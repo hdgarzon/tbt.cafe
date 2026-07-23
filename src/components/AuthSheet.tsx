@@ -23,11 +23,15 @@ import {
  * la wallet custodial (claves cifradas AES-256-GCM). El usuario nunca ve cripto;
  * el front solo dispara la autenticación.
  *
- * NOTA sobre OTP_LEN: el prototipo usa 4, pero Supabase envía códigos de 6
- * dígitos. Como aquí conectamos con el backend REAL, va en 6 — con 4 la
- * verificación sería imposible. El spec ya lo trata como constante ajustable.
+ * NOTA sobre la longitud del OTP: el prototipo especifica 4 dígitos, pero este
+ * proyecto de Supabase está configurado para enviar códigos de 8 (verificado
+ * con un SMS real). Como la longitud es configurable por proyecto, en vez de
+ * fijar un número exacto se acepta un rango — mismo criterio que ya usa el
+ * AuthModal de la app en producción (maxLength 8, habilita desde 6). Así un
+ * cambio de configuración no rompe el login.
  */
-const OTP_LEN = 6
+const OTP_MIN_LEN = 6
+const OTP_MAX_LEN = 8
 const RESEND_SECONDS = 30
 
 type Step = 'phone' | 'verify'
@@ -233,8 +237,8 @@ export function AuthSheet({
               inputMode="numeric"
               autoComplete="one-time-code"
               value={otp}
-              onChange={(e) => setOtp(e.target.value.replace(/\D/g, '').slice(0, OTP_LEN))}
-              placeholder={'0'.repeat(OTP_LEN)}
+              onChange={(e) => setOtp(e.target.value.replace(/\D/g, '').slice(0, OTP_MAX_LEN))}
+              placeholder={'0'.repeat(OTP_MAX_LEN)}
               className="w-full mt-4 py-2 bg-transparent border-b border-hairline text-[26px] tracking-[0.5em] font-mono outline-none focus:border-ink transition-colors"
             />
 
@@ -267,7 +271,7 @@ export function AuthSheet({
             <button
               type="button"
               onClick={verifyOtp}
-              disabled={otp.length < OTP_LEN || busy}
+              disabled={otp.length < OTP_MIN_LEN || busy}
               className="w-full mt-6 py-3 text-[13px] tracking-[0.1em] uppercase border border-ink transition-colors disabled:border-hairline disabled:text-placeholder enabled:hover:bg-ink enabled:hover:text-paper"
             >
               {busy ? 'Verifying…' : 'Verify'}
