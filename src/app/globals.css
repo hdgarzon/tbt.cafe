@@ -2,32 +2,85 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ==========================================================================
+   Design tokens — portados VERBATIM del prototipo tbt-auth.html (:root)
+   Fuente de verdad: TBT_Build_Spec_01.docx, ÍTEM 1.
+   ========================================================================== */
 :root {
-  --foreground-rgb: 0, 0, 0;
-  --background-start-rgb: 214, 219, 220;
-  --background-end-rgb: 255, 255, 255;
+  /* Hermès-quiet canvas */
+  --paper: #FFFFFF;
+  --paper-warm: #F6F3EE;      /* zona utilitaria blanco cálido */
+  --ink: #1A1A1A;
+  --ink-soft: #6B6B6B;
+  --hairline: #E4E1DB;
+  --placeholder: #B8B4AD;     /* gris claro — netamente más claro que el texto escrito */
+
+  /* Paleta Transbit — SOLO como acento precioso, nunca como campos de color */
+  --t-yellow: #FAD212;
+  --t-cyan: #21ABCC;
+  --t-magenta: #EF1385;
+  --t-red: #ED2D0C;
+  --t-green: #3EA32C;
+  --t-navy: #220E82;
+
+  --col-width: 390px;         /* columna bloqueada a móvil */
+  --header-h: 60px;
+  --footer-h: 30px;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --foreground-rgb: 255, 255, 255;
-    --background-start-rgb: 0, 0, 0;
-    --background-end-rgb: 0, 0, 0;
+/* ==========================================================================
+   Base
+   ========================================================================== */
+html,
+body {
+  background: var(--paper);
+  color: var(--ink);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Convención app-wide (Master Handoff §14): el placeholder SIEMPRE va en
+   --placeholder, para que nunca se lea como un campo ya diligenciado. */
+input::placeholder,
+textarea::placeholder {
+  color: var(--placeholder);
+  opacity: 1;
+}
+
+/* Foco visible siempre — accesibilidad */
+:focus-visible {
+  outline: 2px solid var(--t-magenta);
+  outline-offset: 2px;
+}
+
+/* Guarda de movimiento reducido (Master Handoff §5) */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
   }
 }
 
-body {
-  color: rgb(var(--foreground-rgb));
-  background: linear-gradient(
-      to bottom,
-      transparent,
-      rgb(var(--background-end-rgb))
-    )
-    rgb(var(--background-start-rgb));
-}
+/* ==========================================================================
+   Componentes del shell
+   ========================================================================== */
+@layer components {
+  /* Columna bloqueada a móvil: el desktop replica el móvil exactamente. */
+  .col-locked {
+    width: 100%;
+    max-width: var(--col-width);
+    margin-inline: auto;
+  }
 
-@layer utilities {
-  .text-balance {
-    text-wrap: balance;
+  /* Etiqueta en versalitas con tracking generoso */
+  .label-caps {
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--ink-soft);
   }
 }

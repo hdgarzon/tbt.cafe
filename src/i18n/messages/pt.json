@@ -1,0 +1,23 @@
+{
+  "nav": {
+    "collections": "Coleções",
+    "profile": "Perfil",
+    "brew": "Criar TBT",
+    "settings": "Configurações",
+    "history": "Histórico",
+    "authentication": "Autenticação",
+    "language": "Idioma",
+    "notifications": "Notificações"
+  },
+  "home": {
+    "roast": "Roast",
+    "roastSub": "Saiba o que é um TBT",
+    "grind": "Grind",
+    "grindSub": "Descubra criadores e obras",
+    "brew": "Brew",
+    "brewSub": "Crie o seu TBT",
+    "searchPlaceholder": "Busque criadores ou um TBT ID"
+  },
+  "header": { "connected": "Conectado", "disconnected": "Desconectado" },
+  "footer": { "credit": "Transbit × BROCHA" }
+}
