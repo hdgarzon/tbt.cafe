@@ -1,13 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
-import { randomBytes, scrypt, timingSafeEqual } from 'crypto'
-import { promisify } from 'util'
-
-const scryptAsync = promisify(scrypt) as (
-  password: string,
-  salt: string,
-  keylen: number
-) => Promise<Buffer>
+import { hashCode } from '@/lib/private-code'
 
 /**
  * Código privado — Master Handoff §10.
@@ -17,8 +10,8 @@ const scryptAsync = promisify(scrypt) as (
  * factor real. La frecuencia se aplica del lado del servidor y la vía de
  * recuperación es el email verificado.
  *
- * Se usa scrypt de Node (sin dependencias nativas). Formato guardado:
- *   scrypt$<salt-hex>$<hash-hex>
+ * El hashing (scrypt) vive en src/lib/private-code.ts: un archivo de ruta solo
+ * puede exportar handlers, no funciones auxiliares.
  *
  * No hace falta service-role: se usa el token del propio usuario, y la RLS de
  * `profiles` (escritura solo de la fila propia) garantiza que nadie toque la
@@ -27,22 +20,6 @@ const scryptAsync = promisify(scrypt) as (
 
 const MIN_LEN = 3
 const MAX_LEN = 5
-const KEYLEN = 64
-
-async function hashCode(code: string): Promise<string> {
-  const salt = randomBytes(16).toString('hex')
-  const derived = await scryptAsync(code, salt, KEYLEN)
-  return `scrypt$${salt}$${derived.toString('hex')}`
-}
-
-export async function verifyCode(code: string, stored: string): Promise<boolean> {
-  const [scheme, salt, hash] = stored.split('$')
-  if (scheme !== 'scrypt' || !salt || !hash) return false
-  const derived = await scryptAsync(code, salt, KEYLEN)
-  const expected = Buffer.from(hash, 'hex')
-  // Comparación en tiempo constante: evita filtrar información por timing
-  return derived.length === expected.length && timingSafeEqual(derived, expected)
-}
 
 function clientFor(token: string) {
   return createClient(

@@ -5,6 +5,7 @@ import { supabase } from '@/lib/supabase'
 import { maskEmail, maskPhoneE164 } from '@/lib/masking'
 import { PrivateCodeSheet } from '@/components/PrivateCodeSheet'
 import { RecoveryEmailSheet } from '@/components/RecoveryEmailSheet'
+import { BiometricSheet } from '@/components/BiometricSheet'
 
 /**
  * Hub de autenticación — Master Handoff §8.
@@ -24,7 +25,8 @@ export default function AuthHubPage() {
   const [phone, setPhone] = useState<string | null>(null)
   const [profile, setProfile] = useState<Profile | null>(null)
   const [bioAvailable, setBioAvailable] = useState(false)
-  const [sheet, setSheet] = useState<null | 'code' | 'email'>(null)
+  const [bioCount, setBioCount] = useState(0)
+  const [sheet, setSheet] = useState<null | 'code' | 'email' | 'bio'>(null)
 
   async function load() {
     const { data: { user } } = await supabase.auth.getUser()
@@ -41,6 +43,14 @@ export default function AuthHubPage() {
       .single()
 
     setProfile(data as Profile | null)
+
+    // Dispositivos biométricos registrados (RLS: solo los propios)
+    const { count } = await supabase
+      .from('webauthn_credentials')
+      .select('id', { count: 'exact', head: true })
+      .eq('user_id', user.id)
+    setBioCount(count ?? 0)
+
     setLoading(false)
   }
 
@@ -123,11 +133,13 @@ export default function AuthHubPage() {
         {bioAvailable && (
           <Row
             title="Biometric sign-in"
-            value="No configurado"
-            action="Set up"
-            onAction={() =>
-              alert('WebAuthn: llega en el paso 7 (requiere las 4 rutas del companion doc)')
+            value={
+              bioCount > 0
+                ? `Activo · ${bioCount} dispositivo${bioCount > 1 ? 's' : ''}`
+                : 'No configurado'
             }
+            action={bioCount > 0 ? 'Add device' : 'Set up'}
+            onAction={() => setSheet('bio')}
             hint="Se suma al OTP; nunca lo reemplaza. Por dispositivo."
           />
         )}
@@ -144,6 +156,15 @@ export default function AuthHubPage() {
 
       <RecoveryEmailSheet
         open={sheet === 'email'}
+        onClose={() => setSheet(null)}
+        onSaved={() => {
+          setSheet(null)
+          load()
+        }}
+      />
+
+      <BiometricSheet
+        open={sheet === 'bio'}
         onClose={() => setSheet(null)}
         onSaved={() => {
           setSheet(null)
