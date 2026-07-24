@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { Header } from '@/components/Header'
 import { SlideMenu } from '@/components/SlideMenu'
 import { AuthSheet } from '@/components/AuthSheet'
+import { BiometricSignInSheet } from '@/components/BiometricSignInSheet'
 import { supabase } from '@/lib/supabase'
 import { maskPhone, type Country } from '@/lib/countries'
 import { resolveLocale, type Locale } from '@/i18n/config'
@@ -26,6 +27,7 @@ export default function HomePage() {
   const [connected, setConnected] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
   const [authOpen, setAuthOpen] = useState(false)
+  const [bioAuthOpen, setBioAuthOpen] = useState(false)
   const [maskedPhone, setMaskedPhone] = useState<string | null>(null)
   const [query, setQuery] = useState('')
   const [locale, setLocale] = useState<Locale>('en')
@@ -126,6 +128,16 @@ export default function HomePage() {
         open={authOpen}
         onClose={() => setAuthOpen(false)}
         onAuthenticated={handleAuthenticated}
+        onSwitchToBiometric={() => {
+          setAuthOpen(false)
+          setBioAuthOpen(true)
+        }}
+      />
+
+      <BiometricSignInSheet
+        open={bioAuthOpen}
+        onClose={() => setBioAuthOpen(false)}
+        onAuthenticated={() => setConnected(true)}
       />
     </div>
   )
