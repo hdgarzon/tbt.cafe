@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Inter, Cormorant_Garamond } from "next/font/google";
+import { LocaleProvider } from "@/i18n/LocaleProvider";
 import "./globals.css";
 
 /**
@@ -45,7 +46,7 @@ export default function RootLayout({
           derramarse al costado cuando la columna está centrada en desktop.
         */}
         <div className="col-locked min-h-screen flex flex-col border-x border-hairline overflow-hidden">
-          {children}
+          <LocaleProvider>{children}</LocaleProvider>
         </div>
       </body>
     </html>

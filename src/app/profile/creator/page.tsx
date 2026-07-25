@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
+import { useLocale } from '@/i18n/LocaleProvider'
 import { Field, TextArea, CategoryPicker, SaveBar, type Category } from '@/components/FormBits'
 
 /**
@@ -10,6 +11,7 @@ import { Field, TextArea, CategoryPicker, SaveBar, type Category } from '@/compo
  * las mismas que usa el complete-tbt de la app, para no fragmentar los datos.
  */
 export default function CreatorProfilePage() {
+  const { t } = useLocale()
   const [loading, setLoading] = useState(true)
   const [signedIn, setSignedIn] = useState(true)
   const [busy, setBusy] = useState(false)
@@ -75,7 +77,7 @@ export default function CreatorProfilePage() {
     setSaved(false)
     try {
       const { data: { user } } = await supabase.auth.getUser()
-      if (!user) throw new Error('Sesión expirada')
+      if (!user) throw new Error('Session expired')
 
       const { error: err } = await supabase
         .from('profiles')
@@ -99,18 +101,18 @@ export default function CreatorProfilePage() {
       if (err) throw err
       setSaved(true)
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'No pudimos guardar el perfil')
+      setError(e instanceof Error ? e.message : t.profileCreator.errors.saveFailed)
     } finally {
       setBusy(false)
     }
   }
 
-  if (loading) return <div className="flex-1 px-5 py-8 text-[13px] text-ink-soft">Cargando…</div>
+  if (loading) return <div className="flex-1 px-5 py-8 text-[13px] text-ink-soft">{t.authHub.loading}</div>
   if (!signedIn) {
     return (
       <div className="flex-1 px-5 py-8">
-        <a href="/profile" className="label-caps hover:text-ink">← Profile</a>
-        <p className="text-[14px] mt-6">Inicia sesión para editar tu perfil.</p>
+        <a href="/profile" className="label-caps hover:text-ink">← {t.profile.title}</a>
+        <p className="text-[14px] mt-6">{t.profileCreator.needSignIn}</p>
       </div>
     )
   }
@@ -118,7 +120,7 @@ export default function CreatorProfilePage() {
   return (
     <div className="flex-1 flex flex-col">
       <div className="h-header flex items-center px-5 border-b border-hairline">
-        <a href="/profile" className="label-caps hover:text-ink">← Creator profile</a>
+        <a href="/profile" className="label-caps hover:text-ink">← {t.profileCreator.backLabel}</a>
       </div>
 
       <div className="px-5 py-6 flex flex-col gap-6">
@@ -126,42 +128,42 @@ export default function CreatorProfilePage() {
 
         {/* Campos condicionales por categoría (§11.1) */}
         {category === 'individual' && (
-          <Field label="Legal name" value={legalName} onChange={setLegalName} placeholder="Nombre legal completo" />
+          <Field label={t.profileCreator.legalName} value={legalName} onChange={setLegalName} placeholder={t.profileCreator.legalNamePlaceholder} />
         )}
         {category === 'group' && (
           <>
-            <Field label="Lead representative" value={leadRep} onChange={setLeadRep} placeholder="Representante principal" />
-            <Field label="Collective name" value={collectiveName} onChange={setCollectiveName} placeholder="Nombre del colectivo" />
+            <Field label={t.profileCreator.leadRep} value={leadRep} onChange={setLeadRep} placeholder={t.profileCreator.leadRepPlaceholder} />
+            <Field label={t.profileCreator.collectiveName} value={collectiveName} onChange={setCollectiveName} placeholder={t.profileCreator.collectiveNamePlaceholder} />
           </>
         )}
         {category === 'corporation' && (
           <>
-            <Field label="Registered entity name" value={entityName} onChange={setEntityName} placeholder="Razón social" />
-            <Field label="Tax ID / Registration #" value={taxId} onChange={setTaxId} placeholder="NIT / Tax ID" />
+            <Field label={t.profileCreator.entityName} value={entityName} onChange={setEntityName} placeholder={t.profileCreator.entityNamePlaceholder} />
+            <Field label={t.profileCreator.taxId} value={taxId} onChange={setTaxId} placeholder={t.profileCreator.taxIdPlaceholder} />
           </>
         )}
 
         <Field
-          label="Public alias"
+          label={t.profileCreator.publicAlias}
           value={publicAlias}
           onChange={setPublicAlias}
-          placeholder="El nombre que aparece en el certificado"
-          hint="Es el nombre que verá cualquiera en el TBT."
+          placeholder={t.profileCreator.publicAliasPlaceholder}
+          hint={t.profileCreator.publicAliasHint}
         />
-        <TextArea label="About" value={about} onChange={setAbout} placeholder="Sobre ti, tu trayectoria…" />
-        <Field label="Credentials" value={credentials} onChange={setCredentials} placeholder="Formación, premios…" />
+        <TextArea label={t.profileCreator.about} value={about} onChange={setAbout} placeholder={t.profileCreator.aboutPlaceholder} />
+        <Field label={t.profileCreator.credentials} value={credentials} onChange={setCredentials} placeholder={t.profileCreator.credentialsPlaceholder} />
         <Field
-          label="Physical address"
+          label={t.profileCreator.address}
           value={address}
           onChange={setAddress}
-          placeholder="Ciudad, país"
-          hint="Autocompletado con Maps: pendiente de integración (seam)."
+          placeholder={t.profileCreator.addressPlaceholder}
+          hint={t.profileCreator.addressHint}
         />
 
-        <div className="label-caps pt-2">Social proof</div>
-        <Field label="LinkedIn" value={linkedin} onChange={setLinkedin} placeholder="https://linkedin.com/in/…" urlDomain="linkedin.com" />
-        <Field label="Website" value={website} onChange={setWebsite} placeholder="https://tusitio.com" />
-        <Field label="Instagram" value={instagram} onChange={setInstagram} placeholder="https://instagram.com/…" urlDomain="instagram.com" />
+        <div className="label-caps pt-2">{t.profileCreator.socialProof}</div>
+        <Field label={t.profileCreator.linkedin} value={linkedin} onChange={setLinkedin} placeholder="https://linkedin.com/in/…" urlDomain="linkedin.com" />
+        <Field label={t.profileCreator.website} value={website} onChange={setWebsite} placeholder="https://yoursite.com" />
+        <Field label={t.profileCreator.instagram} value={instagram} onChange={setInstagram} placeholder="https://instagram.com/…" urlDomain="instagram.com" />
 
         <SaveBar onSave={save} busy={busy} saved={saved} error={error} />
       </div>

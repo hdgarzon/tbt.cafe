@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
+import { useLocale } from '@/i18n/LocaleProvider'
 
 /**
  * Email de recuperación — Master Handoff §9.
@@ -23,6 +24,7 @@ export function RecoveryEmailSheet({
   onClose: () => void
   onSaved: () => void
 }) {
+  const { t } = useLocale()
   const [email, setEmail] = useState('')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
@@ -44,7 +46,7 @@ export function RecoveryEmailSheet({
     setBusy(true)
     try {
       const { data: { user } } = await supabase.auth.getUser()
-      if (!user) throw new Error('Sesión expirada')
+      if (!user) throw new Error('Session expired')
 
       // 1. Dispara el correo de confirmación de Supabase
       const { error: updErr } = await supabase.auth.updateUser({ email })
@@ -60,7 +62,7 @@ export function RecoveryEmailSheet({
 
       setSent(true)
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'No pudimos enviar la confirmación')
+      setError(e instanceof Error ? e.message : t.recoveryEmail.errors.sendFailed)
     } finally {
       setBusy(false)
     }
@@ -74,46 +76,43 @@ export function RecoveryEmailSheet({
 
       <div className="relative bg-paper border-t border-hairline">
         <div className="h-header flex items-center justify-between px-5 border-b border-hairline">
-          <span className="label-caps">Recovery email</span>
+          <span className="label-caps">{t.recoveryEmail.title}</span>
           <button type="button" onClick={onClose} aria-label="Close" className="text-[20px] leading-none text-ink-soft">×</button>
         </div>
 
         <div className="px-5 py-6">
           {sent ? (
             <>
-              <p className="text-[14px]">Revisa tu correo.</p>
+              <p className="text-[14px]">{t.recoveryEmail.checkEmail}</p>
               <p className="text-[12px] text-ink-soft mt-2 leading-relaxed">
-                Enviamos un enlace de confirmación a <span className="text-ink">{email}</span>.
-                Al abrirlo, el email queda verificado y podrás usarlo para recuperar
-                tu cuenta si pierdes el teléfono.
+                {t.recoveryEmail.checkEmailDesc.replace('{email}', email)}
               </p>
               <button
                 type="button"
                 onClick={onSaved}
                 className="w-full mt-6 py-3 text-[13px] tracking-[0.1em] uppercase border border-ink hover:bg-ink hover:text-paper transition-colors"
               >
-                Done
+                {t.recoveryEmail.done}
               </button>
             </>
           ) : (
             <>
               <p className="text-[12px] text-ink-soft leading-relaxed">
-                Sirve para recuperar la cuenta si pierdes el teléfono, y como
-                confirmación adicional.
+                {t.recoveryEmail.description}
               </p>
 
-              <label className="label-caps block mt-5" htmlFor="rec-email">Email</label>
+              <label className="label-caps block mt-5" htmlFor="rec-email">{t.recoveryEmail.emailLabel}</label>
               <input
                 id="rec-email"
                 type="email"
                 autoComplete="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value.trim())}
-                placeholder="tu@correo.com"
+                placeholder="you@email.com"
                 className="w-full mt-1 py-2 bg-transparent border-b border-hairline text-[15px] outline-none focus:border-ink transition-colors"
               />
               {email.length > 0 && !valid && (
-                <p className="text-[11px] text-t-red mt-2">Correo inválido.</p>
+                <p className="text-[11px] text-t-red mt-2">{t.recoveryEmail.invalidEmail}</p>
               )}
 
               {error && <p className="text-[12px] text-t-red mt-4">{error}</p>}
@@ -124,7 +123,7 @@ export function RecoveryEmailSheet({
                 disabled={!valid || busy}
                 className="w-full mt-6 py-3 text-[13px] tracking-[0.1em] uppercase border border-ink transition-colors disabled:border-hairline disabled:text-placeholder enabled:hover:bg-ink enabled:hover:text-paper"
               >
-                {busy ? 'Sending…' : 'Send confirmation'}
+                {busy ? t.recoveryEmail.sending : t.recoveryEmail.send}
               </button>
             </>
           )}

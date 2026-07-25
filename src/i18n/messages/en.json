@@ -1,13 +1,9 @@
 {
-  "nav": {
-    "collections": "Collections",
-    "profile": "Profile",
-    "brew": "Brew TBT",
-    "settings": "Settings",
-    "history": "History",
-    "authentication": "Authentication",
-    "language": "Language",
-    "notifications": "Notifications"
+  "header": {
+    "menu": "Menu",
+    "favorites": "Favorites",
+    "signIn": "Sign in",
+    "signOut": "Sign out"
   },
   "home": {
     "roast": "Roast",
@@ -18,6 +14,250 @@
     "brewSub": "Create your TBT",
     "searchPlaceholder": "Search creators or TBT ID"
   },
-  "header": { "connected": "Connected", "disconnected": "Disconnected" },
-  "footer": { "credit": "Transbit × BROCHA" }
+  "footer": { "credit": "Transbit × BROCHA" },
+  "menu": {
+    "collections": "Collections",
+    "profile": "Profile",
+    "brewTbt": "Brew TBT",
+    "settings": "Settings",
+    "authentication": "Authentication",
+    "language": "Language",
+    "notifications": "Notifications",
+    "history": "History",
+    "switchTo": "Switch to {lang}?",
+    "confirm": "Confirm",
+    "cancel": "Cancel"
+  },
+  "auth": {
+    "signInTitle": "Sign in",
+    "verifyTitle": "Verify",
+    "termsPrefix": "I agree to the",
+    "termsOfService": "Terms of Service",
+    "termsAnd": "and",
+    "privacyPolicy": "Privacy Policy",
+    "sendCode": "Send code",
+    "sending": "Sending…",
+    "bioInstead": "Sign in with biometrics instead",
+    "codeSentTo": "Code sent to",
+    "changeNumber": "change number",
+    "resendCode": "resend code",
+    "resendCodeIn": "resend code ({s}s)",
+    "verify": "Verify",
+    "verifying": "Verifying…",
+    "errors": {
+      "sendFailed": "We couldn't send the code",
+      "expired": "The code expired. Request a new one.",
+      "invalid": "Incorrect code. Check it and try again.",
+      "verifyFailed": "We couldn't verify the code"
+    }
+  },
+  "authHub": {
+    "loading": "Loading…",
+    "needSignIn": "Sign in to manage your authentication.",
+    "mobilePhone": "Mobile phone",
+    "change": "Change",
+    "recoveryEmail": "Recovery email",
+    "add": "Add",
+    "notConfigured": "Not configured",
+    "unverified": "unverified",
+    "recoveryHint": "To recover your account if you lose your phone.",
+    "privateCode": "Private code",
+    "setUp": "Set up",
+    "active": "Active",
+    "always": "always",
+    "occasional": "occasionally",
+    "privateCodeHint": "Asked in addition to the SMS code, per the frequency you choose.",
+    "biometricSignIn": "Biometric sign-in",
+    "biometricHint": "Adds to the SMS code; never replaces it. Per device.",
+    "addDevice": "Add device",
+    "activeDevices": "Active · {n} device",
+    "activeDevicesPlural": "Active · {n} devices"
+  },
+  "privateCode": {
+    "title": "Private code",
+    "description": "Between {min} and {max} characters. Will be asked in addition to the SMS code.",
+    "codeLabel": "Code",
+    "confirmLabel": "Confirm",
+    "mismatch": "The codes don't match.",
+    "askMe": "Ask me",
+    "always": "Always",
+    "occasional": "Occasionally",
+    "save": "Save code",
+    "saving": "Saving…",
+    "disclaimer": "Stored as a hash, never in plain text. A short code is a convenience layer, not a real second factor.",
+    "errors": { "saveFailed": "We couldn't save the code" }
+  },
+  "recoveryEmail": {
+    "title": "Recovery email",
+    "description": "Used to recover your account if you lose your phone, and as extra confirmation.",
+    "emailLabel": "Email",
+    "invalidEmail": "Invalid email.",
+    "send": "Send confirmation",
+    "sending": "Sending…",
+    "checkEmail": "Check your email.",
+    "checkEmailDesc": "We sent a confirmation link to {email}. Once you open it, the email is verified and you can use it to recover your account if you lose your phone.",
+    "done": "Done",
+    "errors": { "sendFailed": "We couldn't send the confirmation" }
+  },
+  "biometric": {
+    "title": "Biometric sign-in",
+    "description": "Register this device with your fingerprint or face. Biometrics never leave the device — we only store a public key. It adds to the SMS code, never replaces it as your identity.",
+    "setUp": "Set up",
+    "prompting": "Follow your device's prompt…",
+    "chooseMode": "How do you want to use biometrics on this device?",
+    "quickTitle": "Quick sign-in",
+    "quickDesc": "One touch identifies you, no SMS code on this device.",
+    "extraTitle": "Extra security layer",
+    "extraDesc": "Biometrics required in addition to the SMS code.",
+    "registered": "Device registered.",
+    "registeredDesc": "You can now use biometrics on this device.",
+    "done": "Done",
+    "errors": {
+      "cancelled": "You cancelled the device registration.",
+      "enrollFailed": "We couldn't register the device",
+      "saveFailed": "We couldn't save the device"
+    }
+  },
+  "biometricSignIn": {
+    "title": "Quick sign-in",
+    "description": "Enter your phone to locate your registered device.",
+    "continue": "Continue",
+    "starting": "Starting…",
+    "errors": {
+      "cancelled": "You cancelled the verification.",
+      "needSignIn": "We couldn't start the verification",
+      "failed": "We couldn't verify the device"
+    }
+  },
+  "profile": {
+    "title": "Profile",
+    "creatorTitle": "Creator profile",
+    "creatorSub": "Who certifies the work",
+    "collectorTitle": "Collector profile",
+    "collectorSub": "Who acquires it",
+    "needSignIn": "Sign in to edit your profile."
+  },
+  "profileCreator": {
+    "backLabel": "Creator profile",
+    "category": "Category",
+    "individual": "Individual",
+    "group": "Group",
+    "corporation": "Corporation",
+    "legalName": "Legal name",
+    "legalNamePlaceholder": "Full legal name",
+    "leadRep": "Lead representative",
+    "leadRepPlaceholder": "Lead representative",
+    "collectiveName": "Collective name",
+    "collectiveNamePlaceholder": "Collective name",
+    "entityName": "Registered entity name",
+    "entityNamePlaceholder": "Registered entity name",
+    "taxId": "Tax ID / Registration #",
+    "taxIdPlaceholder": "Tax ID / Registration #",
+    "publicAlias": "Public alias",
+    "publicAliasPlaceholder": "The name that appears on the certificate",
+    "publicAliasHint": "This is the name anyone will see on the TBT.",
+    "about": "About",
+    "aboutPlaceholder": "About you, your background…",
+    "credentials": "Credentials",
+    "credentialsPlaceholder": "Training, awards…",
+    "address": "Physical address",
+    "addressPlaceholder": "City, country",
+    "addressHint": "Maps autocomplete: pending integration (seam).",
+    "socialProof": "Social proof",
+    "linkedin": "LinkedIn",
+    "website": "Website",
+    "instagram": "Instagram",
+    "urlDomainError": "Must be a {domain} link.",
+    "save": "Save",
+    "saving": "Saving…",
+    "saved": "Saved ✓",
+    "needSignIn": "Sign in to edit your profile.",
+    "errors": { "saveFailed": "We couldn't save the profile" }
+  },
+  "profileCollector": {
+    "backLabel": "Collector profile",
+    "category": "Category",
+    "anonymous": "Display as anonymous",
+    "anonymousHint": "The TBT page will show \"Private collector\".",
+    "anonymousFieldsHint": "In anonymous mode these fields are not shown publicly.",
+    "alias": "Alias",
+    "aliasPlaceholder": "Name shown as collector",
+    "location": "Location",
+    "locationPlaceholder": "City, country",
+    "about": "About",
+    "aboutPlaceholder": "About your collection…",
+    "website": "Website",
+    "websitePlaceholder": "https://yoursite.com",
+    "save": "Save",
+    "saving": "Saving…",
+    "saved": "Saved ✓",
+    "needSignIn": "Sign in to edit your profile.",
+    "errors": { "saveFailed": "We couldn't save the profile" }
+  },
+  "notifications": {
+    "backLabel": "Notifications",
+    "needSignIn": "Sign in to manage your notifications.",
+    "categories": {
+      "tbtActivity": "TBT activity",
+      "security": "Security",
+      "securityNote": "On by default, deliberately.",
+      "transactional": "Transactional"
+    },
+    "items": {
+      "viewsCreated": "Views on created works",
+      "viewsCollection": "Views on collection",
+      "favorites": "Favorites activity",
+      "surge": "Surge alerts",
+      "newLocation": "New location (IP)",
+      "newDevice": "New device",
+      "suspicious": "Suspicious activity",
+      "purchases": "Purchases",
+      "transfers": "Transfers",
+      "newFromFollowed": "New from followed",
+      "registrations": "Registration confirmations"
+    },
+    "notifyPast": "Notify past",
+    "views": "views",
+    "save": "Save preferences",
+    "saving": "Saving…",
+    "saved": "Saved ✓"
+  },
+  "work": {
+    "loading": "Loading…",
+    "notFound": "We couldn't find a work with that ID.",
+    "creator": "Creator",
+    "about": "About",
+    "certified": "Certified",
+    "pending": "Pending",
+    "viewOnSolana": "View on Solana",
+    "price": "Price",
+    "buyDisclaimer": "When you buy, you pay the platform fee and the artist's royalty via Stripe. The work's price is arranged directly with the seller, outside the platform.",
+    "buy": "Buy",
+    "starting": "Starting…",
+    "youOwnThis": "You own this piece.",
+    "errors": {
+      "needSignIn": "Sign in to buy this piece.",
+      "buyFailed": "We couldn't start the purchase"
+    }
+  },
+  "purchase": {
+    "successWorking": "Completing your purchase…",
+    "successDone": "It's yours.",
+    "home": "Home",
+    "cancelTitle": "Purchase cancelled.",
+    "cancelDesc": "No charge was made.",
+    "missingTransferId": "Missing transferId in the return URL.",
+    "errors": {
+      "sessionExpired": "Session expired — sign in again.",
+      "completeFailed": "We couldn't complete the purchase"
+    }
+  },
+  "creator": {
+    "label": "Creator",
+    "purchasedHandle": "Purchased handle · resolves to the key",
+    "permanentKey": "Permanent key",
+    "collectionsLabel": "Collections",
+    "collectionOneAuto": "The first TBT automatically creates \"Collection 1\" (renamable; the slug follows the name).",
+    "collectionWorks": "Works in this collection."
+  }
 }

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
+import { useLocale } from '@/i18n/LocaleProvider'
 import { maskEmail, maskPhoneE164 } from '@/lib/masking'
 import { PrivateCodeSheet } from '@/components/PrivateCodeSheet'
 import { RecoveryEmailSheet } from '@/components/RecoveryEmailSheet'
@@ -21,6 +22,7 @@ type Profile = {
 }
 
 export default function AuthHubPage() {
+  const { t } = useLocale()
   const [loading, setLoading] = useState(true)
   const [phone, setPhone] = useState<string | null>(null)
   const [profile, setProfile] = useState<Profile | null>(null)
@@ -71,15 +73,15 @@ export default function AuthHubPage() {
   }, [])
 
   if (loading) {
-    return <div className="flex-1 px-5 py-8 text-[13px] text-ink-soft">Cargando…</div>
+    return <div className="flex-1 px-5 py-8 text-[13px] text-ink-soft">{t.authHub.loading}</div>
   }
 
   if (!phone) {
     return (
       <div className="flex-1 px-5 py-8">
-        <a href="/" className="label-caps hover:text-ink">← Home</a>
+        <a href="/" className="label-caps hover:text-ink">← {t.purchase.home}</a>
         <p className="text-[14px] mt-6">
-          Inicia sesión para gestionar tu autenticación.
+          {t.authHub.needSignIn}
         </p>
       </div>
     )
@@ -91,56 +93,56 @@ export default function AuthHubPage() {
   return (
     <div className="flex-1 flex flex-col">
       <div className="h-header flex items-center px-5 border-b border-hairline">
-        <a href="/" className="label-caps hover:text-ink">← Authentication</a>
+        <a href="/" className="label-caps hover:text-ink">← {t.menu.authentication}</a>
       </div>
 
       <div className="flex flex-col">
         {/* 1 · Teléfono móvil */}
         <Row
-          title="Mobile phone"
+          title={t.authHub.mobilePhone}
           value={maskPhoneE164(phone)}
-          action="Change"
+          action={t.authHub.change}
           onAction={() => alert('Change-number flow: pendiente de diseño (Master Handoff §16)')}
         />
 
         {/* 2 · Email de recuperación */}
         <Row
-          title="Recovery email"
+          title={t.authHub.recoveryEmail}
           value={
             profile?.recovery_email
-              ? `${maskEmail(profile.recovery_email)}${emailVerified ? '' : ' · sin verificar'}`
-              : 'No configurado'
+              ? `${maskEmail(profile.recovery_email)}${emailVerified ? '' : ` · ${t.authHub.unverified}`}`
+              : t.authHub.notConfigured
           }
-          action={profile?.recovery_email ? 'Change' : 'Add'}
+          action={profile?.recovery_email ? t.authHub.change : t.authHub.add}
           onAction={() => setSheet('email')}
-          hint="Para recuperar la cuenta si pierdes el teléfono."
+          hint={t.authHub.recoveryHint}
         />
 
         {/* 3 · Código privado */}
         <Row
-          title="Private code"
+          title={t.authHub.privateCode}
           value={
             hasCode
-              ? `Activo · ${profile?.private_code_freq === 'always' ? 'siempre' : 'ocasional'}`
-              : 'No configurado'
+              ? `${t.authHub.active} · ${profile?.private_code_freq === 'always' ? t.authHub.always : t.authHub.occasional}`
+              : t.authHub.notConfigured
           }
-          action={hasCode ? 'Change' : 'Set up'}
+          action={hasCode ? t.authHub.change : t.authHub.setUp}
           onAction={() => setSheet('code')}
-          hint="Se pide además del OTP, según la frecuencia elegida."
+          hint={t.authHub.privateCodeHint}
         />
 
         {/* 4 · Biométrico — oculto si el dispositivo no lo soporta */}
         {bioAvailable && (
           <Row
-            title="Biometric sign-in"
+            title={t.authHub.biometricSignIn}
             value={
               bioCount > 0
-                ? `Activo · ${bioCount} dispositivo${bioCount > 1 ? 's' : ''}`
-                : 'No configurado'
+                ? (bioCount > 1 ? t.authHub.activeDevicesPlural : t.authHub.activeDevices).replace('{n}', String(bioCount))
+                : t.authHub.notConfigured
             }
-            action={bioCount > 0 ? 'Add device' : 'Set up'}
+            action={bioCount > 0 ? t.authHub.addDevice : t.authHub.setUp}
             onAction={() => setSheet('bio')}
-            hint="Se suma al OTP; nunca lo reemplaza. Por dispositivo."
+            hint={t.authHub.biometricHint}
           />
         )}
       </div>

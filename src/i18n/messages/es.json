@@ -1,13 +1,9 @@
 {
-  "nav": {
-    "collections": "Colecciones",
-    "profile": "Perfil",
-    "brew": "Crear TBT",
-    "settings": "Ajustes",
-    "history": "Historial",
-    "authentication": "Autenticación",
-    "language": "Idioma",
-    "notifications": "Notificaciones"
+  "header": {
+    "menu": "Menú",
+    "favorites": "Favoritos",
+    "signIn": "Iniciar sesión",
+    "signOut": "Cerrar sesión"
   },
   "home": {
     "roast": "Roast",
@@ -18,6 +14,250 @@
     "brewSub": "Crea tu TBT",
     "searchPlaceholder": "Busca creadores o un TBT ID"
   },
-  "header": { "connected": "Conectado", "disconnected": "Desconectado" },
-  "footer": { "credit": "Transbit × BROCHA" }
+  "footer": { "credit": "Transbit × BROCHA" },
+  "menu": {
+    "collections": "Colecciones",
+    "profile": "Perfil",
+    "brewTbt": "Crear TBT",
+    "settings": "Ajustes",
+    "authentication": "Autenticación",
+    "language": "Idioma",
+    "notifications": "Notificaciones",
+    "history": "Historial",
+    "switchTo": "¿Cambiar a {lang}?",
+    "confirm": "Confirmar",
+    "cancel": "Cancelar"
+  },
+  "auth": {
+    "signInTitle": "Iniciar sesión",
+    "verifyTitle": "Verificar",
+    "termsPrefix": "Acepto los",
+    "termsOfService": "Términos de Servicio",
+    "termsAnd": "y la",
+    "privacyPolicy": "Política de Privacidad",
+    "sendCode": "Enviar código",
+    "sending": "Enviando…",
+    "bioInstead": "Iniciar sesión con biométrico en su lugar",
+    "codeSentTo": "Código enviado a",
+    "changeNumber": "cambiar número",
+    "resendCode": "reenviar código",
+    "resendCodeIn": "reenviar código ({s}s)",
+    "verify": "Verificar",
+    "verifying": "Verificando…",
+    "errors": {
+      "sendFailed": "No pudimos enviar el código",
+      "expired": "El código expiró. Solicita uno nuevo.",
+      "invalid": "Código incorrecto. Revísalo e intenta de nuevo.",
+      "verifyFailed": "No pudimos verificar el código"
+    }
+  },
+  "authHub": {
+    "loading": "Cargando…",
+    "needSignIn": "Inicia sesión para gestionar tu autenticación.",
+    "mobilePhone": "Móvil",
+    "change": "Cambiar",
+    "recoveryEmail": "Email de recuperación",
+    "add": "Agregar",
+    "notConfigured": "No configurado",
+    "unverified": "sin verificar",
+    "recoveryHint": "Para recuperar la cuenta si pierdes el teléfono.",
+    "privateCode": "Código privado",
+    "setUp": "Configurar",
+    "active": "Activo",
+    "always": "siempre",
+    "occasional": "ocasional",
+    "privateCodeHint": "Se pide además del código SMS, según la frecuencia elegida.",
+    "biometricSignIn": "Inicio biométrico",
+    "biometricHint": "Se suma al código SMS; nunca lo reemplaza. Por dispositivo.",
+    "addDevice": "Agregar dispositivo",
+    "activeDevices": "Activo · {n} dispositivo",
+    "activeDevicesPlural": "Activo · {n} dispositivos"
+  },
+  "privateCode": {
+    "title": "Código privado",
+    "description": "Entre {min} y {max} caracteres. Se pedirá además del código SMS.",
+    "codeLabel": "Código",
+    "confirmLabel": "Confirmar",
+    "mismatch": "Los códigos no coinciden.",
+    "askMe": "Pedirlo",
+    "always": "Siempre",
+    "occasional": "Ocasionalmente",
+    "save": "Guardar código",
+    "saving": "Guardando…",
+    "disclaimer": "Se guarda hasheado, nunca en texto plano. Un código corto es una capa de conveniencia, no un segundo factor real.",
+    "errors": { "saveFailed": "No pudimos guardar el código" }
+  },
+  "recoveryEmail": {
+    "title": "Email de recuperación",
+    "description": "Sirve para recuperar la cuenta si pierdes el teléfono, y como confirmación adicional.",
+    "emailLabel": "Email",
+    "invalidEmail": "Correo inválido.",
+    "send": "Enviar confirmación",
+    "sending": "Enviando…",
+    "checkEmail": "Revisa tu correo.",
+    "checkEmailDesc": "Enviamos un enlace de confirmación a {email}. Al abrirlo, el email queda verificado y podrás usarlo para recuperar tu cuenta si pierdes el teléfono.",
+    "done": "Listo",
+    "errors": { "sendFailed": "No pudimos enviar la confirmación" }
+  },
+  "biometric": {
+    "title": "Inicio biométrico",
+    "description": "Registra este dispositivo con tu huella o rostro. La biometría nunca sale del dispositivo — solo guardamos una clave pública. Se suma al código SMS, nunca lo reemplaza como tu identidad.",
+    "setUp": "Configurar",
+    "prompting": "Sigue la indicación de tu dispositivo…",
+    "chooseMode": "¿Cómo quieres usar el biométrico en este dispositivo?",
+    "quickTitle": "Inicio rápido",
+    "quickDesc": "Una pulsación te identifica, sin código SMS en este dispositivo.",
+    "extraTitle": "Capa de seguridad extra",
+    "extraDesc": "Se pide el biométrico además del código SMS.",
+    "registered": "Dispositivo registrado.",
+    "registeredDesc": "Ya puedes usar el biométrico en este dispositivo.",
+    "done": "Listo",
+    "errors": {
+      "cancelled": "Cancelaste el registro del dispositivo.",
+      "enrollFailed": "No pudimos registrar el dispositivo",
+      "saveFailed": "No pudimos guardar el dispositivo"
+    }
+  },
+  "biometricSignIn": {
+    "title": "Inicio rápido",
+    "description": "Ingresa tu teléfono para ubicar el dispositivo registrado.",
+    "continue": "Continuar",
+    "starting": "Iniciando…",
+    "errors": {
+      "cancelled": "Cancelaste la verificación.",
+      "needSignIn": "No pudimos iniciar la verificación",
+      "failed": "No pudimos verificar el dispositivo"
+    }
+  },
+  "profile": {
+    "title": "Perfil",
+    "creatorTitle": "Perfil de Creador",
+    "creatorSub": "Quien certifica la obra",
+    "collectorTitle": "Perfil de Coleccionista",
+    "collectorSub": "Quien la adquiere",
+    "needSignIn": "Inicia sesión para editar tu perfil."
+  },
+  "profileCreator": {
+    "backLabel": "Perfil de Creador",
+    "category": "Categoría",
+    "individual": "Individual",
+    "group": "Grupo",
+    "corporation": "Corporación",
+    "legalName": "Nombre legal",
+    "legalNamePlaceholder": "Nombre legal completo",
+    "leadRep": "Representante principal",
+    "leadRepPlaceholder": "Representante principal",
+    "collectiveName": "Nombre del colectivo",
+    "collectiveNamePlaceholder": "Nombre del colectivo",
+    "entityName": "Razón social",
+    "entityNamePlaceholder": "Razón social",
+    "taxId": "NIT / Tax ID",
+    "taxIdPlaceholder": "NIT / Tax ID",
+    "publicAlias": "Alias público",
+    "publicAliasPlaceholder": "El nombre que aparece en el certificado",
+    "publicAliasHint": "Es el nombre que verá cualquiera en el TBT.",
+    "about": "Sobre ti",
+    "aboutPlaceholder": "Sobre ti, tu trayectoria…",
+    "credentials": "Credenciales",
+    "credentialsPlaceholder": "Formación, premios…",
+    "address": "Dirección física",
+    "addressPlaceholder": "Ciudad, país",
+    "addressHint": "Autocompletado con Maps: pendiente de integración (seam).",
+    "socialProof": "Redes sociales",
+    "linkedin": "LinkedIn",
+    "website": "Sitio web",
+    "instagram": "Instagram",
+    "urlDomainError": "Debe ser un enlace de {domain}.",
+    "save": "Guardar",
+    "saving": "Guardando…",
+    "saved": "Guardado ✓",
+    "needSignIn": "Inicia sesión para editar tu perfil.",
+    "errors": { "saveFailed": "No pudimos guardar el perfil" }
+  },
+  "profileCollector": {
+    "backLabel": "Perfil de Coleccionista",
+    "category": "Categoría",
+    "anonymous": "Mostrar como anónimo",
+    "anonymousHint": "La página del TBT mostrará \"Coleccionista privado\".",
+    "anonymousFieldsHint": "En modo anónimo estos campos no se muestran públicamente.",
+    "alias": "Alias",
+    "aliasPlaceholder": "Nombre visible como coleccionista",
+    "location": "Ubicación",
+    "locationPlaceholder": "Ciudad, país",
+    "about": "Sobre ti",
+    "aboutPlaceholder": "Sobre tu colección…",
+    "website": "Sitio web",
+    "websitePlaceholder": "https://tusitio.com",
+    "save": "Guardar",
+    "saving": "Guardando…",
+    "saved": "Guardado ✓",
+    "needSignIn": "Inicia sesión para editar tu perfil.",
+    "errors": { "saveFailed": "No pudimos guardar el perfil" }
+  },
+  "notifications": {
+    "backLabel": "Notificaciones",
+    "needSignIn": "Inicia sesión para gestionar tus notificaciones.",
+    "categories": {
+      "tbtActivity": "Actividad TBT",
+      "security": "Seguridad",
+      "securityNote": "Activadas por defecto, deliberadamente.",
+      "transactional": "Transaccional"
+    },
+    "items": {
+      "viewsCreated": "Vistas en obras creadas",
+      "viewsCollection": "Vistas en la colección",
+      "favorites": "Actividad de favoritos",
+      "surge": "Alertas de repunte",
+      "newLocation": "Nueva ubicación (IP)",
+      "newDevice": "Nuevo dispositivo",
+      "suspicious": "Actividad sospechosa",
+      "purchases": "Compras",
+      "transfers": "Transferencias",
+      "newFromFollowed": "Novedades de seguidos",
+      "registrations": "Confirmaciones de registro"
+    },
+    "notifyPast": "Notificar a partir de",
+    "views": "vistas",
+    "save": "Guardar preferencias",
+    "saving": "Guardando…",
+    "saved": "Guardado ✓"
+  },
+  "work": {
+    "loading": "Cargando…",
+    "notFound": "No encontramos ninguna obra con ese ID.",
+    "creator": "Creador",
+    "about": "Sobre la obra",
+    "certified": "Certificado",
+    "pending": "Pendiente",
+    "viewOnSolana": "Ver en Solana",
+    "price": "Precio",
+    "buyDisclaimer": "Al comprar, pagas la tarifa de plataforma y la regalía del artista vía Stripe. El precio de la obra se acuerda directamente con el vendedor, fuera de la plataforma.",
+    "buy": "Comprar",
+    "starting": "Iniciando…",
+    "youOwnThis": "Eres propietario de esta pieza.",
+    "errors": {
+      "needSignIn": "Inicia sesión para comprar esta obra.",
+      "buyFailed": "No pudimos iniciar la compra"
+    }
+  },
+  "purchase": {
+    "successWorking": "Completando tu compra…",
+    "successDone": "Es tuya.",
+    "home": "Inicio",
+    "cancelTitle": "Compra cancelada.",
+    "cancelDesc": "No se realizó ningún cargo.",
+    "missingTransferId": "Falta transferId en la URL de retorno.",
+    "errors": {
+      "sessionExpired": "Sesión expirada — inicia sesión de nuevo.",
+      "completeFailed": "No pudimos completar la compra"
+    }
+  },
+  "creator": {
+    "label": "Creador",
+    "purchasedHandle": "Handle comprado · resuelve a la key",
+    "permanentKey": "Key permanente",
+    "collectionsLabel": "Colecciones",
+    "collectionOneAuto": "El primer TBT crea \"Collection 1\" automáticamente (renombrable; el slug sigue al nombre).",
+    "collectionWorks": "Obras de esta colección."
+  }
 }

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { locales, localeMeta, type Locale } from '@/i18n/config'
+import { useLocale } from '@/i18n/LocaleProvider'
 
 /**
  * Menú deslizable en acordeón (Build Spec 01, ÍTEM 1).
@@ -10,16 +11,13 @@ import { locales, localeMeta, type Locale } from '@/i18n/config'
  *
  * Language es un selector INLINE (bandera + código de 2 letras), no una página,
  * y exige un paso de confirmación antes de aplicar (Master Handoff §6).
+ *
+ * locale/setLocale vienen del LocaleProvider compartido (root layout), no de
+ * props — así la elección de idioma persiste al navegar entre páginas.
  */
 
-type MenuProps = {
-  open: boolean
-  onClose: () => void
-  locale: Locale
-  onLocaleChange: (l: Locale) => void
-}
-
-export function SlideMenu({ open, onClose, locale, onLocaleChange }: MenuProps) {
+export function SlideMenu({ open, onClose }: { open: boolean; onClose: () => void }) {
+  const { locale, t, setLocale } = useLocale()
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [pendingLocale, setPendingLocale] = useState<Locale | null>(null)
 
@@ -40,9 +38,9 @@ export function SlideMenu({ open, onClose, locale, onLocaleChange }: MenuProps) 
   }, [open])
 
   const items = [
-    { key: 'collections', label: 'Collections', href: '/collections' },
-    { key: 'profile', label: 'Profile', href: '/profile' },
-    { key: 'brew', label: 'Brew TBT', href: '/brew' },
+    { key: 'collections', label: t.menu.collections, href: '/collections' },
+    { key: 'profile', label: t.menu.profile, href: '/profile' },
+    { key: 'brew', label: t.menu.brewTbt, href: '/brew' },
   ]
 
   return (
@@ -95,7 +93,7 @@ export function SlideMenu({ open, onClose, locale, onLocaleChange }: MenuProps) 
               aria-expanded={settingsOpen}
               className="w-full flex items-center justify-between px-5 py-4 text-[15px] hover:bg-paper-warm transition-colors"
             >
-              <span>Settings</span>
+              <span>{t.menu.settings}</span>
               <span className="text-ink-soft text-[16px] leading-none tabular-nums">
                 {settingsOpen ? '−' : '+'}
               </span>
@@ -107,12 +105,12 @@ export function SlideMenu({ open, onClose, locale, onLocaleChange }: MenuProps) 
                   href="/settings/authentication"
                   className="block px-5 py-3 pl-8 text-[14px] border-b border-hairline"
                 >
-                  Authentication
+                  {t.menu.authentication}
                 </a>
 
                 {/* Language — selector inline con confirmación */}
                 <div className="px-5 py-3 pl-8 border-b border-hairline">
-                  <div className="label-caps mb-2">Language</div>
+                  <div className="label-caps mb-2">{t.menu.language}</div>
                   <div className="flex gap-2">
                     {locales.map((l) => {
                       const meta = localeMeta[l]
@@ -143,24 +141,24 @@ export function SlideMenu({ open, onClose, locale, onLocaleChange }: MenuProps) 
                   {pendingLocale && (
                     <div className="mt-3 flex items-center gap-3">
                       <span className="text-[12px] text-ink-soft">
-                        Switch to {localeMeta[pendingLocale].name}?
+                        {t.menu.switchTo.replace('{lang}', localeMeta[pendingLocale].name)}
                       </span>
                       <button
                         type="button"
                         onClick={() => {
-                          onLocaleChange(pendingLocale)
+                          setLocale(pendingLocale)
                           setPendingLocale(null)
                         }}
                         className="text-[12px] text-t-magenta underline underline-offset-2"
                       >
-                        Confirm
+                        {t.menu.confirm}
                       </button>
                       <button
                         type="button"
                         onClick={() => setPendingLocale(null)}
                         className="text-[12px] text-ink-soft"
                       >
-                        Cancel
+                        {t.menu.cancel}
                       </button>
                     </div>
                   )}
@@ -170,7 +168,7 @@ export function SlideMenu({ open, onClose, locale, onLocaleChange }: MenuProps) 
                   href="/settings/notifications"
                   className="block px-5 py-3 pl-8 text-[14px]"
                 >
-                  Notifications
+                  {t.menu.notifications}
                 </a>
               </div>
             )}
@@ -181,7 +179,7 @@ export function SlideMenu({ open, onClose, locale, onLocaleChange }: MenuProps) 
               href="/history"
               className="block px-5 py-4 text-[15px] hover:bg-paper-warm transition-colors"
             >
-              History
+              {t.menu.history}
             </a>
           </li>
         </ul>

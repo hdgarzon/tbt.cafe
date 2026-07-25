@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { startAuthentication } from '@simplewebauthn/browser'
 import { supabase } from '@/lib/supabase'
+import { useLocale } from '@/i18n/LocaleProvider'
 import { COUNTRIES, DEFAULT_COUNTRY, findCountry, formatNational, toE164, isPlausible, type Country } from '@/lib/countries'
 
 /**
@@ -24,6 +25,7 @@ export function BiometricSignInSheet({
   onClose: () => void
   onAuthenticated: () => void
 }) {
+  const { t } = useLocale()
   const [phase, setPhase] = useState<Phase>('phone')
   const [country, setCountry] = useState<Country>(DEFAULT_COUNTRY)
   const [digits, setDigits] = useState('')
@@ -49,7 +51,7 @@ export function BiometricSignInSheet({
         body: JSON.stringify({ phone }),
       })
       const beginBody = await begin.json()
-      if (!begin.ok) throw new Error(beginBody.error ?? 'No pudimos iniciar la verificación')
+      if (!begin.ok) throw new Error(beginBody.error ?? t.biometricSignIn.errors.needSignIn)
 
       // Dispara Touch ID / Face ID / Windows Hello
       const credential = await startAuthentication({ optionsJSON: beginBody.options })
@@ -60,7 +62,7 @@ export function BiometricSignInSheet({
         body: JSON.stringify({ userId: beginBody.userId, credential }),
       })
       const finishBody = await finish.json()
-      if (!finish.ok) throw new Error(finishBody.error ?? 'No pudimos verificar el dispositivo')
+      if (!finish.ok) throw new Error(finishBody.error ?? t.biometricSignIn.errors.failed)
 
       // Adoptar la sesión acuñada por el servidor
       const { error: setErr } = await supabase.auth.setSession({
@@ -74,9 +76,7 @@ export function BiometricSignInSheet({
     } catch (e) {
       const msg = e instanceof Error ? e.message : ''
       setError(
-        /NotAllowed|abort/i.test(msg)
-          ? 'Cancelaste la verificación.'
-          : msg || 'No pudimos iniciar sesión con biométrico'
+        /NotAllowed|abort/i.test(msg) ? t.biometricSignIn.errors.cancelled : msg || t.biometricSignIn.errors.failed
       )
       setPhase('error')
     }
@@ -90,17 +90,17 @@ export function BiometricSignInSheet({
 
       <div className="relative bg-paper border-t border-hairline">
         <div className="h-header flex items-center justify-between px-5 border-b border-hairline">
-          <span className="label-caps">Quick sign-in</span>
+          <span className="label-caps">{t.biometricSignIn.title}</span>
           <button type="button" onClick={onClose} aria-label="Close" className="text-[20px] leading-none text-ink-soft">×</button>
         </div>
 
         <div className="px-5 py-6">
           {phase === 'prompting' ? (
-            <p className="text-[14px] text-ink-soft py-4">Sigue la indicación de tu dispositivo…</p>
+            <p className="text-[14px] text-ink-soft py-4">{t.biometric.prompting}</p>
           ) : (
             <>
               <p className="text-[12px] text-ink-soft leading-relaxed">
-                Ingresa tu teléfono para ubicar el dispositivo registrado.
+                {t.biometricSignIn.description}
               </p>
 
               <div className="flex items-stretch border-b border-hairline pb-2 mt-5">
@@ -132,7 +132,7 @@ export function BiometricSignInSheet({
                 disabled={!isPlausible(digits, country)}
                 className="w-full mt-6 py-3 text-[13px] tracking-[0.1em] uppercase border border-ink transition-colors disabled:border-hairline disabled:text-placeholder enabled:hover:bg-ink enabled:hover:text-paper"
               >
-                Continue
+                {t.biometricSignIn.continue}
               </button>
             </>
           )}

@@ -1,13 +1,9 @@
 {
-  "nav": {
-    "collections": "Collections",
-    "profile": "Profil",
-    "brew": "Créer un TBT",
-    "settings": "Paramètres",
-    "history": "Historique",
-    "authentication": "Authentification",
-    "language": "Langue",
-    "notifications": "Notifications"
+  "header": {
+    "menu": "Menu",
+    "favorites": "Favoris",
+    "signIn": "Se connecter",
+    "signOut": "Se déconnecter"
   },
   "home": {
     "roast": "Roast",
@@ -18,6 +14,250 @@
     "brewSub": "Créez votre TBT",
     "searchPlaceholder": "Rechercher un créateur ou un TBT ID"
   },
-  "header": { "connected": "Connecté", "disconnected": "Déconnecté" },
-  "footer": { "credit": "Transbit × BROCHA" }
+  "footer": { "credit": "Transbit × BROCHA" },
+  "menu": {
+    "collections": "Collections",
+    "profile": "Profil",
+    "brewTbt": "Créer un TBT",
+    "settings": "Paramètres",
+    "authentication": "Authentification",
+    "language": "Langue",
+    "notifications": "Notifications",
+    "history": "Historique",
+    "switchTo": "Passer en {lang} ?",
+    "confirm": "Confirmer",
+    "cancel": "Annuler"
+  },
+  "auth": {
+    "signInTitle": "Se connecter",
+    "verifyTitle": "Vérifier",
+    "termsPrefix": "J'accepte les",
+    "termsOfService": "Conditions d'utilisation",
+    "termsAnd": "et la",
+    "privacyPolicy": "Politique de confidentialité",
+    "sendCode": "Envoyer le code",
+    "sending": "Envoi…",
+    "bioInstead": "Se connecter avec la biométrie à la place",
+    "codeSentTo": "Code envoyé à",
+    "changeNumber": "changer de numéro",
+    "resendCode": "renvoyer le code",
+    "resendCodeIn": "renvoyer le code ({s}s)",
+    "verify": "Vérifier",
+    "verifying": "Vérification…",
+    "errors": {
+      "sendFailed": "Nous n'avons pas pu envoyer le code",
+      "expired": "Le code a expiré. Demandez-en un nouveau.",
+      "invalid": "Code incorrect. Vérifiez-le et réessayez.",
+      "verifyFailed": "Nous n'avons pas pu vérifier le code"
+    }
+  },
+  "authHub": {
+    "loading": "Chargement…",
+    "needSignIn": "Connectez-vous pour gérer votre authentification.",
+    "mobilePhone": "Téléphone mobile",
+    "change": "Modifier",
+    "recoveryEmail": "Email de récupération",
+    "add": "Ajouter",
+    "notConfigured": "Non configuré",
+    "unverified": "non vérifié",
+    "recoveryHint": "Pour récupérer le compte si vous perdez votre téléphone.",
+    "privateCode": "Code privé",
+    "setUp": "Configurer",
+    "active": "Actif",
+    "always": "toujours",
+    "occasional": "occasionnel",
+    "privateCodeHint": "Demandé en plus du code SMS, selon la fréquence choisie.",
+    "biometricSignIn": "Connexion biométrique",
+    "biometricHint": "S'ajoute au code SMS ; ne le remplace jamais. Par appareil.",
+    "addDevice": "Ajouter un appareil",
+    "activeDevices": "Actif · {n} appareil",
+    "activeDevicesPlural": "Actif · {n} appareils"
+  },
+  "privateCode": {
+    "title": "Code privé",
+    "description": "Entre {min} et {max} caractères. Sera demandé en plus du code SMS.",
+    "codeLabel": "Code",
+    "confirmLabel": "Confirmer",
+    "mismatch": "Les codes ne correspondent pas.",
+    "askMe": "Me le demander",
+    "always": "Toujours",
+    "occasional": "Occasionnellement",
+    "save": "Enregistrer le code",
+    "saving": "Enregistrement…",
+    "disclaimer": "Stocké sous forme de hash, jamais en texte clair. Un code court est une couche de confort, pas un vrai second facteur.",
+    "errors": { "saveFailed": "Nous n'avons pas pu enregistrer le code" }
+  },
+  "recoveryEmail": {
+    "title": "Email de récupération",
+    "description": "Sert à récupérer le compte si vous perdez votre téléphone, et comme confirmation supplémentaire.",
+    "emailLabel": "Email",
+    "invalidEmail": "Email invalide.",
+    "send": "Envoyer la confirmation",
+    "sending": "Envoi…",
+    "checkEmail": "Vérifiez votre email.",
+    "checkEmailDesc": "Nous avons envoyé un lien de confirmation à {email}. Une fois ouvert, l'email est vérifié et vous pourrez l'utiliser pour récupérer votre compte si vous perdez votre téléphone.",
+    "done": "Terminé",
+    "errors": { "sendFailed": "Nous n'avons pas pu envoyer la confirmation" }
+  },
+  "biometric": {
+    "title": "Connexion biométrique",
+    "description": "Enregistrez cet appareil avec votre empreinte ou votre visage. La biométrie ne quitte jamais l'appareil — nous ne stockons qu'une clé publique. S'ajoute au code SMS, ne le remplace jamais comme identité.",
+    "setUp": "Configurer",
+    "prompting": "Suivez l'indication de votre appareil…",
+    "chooseMode": "Comment voulez-vous utiliser la biométrie sur cet appareil ?",
+    "quickTitle": "Connexion rapide",
+    "quickDesc": "Un contact vous identifie, sans code SMS sur cet appareil.",
+    "extraTitle": "Couche de sécurité supplémentaire",
+    "extraDesc": "La biométrie est requise en plus du code SMS.",
+    "registered": "Appareil enregistré.",
+    "registeredDesc": "Vous pouvez désormais utiliser la biométrie sur cet appareil.",
+    "done": "Terminé",
+    "errors": {
+      "cancelled": "Vous avez annulé l'enregistrement de l'appareil.",
+      "enrollFailed": "Nous n'avons pas pu enregistrer l'appareil",
+      "saveFailed": "Nous n'avons pas pu enregistrer l'appareil"
+    }
+  },
+  "biometricSignIn": {
+    "title": "Connexion rapide",
+    "description": "Entrez votre téléphone pour localiser votre appareil enregistré.",
+    "continue": "Continuer",
+    "starting": "Démarrage…",
+    "errors": {
+      "cancelled": "Vous avez annulé la vérification.",
+      "needSignIn": "Nous n'avons pas pu démarrer la vérification",
+      "failed": "Nous n'avons pas pu vérifier l'appareil"
+    }
+  },
+  "profile": {
+    "title": "Profil",
+    "creatorTitle": "Profil créateur",
+    "creatorSub": "Qui certifie l'œuvre",
+    "collectorTitle": "Profil collectionneur",
+    "collectorSub": "Qui l'acquiert",
+    "needSignIn": "Connectez-vous pour modifier votre profil."
+  },
+  "profileCreator": {
+    "backLabel": "Profil créateur",
+    "category": "Catégorie",
+    "individual": "Individuel",
+    "group": "Groupe",
+    "corporation": "Société",
+    "legalName": "Nom légal",
+    "legalNamePlaceholder": "Nom légal complet",
+    "leadRep": "Représentant principal",
+    "leadRepPlaceholder": "Représentant principal",
+    "collectiveName": "Nom du collectif",
+    "collectiveNamePlaceholder": "Nom du collectif",
+    "entityName": "Raison sociale",
+    "entityNamePlaceholder": "Raison sociale",
+    "taxId": "N° SIRET / Tax ID",
+    "taxIdPlaceholder": "N° SIRET / Tax ID",
+    "publicAlias": "Alias public",
+    "publicAliasPlaceholder": "Le nom qui apparaît sur le certificat",
+    "publicAliasHint": "C'est le nom que tout le monde verra sur le TBT.",
+    "about": "À propos",
+    "aboutPlaceholder": "À propos de vous, votre parcours…",
+    "credentials": "Références",
+    "credentialsPlaceholder": "Formation, distinctions…",
+    "address": "Adresse physique",
+    "addressPlaceholder": "Ville, pays",
+    "addressHint": "Autocomplétion Maps : intégration en attente (seam).",
+    "socialProof": "Réseaux sociaux",
+    "linkedin": "LinkedIn",
+    "website": "Site web",
+    "instagram": "Instagram",
+    "urlDomainError": "Doit être un lien {domain}.",
+    "save": "Enregistrer",
+    "saving": "Enregistrement…",
+    "saved": "Enregistré ✓",
+    "needSignIn": "Connectez-vous pour modifier votre profil.",
+    "errors": { "saveFailed": "Nous n'avons pas pu enregistrer le profil" }
+  },
+  "profileCollector": {
+    "backLabel": "Profil collectionneur",
+    "category": "Catégorie",
+    "anonymous": "Afficher en anonyme",
+    "anonymousHint": "La page du TBT affichera \"Collectionneur privé\".",
+    "anonymousFieldsHint": "En mode anonyme, ces champs ne sont pas affichés publiquement.",
+    "alias": "Alias",
+    "aliasPlaceholder": "Nom affiché en tant que collectionneur",
+    "location": "Localisation",
+    "locationPlaceholder": "Ville, pays",
+    "about": "À propos",
+    "aboutPlaceholder": "À propos de votre collection…",
+    "website": "Site web",
+    "websitePlaceholder": "https://votresite.com",
+    "save": "Enregistrer",
+    "saving": "Enregistrement…",
+    "saved": "Enregistré ✓",
+    "needSignIn": "Connectez-vous pour modifier votre profil.",
+    "errors": { "saveFailed": "Nous n'avons pas pu enregistrer le profil" }
+  },
+  "notifications": {
+    "backLabel": "Notifications",
+    "needSignIn": "Connectez-vous pour gérer vos notifications.",
+    "categories": {
+      "tbtActivity": "Activité TBT",
+      "security": "Sécurité",
+      "securityNote": "Activées par défaut, délibérément.",
+      "transactional": "Transactionnel"
+    },
+    "items": {
+      "viewsCreated": "Vues sur les œuvres créées",
+      "viewsCollection": "Vues sur la collection",
+      "favorites": "Activité des favoris",
+      "surge": "Alertes de pic",
+      "newLocation": "Nouvelle localisation (IP)",
+      "newDevice": "Nouvel appareil",
+      "suspicious": "Activité suspecte",
+      "purchases": "Achats",
+      "transfers": "Transferts",
+      "newFromFollowed": "Nouveautés des suivis",
+      "registrations": "Confirmations d'inscription"
+    },
+    "notifyPast": "Notifier à partir de",
+    "views": "vues",
+    "save": "Enregistrer les préférences",
+    "saving": "Enregistrement…",
+    "saved": "Enregistré ✓"
+  },
+  "work": {
+    "loading": "Chargement…",
+    "notFound": "Nous n'avons trouvé aucune œuvre avec cet ID.",
+    "creator": "Créateur",
+    "about": "À propos",
+    "certified": "Certifié",
+    "pending": "En attente",
+    "viewOnSolana": "Voir sur Solana",
+    "price": "Prix",
+    "buyDisclaimer": "En achetant, vous payez les frais de plateforme et la redevance de l'artiste via Stripe. Le prix de l'œuvre est convenu directement avec le vendeur, en dehors de la plateforme.",
+    "buy": "Acheter",
+    "starting": "Démarrage…",
+    "youOwnThis": "Vous possédez cette pièce.",
+    "errors": {
+      "needSignIn": "Connectez-vous pour acheter cette œuvre.",
+      "buyFailed": "Nous n'avons pas pu démarrer l'achat"
+    }
+  },
+  "purchase": {
+    "successWorking": "Finalisation de votre achat…",
+    "successDone": "Elle est à vous.",
+    "home": "Accueil",
+    "cancelTitle": "Achat annulé.",
+    "cancelDesc": "Aucun montant n'a été débité.",
+    "missingTransferId": "transferId manquant dans l'URL de retour.",
+    "errors": {
+      "sessionExpired": "Session expirée — reconnectez-vous.",
+      "completeFailed": "Nous n'avons pas pu finaliser l'achat"
+    }
+  },
+  "creator": {
+    "label": "Créateur",
+    "purchasedHandle": "Handle acheté · renvoie vers la clé",
+    "permanentKey": "Clé permanente",
+    "collectionsLabel": "Collections",
+    "collectionOneAuto": "Le premier TBT crée automatiquement \"Collection 1\" (renommable ; le slug suit le nom).",
+    "collectionWorks": "Œuvres de cette collection."
+  }
 }

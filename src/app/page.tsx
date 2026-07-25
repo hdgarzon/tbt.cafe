@@ -7,21 +7,14 @@ import { AuthSheet } from '@/components/AuthSheet'
 import { BiometricSignInSheet } from '@/components/BiometricSignInSheet'
 import { supabase } from '@/lib/supabase'
 import { maskPhone, type Country } from '@/lib/countries'
-import { resolveLocale, type Locale } from '@/i18n/config'
-import en from '@/i18n/messages/en.json'
-import es from '@/i18n/messages/es.json'
-import pt from '@/i18n/messages/pt.json'
-import fr from '@/i18n/messages/fr.json'
-
-const dictionaries = { en, es, pt, fr } as const
+import { useLocale } from '@/i18n/LocaleProvider'
 
 /**
  * Home (Build Spec 01, ÍTEMS 1 y 4).
  * Roast (aprender) · Grind (descubrir) · Brew (crear) + búsqueda en vivo.
  *
- * Idioma: se detecta de navigator.language al montar; si no hay soporte cae a
- * inglés. Un override manual gana sobre la detección del navegador. En
- * producción ese override se persistirá en el perfil de Supabase.
+ * Idioma: viene del LocaleProvider compartido (root layout) — detección de
+ * navigator.language con fallback inglés, persistente al navegar.
  */
 export default function HomePage() {
   const [connected, setConnected] = useState(false)
@@ -30,12 +23,7 @@ export default function HomePage() {
   const [bioAuthOpen, setBioAuthOpen] = useState(false)
   const [maskedPhone, setMaskedPhone] = useState<string | null>(null)
   const [query, setQuery] = useState('')
-  const [locale, setLocale] = useState<Locale>('en')
-
-  // Detección de idioma del navegador (fallback inglés)
-  useEffect(() => {
-    setLocale(resolveLocale(navigator.language))
-  }, [])
+  const { t } = useLocale()
 
   // Restaurar sesión existente al montar
   useEffect(() => {
@@ -64,8 +52,6 @@ export default function HomePage() {
     // El número enmascarado alimenta el hub de autenticación (Master Handoff §8)
     setMaskedPhone(maskPhone(digits, country))
   }
-
-  const t = dictionaries[locale]
 
   const sections = [
     { key: 'roast', title: t.home.roast, sub: t.home.roastSub, href: '/roast' },
@@ -117,12 +103,7 @@ export default function HomePage() {
         </span>
       </footer>
 
-      <SlideMenu
-        open={menuOpen}
-        onClose={() => setMenuOpen(false)}
-        locale={locale}
-        onLocaleChange={setLocale}
-      />
+      <SlideMenu open={menuOpen} onClose={() => setMenuOpen(false)} />
 
       <AuthSheet
         open={authOpen}

@@ -1,16 +1,22 @@
+'use client'
+
+import { useLocale } from '@/i18n/LocaleProvider'
+
 /**
  * /profile — selector entre perfil de Creador y de Coleccionista
  * (Master Handoff §11). Se puede tener uno, otro, o ambos.
  */
 export default function ProfilePage() {
+  const { t } = useLocale()
+
   const cards = [
-    { key: 'creator', title: 'Creator profile', sub: 'Quien certifica la obra' },
-    { key: 'collector', title: 'Collector profile', sub: 'Quien la adquiere' },
+    { key: 'creator', title: t.profile.creatorTitle, sub: t.profile.creatorSub },
+    { key: 'collector', title: t.profile.collectorTitle, sub: t.profile.collectorSub },
   ]
 
   return (
     <div className="flex-1 px-5 py-8">
-      <div className="label-caps">Profile</div>
+      <div className="label-caps">{t.profile.title}</div>
       <div className="mt-5 flex flex-col">
         {cards.map((c) => (
           <a

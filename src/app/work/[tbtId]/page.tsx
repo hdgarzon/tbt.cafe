@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import Image from 'next/image'
 import { supabase } from '@/lib/supabase'
+import { useLocale } from '@/i18n/LocaleProvider'
 import { TBT_BACKEND_URL } from '@/lib/backend'
 
 /**
@@ -38,6 +39,7 @@ type Work = {
 }
 
 export default function WorkPage({ params }: { params: { tbtId: string } }) {
+  const { t } = useLocale()
   const [work, setWork] = useState<Work | null>(null)
   const [loading, setLoading] = useState(true)
   const [notFound, setNotFound] = useState(false)
@@ -76,7 +78,7 @@ export default function WorkPage({ params }: { params: { tbtId: string } }) {
     try {
       const { data: { session } } = await supabase.auth.getSession()
       if (!session) {
-        setBuyError('Inicia sesión para comprar esta obra.')
+        setBuyError(t.work.errors.needSignIn)
         setBuying(false)
         return
       }
@@ -90,24 +92,24 @@ export default function WorkPage({ params }: { params: { tbtId: string } }) {
         body: JSON.stringify({ workId: work.id }),
       })
       const body = await res.json()
-      if (!res.ok) throw new Error(body.error ?? 'No pudimos iniciar la compra')
+      if (!res.ok) throw new Error(body.error ?? t.work.errors.buyFailed)
 
       window.location.href = body.checkoutUrl
     } catch (e) {
-      setBuyError(e instanceof Error ? e.message : 'No pudimos iniciar la compra')
+      setBuyError(e instanceof Error ? e.message : t.work.errors.buyFailed)
       setBuying(false)
     }
   }
 
   if (loading) {
-    return <div className="flex-1 px-5 py-8 text-[13px] text-ink-soft">Cargando…</div>
+    return <div className="flex-1 px-5 py-8 text-[13px] text-ink-soft">{t.work.loading}</div>
   }
 
   if (notFound || !work) {
     return (
       <div className="flex-1 px-5 py-8">
         <div className="label-caps">TBT</div>
-        <p className="text-[14px] mt-4">No encontramos ninguna obra con ese ID.</p>
+        <p className="text-[14px] mt-4">{t.work.notFound}</p>
       </div>
     )
   }
@@ -133,21 +135,21 @@ export default function WorkPage({ params }: { params: { tbtId: string } }) {
         </p>
 
         <div className="mt-4 pt-4 border-t border-hairline">
-          <div className="label-caps">Creator</div>
+          <div className="label-caps">{t.work.creator}</div>
           <p className="text-[15px] mt-1">{creatorName}</p>
         </div>
 
         {work.description && (
           <div className="mt-4 pt-4 border-t border-hairline">
-            <div className="label-caps">About</div>
+            <div className="label-caps">{t.work.about}</div>
             <p className="text-[14px] text-ink-soft mt-1 leading-relaxed">{work.description}</p>
           </div>
         )}
 
         <div className="mt-4 pt-4 border-t border-hairline">
-          <div className="label-caps">Certified</div>
+          <div className="label-caps">{t.work.certified}</div>
           <p className="text-[14px] mt-1">
-            {work.certified_at ? new Date(work.certified_at).toLocaleDateString() : 'Pending'}
+            {work.certified_at ? new Date(work.certified_at).toLocaleDateString() : t.work.pending}
           </p>
         </div>
 
@@ -158,21 +160,19 @@ export default function WorkPage({ params }: { params: { tbtId: string } }) {
             rel="noreferrer"
             className="text-[12px] text-t-magenta underline underline-offset-2 mt-2 inline-block"
           >
-            View on Solana
+            {t.work.viewOnSolana}
           </a>
         )}
 
         {/* Comprar */}
         {forSale && !isOwner && (
           <div className="mt-6 pt-6 border-t border-hairline">
-            <div className="label-caps">Price</div>
+            <div className="label-caps">{t.work.price}</div>
             <p className="font-display text-[26px] mt-1">
               {work.commerce?.currency} {work.commerce?.initial_price?.toLocaleString()}
             </p>
             <p className="text-[11px] text-placeholder mt-2 leading-relaxed">
-              Al comprar, pagas la tarifa de plataforma y la regalía del artista vía
-              Stripe. El precio de la obra se acuerda directamente con el vendedor,
-              fuera de la plataforma.
+              {t.work.buyDisclaimer}
             </p>
 
             {buyError && <p className="text-[12px] text-t-red mt-3">{buyError}</p>}
@@ -183,14 +183,14 @@ export default function WorkPage({ params }: { params: { tbtId: string } }) {
               disabled={buying}
               className="w-full mt-4 py-3 text-[13px] tracking-[0.1em] uppercase border border-ink transition-colors disabled:border-hairline disabled:text-placeholder enabled:hover:bg-ink enabled:hover:text-paper"
             >
-              {buying ? 'Starting…' : 'Buy'}
+              {buying ? t.work.starting : t.work.buy}
             </button>
           </div>
         )}
 
         {isOwner && (
           <p className="text-[12px] text-ink-soft mt-6 pt-6 border-t border-hairline">
-            You own this piece.
+            {t.work.youOwnThis}
           </p>
         )}
       </div>

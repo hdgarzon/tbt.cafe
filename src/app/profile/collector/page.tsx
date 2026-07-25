@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
+import { useLocale } from '@/i18n/LocaleProvider'
 import { Field, TextArea, CategoryPicker, SaveBar, type Category } from '@/components/FormBits'
 
 /**
@@ -12,6 +13,7 @@ import { Field, TextArea, CategoryPicker, SaveBar, type Category } from '@/compo
  * se mantiene visible.
  */
 export default function CollectorProfilePage() {
+  const { t } = useLocale()
   const [loading, setLoading] = useState(true)
   const [signedIn, setSignedIn] = useState(true)
   const [busy, setBusy] = useState(false)
@@ -57,7 +59,7 @@ export default function CollectorProfilePage() {
     setSaved(false)
     try {
       const { data: { user } } = await supabase.auth.getUser()
-      if (!user) throw new Error('Sesión expirada')
+      if (!user) throw new Error('Session expired')
 
       const { error: err } = await supabase
         .from('profiles')
@@ -73,18 +75,18 @@ export default function CollectorProfilePage() {
       if (err) throw err
       setSaved(true)
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'No pudimos guardar el perfil')
+      setError(e instanceof Error ? e.message : t.profileCollector.errors.saveFailed)
     } finally {
       setBusy(false)
     }
   }
 
-  if (loading) return <div className="flex-1 px-5 py-8 text-[13px] text-ink-soft">Cargando…</div>
+  if (loading) return <div className="flex-1 px-5 py-8 text-[13px] text-ink-soft">{t.authHub.loading}</div>
   if (!signedIn) {
     return (
       <div className="flex-1 px-5 py-8">
-        <a href="/profile" className="label-caps hover:text-ink">← Profile</a>
-        <p className="text-[14px] mt-6">Inicia sesión para editar tu perfil.</p>
+        <a href="/profile" className="label-caps hover:text-ink">← {t.profile.title}</a>
+        <p className="text-[14px] mt-6">{t.profileCollector.needSignIn}</p>
       </div>
     )
   }
@@ -95,7 +97,7 @@ export default function CollectorProfilePage() {
   return (
     <div className="flex-1 flex flex-col">
       <div className="h-header flex items-center px-5 border-b border-hairline">
-        <a href="/profile" className="label-caps hover:text-ink">← Collector profile</a>
+        <a href="/profile" className="label-caps hover:text-ink">← {t.profileCollector.backLabel}</a>
       </div>
 
       <div className="px-5 py-6 flex flex-col gap-6">
@@ -105,16 +107,16 @@ export default function CollectorProfilePage() {
         {/* Toggle de anonimato */}
         <div className="flex items-start justify-between gap-4 py-1">
           <div>
-            <div className="text-[15px]">Display as anonymous</div>
+            <div className="text-[15px]">{t.profileCollector.anonymous}</div>
             <div className="text-[12px] text-ink-soft mt-1">
-              La página del TBT mostrará &quot;Private collector&quot;.
+              {t.profileCollector.anonymousHint}
             </div>
           </div>
           <button
             type="button"
             role="switch"
             aria-checked={anonymous}
-            aria-label="Display as anonymous"
+            aria-label={t.profileCollector.anonymous}
             onClick={() => setAnonymous((v) => !v)}
             className={`relative w-[42px] h-[24px] rounded-full flex-shrink-0 mt-1 transition-colors ${
               anonymous ? 'bg-ink' : 'bg-hairline'
@@ -132,13 +134,13 @@ export default function CollectorProfilePage() {
         <div className={`flex flex-col gap-6 transition-opacity ${identityDim}`}>
           {anonymous && (
             <p className="text-[11px] text-placeholder -mb-2">
-              En modo anónimo estos campos no se muestran públicamente.
+              {t.profileCollector.anonymousFieldsHint}
             </p>
           )}
-          <Field label="Alias" value={alias} onChange={setAlias} placeholder="Nombre visible como coleccionista" />
-          <Field label="Location" value={location} onChange={setLocation} placeholder="Ciudad, país" />
-          <TextArea label="About" value={about} onChange={setAbout} placeholder="Sobre tu colección…" />
-          <Field label="Website" value={website} onChange={setWebsite} placeholder="https://tusitio.com" />
+          <Field label={t.profileCollector.alias} value={alias} onChange={setAlias} placeholder={t.profileCollector.aliasPlaceholder} />
+          <Field label={t.profileCollector.location} value={location} onChange={setLocation} placeholder={t.profileCollector.locationPlaceholder} />
+          <TextArea label={t.profileCollector.about} value={about} onChange={setAbout} placeholder={t.profileCollector.aboutPlaceholder} />
+          <Field label={t.profileCollector.website} value={website} onChange={setWebsite} placeholder={t.profileCollector.websitePlaceholder} />
         </div>
 
         <SaveBar onSave={save} busy={busy} saved={saved} error={error} />

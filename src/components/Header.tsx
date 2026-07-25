@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { useLocale } from '@/i18n/LocaleProvider'
 
 /**
  * Header del shell (Build Spec 01, ÍTEM 1):
@@ -21,6 +22,7 @@ export function Header({
   onMenu?: () => void
 }) {
   const [favorited, setFavorited] = useState(false)
+  const { t } = useLocale()
 
   return (
     <header className="h-header flex items-center justify-between px-5 border-b border-hairline">
@@ -28,7 +30,7 @@ export function Header({
       <button
         type="button"
         onClick={onMenu}
-        aria-label="Menu"
+        aria-label={t.header.menu}
         className="w-8 h-8 -ml-1 flex flex-col items-center justify-center gap-[5px]"
       >
         <span className="block w-[18px] h-px bg-ink" />
@@ -47,7 +49,7 @@ export function Header({
         <button
           type="button"
           onClick={() => setFavorited((v) => !v)}
-          aria-label="Favorites"
+          aria-label={t.header.favorites}
           aria-pressed={favorited}
           className="w-8 h-8 flex items-center justify-center"
         >
@@ -70,7 +72,7 @@ export function Header({
           onClick={onToggle}
           role="switch"
           aria-checked={connected}
-          aria-label={connected ? 'Sign out' : 'Sign in'}
+          aria-label={connected ? t.header.signOut : t.header.signIn}
           className={`relative w-[42px] h-[24px] rounded-full transition-colors duration-200 ${
             connected ? 'bg-ink' : 'bg-hairline'
           }`}

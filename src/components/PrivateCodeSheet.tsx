@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
+import { useLocale } from '@/i18n/LocaleProvider'
 
 /**
  * Código privado — Master Handoff §10.
@@ -23,6 +24,7 @@ export function PrivateCodeSheet({
   onClose: () => void
   onSaved: () => void
 }) {
+  const { t } = useLocale()
   const [code, setCode] = useState('')
   const [confirm, setConfirm] = useState('')
   const [freq, setFreq] = useState<'always' | 'occasional'>('always')
@@ -48,7 +50,7 @@ export function PrivateCodeSheet({
     setBusy(true)
     try {
       const { data: { session } } = await supabase.auth.getSession()
-      if (!session) throw new Error('Sesión expirada')
+      if (!session) throw new Error('Session expired')
 
       const res = await fetch('/api/private-code', {
         method: 'POST',
@@ -59,10 +61,10 @@ export function PrivateCodeSheet({
         body: JSON.stringify({ code, frequency: freq }),
       })
       const json = await res.json()
-      if (!res.ok) throw new Error(json.error ?? 'No pudimos guardar el código')
+      if (!res.ok) throw new Error(json.error ?? t.privateCode.errors.saveFailed)
       onSaved()
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'No pudimos guardar el código')
+      setError(e instanceof Error ? e.message : t.privateCode.errors.saveFailed)
     } finally {
       setBusy(false)
     }
@@ -76,16 +78,16 @@ export function PrivateCodeSheet({
 
       <div className="relative bg-paper border-t border-hairline">
         <div className="h-header flex items-center justify-between px-5 border-b border-hairline">
-          <span className="label-caps">Private code</span>
+          <span className="label-caps">{t.privateCode.title}</span>
           <button type="button" onClick={onClose} aria-label="Close" className="text-[20px] leading-none text-ink-soft">×</button>
         </div>
 
         <div className="px-5 py-6">
           <p className="text-[12px] text-ink-soft leading-relaxed">
-            Entre {MIN_LEN} y {MAX_LEN} caracteres. Se pedirá además del código SMS.
+            {t.privateCode.description.replace('{min}', String(MIN_LEN)).replace('{max}', String(MAX_LEN))}
           </p>
 
-          <label className="label-caps block mt-5" htmlFor="pc">Code</label>
+          <label className="label-caps block mt-5" htmlFor="pc">{t.privateCode.codeLabel}</label>
           <input
             id="pc"
             type="password"
@@ -96,7 +98,7 @@ export function PrivateCodeSheet({
             className="w-full mt-1 py-2 bg-transparent border-b border-hairline text-[16px] tracking-[0.3em] outline-none focus:border-ink transition-colors"
           />
 
-          <label className="label-caps block mt-5" htmlFor="pc2">Confirm</label>
+          <label className="label-caps block mt-5" htmlFor="pc2">{t.privateCode.confirmLabel}</label>
           <input
             id="pc2"
             type="password"
@@ -107,14 +109,14 @@ export function PrivateCodeSheet({
             className="w-full mt-1 py-2 bg-transparent border-b border-hairline text-[16px] tracking-[0.3em] outline-none focus:border-ink transition-colors"
           />
           {confirm.length > 0 && !matches && (
-            <p className="text-[11px] text-t-red mt-2">Los códigos no coinciden.</p>
+            <p className="text-[11px] text-t-red mt-2">{t.privateCode.mismatch}</p>
           )}
 
-          <div className="label-caps mt-6">Ask me</div>
+          <div className="label-caps mt-6">{t.privateCode.askMe}</div>
           <div className="flex gap-2 mt-2">
             {([
-              ['always', 'Always'],
-              ['occasional', 'Occasionally'],
+              ['always', t.privateCode.always],
+              ['occasional', t.privateCode.occasional],
             ] as const).map(([value, label]) => (
               <button
                 key={value}
@@ -138,12 +140,11 @@ export function PrivateCodeSheet({
             disabled={!canSave}
             className="w-full mt-6 py-3 text-[13px] tracking-[0.1em] uppercase border border-ink transition-colors disabled:border-hairline disabled:text-placeholder enabled:hover:bg-ink enabled:hover:text-paper"
           >
-            {busy ? 'Saving…' : 'Save code'}
+            {busy ? t.privateCode.saving : t.privateCode.save}
           </button>
 
           <p className="text-[11px] text-placeholder mt-4 leading-relaxed">
-            Se guarda hasheado, nunca en texto plano. Un código corto es una capa
-            de conveniencia, no un segundo factor real.
+            {t.privateCode.disclaimer}
           </p>
         </div>
       </div>

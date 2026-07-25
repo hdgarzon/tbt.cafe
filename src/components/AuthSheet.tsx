@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react'
 import { supabase } from '@/lib/supabase'
+import { useLocale } from '@/i18n/LocaleProvider'
 import {
   COUNTRIES,
   DEFAULT_COUNTRY,
@@ -48,6 +49,7 @@ export function AuthSheet({
   /** Ofrece "Sign in with biometrics" en el paso de teléfono, si el dispositivo lo soporta. */
   onSwitchToBiometric?: () => void
 }) {
+  const { t } = useLocale()
   const [step, setStep] = useState<Step>('phone')
   const [country, setCountry] = useState<Country>(DEFAULT_COUNTRY)
   const [digits, setDigits] = useState('')
@@ -104,7 +106,7 @@ export function AuthSheet({
       setStep('verify')
       setCountdown(RESEND_SECONDS)
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'No pudimos enviar el código')
+      setError(e instanceof Error ? e.message : t.auth.errors.sendFailed)
     } finally {
       setBusy(false)
     }
@@ -128,10 +130,10 @@ export function AuthSheet({
       const msg = e instanceof Error ? e.message : ''
       setError(
         msg.includes('expired')
-          ? 'El código expiró. Pide uno nuevo.'
+          ? t.auth.errors.expired
           : msg.includes('invalid') || msg.includes('Token')
-            ? 'Código incorrecto. Revísalo e intenta de nuevo.'
-            : msg || 'No pudimos verificar el código'
+            ? t.auth.errors.invalid
+            : msg || t.auth.errors.verifyFailed
       )
     } finally {
       setBusy(false)
@@ -147,7 +149,7 @@ export function AuthSheet({
       <div className="relative bg-paper border-t border-hairline">
         <div className="h-header flex items-center justify-between px-5 border-b border-hairline">
           <span className="label-caps">
-            {step === 'phone' ? 'Sign in' : 'Verify'}
+            {step === 'phone' ? t.auth.signInTitle : t.auth.verifyTitle}
           </span>
           <button
             type="button"
@@ -213,10 +215,10 @@ export function AuthSheet({
                 )}
               </button>
               <p className="text-[12px] leading-relaxed text-ink-soft">
-                I agree to the{' '}
-                <a href="/terms" className="text-ink underline underline-offset-2">Terms of Service</a>{' '}
-                and{' '}
-                <a href="/privacy" className="text-ink underline underline-offset-2">Privacy Policy</a>.
+                {t.auth.termsPrefix}{' '}
+                <a href="/terms" className="text-ink underline underline-offset-2">{t.auth.termsOfService}</a>{' '}
+                {t.auth.termsAnd}{' '}
+                <a href="/privacy" className="text-ink underline underline-offset-2">{t.auth.privacyPolicy}</a>.
               </p>
             </div>
 
@@ -228,7 +230,7 @@ export function AuthSheet({
               disabled={!canSend}
               className="w-full mt-6 py-3 text-[13px] tracking-[0.1em] uppercase border border-ink transition-colors disabled:border-hairline disabled:text-placeholder enabled:hover:bg-ink enabled:hover:text-paper"
             >
-              {busy ? 'Sending…' : 'Send code'}
+              {busy ? t.auth.sending : t.auth.sendCode}
             </button>
 
             {bioAvailable && onSwitchToBiometric && (
@@ -237,14 +239,14 @@ export function AuthSheet({
                 onClick={onSwitchToBiometric}
                 className="w-full mt-3 py-2 text-[12px] text-ink-soft underline underline-offset-2"
               >
-                Sign in with biometrics instead
+                {t.auth.bioInstead}
               </button>
             )}
           </div>
         ) : (
           <div className="px-5 py-6">
             <p className="text-[13px] text-ink-soft">
-              Code sent to{' '}
+              {t.auth.codeSentTo}{' '}
               <span className="text-ink">
                 {country.dial} {formatNational(digits, country)}
               </span>
@@ -276,7 +278,7 @@ export function AuthSheet({
                 }}
                 className="text-ink-soft underline underline-offset-2"
               >
-                change number
+                {t.auth.changeNumber}
               </button>
               <span className="text-hairline">|</span>
               <button
@@ -285,7 +287,7 @@ export function AuthSheet({
                 disabled={countdown > 0 || busy}
                 className="text-ink-soft underline underline-offset-2 disabled:no-underline disabled:text-placeholder"
               >
-                {countdown > 0 ? `resend code (${countdown}s)` : 'resend code'}
+                {countdown > 0 ? t.auth.resendCodeIn.replace('{s}', String(countdown)) : t.auth.resendCode}
               </button>
             </div>
 
@@ -295,7 +297,7 @@ export function AuthSheet({
               disabled={otp.length < OTP_MIN_LEN || busy}
               className="w-full mt-6 py-3 text-[13px] tracking-[0.1em] uppercase border border-ink transition-colors disabled:border-hairline disabled:text-placeholder enabled:hover:bg-ink enabled:hover:text-paper"
             >
-              {busy ? 'Verifying…' : 'Verify'}
+              {busy ? t.auth.verifying : t.auth.verify}
             </button>
           </div>
         )}

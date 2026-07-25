@@ -1,10 +1,16 @@
 'use client'
 
 import { useState } from 'react'
+import { useLocale } from '@/i18n/LocaleProvider'
 
 /**
  * Primitivas de formulario compartidas por los perfiles.
  * Estética del sistema: hairlines, sin cajas, etiquetas en versalitas.
+ *
+ * Category/Save labels son idénticos entre creator y collector profiles en
+ * los 4 diccionarios, así que estos componentes leen de t.profileCreator
+ * directamente en vez de recibirlos por props — evita duplicar el hilo de
+ * traducción en cada call site.
  */
 
 export function Field({
@@ -25,6 +31,7 @@ export function Field({
   urlDomain?: string
   hint?: string
 }) {
+  const { t } = useLocale()
   const [touched, setTouched] = useState(false)
 
   // Validación de URL: formato + dominio esperado (§14)
@@ -57,7 +64,9 @@ export function Field({
         className={`w-full mt-1 py-2 bg-transparent border-b text-[15px] outline-none transition-colors ${borderClass}`}
       />
       {urlState === 'bad' && touched && (
-        <span className="text-[11px] text-t-red">Debe ser un enlace de {urlDomain}.</span>
+        <span className="text-[11px] text-t-red">
+          {t.profileCreator.urlDomainError.replace('{domain}', urlDomain ?? '')}
+        </span>
       )}
       {hint && <span className="text-[11px] text-placeholder block mt-1">{hint}</span>}
     </label>
@@ -98,14 +107,15 @@ export function CategoryPicker({
   value: Category
   onChange: (c: Category) => void
 }) {
+  const { t } = useLocale()
   const opts: [Category, string][] = [
-    ['individual', 'Individual'],
-    ['group', 'Group'],
-    ['corporation', 'Corporation'],
+    ['individual', t.profileCreator.individual],
+    ['group', t.profileCreator.group],
+    ['corporation', t.profileCreator.corporation],
   ]
   return (
     <div>
-      <span className="label-caps">Category</span>
+      <span className="label-caps">{t.profileCreator.category}</span>
       <div className="flex gap-2 mt-2">
         {opts.map(([val, label]) => (
           <button
@@ -136,6 +146,7 @@ export function SaveBar({
   saved: boolean
   error?: string
 }) {
+  const { t } = useLocale()
   return (
     <div className="pt-2">
       {error && <p className="text-[12px] text-t-red mb-3">{error}</p>}
@@ -145,7 +156,7 @@ export function SaveBar({
         disabled={busy}
         className="w-full py-3 text-[13px] tracking-[0.1em] uppercase border border-ink transition-colors disabled:border-hairline disabled:text-placeholder enabled:hover:bg-ink enabled:hover:text-paper"
       >
-        {busy ? 'Saving…' : saved ? 'Saved ✓' : 'Save'}
+        {busy ? t.profileCreator.saving : saved ? t.profileCreator.saved : t.profileCreator.save}
       </button>
     </div>
   )

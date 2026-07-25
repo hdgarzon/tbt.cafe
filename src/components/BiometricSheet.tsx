@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { startRegistration } from '@simplewebauthn/browser'
 import { supabase } from '@/lib/supabase'
+import { useLocale } from '@/i18n/LocaleProvider'
 
 /**
  * Enrolamiento biométrico — companion doc §2.
@@ -23,6 +24,7 @@ export function BiometricSheet({
   onClose: () => void
   onSaved: () => void
 }) {
+  const { t } = useLocale()
   const [phase, setPhase] = useState<Phase>('idle')
   const [error, setError] = useState('')
   // El resultado de la ceremonia WebAuthn se guarda hasta que el usuario elige el modo
@@ -38,7 +40,7 @@ export function BiometricSheet({
 
   async function accessToken(): Promise<string> {
     const { data: { session } } = await supabase.auth.getSession()
-    if (!session) throw new Error('Sesión expirada')
+    if (!session) throw new Error('Session expired')
     return session.access_token
   }
 
@@ -53,7 +55,7 @@ export function BiometricSheet({
         headers: { Authorization: `Bearer ${token}` },
       })
       const options = await begin.json()
-      if (!begin.ok) throw new Error(options.error ?? 'No pudimos iniciar el registro')
+      if (!begin.ok) throw new Error(options.error ?? t.biometric.errors.enrollFailed)
 
       // Aquí el navegador invoca Touch ID / Face ID / Windows Hello
       const cred = await startRegistration({ optionsJSON: options })
@@ -62,9 +64,7 @@ export function BiometricSheet({
     } catch (e) {
       const msg = e instanceof Error ? e.message : ''
       setError(
-        /NotAllowed|abort/i.test(msg)
-          ? 'Cancelaste el registro del dispositivo.'
-          : msg || 'No se pudo registrar el dispositivo'
+        /NotAllowed|abort/i.test(msg) ? t.biometric.errors.cancelled : msg || t.biometric.errors.enrollFailed
       )
       setPhase('idle')
     }
@@ -82,10 +82,10 @@ export function BiometricSheet({
         body: JSON.stringify({ credential, bioMode }),
       })
       const json = await res.json()
-      if (!res.ok) throw new Error(json.error ?? 'No pudimos guardar el dispositivo')
+      if (!res.ok) throw new Error(json.error ?? t.biometric.errors.saveFailed)
       setPhase('done')
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'No pudimos guardar el dispositivo')
+      setError(e instanceof Error ? e.message : t.biometric.errors.saveFailed)
       setPhase('choose')
     }
   }
@@ -98,7 +98,7 @@ export function BiometricSheet({
 
       <div className="relative bg-paper border-t border-hairline">
         <div className="h-header flex items-center justify-between px-5 border-b border-hairline">
-          <span className="label-caps">Biometric sign-in</span>
+          <span className="label-caps">{t.biometric.title}</span>
           <button type="button" onClick={onClose} aria-label="Close" className="text-[20px] leading-none text-ink-soft">×</button>
         </div>
 
@@ -106,9 +106,7 @@ export function BiometricSheet({
           {phase === 'idle' && (
             <>
               <p className="text-[12px] text-ink-soft leading-relaxed">
-                Registra este dispositivo con tu huella o rostro. La biometría
-                nunca sale del dispositivo — solo guardamos una clave pública.
-                Se suma al código SMS, nunca lo reemplaza como tu identidad.
+                {t.biometric.description}
               </p>
               {error && <p className="text-[12px] text-t-red mt-4">{error}</p>}
               <button
@@ -116,20 +114,20 @@ export function BiometricSheet({
                 onClick={startEnroll}
                 className="w-full mt-6 py-3 text-[13px] tracking-[0.1em] uppercase border border-ink hover:bg-ink hover:text-paper transition-colors"
               >
-                Set up
+                {t.biometric.setUp}
               </button>
             </>
           )}
 
           {phase === 'prompting' && (
             <p className="text-[14px] text-ink-soft py-4">
-              Sigue la indicación de tu dispositivo…
+              {t.biometric.prompting}
             </p>
           )}
 
           {(phase === 'choose' || phase === 'saving') && (
             <>
-              <p className="text-[13px]">¿Cómo quieres usar el biométrico en este dispositivo?</p>
+              <p className="text-[13px]">{t.biometric.chooseMode}</p>
               <div className="mt-4 flex flex-col gap-3">
                 <button
                   type="button"
@@ -137,9 +135,9 @@ export function BiometricSheet({
                   onClick={() => finishEnroll('quick')}
                   className="text-left border border-hairline hover:border-ink transition-colors p-4 disabled:opacity-50"
                 >
-                  <div className="text-[14px]">Quick sign-in</div>
+                  <div className="text-[14px]">{t.biometric.quickTitle}</div>
                   <div className="text-[12px] text-ink-soft mt-1">
-                    Una pulsación te identifica, sin código SMS en este dispositivo.
+                    {t.biometric.quickDesc}
                   </div>
                 </button>
                 <button
@@ -148,9 +146,9 @@ export function BiometricSheet({
                   onClick={() => finishEnroll('extra')}
                   className="text-left border border-hairline hover:border-ink transition-colors p-4 disabled:opacity-50"
                 >
-                  <div className="text-[14px]">Extra security layer</div>
+                  <div className="text-[14px]">{t.biometric.extraTitle}</div>
                   <div className="text-[12px] text-ink-soft mt-1">
-                    Se pide el biométrico además del código SMS.
+                    {t.biometric.extraDesc}
                   </div>
                 </button>
               </div>
@@ -160,16 +158,16 @@ export function BiometricSheet({
 
           {phase === 'done' && (
             <>
-              <p className="text-[14px]">Dispositivo registrado.</p>
+              <p className="text-[14px]">{t.biometric.registered}</p>
               <p className="text-[12px] text-ink-soft mt-2">
-                Ya puedes usar el biométrico en este dispositivo.
+                {t.biometric.registeredDesc}
               </p>
               <button
                 type="button"
                 onClick={onSaved}
                 className="w-full mt-6 py-3 text-[13px] tracking-[0.1em] uppercase border border-ink hover:bg-ink hover:text-paper transition-colors"
               >
-                Done
+                {t.biometric.done}
               </button>
             </>
           )}

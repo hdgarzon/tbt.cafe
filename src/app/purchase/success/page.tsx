@@ -3,6 +3,7 @@
 import { Suspense, useEffect, useState } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
+import { useLocale } from '@/i18n/LocaleProvider'
 import { TBT_BACKEND_URL } from '@/lib/backend'
 
 /**
@@ -21,6 +22,7 @@ import { TBT_BACKEND_URL } from '@/lib/backend'
 type State = 'working' | 'done' | 'error'
 
 function PurchaseSuccessContent() {
+  const { t } = useLocale()
   const params = useSearchParams()
   const [state, setState] = useState<State>('working')
   const [error, setError] = useState('')
@@ -32,14 +34,14 @@ function PurchaseSuccessContent() {
 
     if (!transferId) {
       setState('error')
-      setError('Falta transferId en la URL de retorno.')
+      setError(t.purchase.missingTransferId)
       return
     }
 
     ;(async () => {
       try {
         const { data: { session } } = await supabase.auth.getSession()
-        if (!session) throw new Error('Sesión expirada — inicia sesión de nuevo.')
+        if (!session) throw new Error(t.purchase.errors.sessionExpired)
 
         const res = await fetch(`${TBT_BACKEND_URL}/api/complete-transfer`, {
           method: 'POST',
@@ -50,33 +52,34 @@ function PurchaseSuccessContent() {
           body: JSON.stringify({ transferId, sessionId }),
         })
         const body = await res.json()
-        if (!res.ok) throw new Error(body.error ?? 'No pudimos completar la compra')
+        if (!res.ok) throw new Error(body.error ?? t.purchase.errors.completeFailed)
 
         setWorkTitle(body.workTitle ?? '')
         setState('done')
       } catch (e) {
-        setError(e instanceof Error ? e.message : 'No pudimos completar la compra')
+        setError(e instanceof Error ? e.message : t.purchase.errors.completeFailed)
         setState('error')
       }
     })()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [params])
 
   return (
     <>
       {state === 'working' && (
-        <p className="text-[14px] text-ink-soft">Completando tu compra…</p>
+        <p className="text-[14px] text-ink-soft">{t.purchase.successWorking}</p>
       )}
       {state === 'done' && (
         <>
-          <p className="font-display text-[28px]">It&apos;s yours.</p>
+          <p className="font-display text-[28px]">{t.purchase.successDone}</p>
           {workTitle && <p className="text-[14px] text-ink-soft mt-2">{workTitle}</p>}
-          <a href="/" className="label-caps mt-8 hover:text-ink">← Home</a>
+          <a href="/" className="label-caps mt-8 hover:text-ink">← {t.purchase.home}</a>
         </>
       )}
       {state === 'error' && (
         <>
           <p className="text-[14px] text-t-red">{error}</p>
-          <a href="/" className="label-caps mt-6 hover:text-ink">← Home</a>
+          <a href="/" className="label-caps mt-6 hover:text-ink">← {t.purchase.home}</a>
         </>
       )}
     </>
@@ -84,9 +87,10 @@ function PurchaseSuccessContent() {
 }
 
 export default function PurchaseSuccessPage() {
+  const { t } = useLocale()
   return (
     <div className="flex-1 px-5 py-10 flex flex-col items-center text-center">
-      <Suspense fallback={<p className="text-[14px] text-ink-soft">Cargando…</p>}>
+      <Suspense fallback={<p className="text-[14px] text-ink-soft">{t.authHub.loading}</p>}>
         <PurchaseSuccessContent />
       </Suspense>
     </div>
