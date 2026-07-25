@@ -14,7 +14,9 @@
     "brewSub": "Crea tu TBT",
     "searchPlaceholder": "Busca creadores o un TBT ID"
   },
-  "footer": { "credit": "Transbit × BROCHA" },
+  "footer": {
+    "credit": "Transbit × BROCHA"
+  },
   "menu": {
     "collections": "Colecciones",
     "profile": "Perfil",
@@ -85,7 +87,9 @@
     "save": "Guardar código",
     "saving": "Guardando…",
     "disclaimer": "Se guarda hasheado, nunca en texto plano. Un código corto es una capa de conveniencia, no un segundo factor real.",
-    "errors": { "saveFailed": "No pudimos guardar el código" }
+    "errors": {
+      "saveFailed": "No pudimos guardar el código"
+    }
   },
   "recoveryEmail": {
     "title": "Email de recuperación",
@@ -97,7 +101,9 @@
     "checkEmail": "Revisa tu correo.",
     "checkEmailDesc": "Enviamos un enlace de confirmación a {email}. Al abrirlo, el email queda verificado y podrás usarlo para recuperar tu cuenta si pierdes el teléfono.",
     "done": "Listo",
-    "errors": { "sendFailed": "No pudimos enviar la confirmación" }
+    "errors": {
+      "sendFailed": "No pudimos enviar la confirmación"
+    }
   },
   "biometric": {
     "title": "Inicio biométrico",
@@ -172,7 +178,12 @@
     "saving": "Guardando…",
     "saved": "Guardado ✓",
     "needSignIn": "Inicia sesión para editar tu perfil.",
-    "errors": { "saveFailed": "No pudimos guardar el perfil" }
+    "errors": {
+      "saveFailed": "No pudimos guardar el perfil"
+    },
+    "checkingLink": "Verificando…",
+    "linkLive": "El enlace responde",
+    "linkUnreachable": "No pudimos alcanzar este enlace"
   },
   "profileCollector": {
     "backLabel": "Perfil de Coleccionista",
@@ -192,7 +203,9 @@
     "saving": "Guardando…",
     "saved": "Guardado ✓",
     "needSignIn": "Inicia sesión para editar tu perfil.",
-    "errors": { "saveFailed": "No pudimos guardar el perfil" }
+    "errors": {
+      "saveFailed": "No pudimos guardar el perfil"
+    }
   },
   "notifications": {
     "backLabel": "Notificaciones",

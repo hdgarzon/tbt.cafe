@@ -13,6 +13,8 @@ import { useLocale } from '@/i18n/LocaleProvider'
  * traducción en cada call site.
  */
 
+type Liveness = 'idle' | 'checking' | 'live' | 'unreachable'
+
 export function Field({
   label,
   value,
@@ -33,6 +35,7 @@ export function Field({
 }) {
   const { t } = useLocale()
   const [touched, setTouched] = useState(false)
+  const [liveness, setLiveness] = useState<Liveness>('idle')
 
   // Validación de URL: formato + dominio esperado (§14)
   let urlState: 'ok' | 'bad' | null = null
@@ -42,6 +45,31 @@ export function Field({
       urlState = u.hostname.includes(urlDomain) ? 'ok' : 'bad'
     } catch {
       urlState = 'bad'
+    }
+  }
+
+  /**
+   * Liveness (§14): "cannot be done in-browser — CORS blocks it. Seam:
+   * checkUrlReachable(v) against a backend fetch endpoint." Solo se dispara
+   * al perder foco con formato+dominio ya válidos, para no golpear la ruta
+   * en cada tecla.
+   */
+  async function checkLiveness() {
+    if (urlState !== 'ok') {
+      setLiveness('idle')
+      return
+    }
+    setLiveness('checking')
+    try {
+      const res = await fetch('/api/check-url', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url: value }),
+      })
+      const body = await res.json()
+      setLiveness(body.reachable ? 'live' : 'unreachable')
+    } catch {
+      setLiveness('unreachable')
     }
   }
 
@@ -58,14 +86,31 @@ export function Field({
       <input
         type={type}
         value={value}
-        onChange={(e) => onChange(e.target.value)}
-        onBlur={() => setTouched(true)}
+        onChange={(e) => {
+          onChange(e.target.value)
+          setLiveness('idle')
+        }}
+        onBlur={() => {
+          setTouched(true)
+          if (urlDomain) checkLiveness()
+        }}
         placeholder={placeholder}
         className={`w-full mt-1 py-2 bg-transparent border-b text-[15px] outline-none transition-colors ${borderClass}`}
       />
       {urlState === 'bad' && touched && (
-        <span className="text-[11px] text-t-red">
+        <span className="text-[11px] text-t-red block">
           {t.profileCreator.urlDomainError.replace('{domain}', urlDomain ?? '')}
+        </span>
+      )}
+      {urlState === 'ok' && liveness !== 'idle' && (
+        <span
+          className={`text-[11px] block ${
+            liveness === 'live' ? 'text-t-green' : liveness === 'unreachable' ? 'text-t-red' : 'text-placeholder'
+          }`}
+        >
+          {liveness === 'checking' && t.profileCreator.checkingLink}
+          {liveness === 'live' && t.profileCreator.linkLive}
+          {liveness === 'unreachable' && t.profileCreator.linkUnreachable}
         </span>
       )}
       {hint && <span className="text-[11px] text-placeholder block mt-1">{hint}</span>}

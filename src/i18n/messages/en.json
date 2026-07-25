@@ -14,7 +14,9 @@
     "brewSub": "Create your TBT",
     "searchPlaceholder": "Search creators or TBT ID"
   },
-  "footer": { "credit": "Transbit × BROCHA" },
+  "footer": {
+    "credit": "Transbit × BROCHA"
+  },
   "menu": {
     "collections": "Collections",
     "profile": "Profile",
@@ -85,7 +87,9 @@
     "save": "Save code",
     "saving": "Saving…",
     "disclaimer": "Stored as a hash, never in plain text. A short code is a convenience layer, not a real second factor.",
-    "errors": { "saveFailed": "We couldn't save the code" }
+    "errors": {
+      "saveFailed": "We couldn't save the code"
+    }
   },
   "recoveryEmail": {
     "title": "Recovery email",
@@ -97,7 +101,9 @@
     "checkEmail": "Check your email.",
     "checkEmailDesc": "We sent a confirmation link to {email}. Once you open it, the email is verified and you can use it to recover your account if you lose your phone.",
     "done": "Done",
-    "errors": { "sendFailed": "We couldn't send the confirmation" }
+    "errors": {
+      "sendFailed": "We couldn't send the confirmation"
+    }
   },
   "biometric": {
     "title": "Biometric sign-in",
@@ -172,7 +178,12 @@
     "saving": "Saving…",
     "saved": "Saved ✓",
     "needSignIn": "Sign in to edit your profile.",
-    "errors": { "saveFailed": "We couldn't save the profile" }
+    "errors": {
+      "saveFailed": "We couldn't save the profile"
+    },
+    "checkingLink": "Checking…",
+    "linkLive": "Link is live",
+    "linkUnreachable": "Could not reach this link"
   },
   "profileCollector": {
     "backLabel": "Collector profile",
@@ -192,7 +203,9 @@
     "saving": "Saving…",
     "saved": "Saved ✓",
     "needSignIn": "Sign in to edit your profile.",
-    "errors": { "saveFailed": "We couldn't save the profile" }
+    "errors": {
+      "saveFailed": "We couldn't save the profile"
+    }
   },
   "notifications": {
     "backLabel": "Notifications",

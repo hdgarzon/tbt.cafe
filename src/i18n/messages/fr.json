@@ -14,7 +14,9 @@
     "brewSub": "Créez votre TBT",
     "searchPlaceholder": "Rechercher un créateur ou un TBT ID"
   },
-  "footer": { "credit": "Transbit × BROCHA" },
+  "footer": {
+    "credit": "Transbit × BROCHA"
+  },
   "menu": {
     "collections": "Collections",
     "profile": "Profil",
@@ -85,7 +87,9 @@
     "save": "Enregistrer le code",
     "saving": "Enregistrement…",
     "disclaimer": "Stocké sous forme de hash, jamais en texte clair. Un code court est une couche de confort, pas un vrai second facteur.",
-    "errors": { "saveFailed": "Nous n'avons pas pu enregistrer le code" }
+    "errors": {
+      "saveFailed": "Nous n'avons pas pu enregistrer le code"
+    }
   },
   "recoveryEmail": {
     "title": "Email de récupération",
@@ -97,7 +101,9 @@
     "checkEmail": "Vérifiez votre email.",
     "checkEmailDesc": "Nous avons envoyé un lien de confirmation à {email}. Une fois ouvert, l'email est vérifié et vous pourrez l'utiliser pour récupérer votre compte si vous perdez votre téléphone.",
     "done": "Terminé",
-    "errors": { "sendFailed": "Nous n'avons pas pu envoyer la confirmation" }
+    "errors": {
+      "sendFailed": "Nous n'avons pas pu envoyer la confirmation"
+    }
   },
   "biometric": {
     "title": "Connexion biométrique",
@@ -172,7 +178,12 @@
     "saving": "Enregistrement…",
     "saved": "Enregistré ✓",
     "needSignIn": "Connectez-vous pour modifier votre profil.",
-    "errors": { "saveFailed": "Nous n'avons pas pu enregistrer le profil" }
+    "errors": {
+      "saveFailed": "Nous n'avons pas pu enregistrer le profil"
+    },
+    "checkingLink": "Vérification…",
+    "linkLive": "Le lien répond",
+    "linkUnreachable": "Impossible d'atteindre ce lien"
   },
   "profileCollector": {
     "backLabel": "Profil collectionneur",
@@ -192,7 +203,9 @@
     "saving": "Enregistrement…",
     "saved": "Enregistré ✓",
     "needSignIn": "Connectez-vous pour modifier votre profil.",
-    "errors": { "saveFailed": "Nous n'avons pas pu enregistrer le profil" }
+    "errors": {
+      "saveFailed": "Nous n'avons pas pu enregistrer le profil"
+    }
   },
   "notifications": {
     "backLabel": "Notifications",
