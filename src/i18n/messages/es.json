@@ -339,5 +339,29 @@
     "collectionsLabel": "Colecciones",
     "collectionOneAuto": "El primer TBT crea \"Collection 1\" automáticamente (renombrable; el slug sigue al nombre).",
     "collectionWorks": "Obras de esta colección."
+  },
+  "myCollections": {
+    "creationsSub": "Obras que has certificado",
+    "creationsEmpty": "Aún no has certificado ningún TBT.",
+    "acquisitionsSub": "Obras que has adquirido de otros creadores",
+    "acquisitionsEmpty": "Aún no has adquirido ningún TBT.",
+    "favoritesSub": "Obras que has marcado como favoritas",
+    "favoritesUnavailable": "Favoritos aún no está disponible — esta función no está construida en el backend.",
+    "activitySub": "Eventos de procedencia de obras que has creado o poseído",
+    "activityEmpty": "Sin actividad todavía.",
+    "transactionsSub": "Transferencias que has enviado o recibido",
+    "transactionsEmpty": "Sin transacciones todavía.",
+    "needSignIn": "Inicia sesión para ver esto.",
+    "statusDraft": "Borrador",
+    "statusCertified": "Certificado",
+    "statusTransferred": "Transferido",
+    "statusArchived": "Archivado",
+    "eventCreation": "Certificado",
+    "eventTransfer": "Transferido",
+    "transferTo": "Para",
+    "transferFrom": "De",
+    "transferStatusCompleted": "Completado",
+    "transferStatusPending": "Pendiente",
+    "transferStatusCancelled": "Cancelado"
   }
 }

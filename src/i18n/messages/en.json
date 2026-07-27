@@ -339,5 +339,29 @@
     "collectionsLabel": "Collections",
     "collectionOneAuto": "The first TBT automatically creates \"Collection 1\" (renamable; the slug follows the name).",
     "collectionWorks": "Works in this collection."
+  },
+  "myCollections": {
+    "creationsSub": "Works you've certified",
+    "creationsEmpty": "You haven't certified any TBT yet.",
+    "acquisitionsSub": "Works you've acquired from other creators",
+    "acquisitionsEmpty": "You haven't acquired any TBT yet.",
+    "favoritesSub": "Works you've marked as favorites",
+    "favoritesUnavailable": "Favorites aren't available yet — this feature isn't built on the backend.",
+    "activitySub": "Provenance events for works you've created or owned",
+    "activityEmpty": "No activity yet.",
+    "transactionsSub": "Transfers you've sent or received",
+    "transactionsEmpty": "No transactions yet.",
+    "needSignIn": "Sign in to see this.",
+    "statusDraft": "Draft",
+    "statusCertified": "Certified",
+    "statusTransferred": "Transferred",
+    "statusArchived": "Archived",
+    "eventCreation": "Certified",
+    "eventTransfer": "Transferred",
+    "transferTo": "To",
+    "transferFrom": "From",
+    "transferStatusCompleted": "Completed",
+    "transferStatusPending": "Pending",
+    "transferStatusCancelled": "Cancelled"
   }
 }

@@ -1,38 +1,28 @@
 'use client'
 
-import { useMemo, useState, type ReactNode } from 'react'
+import { useEffect, useState, type ReactNode } from 'react'
 import { SearchIcon, CloseIcon } from '@/components/Brand'
 import { useShell } from '@/components/AppShell'
 import { useLocale } from '@/i18n/LocaleProvider'
-import {
-  SIMULATED_CREATORS,
-  SIMULATED_COLLECTIONS,
-  SIMULATED_PIECES,
-  creatorSeg,
-  toCollectionSlug,
-} from '@/lib/creator-routing'
+import { searchCatalog, type SearchHit } from '@/lib/creator-data'
 
 /**
  * Home (Build Spec 01, ÍTEMS 1 y 4).
  * Roast · Grind · Brew como tres cajas iguales, más búsqueda en vivo sobre
- * creadores, colecciones y obras.
+ * creadores y obras REALES (Supabase compartido con el backend de Forms) —
+ * antes esto pegaba contra un catálogo de simulación fijo (Picasso, Monet…)
+ * que nunca mostraba las obras que un usuario había certificado de verdad.
  *
  * Idioma: viene del LocaleProvider compartido (root layout) — detección de
  * navigator.language con fallback inglés, persistente al navegar.
  */
 
-type Hit = {
-  kind: 'creator' | 'collection' | 'work'
-  name: string
-  meta: string
-  glyph: string
-  href: string
-}
-
 export default function HomePage() {
   const [query, setQuery] = useState('')
   const [searchFocused, setSearchFocused] = useState(false)
   const [welcomeDismissed, setWelcomeDismissed] = useState(false)
+  const [hits, setHits] = useState<SearchHit[]>([])
+  const [searching, setSearching] = useState(false)
   const { connected } = useShell()
   const { t } = useLocale()
 
@@ -42,43 +32,22 @@ export default function HomePage() {
     { key: 'brew', label: t.home.brew, href: '/brew' },
   ]
 
-  /** Búsqueda en vivo: creadores primero, luego colecciones, luego obras. */
-  const hits = useMemo<Hit[]>(() => {
-    const q = query.trim().toLowerCase()
-    if (!q) return []
-
-    const creators: Hit[] = SIMULATED_CREATORS.filter(
-      (c) => c.name.toLowerCase().includes(q) || (c.handle ?? '').includes(q)
-    ).map((c) => ({
-      kind: 'creator',
-      name: c.name,
-      meta: `${t.search.works.replace('{n}', String(c.works.length))} · /creator/${creatorSeg(c)}`,
-      glyph: '⬤',
-      href: `/creator/${creatorSeg(c)}`,
-    }))
-
-    const collections: Hit[] = SIMULATED_COLLECTIONS.filter((c) =>
-      c.name.toLowerCase().includes(q)
-    ).map((c) => ({
-      kind: 'collection',
-      name: c.name,
-      meta: `${t.search.collection} · ${c.creator.name}`,
-      glyph: '◫',
-      href: `/creator/${creatorSeg(c.creator)}/${toCollectionSlug(c.name)}`,
-    }))
-
-    const works: Hit[] = SIMULATED_PIECES.filter((p) =>
-      p.title.toLowerCase().includes(q)
-    ).map((p) => ({
-      kind: 'work',
-      name: p.title,
-      meta: `${t.search.work} · ${p.creator.name}`,
-      glyph: '▦',
-      href: `/work/${p.tbtId}`,
-    }))
-
-    return [...creators, ...collections, ...works]
-  }, [query, t])
+  // Búsqueda en vivo, debounced 250ms para no golpear Supabase en cada tecla
+  useEffect(() => {
+    const q = query.trim()
+    if (!q) {
+      setHits([])
+      setSearching(false)
+      return
+    }
+    setSearching(true)
+    const id = setTimeout(() => {
+      searchCatalog(q)
+        .then(setHits)
+        .finally(() => setSearching(false))
+    }, 250)
+    return () => clearTimeout(id)
+  }, [query])
 
   // El banner sólo aplica al usuario recién autenticado
   const showWelcome = connected && !welcomeDismissed
@@ -165,7 +134,7 @@ export default function HomePage() {
 
         {/* Resultados en vivo */}
         <div className="mt-1" role="listbox" aria-label={t.home.searchPlaceholder}>
-          {query.trim() && hits.length === 0 && (
+          {query.trim() && !searching && hits.length === 0 && (
             <div className="py-3.5 px-0.5 text-[12px] tracking-[0.03em] text-ink-soft">
               {t.search.noResults.replace('{q}', query.trim())}
             </div>
@@ -185,7 +154,7 @@ export default function HomePage() {
                 }`}
               >
                 <span className="font-display text-[16px] text-ink-soft" aria-hidden="true">
-                  {h.glyph}
+                  {h.kind === 'creator' ? '⬤' : '▦'}
                 </span>
               </span>
               <span className="flex-1 min-w-0">
