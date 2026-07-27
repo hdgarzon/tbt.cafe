@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useLocale } from '@/i18n/LocaleProvider'
+import { Sheet, SheetButton, FieldLabel } from '@/components/Sheet'
 
 /**
  * Código privado — Master Handoff §10.
@@ -19,10 +20,13 @@ export function PrivateCodeSheet({
   open,
   onClose,
   onSaved,
+  emailVerified = false,
 }: {
   open: boolean
   onClose: () => void
   onSaved: () => void
+  /** Cambia la nota de pie: con email verificado se ofrece como recuperación real. */
+  emailVerified?: boolean
 }) {
   const { t } = useLocale()
   const [code, setCode] = useState('')
@@ -49,7 +53,9 @@ export function PrivateCodeSheet({
     setError('')
     setBusy(true)
     try {
-      const { data: { session } } = await supabase.auth.getSession()
+      const {
+        data: { session },
+      } = await supabase.auth.getSession()
       if (!session) throw new Error('Session expired')
 
       const res = await fetch('/api/private-code', {
@@ -70,84 +76,74 @@ export function PrivateCodeSheet({
     }
   }
 
-  if (!open) return null
-
   return (
-    <div className="absolute inset-0 z-30 flex flex-col justify-end">
-      <div className="absolute inset-0 bg-ink/20" onClick={onClose} />
+    <Sheet open={open} onClose={onClose} kicker={t.authHub.privateCode} title={t.privateCode.title}>
+      <p className="text-[12.5px] leading-[1.6] tracking-[0.01em] text-ink-soft">
+        {t.privateCode.description.replace('{min}', String(MIN_LEN)).replace('{max}', String(MAX_LEN))}
+      </p>
 
-      <div className="relative bg-paper border-t border-hairline">
-        <div className="h-header flex items-center justify-between px-5 border-b border-hairline">
-          <span className="label-caps">{t.privateCode.title}</span>
-          <button type="button" onClick={onClose} aria-label="Close" className="text-[20px] leading-none text-ink-soft">×</button>
-        </div>
+      <div className="mt-[22px]">
+        <FieldLabel htmlFor="pc">{t.privateCode.codeLabel}</FieldLabel>
+        <input
+          id="pc"
+          type="password"
+          autoComplete="new-password"
+          value={code}
+          onChange={(e) => setCode(e.target.value.slice(0, MAX_LEN))}
+          placeholder={`${MIN_LEN}–${MAX_LEN} characters`}
+          className="w-full border border-hairline rounded-xl outline-none px-3.5 py-[13px] text-[15px] tracking-[0.3em] text-ink focus:border-ink transition-colors"
+        />
+      </div>
 
-        <div className="px-5 py-6">
-          <p className="text-[12px] text-ink-soft leading-relaxed">
-            {t.privateCode.description.replace('{min}', String(MIN_LEN)).replace('{max}', String(MAX_LEN))}
-          </p>
+      <div className="mt-[18px]">
+        <FieldLabel htmlFor="pc2">{t.privateCode.confirmLabel}</FieldLabel>
+        <input
+          id="pc2"
+          type="password"
+          autoComplete="new-password"
+          value={confirm}
+          onChange={(e) => setConfirm(e.target.value.slice(0, MAX_LEN))}
+          placeholder="Re-enter code"
+          className="w-full border border-hairline rounded-xl outline-none px-3.5 py-[13px] text-[15px] tracking-[0.3em] text-ink focus:border-ink transition-colors"
+        />
+        {confirm.length > 0 && !matches && (
+          <p className="text-[11px] leading-[1.4] text-t-red mt-1.5">{t.privateCode.mismatch}</p>
+        )}
+      </div>
 
-          <label className="label-caps block mt-5" htmlFor="pc">{t.privateCode.codeLabel}</label>
-          <input
-            id="pc"
-            type="password"
-            autoComplete="new-password"
-            value={code}
-            onChange={(e) => setCode(e.target.value.slice(0, MAX_LEN))}
-            placeholder="•••••"
-            className="w-full mt-1 py-2 bg-transparent border-b border-hairline text-[16px] tracking-[0.3em] outline-none focus:border-ink transition-colors"
-          />
-
-          <label className="label-caps block mt-5" htmlFor="pc2">{t.privateCode.confirmLabel}</label>
-          <input
-            id="pc2"
-            type="password"
-            autoComplete="new-password"
-            value={confirm}
-            onChange={(e) => setConfirm(e.target.value.slice(0, MAX_LEN))}
-            placeholder="•••••"
-            className="w-full mt-1 py-2 bg-transparent border-b border-hairline text-[16px] tracking-[0.3em] outline-none focus:border-ink transition-colors"
-          />
-          {confirm.length > 0 && !matches && (
-            <p className="text-[11px] text-t-red mt-2">{t.privateCode.mismatch}</p>
-          )}
-
-          <div className="label-caps mt-6">{t.privateCode.askMe}</div>
-          <div className="flex gap-2 mt-2">
-            {([
+      <div className="mt-[22px]">
+        <FieldLabel>{t.privateCode.freqLabel}</FieldLabel>
+        <div className="flex gap-[10px]">
+          {(
+            [
               ['always', t.privateCode.always],
               ['occasional', t.privateCode.occasional],
-            ] as const).map(([value, label]) => (
-              <button
-                key={value}
-                type="button"
-                onClick={() => setFreq(value)}
-                aria-pressed={freq === value}
-                className={`px-3 py-1.5 text-[12px] border transition-colors ${
-                  freq === value ? 'border-ink text-ink' : 'border-hairline text-ink-soft'
-                }`}
-              >
-                {label}
-              </button>
-            ))}
-          </div>
-
-          {error && <p className="text-[12px] text-t-red mt-4">{error}</p>}
-
-          <button
-            type="button"
-            onClick={save}
-            disabled={!canSave}
-            className="w-full mt-6 py-3 text-[13px] tracking-[0.1em] uppercase border border-ink transition-colors disabled:border-hairline disabled:text-placeholder enabled:hover:bg-ink enabled:hover:text-paper"
-          >
-            {busy ? t.privateCode.saving : t.privateCode.save}
-          </button>
-
-          <p className="text-[11px] text-placeholder mt-4 leading-relaxed">
-            {t.privateCode.disclaimer}
-          </p>
+            ] as const
+          ).map(([value, label]) => (
+            <button
+              key={value}
+              type="button"
+              onClick={() => setFreq(value)}
+              aria-pressed={freq === value}
+              className={`flex-1 rounded-xl border px-3.5 py-[13px] text-[13px] font-medium tracking-[0.02em] transition-colors ${
+                freq === value ? 'border-ink text-ink bg-paper-warm' : 'border-hairline text-ink-soft hover:border-ink'
+              }`}
+            >
+              {label}
+            </button>
+          ))}
         </div>
       </div>
-    </div>
+
+      {error && <p className="text-[11.5px] leading-[1.5] text-t-red mt-3">{error}</p>}
+
+      <SheetButton onClick={save} disabled={!canSave}>
+        {busy ? t.privateCode.saving : t.privateCode.save}
+      </SheetButton>
+
+      <p className="text-[11px] leading-[1.5] text-ink-soft mt-4 text-center">
+        {emailVerified ? t.privateCode.pcResetNote : t.privateCode.pcResetNoteNoEmail}
+      </p>
+    </Sheet>
   )
 }

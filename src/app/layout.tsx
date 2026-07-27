@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Inter, Cormorant_Garamond } from "next/font/google";
 import { LocaleProvider } from "@/i18n/LocaleProvider";
+import { AppShell } from "@/components/AppShell";
 import "./globals.css";
 
 /**
@@ -35,18 +36,19 @@ export default function RootLayout({
   return (
     // El idioma real lo fija el provider de i18n; `en` es el fallback (Build Spec 01, ÍTEM 3)
     <html lang="en" className={`${inter.variable} ${cormorant.variable}`}>
-      <body className="font-sans bg-paper text-ink">
+      <body className="font-sans text-ink">
         {/*
           Shell bloqueado a móvil: toda la app vive en una columna centrada de
           ~390px y el desktop replica el móvil exactamente (Master Handoff §5).
+
+          `relative` ancla los paneles off-canvas (menú deslizable, sheets) a la
+          columna; `overflow-x-hidden` los recorta a su borde para que queden
+          ocultos como en un móvil real en vez de derramarse al costado.
         */}
-        {/*
-          overflow-hidden recorta al borde de la columna: los paneles off-canvas
-          (menú deslizable) quedan ocultos como en un móvil real, en vez de
-          derramarse al costado cuando la columna está centrada en desktop.
-        */}
-        <div className="col-locked min-h-screen flex flex-col border-x border-hairline overflow-hidden">
-          <LocaleProvider>{children}</LocaleProvider>
+        <div className="col-locked relative min-h-screen flex flex-col overflow-x-hidden">
+          <LocaleProvider>
+            <AppShell>{children}</AppShell>
+          </LocaleProvider>
         </div>
       </body>
     </html>

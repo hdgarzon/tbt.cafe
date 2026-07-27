@@ -7,9 +7,9 @@ import { useLocale, type Dictionary } from '@/i18n/LocaleProvider'
 /**
  * Notificaciones — Master Handoff §15.
  * Tres categorías; cada ítem es un toggle on/off. Los ítems basados en vistas
- * añaden un selector de umbral que solo aparece cuando el ítem está ON.
- * Las de seguridad van ON por defecto (deliberado): alimentan la alarma de
- * clonación del biométrico y la detección de actividad sospechosa.
+ * añaden un selector de umbral (nativo, como el prototipo) que solo aparece
+ * cuando el ítem está ON. Las de seguridad van ON por defecto (deliberado) y
+ * se distinguen con el acento navy, igual que el prototipo.
  *
  * Estado por ítem: { on: boolean, threshold?: number }
  * Se persiste como jsonb en notification_prefs.prefs, con los IDs de abajo
@@ -19,7 +19,7 @@ import { useLocale, type Dictionary } from '@/i18n/LocaleProvider'
  */
 
 type ItemDef = { id: string; threshold?: boolean; defaultOn: boolean }
-type CategoryDef = { key: string; items: ItemDef[] }
+type CategoryDef = { key: string; security?: boolean; items: ItemDef[] }
 
 const STRUCTURE: CategoryDef[] = [
   {
@@ -33,6 +33,7 @@ const STRUCTURE: CategoryDef[] = [
   },
   {
     key: 'security',
+    security: true,
     items: [
       { id: 'new_location', defaultOn: true },
       { id: 'new_device', defaultOn: true },
@@ -76,16 +77,18 @@ function buildCategories(t: Dictionary) {
   }
   return STRUCTURE.map((cat) => ({
     key: cat.key,
+    security: cat.security,
     title: titles[cat.key],
     note: notes[cat.key],
     items: cat.items.map((item) => ({
       ...item,
       label: t.notifications.items[ITEM_LABEL_KEY[item.id]],
+      desc: t.notifications.itemDesc[ITEM_LABEL_KEY[item.id]],
     })),
   }))
 }
 
-const THRESHOLDS = [10, 50, 100, 500]
+const THRESHOLDS = [100, 500, 1000]
 
 type Pref = { on: boolean; threshold?: number }
 type Prefs = Record<string, Pref>
@@ -114,7 +117,9 @@ export default function NotificationsPage() {
 
   useEffect(() => {
     ;(async () => {
-      const { data: { user } } = await supabase.auth.getUser()
+      const {
+        data: { user },
+      } = await supabase.auth.getUser()
       if (!user) {
         setSignedIn(false)
         setLoading(false)
@@ -142,7 +147,9 @@ export default function NotificationsPage() {
   async function save() {
     setBusy(true)
     setSaved(false)
-    const { data: { user } } = await supabase.auth.getUser()
+    const {
+      data: { user },
+    } = await supabase.auth.getUser()
     if (!user) {
       setBusy(false)
       return
@@ -154,11 +161,11 @@ export default function NotificationsPage() {
     setSaved(true)
   }
 
-  if (loading) return <div className="flex-1 px-5 py-8 text-[13px] text-ink-soft">{t.authHub.loading}</div>
+  if (loading) return <div className="px-4 pt-6 text-[13px] text-ink-soft">{t.authHub.loading}</div>
   if (!signedIn) {
     return (
-      <div className="flex-1 px-5 py-8">
-        <a href="/" className="label-caps hover:text-ink">← {t.purchase.home}</a>
+      <div className="px-4 pt-6">
+        <a href="/" className="back-link">← {t.purchase.home}</a>
         <p className="text-[14px] mt-6">{t.notifications.needSignIn}</p>
       </div>
     )
@@ -167,76 +174,87 @@ export default function NotificationsPage() {
   const categories = buildCategories(t)
 
   return (
-    <div className="flex-1 flex flex-col">
-      <div className="h-header flex items-center px-5 border-b border-hairline">
-        <a href="/" className="label-caps hover:text-ink">← {t.notifications.backLabel}</a>
-      </div>
+    <div className="px-4 pt-6">
+      <a href="/" className="back-link">← {t.notifications.backLabel}</a>
+      <h1 className="page-title">{t.notifications.backLabel}</h1>
+      <div className="page-sub">{t.notifications.pageSub}</div>
 
       {categories.map((cat) => (
-        <section key={cat.key}>
-          <div className="px-5 pt-6 pb-2">
-            <div className="label-caps">{cat.title}</div>
-            {cat.note && <div className="text-[11px] text-placeholder mt-1">{cat.note}</div>}
+        <section key={cat.key} className="mb-2">
+          <div
+            className={`text-[10px] font-semibold tracking-[0.2em] uppercase mt-6 mb-1 pb-[10px] border-b border-hairline ${
+              cat.security ? 'text-t-navy' : 'text-ink'
+            }`}
+          >
+            {cat.title}
           </div>
+          {cat.note && <div className="text-[11px] text-placeholder -mt-0.5 mb-2">{cat.note}</div>}
+
           {cat.items.map((item) => {
             const pref = prefs[item.id]
             return (
-              <div key={item.id} className="px-5 py-3 border-b border-hairline">
-                <div className="flex items-center justify-between gap-4">
-                  <span className="text-[14px]">{item.label}</span>
-                  <button
-                    type="button"
-                    role="switch"
-                    aria-checked={pref.on}
-                    aria-label={item.label}
-                    onClick={() => toggle(item.id)}
-                    className={`relative w-[42px] h-[24px] rounded-full flex-shrink-0 transition-colors ${
-                      pref.on ? 'bg-ink' : 'bg-hairline'
-                    }`}
-                  >
-                    <span
-                      className={`absolute top-[3px] w-[18px] h-[18px] rounded-full bg-paper shadow-sm transition-[left] ${
-                        pref.on ? 'left-[21px]' : 'left-[3px]'
-                      }`}
-                    />
-                  </button>
+              <div key={item.id} className="flex items-start justify-between gap-3.5 py-4 border-b border-hairline">
+                <div className="flex-1">
+                  <div className="text-[13.5px] font-medium tracking-[0.01em] text-ink">{item.label}</div>
+                  <div className="text-[11.5px] leading-[1.5] text-ink-soft mt-1">{item.desc}</div>
+
+                  {/* Umbral: select nativo, solo visible cuando el ítem está ON */}
+                  {item.threshold && pref.on && (
+                    <div className="mt-2.5 flex items-center gap-2">
+                      <span className="text-[10px] font-medium tracking-[0.12em] uppercase text-ink-soft">
+                        {t.notifications.every}
+                      </span>
+                      <select
+                        value={pref.threshold}
+                        onChange={(e) => setThreshold(item.id, Number(e.target.value))}
+                        className="rounded-lg border border-hairline bg-paper px-2.5 py-[7px] text-[12px] text-ink outline-none cursor-pointer focus:border-ink"
+                      >
+                        {THRESHOLDS.map((n) => (
+                          <option key={n} value={n}>
+                            {n.toLocaleString()} {t.notifications.views}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
                 </div>
 
-                {/* Umbral: solo visible cuando el ítem está ON */}
-                {item.threshold && pref.on && (
-                  <div className="flex items-center gap-2 mt-3">
-                    <span className="text-[11px] text-ink-soft">{t.notifications.notifyPast}</span>
-                    {THRESHOLDS.map((n) => (
-                      <button
-                        key={n}
-                        type="button"
-                        onClick={() => setThreshold(item.id, n)}
-                        aria-pressed={pref.threshold === n}
-                        className={`px-2 py-1 text-[11px] border transition-colors ${
-                          pref.threshold === n ? 'border-ink text-ink' : 'border-hairline text-ink-soft'
-                        }`}
-                      >
-                        {n}
-                      </button>
-                    ))}
-                    <span className="text-[11px] text-ink-soft">{t.notifications.views}</span>
-                  </div>
-                )}
+                <button
+                  type="button"
+                  role="switch"
+                  aria-checked={pref.on}
+                  aria-label={item.label}
+                  onClick={() => toggle(item.id)}
+                  className={`relative w-[46px] h-[26px] rounded-full flex-shrink-0 mt-0.5 transition-colors ${
+                    pref.on ? (cat.security ? 'bg-t-navy' : 'bg-ink') : 'bg-hairline'
+                  }`}
+                >
+                  <span
+                    className={`absolute top-[3px] w-5 h-5 rounded-full bg-paper shadow-sm transition-[left] ${
+                      pref.on ? 'left-5' : 'left-[3px]'
+                    }`}
+                  />
+                </button>
               </div>
             )
           })}
         </section>
       ))}
 
-      <div className="px-5 py-6">
+      <div className="py-6">
         <button
           type="button"
           onClick={save}
           disabled={busy}
-          className="w-full py-3 text-[13px] tracking-[0.1em] uppercase border border-ink transition-colors disabled:border-hairline disabled:text-placeholder enabled:hover:bg-ink enabled:hover:text-paper"
+          className="w-full py-4 text-[12px] font-semibold tracking-[0.16em] uppercase bg-ink text-paper rounded-xl transition-[opacity,background] disabled:opacity-60 disabled:cursor-not-allowed enabled:hover:bg-black"
         >
-          {busy ? t.notifications.saving : saved ? t.notifications.saved : t.notifications.save}
+          {busy ? t.notifications.saving : t.notifications.save}
         </button>
+        {saved && (
+          <p className="text-[12px] text-t-green text-center mt-3.5 tracking-[0.02em]">
+            {t.notifications.saved}
+          </p>
+        )}
       </div>
     </div>
   )

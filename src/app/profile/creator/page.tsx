@@ -107,23 +107,23 @@ export default function CreatorProfilePage() {
     }
   }
 
-  if (loading) return <div className="flex-1 px-5 py-8 text-[13px] text-ink-soft">{t.authHub.loading}</div>
+  if (loading) return <div className="px-4 pt-6 text-[13px] text-ink-soft">{t.authHub.loading}</div>
   if (!signedIn) {
     return (
-      <div className="flex-1 px-5 py-8">
-        <a href="/profile" className="label-caps hover:text-ink">← {t.profile.title}</a>
+      <div className="px-4 pt-6">
+        <a href="/profile" className="back-link">← {t.profile.title}</a>
         <p className="text-[14px] mt-6">{t.profileCreator.needSignIn}</p>
       </div>
     )
   }
 
   return (
-    <div className="flex-1 flex flex-col">
-      <div className="h-header flex items-center px-5 border-b border-hairline">
-        <a href="/profile" className="label-caps hover:text-ink">← {t.profileCreator.backLabel}</a>
-      </div>
+    <div className="px-4 pt-6">
+      <a href="/profile" className="back-link">← {t.profileCreator.backLabel}</a>
+      <h1 className="page-title">{t.profile.creatorTitle}</h1>
+      <div className="page-sub">{t.profile.creatorSub}</div>
 
-      <div className="px-5 py-6 flex flex-col gap-6">
+      <div className="mt-6 flex flex-col gap-[22px]">
         <CategoryPicker value={category} onChange={setCategory} />
 
         {/* Campos condicionales por categoría (§11.1) */}
@@ -150,8 +150,6 @@ export default function CreatorProfilePage() {
           placeholder={t.profileCreator.publicAliasPlaceholder}
           hint={t.profileCreator.publicAliasHint}
         />
-        <TextArea label={t.profileCreator.about} value={about} onChange={setAbout} placeholder={t.profileCreator.aboutPlaceholder} />
-        <Field label={t.profileCreator.credentials} value={credentials} onChange={setCredentials} placeholder={t.profileCreator.credentialsPlaceholder} />
         <Field
           label={t.profileCreator.address}
           value={address}
@@ -159,11 +157,14 @@ export default function CreatorProfilePage() {
           placeholder={t.profileCreator.addressPlaceholder}
           hint={t.profileCreator.addressHint}
         />
+        <TextArea label={t.profileCreator.credentials} value={credentials} onChange={setCredentials} placeholder={t.profileCreator.credentialsPlaceholder} />
 
-        <div className="label-caps pt-2">{t.profileCreator.socialProof}</div>
+        <div className="label-caps">{t.profileCreator.socialProof}</div>
         <Field label={t.profileCreator.linkedin} value={linkedin} onChange={setLinkedin} placeholder="https://linkedin.com/in/…" urlDomain="linkedin.com" />
         <Field label={t.profileCreator.website} value={website} onChange={setWebsite} placeholder="https://yoursite.com" />
         <Field label={t.profileCreator.instagram} value={instagram} onChange={setInstagram} placeholder="https://instagram.com/…" urlDomain="instagram.com" />
+
+        <TextArea label={t.profileCreator.about} value={about} onChange={setAbout} placeholder={t.profileCreator.aboutPlaceholder} />
 
         <SaveBar onSave={save} busy={busy} saved={saved} error={error} />
       </div>

@@ -49,7 +49,9 @@ export default function WorkPage({ params }: { params: { tbtId: string } }) {
 
   useEffect(() => {
     ;(async () => {
-      const { data: { user } } = await supabase.auth.getUser()
+      const {
+        data: { user },
+      } = await supabase.auth.getUser()
       setUserId(user?.id ?? null)
 
       const { data, error } = await supabase
@@ -76,7 +78,9 @@ export default function WorkPage({ params }: { params: { tbtId: string } }) {
     setBuyError('')
     setBuying(true)
     try {
-      const { data: { session } } = await supabase.auth.getSession()
+      const {
+        data: { session },
+      } = await supabase.auth.getSession()
       if (!session) {
         setBuyError(t.work.errors.needSignIn)
         setBuying(false)
@@ -102,13 +106,14 @@ export default function WorkPage({ params }: { params: { tbtId: string } }) {
   }
 
   if (loading) {
-    return <div className="flex-1 px-5 py-8 text-[13px] text-ink-soft">{t.work.loading}</div>
+    return <div className="px-4 pt-6 text-[13px] text-ink-soft">{t.work.loading}</div>
   }
 
   if (notFound || !work) {
     return (
-      <div className="flex-1 px-5 py-8">
-        <div className="label-caps">TBT</div>
+      <div className="px-4 pt-6">
+        <a href="/" className="back-link">← {t.purchase.home}</a>
+        <div className="urlbar">tbt.cafe/work/{params.tbtId}</div>
         <p className="text-[14px] mt-4">{t.work.notFound}</p>
       </div>
     )
@@ -119,40 +124,40 @@ export default function WorkPage({ params }: { params: { tbtId: string } }) {
   const isOwner = userId === work.current_owner_id
 
   return (
-    <div className="flex-1 flex flex-col">
+    <div className="px-4 pt-6">
+      <a href="/" className="back-link">← {t.purchase.home}</a>
+      <div className="urlbar">tbt.cafe/work/{work.tbt_id}</div>
+
       {work.media_url && (
-        <div className="relative w-full aspect-square bg-paper-warm">
+        <div className="relative w-full aspect-[4/3] rounded-xl overflow-hidden bg-paper-warm border border-hairline mb-5">
           <Image src={work.media_url} alt={work.title} fill className="object-cover" unoptimized />
         </div>
       )}
 
-      <div className="px-5 py-6">
-        <div className="label-caps">{work.tbt_id}</div>
-        <h1 className="font-display text-[30px] leading-tight mt-1">{work.title}</h1>
-        <p className="text-[13px] text-ink-soft mt-1">
+      <h1 className="page-title">{work.title}</h1>
+      <div className="page-sub">
+        {t.work.creator} · {creatorName}
+      </div>
+
+      {(work.category || work.technique) && (
+        <p className="text-[13px] text-ink-soft mt-2">
           {work.category}
           {work.technique ? ` · ${work.technique}` : ''}
         </p>
+      )}
 
-        <div className="mt-4 pt-4 border-t border-hairline">
-          <div className="label-caps">{t.work.creator}</div>
-          <p className="text-[15px] mt-1">{creatorName}</p>
+      {work.description && (
+        <div className="mt-5 pt-5 border-t border-hairline">
+          <div className="label-caps">{t.work.about}</div>
+          <p className="text-[14px] leading-relaxed text-ink-soft mt-2">{work.description}</p>
         </div>
+      )}
 
-        {work.description && (
-          <div className="mt-4 pt-4 border-t border-hairline">
-            <div className="label-caps">{t.work.about}</div>
-            <p className="text-[14px] text-ink-soft mt-1 leading-relaxed">{work.description}</p>
-          </div>
-        )}
-
-        <div className="mt-4 pt-4 border-t border-hairline">
-          <div className="label-caps">{t.work.certified}</div>
-          <p className="text-[14px] mt-1">
-            {work.certified_at ? new Date(work.certified_at).toLocaleDateString() : t.work.pending}
-          </p>
-        </div>
-
+      <div className="mt-5 pt-5 border-t border-hairline">
+        <div className="label-caps">{t.work.certified}</div>
+        <p className="text-[14px] mt-2">
+          {work.certified_at ? new Date(work.certified_at).toLocaleDateString() : t.work.pending}
+        </p>
         {work.mint_address && (
           <a
             href={`https://solscan.io/token/${work.mint_address}`}
@@ -163,37 +168,35 @@ export default function WorkPage({ params }: { params: { tbtId: string } }) {
             {t.work.viewOnSolana}
           </a>
         )}
-
-        {/* Comprar */}
-        {forSale && !isOwner && (
-          <div className="mt-6 pt-6 border-t border-hairline">
-            <div className="label-caps">{t.work.price}</div>
-            <p className="font-display text-[26px] mt-1">
-              {work.commerce?.currency} {work.commerce?.initial_price?.toLocaleString()}
-            </p>
-            <p className="text-[11px] text-placeholder mt-2 leading-relaxed">
-              {t.work.buyDisclaimer}
-            </p>
-
-            {buyError && <p className="text-[12px] text-t-red mt-3">{buyError}</p>}
-
-            <button
-              type="button"
-              onClick={buy}
-              disabled={buying}
-              className="w-full mt-4 py-3 text-[13px] tracking-[0.1em] uppercase border border-ink transition-colors disabled:border-hairline disabled:text-placeholder enabled:hover:bg-ink enabled:hover:text-paper"
-            >
-              {buying ? t.work.starting : t.work.buy}
-            </button>
-          </div>
-        )}
-
-        {isOwner && (
-          <p className="text-[12px] text-ink-soft mt-6 pt-6 border-t border-hairline">
-            {t.work.youOwnThis}
-          </p>
-        )}
       </div>
+
+      {/* Comprar */}
+      {forSale && !isOwner && (
+        <div className="mt-6 pt-6 border-t border-hairline">
+          <div className="label-caps">{t.work.price}</div>
+          <p className="font-display font-medium text-[26px] mt-1.5 text-ink">
+            {work.commerce?.currency} {work.commerce?.initial_price?.toLocaleString()}
+          </p>
+          <p className="text-[11px] leading-relaxed text-placeholder mt-2">{t.work.buyDisclaimer}</p>
+
+          {buyError && <p className="text-[11.5px] leading-[1.5] text-t-red mt-3">{buyError}</p>}
+
+          <button
+            type="button"
+            onClick={buy}
+            disabled={buying}
+            className="w-full mt-4 py-4 text-[12px] font-semibold tracking-[0.16em] uppercase bg-ink text-paper rounded-xl transition-[opacity,background] disabled:opacity-60 disabled:cursor-not-allowed enabled:hover:bg-black"
+          >
+            {buying ? t.work.starting : t.work.buy}
+          </button>
+        </div>
+      )}
+
+      {isOwner && (
+        <p className="text-[12px] text-ink-soft mt-6 pt-6 border-t border-hairline">{t.work.youOwnThis}</p>
+      )}
+
+      <div className="pb-6" />
     </div>
   )
 }

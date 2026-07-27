@@ -4,7 +4,17 @@ import { useEffect, useState } from 'react'
 import { startAuthentication } from '@simplewebauthn/browser'
 import { supabase } from '@/lib/supabase'
 import { useLocale } from '@/i18n/LocaleProvider'
-import { COUNTRIES, DEFAULT_COUNTRY, findCountry, formatNational, toE164, isPlausible, type Country } from '@/lib/countries'
+import { Sheet, SheetButton, FieldLabel } from '@/components/Sheet'
+import { CaretIcon } from '@/components/Brand'
+import {
+  COUNTRIES,
+  DEFAULT_COUNTRY,
+  findCountry,
+  formatNational,
+  toE164,
+  isPlausible,
+  type Country,
+} from '@/lib/countries'
 
 /**
  * Quick sign-in biométrico — companion doc §5.3, camino quick.
@@ -82,62 +92,67 @@ export function BiometricSignInSheet({
     }
   }
 
-  if (!open) return null
-
   return (
-    <div className="absolute inset-0 z-30 flex flex-col justify-end">
-      <div className="absolute inset-0 bg-ink/20" onClick={onClose} />
+    <Sheet open={open} onClose={onClose} kicker={t.authHub.biometricSignIn} title={t.biometricSignIn.title}>
+      {phase === 'prompting' ? (
+        <p className="text-[12.5px] leading-[1.6] tracking-[0.01em] text-ink-soft py-4 text-center">
+          {t.biometric.prompting}
+        </p>
+      ) : (
+        <div>
+          <p className="text-[12.5px] leading-[1.6] tracking-[0.01em] text-ink-soft">
+            {t.biometricSignIn.description}
+          </p>
 
-      <div className="relative bg-paper border-t border-hairline">
-        <div className="h-header flex items-center justify-between px-5 border-b border-hairline">
-          <span className="label-caps">{t.biometricSignIn.title}</span>
-          <button type="button" onClick={onClose} aria-label="Close" className="text-[20px] leading-none text-ink-soft">×</button>
-        </div>
-
-        <div className="px-5 py-6">
-          {phase === 'prompting' ? (
-            <p className="text-[14px] text-ink-soft py-4">{t.biometric.prompting}</p>
-          ) : (
-            <>
-              <p className="text-[12px] text-ink-soft leading-relaxed">
-                {t.biometricSignIn.description}
-              </p>
-
-              <div className="flex items-stretch border-b border-hairline pb-2 mt-5">
+          <div className="mt-[22px]">
+            <FieldLabel htmlFor="bio-phone">{t.auth.phoneLabel}</FieldLabel>
+            <div className="flex items-stretch border border-hairline rounded-xl overflow-hidden focus-within:border-ink transition-colors">
+              <div className="relative flex items-center gap-[7px] px-3 shrink-0 border-r border-hairline bg-paper-warm">
+                <span className="text-[18px] leading-none" aria-hidden="true">
+                  {country.flag}
+                </span>
+                <span className="text-[14px] font-medium tracking-[0.02em] text-ink">
+                  {country.dial}
+                </span>
+                <span className="text-ink-soft shrink-0">
+                  <CaretIcon />
+                </span>
                 <select
                   value={country.iso}
-                  onChange={(e) => { setCountry(findCountry(e.target.value)); setDigits('') }}
-                  className="bg-transparent text-[15px] pr-2 outline-none cursor-pointer"
+                  onChange={(e) => {
+                    setCountry(findCountry(e.target.value))
+                    setDigits('')
+                  }}
+                  aria-label="Country code"
+                  className="absolute inset-0 w-full h-full opacity-0 cursor-pointer text-base"
                 >
                   {COUNTRIES.map((c) => (
-                    <option key={c.iso} value={c.iso}>{c.flag} {c.dial}</option>
+                    <option key={c.iso} value={c.iso}>
+                      {c.flag} {c.iso} {c.dial}
+                    </option>
                   ))}
                 </select>
-                <span className="w-px bg-hairline mx-3" aria-hidden="true" />
-                <input
-                  type="tel"
-                  inputMode="numeric"
-                  value={formatNational(digits, country)}
-                  onChange={(e) => setDigits(e.target.value.replace(/\D/g, ''))}
-                  placeholder={formatNational('0'.repeat(12), country)}
-                  className="flex-1 bg-transparent text-[15px] outline-none"
-                />
               </div>
 
-              {error && <p className="text-[12px] text-t-red mt-4">{error}</p>}
+              <input
+                id="bio-phone"
+                type="tel"
+                inputMode="numeric"
+                value={formatNational(digits, country)}
+                onChange={(e) => setDigits(e.target.value.replace(/\D/g, ''))}
+                placeholder={t.auth.phonePlaceholder}
+                className="flex-1 min-w-0 bg-transparent px-3.5 py-[15px] text-[16px] tracking-[0.02em] text-ink outline-none"
+              />
+            </div>
+          </div>
 
-              <button
-                type="button"
-                onClick={go}
-                disabled={!isPlausible(digits, country)}
-                className="w-full mt-6 py-3 text-[13px] tracking-[0.1em] uppercase border border-ink transition-colors disabled:border-hairline disabled:text-placeholder enabled:hover:bg-ink enabled:hover:text-paper"
-              >
-                {t.biometricSignIn.continue}
-              </button>
-            </>
-          )}
+          {error && <p className="text-[11.5px] leading-[1.5] text-t-red mt-3">{error}</p>}
+
+          <SheetButton onClick={go} disabled={!isPlausible(digits, country)}>
+            {t.biometricSignIn.continue}
+          </SheetButton>
         </div>
-      </div>
-    </div>
+      )}
+    </Sheet>
   )
 }

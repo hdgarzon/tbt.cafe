@@ -26,6 +26,10 @@
   --col-width: 390px;         /* columna bloqueada a móvil */
   --header-h: 60px;
   --footer-h: 30px;
+
+  /* Lienzo neutro alrededor de la columna: en desktop hace que la columna
+     bloqueada se lea como un dispositivo, no como una página estrecha. */
+  --surround: #EDEBE7;
 }
 
 /* ==========================================================================
@@ -33,7 +37,7 @@
    ========================================================================== */
 html,
 body {
-  background: var(--paper);
+  background: var(--surround);
   color: var(--ink);
   -webkit-font-smoothing: antialiased;
 }
@@ -48,8 +52,9 @@ textarea::placeholder {
 
 /* Foco visible siempre — accesibilidad */
 :focus-visible {
-  outline: 2px solid var(--t-magenta);
+  outline: 2px solid var(--t-cyan);
   outline-offset: 2px;
+  border-radius: 4px;
 }
 
 /* Guarda de movimiento reducido (Master Handoff §5) */
@@ -68,11 +73,14 @@ textarea::placeholder {
    Componentes del shell
    ========================================================================== */
 @layer components {
-  /* Columna bloqueada a móvil: el desktop replica el móvil exactamente. */
+  /* Columna bloqueada a móvil: el desktop replica el móvil exactamente.
+     La sombra suave la despega del lienzo neutro de alrededor. */
   .col-locked {
     width: 100%;
     max-width: var(--col-width);
     margin-inline: auto;
+    background: var(--paper);
+    box-shadow: 0 0 60px rgba(0, 0, 0, 0.06);
   }
 
   /* Etiqueta en versalitas con tracking generoso */
@@ -82,5 +90,68 @@ textarea::placeholder {
     letter-spacing: 0.14em;
     text-transform: uppercase;
     color: var(--ink-soft);
+  }
+
+  /* Título display de página */
+  .page-title {
+    font-family: var(--font-cormorant), Georgia, serif;
+    font-size: 30px;
+    font-weight: 500;
+    line-height: 1.1;
+    color: var(--ink);
+  }
+
+  /* Subtítulo en versalitas bajo el título de página */
+  .page-sub {
+    font-size: 11px;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+    margin-top: 8px;
+  }
+
+  /* Nota explicativa al pie de las páginas stub */
+  .page-note {
+    margin-top: 22px;
+    font-size: 12px;
+    line-height: 1.7;
+    color: var(--ink-soft);
+    letter-spacing: 0.02em;
+  }
+
+  /* Barra de URL monoespaciada — muestra la dirección canónica del recurso */
+  .urlbar {
+    display: inline-block;
+    font-family: var(--font-mono, ui-monospace, "SF Mono", Menlo, monospace);
+    font-size: 11px;
+    letter-spacing: 0.02em;
+    color: var(--ink-soft);
+    background: var(--paper-warm);
+    border: 1px solid var(--hairline);
+    border-radius: 6px;
+    padding: 5px 9px;
+    margin-bottom: 14px;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  /* Botón "volver" en versalitas */
+  .back-link {
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: var(--ink-soft);
+    font-size: 11px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    padding: 0 0 18px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .back-link:hover {
+    color: var(--ink);
   }
 }

@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useLocale } from '@/i18n/LocaleProvider'
+import { Sheet, SheetButton, SheetSuccess, FieldLabel } from '@/components/Sheet'
 
 /**
  * Email de recuperación — Master Handoff §9.
@@ -45,7 +46,9 @@ export function RecoveryEmailSheet({
     setError('')
     setBusy(true)
     try {
-      const { data: { user } } = await supabase.auth.getUser()
+      const {
+        data: { user },
+      } = await supabase.auth.getUser()
       if (!user) throw new Error('Session expired')
 
       // 1. Dispara el correo de confirmación de Supabase
@@ -68,67 +71,47 @@ export function RecoveryEmailSheet({
     }
   }
 
-  if (!open) return null
-
   return (
-    <div className="absolute inset-0 z-30 flex flex-col justify-end">
-      <div className="absolute inset-0 bg-ink/20" onClick={onClose} />
+    <Sheet open={open} onClose={onClose} kicker={t.authHub.recoveryEmail} title={t.recoveryEmail.title}>
+      {sent ? (
+        <SheetSuccess
+          title={t.recoveryEmail.checkEmail}
+          sub={t.recoveryEmail.checkEmailDesc.replace('{email}', email)}
+          buttonLabel={t.recoveryEmail.done}
+          onDone={onSaved}
+        />
+      ) : (
+        <div>
+          <p className="text-[12.5px] leading-[1.6] tracking-[0.01em] text-ink-soft">
+            {t.recoveryEmail.description}
+          </p>
 
-      <div className="relative bg-paper border-t border-hairline">
-        <div className="h-header flex items-center justify-between px-5 border-b border-hairline">
-          <span className="label-caps">{t.recoveryEmail.title}</span>
-          <button type="button" onClick={onClose} aria-label="Close" className="text-[20px] leading-none text-ink-soft">×</button>
-        </div>
-
-        <div className="px-5 py-6">
-          {sent ? (
-            <>
-              <p className="text-[14px]">{t.recoveryEmail.checkEmail}</p>
-              <p className="text-[12px] text-ink-soft mt-2 leading-relaxed">
-                {t.recoveryEmail.checkEmailDesc.replace('{email}', email)}
+          <div className="mt-[22px]">
+            <FieldLabel htmlFor="rec-email">{t.recoveryEmail.emailLabel}</FieldLabel>
+            <input
+              id="rec-email"
+              type="email"
+              inputMode="email"
+              autoComplete="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value.trim())}
+              placeholder="you@example.com"
+              className="w-full border border-hairline rounded-xl outline-none px-3.5 py-[13px] text-[15px] tracking-[0.01em] text-ink focus:border-ink transition-colors"
+            />
+            {email.length > 0 && !valid && (
+              <p className="text-[11px] leading-[1.4] text-t-red mt-1.5">
+                {t.recoveryEmail.invalidEmail}
               </p>
-              <button
-                type="button"
-                onClick={onSaved}
-                className="w-full mt-6 py-3 text-[13px] tracking-[0.1em] uppercase border border-ink hover:bg-ink hover:text-paper transition-colors"
-              >
-                {t.recoveryEmail.done}
-              </button>
-            </>
-          ) : (
-            <>
-              <p className="text-[12px] text-ink-soft leading-relaxed">
-                {t.recoveryEmail.description}
-              </p>
+            )}
+          </div>
 
-              <label className="label-caps block mt-5" htmlFor="rec-email">{t.recoveryEmail.emailLabel}</label>
-              <input
-                id="rec-email"
-                type="email"
-                autoComplete="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value.trim())}
-                placeholder="you@email.com"
-                className="w-full mt-1 py-2 bg-transparent border-b border-hairline text-[15px] outline-none focus:border-ink transition-colors"
-              />
-              {email.length > 0 && !valid && (
-                <p className="text-[11px] text-t-red mt-2">{t.recoveryEmail.invalidEmail}</p>
-              )}
+          {error && <p className="text-[11.5px] leading-[1.5] text-t-red mt-3">{error}</p>}
 
-              {error && <p className="text-[12px] text-t-red mt-4">{error}</p>}
-
-              <button
-                type="button"
-                onClick={send}
-                disabled={!valid || busy}
-                className="w-full mt-6 py-3 text-[13px] tracking-[0.1em] uppercase border border-ink transition-colors disabled:border-hairline disabled:text-placeholder enabled:hover:bg-ink enabled:hover:text-paper"
-              >
-                {busy ? t.recoveryEmail.sending : t.recoveryEmail.send}
-              </button>
-            </>
-          )}
+          <SheetButton onClick={send} disabled={!valid || busy}>
+            {busy ? t.recoveryEmail.sending : t.recoveryEmail.send}
+          </SheetButton>
         </div>
-      </div>
-    </div>
+      )}
+    </Sheet>
   )
 }

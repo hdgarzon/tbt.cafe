@@ -3,6 +3,8 @@
 import { useEffect, useRef, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useLocale } from '@/i18n/LocaleProvider'
+import { Sheet, SheetButton, SheetSuccess, FieldLabel } from '@/components/Sheet'
+import { CaretIcon } from '@/components/Brand'
 import {
   COUNTRIES,
   DEFAULT_COUNTRY,
@@ -30,12 +32,15 @@ import {
  * fijar un número exacto se acepta un rango — mismo criterio que ya usa el
  * AuthModal de la app en producción (maxLength 8, habilita desde 6). Así un
  * cambio de configuración no rompe el login.
+ *
+ * El título del sheet permanece "Authenticate" durante los tres pasos, igual
+ * que el prototipo — solo el contenido del cuerpo cambia.
  */
 const OTP_MIN_LEN = 6
 const OTP_MAX_LEN = 8
 const RESEND_SECONDS = 30
 
-type Step = 'phone' | 'verify'
+type Step = 'phone' | 'verify' | 'success'
 
 export function AuthSheet({
   open,
@@ -124,7 +129,7 @@ export function AuthSheet({
       if (error) throw error
       if (data.session) {
         onAuthenticated(digits, country)
-        onClose()
+        setStep('success')
       }
     } catch (e) {
       const msg = e instanceof Error ? e.message : ''
@@ -140,51 +145,48 @@ export function AuthSheet({
     }
   }
 
-  if (!open) return null
-
   return (
-    <div className="absolute inset-0 z-30 flex flex-col justify-end">
-      <div className="absolute inset-0 bg-ink/20" onClick={onClose} />
+    <Sheet open={open} onClose={onClose} kicker={t.auth.authKicker} title={t.auth.authTitle}>
+      {step === 'phone' && (
+        <div>
+          <p className="text-[12.5px] leading-[1.6] tracking-[0.01em] text-ink-soft">
+            {t.auth.phoneIntro}
+          </p>
 
-      <div className="relative bg-paper border-t border-hairline">
-        <div className="h-header flex items-center justify-between px-5 border-b border-hairline">
-          <span className="label-caps">
-            {step === 'phone' ? t.auth.signInTitle : t.auth.verifyTitle}
-          </span>
-          <button
-            type="button"
-            onClick={onClose}
-            aria-label="Close"
-            className="text-[20px] leading-none text-ink-soft"
-          >
-            ×
-          </button>
-        </div>
+          <div className="mt-[22px]">
+            <FieldLabel htmlFor="phone">{t.auth.phoneLabel}</FieldLabel>
 
-        {step === 'phone' ? (
-          <div className="px-5 py-6">
-            {/* Selector de país a la IZQUIERDA + número a la derecha */}
-            <div className="flex items-stretch border-b border-hairline pb-2">
-              <label className="sr-only" htmlFor="country">Country</label>
-              <select
-                id="country"
-                value={country.iso}
-                onChange={(e) => {
-                  setCountry(findCountry(e.target.value))
-                  setDigits('')
-                }}
-                className="bg-transparent text-[15px] pr-2 outline-none cursor-pointer"
-              >
-                {COUNTRIES.map((c) => (
-                  <option key={c.iso} value={c.iso}>
-                    {c.flag} {c.dial}
-                  </option>
-                ))}
-              </select>
+            {/* Selector de país como píldora (bandera+dial) a la izquierda, número a la derecha */}
+            <div className="flex items-stretch border border-hairline rounded-xl overflow-hidden focus-within:border-ink transition-colors">
+              <div className="relative flex items-center gap-[7px] px-3 shrink-0 border-r border-hairline bg-paper-warm">
+                <span className="text-[18px] leading-none" aria-hidden="true">
+                  {country.flag}
+                </span>
+                <span className="text-[14px] font-medium tracking-[0.02em] text-ink">
+                  {country.dial}
+                </span>
+                <span className="text-ink-soft shrink-0">
+                  <CaretIcon />
+                </span>
+                <select
+                  id="country"
+                  value={country.iso}
+                  onChange={(e) => {
+                    setCountry(findCountry(e.target.value))
+                    setDigits('')
+                  }}
+                  aria-label="Country code"
+                  /* text-base evita el zoom automático de iOS al enfocar */
+                  className="absolute inset-0 w-full h-full opacity-0 cursor-pointer text-base"
+                >
+                  {COUNTRIES.map((c) => (
+                    <option key={c.iso} value={c.iso}>
+                      {c.flag} {c.iso} {c.dial}
+                    </option>
+                  ))}
+                </select>
+              </div>
 
-              <span className="w-px bg-hairline mx-3" aria-hidden="true" />
-
-              <label className="sr-only" htmlFor="phone">Phone number</label>
               <input
                 id="phone"
                 type="tel"
@@ -192,116 +194,125 @@ export function AuthSheet({
                 autoComplete="tel"
                 value={formatNational(digits, country)}
                 onChange={(e) => setDigits(e.target.value.replace(/\D/g, ''))}
-                placeholder={formatNational('0'.repeat(12), country)}
-                className="flex-1 bg-transparent text-[15px] outline-none"
+                placeholder={t.auth.phonePlaceholder}
+                aria-label="Mobile phone number"
+                className="flex-1 min-w-0 bg-transparent px-3.5 py-[15px] text-[16px] tracking-[0.02em] text-ink outline-none"
               />
             </div>
+          </div>
 
-            {/* Gate de términos */}
-            <div className="flex items-start gap-3 mt-5">
-              <button
-                type="button"
-                role="checkbox"
-                aria-checked={terms}
-                onClick={() => setTerms((v) => !v)}
-                className={`w-[16px] h-[16px] mt-[2px] border flex-shrink-0 flex items-center justify-center transition-colors ${
-                  terms ? 'bg-ink border-ink' : 'border-hairline'
-                }`}
-              >
-                {terms && (
-                  <svg width="9" height="9" viewBox="0 0 12 12" aria-hidden="true">
-                    <path d="M2 6l3 3 5-6" fill="none" stroke="#fff" strokeWidth="2" />
-                  </svg>
-                )}
-              </button>
-              <p className="text-[12px] leading-relaxed text-ink-soft">
-                {t.auth.termsPrefix}{' '}
-                <a href="/terms" className="text-ink underline underline-offset-2">{t.auth.termsOfService}</a>{' '}
-                {t.auth.termsAnd}{' '}
-                <a href="/privacy" className="text-ink underline underline-offset-2">{t.auth.privacyPolicy}</a>.
-              </p>
-            </div>
+          {/* Gate de términos */}
+          <div className="flex items-start gap-[10px] mt-[18px]">
+            <button
+              type="button"
+              role="checkbox"
+              aria-checked={terms}
+              onClick={() => setTerms((v) => !v)}
+              className={`w-[18px] h-[18px] mt-px shrink-0 rounded-[5px] border-[1.5px] flex items-center justify-center transition-colors ${
+                terms ? 'bg-ink border-ink' : 'border-ink-soft hover:border-ink'
+              }`}
+            >
+              {terms && (
+                <svg width="9" height="9" viewBox="0 0 12 12" aria-hidden="true">
+                  <path d="M2 6l3 3 5-6" fill="none" stroke="#fff" strokeWidth="2" />
+                </svg>
+              )}
+            </button>
+            <p className="text-[11.5px] leading-[1.55] tracking-[0.01em] text-ink-soft">
+              {t.auth.termsPrefix}{' '}
+              <a href="/terms" className="text-ink underline underline-offset-2 hover:text-t-cyan">
+                {t.auth.termsOfService}
+              </a>{' '}
+              {t.auth.termsAnd}{' '}
+              <a href="/privacy" className="text-ink underline underline-offset-2 hover:text-t-cyan">
+                {t.auth.privacyPolicy}
+              </a>
+              .
+            </p>
+          </div>
 
-            {error && <p className="text-[12px] text-t-red mt-4">{error}</p>}
+          {error && <p className="text-[11.5px] leading-[1.5] text-t-red mt-3">{error}</p>}
 
+          <SheetButton onClick={sendOtp} disabled={!canSend}>
+            {busy ? t.auth.sending : t.auth.sendCode}
+          </SheetButton>
+
+          {bioAvailable && onSwitchToBiometric && (
+            <button
+              type="button"
+              onClick={onSwitchToBiometric}
+              className="w-full mt-3 py-1 text-[12px] text-ink-soft underline underline-offset-2 hover:text-ink transition-colors"
+            >
+              {t.auth.bioInstead}
+            </button>
+          )}
+        </div>
+      )}
+
+      {step === 'verify' && (
+        <div>
+          <p className="text-[12.5px] leading-[1.6] tracking-[0.01em] text-ink-soft mb-1">
+            {t.auth.codeSentTo}{' '}
+            <b className="text-ink font-medium">
+              {country.dial} {formatNational(digits, country)}
+            </b>
+            .
+          </p>
+
+          <FieldLabel htmlFor="otp">{t.auth.codeLabel}</FieldLabel>
+          <input
+            id="otp"
+            ref={otpRef}
+            type="text"
+            inputMode="numeric"
+            autoComplete="one-time-code"
+            value={otp}
+            onChange={(e) => setOtp(e.target.value.replace(/\D/g, '').slice(0, OTP_MAX_LEN))}
+            placeholder={'•'.repeat(OTP_MAX_LEN)}
+            aria-label="Verification code"
+            className="w-full border border-hairline rounded-xl outline-none py-4 px-3.5 text-[22px] font-medium tracking-[0.42em] text-center text-ink focus:border-ink transition-colors"
+          />
+
+          {error && <p className="text-[11.5px] leading-[1.5] text-t-red mt-3">{error}</p>}
+
+          <SheetButton onClick={verifyOtp} disabled={otp.length < OTP_MIN_LEN || busy}>
+            {busy ? t.auth.verifying : t.auth.verifyBtn}
+          </SheetButton>
+
+          {/* change number | resend code */}
+          <div className="flex items-center justify-center gap-[14px] mt-5">
+            <button
+              type="button"
+              onClick={() => {
+                setStep('phone')
+                setOtp('')
+                setError('')
+              }}
+              className="text-[10px] font-bold tracking-[0.14em] uppercase text-ink hover:opacity-70 transition-opacity"
+            >
+              {t.auth.changeNumber}
+            </button>
+            <span className="w-px h-3 bg-hairline shrink-0" aria-hidden="true" />
             <button
               type="button"
               onClick={sendOtp}
-              disabled={!canSend}
-              className="w-full mt-6 py-3 text-[13px] tracking-[0.1em] uppercase border border-ink transition-colors disabled:border-hairline disabled:text-placeholder enabled:hover:bg-ink enabled:hover:text-paper"
+              disabled={countdown > 0 || busy}
+              className="text-[10px] font-bold tracking-[0.14em] uppercase text-ink disabled:text-ink-soft disabled:opacity-60 hover:opacity-70 transition-opacity"
             >
-              {busy ? t.auth.sending : t.auth.sendCode}
-            </button>
-
-            {bioAvailable && onSwitchToBiometric && (
-              <button
-                type="button"
-                onClick={onSwitchToBiometric}
-                className="w-full mt-3 py-2 text-[12px] text-ink-soft underline underline-offset-2"
-              >
-                {t.auth.bioInstead}
-              </button>
-            )}
-          </div>
-        ) : (
-          <div className="px-5 py-6">
-            <p className="text-[13px] text-ink-soft">
-              {t.auth.codeSentTo}{' '}
-              <span className="text-ink">
-                {country.dial} {formatNational(digits, country)}
-              </span>
-            </p>
-
-            <label className="sr-only" htmlFor="otp">Verification code</label>
-            <input
-              id="otp"
-              ref={otpRef}
-              type="text"
-              inputMode="numeric"
-              autoComplete="one-time-code"
-              value={otp}
-              onChange={(e) => setOtp(e.target.value.replace(/\D/g, '').slice(0, OTP_MAX_LEN))}
-              placeholder={'0'.repeat(OTP_MAX_LEN)}
-              className="w-full mt-4 py-2 bg-transparent border-b border-hairline text-[26px] tracking-[0.5em] font-mono outline-none focus:border-ink transition-colors"
-            />
-
-            {error && <p className="text-[12px] text-t-red mt-3">{error}</p>}
-
-            {/* change number | resend code */}
-            <div className="flex items-center gap-3 mt-4 text-[12px]">
-              <button
-                type="button"
-                onClick={() => {
-                  setStep('phone')
-                  setOtp('')
-                  setError('')
-                }}
-                className="text-ink-soft underline underline-offset-2"
-              >
-                {t.auth.changeNumber}
-              </button>
-              <span className="text-hairline">|</span>
-              <button
-                type="button"
-                onClick={sendOtp}
-                disabled={countdown > 0 || busy}
-                className="text-ink-soft underline underline-offset-2 disabled:no-underline disabled:text-placeholder"
-              >
-                {countdown > 0 ? t.auth.resendCodeIn.replace('{s}', String(countdown)) : t.auth.resendCode}
-              </button>
-            </div>
-
-            <button
-              type="button"
-              onClick={verifyOtp}
-              disabled={otp.length < OTP_MIN_LEN || busy}
-              className="w-full mt-6 py-3 text-[13px] tracking-[0.1em] uppercase border border-ink transition-colors disabled:border-hairline disabled:text-placeholder enabled:hover:bg-ink enabled:hover:text-paper"
-            >
-              {busy ? t.auth.verifying : t.auth.verify}
+              {countdown > 0 ? t.auth.resendCodeIn.replace('{s}', String(countdown)) : t.auth.resendCode}
             </button>
           </div>
-        )}
-      </div>
-    </div>
+        </div>
+      )}
+
+      {step === 'success' && (
+        <SheetSuccess
+          title={t.auth.successTitle}
+          sub={t.auth.successSub}
+          buttonLabel={t.auth.doneBtn}
+          onDone={onClose}
+        />
+      )}
+    </Sheet>
   )
 }

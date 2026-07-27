@@ -25,18 +25,84 @@ export type CreatorResolution = {
  * Sustituir por una consulta a Supabase al integrar.
  * Picasso demuestra el comportamiento handle comprado + colección renombrada.
  */
-export const SIMULATED_CREATORS: ReadonlyArray<{
+export type SimulatedCreator = {
   name: string
   key: string
   handle: string | null
   collection: string
-}> = [
-  { name: 'Jean-Michel Basquiat', key: 'a7f3k9', handle: null, collection: 'Collection 1' },
-  { name: 'Pablo Picasso', key: 'b2m8x1', handle: 'picasso', collection: 'Blue Period' },
-  { name: 'Claude Monet', key: 'c5q4t7', handle: 'monet', collection: 'Collection 1' },
-  { name: 'Fernando Botero', key: 'd9w6r2', handle: null, collection: 'Collection 1' },
-  { name: 'Marc Chagall', key: 'e3n7v5', handle: null, collection: 'Collection 1' },
+  works: readonly string[]
+}
+
+export const SIMULATED_CREATORS: readonly SimulatedCreator[] = [
+  {
+    name: 'Jean-Michel Basquiat',
+    key: 'a7f3k9',
+    handle: null,
+    collection: 'Collection 1',
+    works: ['Untitled (Skull)', 'Dustheads', 'Irony of Negro Policeman', 'Hollywood Africans'],
+  },
+  {
+    name: 'Pablo Picasso',
+    key: 'b2m8x1',
+    handle: 'picasso',
+    collection: 'Blue Period',
+    works: ['Guernica', 'Les Demoiselles d’Avignon', 'The Old Guitarist', 'Girl before a Mirror'],
+  },
+  {
+    name: 'Claude Monet',
+    key: 'c5q4t7',
+    handle: 'monet',
+    collection: 'Collection 1',
+    works: ['Water Lilies', 'Impression, Sunrise', 'Woman with a Parasol', 'Rouen Cathedral'],
+  },
+  {
+    name: 'Fernando Botero',
+    key: 'd9w6r2',
+    handle: null,
+    collection: 'Collection 1',
+    works: ['Mona Lisa, Age Twelve', 'The Musicians', 'Dancers'],
+  },
+  {
+    name: 'Marc Chagall',
+    key: 'e3n7v5',
+    handle: null,
+    collection: 'Collection 1',
+    works: ['I and the Village', 'The Birthday', 'White Crucifixion'],
+  },
 ]
+
+/**
+ * El segmento con el que se direcciona a un creador: el handle comprado si lo
+ * tiene, y si no la key permanente.
+ */
+export const creatorSeg = (c: SimulatedCreator) => c.handle ?? c.key
+
+/**
+ * TBT-ID determinista de 6 dígitos por obra — sustituto del ID real de cadena.
+ * Determinista para que las URLs de la demo sean estables entre recargas.
+ */
+export const tbtIdFor = (c: SimulatedCreator, index: number) =>
+  String(
+    100000 + c.key.split('').reduce((sum, ch) => sum + ch.charCodeAt(0), 0) * 7 + index * 137
+  ).slice(-6)
+
+export type SimulatedPiece = {
+  title: string
+  creator: SimulatedCreator
+  tbtId: string
+}
+
+/** Catálogo aplanado de obras, cada una con su creador y TBT-ID. */
+export const SIMULATED_PIECES: readonly SimulatedPiece[] = SIMULATED_CREATORS.flatMap((c) =>
+  c.works.map((title, i) => ({ title, creator: c, tbtId: tbtIdFor(c, i) }))
+)
+
+/** Colecciones — una por creador en estos datos de simulación. */
+export const SIMULATED_COLLECTIONS = SIMULATED_CREATORS.map((c) => ({
+  name: c.collection,
+  creator: c,
+  count: c.works.length,
+}))
 
 /**
  * Resuelve un segmento de URL a su creador.

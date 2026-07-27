@@ -12,7 +12,30 @@
     "grindSub": "Descubre creadores y obras",
     "brew": "Brew",
     "brewSub": "Crea tu TBT",
-    "searchPlaceholder": "Busca creadores o un TBT ID"
+    "searchPlaceholder": "Busca creadores o un TBT ID",
+    "welcomeKicker": "Bienvenido a tbt.cafe",
+    "welcomeTitle": "Estás autenticado",
+    "welcomeBody": "¿Nuevo por aquí? Aprende todo sobre los TBT en el {roast}. Y configura tu {profile} como creador, coleccionista o ambos — se usa al crear o adquirir un TBT y aparece en la página de la obra.",
+    "welcomeRoast": "Roast",
+    "welcomeProfile": "perfil",
+    "dismiss": "Descartar"
+  },
+  "search": {
+    "noResults": "Sin resultados para “{q}”.",
+    "works": "{n} obras",
+    "collection": "Colección",
+    "work": "Obra"
+  },
+  "sections": {
+    "roastTitle": "Roast",
+    "roastSub": "TBT 101",
+    "roastNote": "Roast — aprende todo sobre los TBT. Qué es un Token Transferible Facturable, cómo funciona la certificación, las regalías y la verificación. La superficie de incorporación, en el espíritu de un “NFT 101”.",
+    "grindTitle": "Grind",
+    "grindSub": "Descubrir · Criticar · Compartir · Comparar",
+    "grindNote": "Grind — la planta de descubrimiento. Explora, critica, comparte y compara TBT. (Aquí viven las Listas.)",
+    "brewTitle": "Brew",
+    "brewSub": "Crear",
+    "brewNote": "Brew — donde un creador hace un TBT: sube la obra, fija precio y regalías, y la certifica en cadena. El primer TBT crea “Collection 1” automáticamente."
   },
   "footer": {
     "credit": "Transbit × BROCHA"
@@ -28,11 +51,16 @@
     "history": "Historial",
     "switchTo": "¿Cambiar a {lang}?",
     "confirm": "Confirmar",
-    "cancel": "Cancelar"
+    "cancel": "Cancelar",
+    "favorites": "Favoritos",
+    "creations": "Creaciones",
+    "acquisitions": "Adquisiciones",
+    "transactions": "Transacciones",
+    "activity": "Actividad",
+    "footNote1": "tbt.cafe — Transbit × BROCHA",
+    "footNote2": "Tokens Transferibles Facturables"
   },
   "auth": {
-    "signInTitle": "Iniciar sesión",
-    "verifyTitle": "Verificar",
     "termsPrefix": "Acepto los",
     "termsOfService": "Términos de Servicio",
     "termsAnd": "y la",
@@ -51,7 +79,17 @@
       "expired": "El código expiró. Solicita uno nuevo.",
       "invalid": "Código incorrecto. Revísalo e intenta de nuevo.",
       "verifyFailed": "No pudimos verificar el código"
-    }
+    },
+    "authKicker": "tbt.cafe",
+    "authTitle": "Autenticar",
+    "verifyBtn": "Verificar y conectar",
+    "successTitle": "Autenticado",
+    "successSub": "Tu identidad está verificada. Estás conectado con tus TBT y la blockchain.",
+    "doneBtn": "Continuar",
+    "phoneIntro": "Escribe tu número móvil y te enviaremos un código de un solo uso.",
+    "phoneLabel": "Teléfono móvil",
+    "phonePlaceholder": "300 123 4567",
+    "codeLabel": "Código de verificación"
   },
   "authHub": {
     "loading": "Cargando…",
@@ -73,7 +111,13 @@
     "biometricHint": "Se suma al código SMS; nunca lo reemplaza. Por dispositivo.",
     "addDevice": "Agregar dispositivo",
     "activeDevices": "Activo · {n} dispositivo",
-    "activeDevicesPlural": "Activo · {n} dispositivos"
+    "activeDevicesPlural": "Activo · {n} dispositivos",
+    "asTitle": "Autenticación",
+    "asSub": "Tu identidad, recuperación y seguridad",
+    "tagVerified": "Verificado",
+    "tagNotSet": "Sin configurar",
+    "tagOff": "Desactivado",
+    "tagOn": "Activado"
   },
   "privateCode": {
     "title": "Código privado",
@@ -89,7 +133,10 @@
     "disclaimer": "Se guarda hasheado, nunca en texto plano. Un código corto es una capa de conveniencia, no un segundo factor real.",
     "errors": {
       "saveFailed": "No pudimos guardar el código"
-    }
+    },
+    "pcResetNote": "¿Lo olvidas luego? Restablécelo con tu correo de recuperación.",
+    "pcResetNoteNoEmail": "Consejo: añade un correo de recuperación para poder restablecerlo si lo olvidas.",
+    "freqLabel": "Cuándo pedirlo"
   },
   "recoveryEmail": {
     "title": "Email de recuperación",
@@ -122,7 +169,10 @@
       "cancelled": "Cancelaste el registro del dispositivo.",
       "enrollFailed": "No pudimos registrar el dispositivo",
       "saveFailed": "No pudimos guardar el dispositivo"
-    }
+    },
+    "chooseSave": "Guardar",
+    "doneQuick": "En este dispositivo, un toque te da acceso.",
+    "doneExtra": "Se exigirá biometría además de tu código de acceso."
   },
   "biometricSignIn": {
     "title": "Inicio rápido",
@@ -141,7 +191,9 @@
     "creatorSub": "Quien certifica la obra",
     "collectorTitle": "Perfil de Coleccionista",
     "collectorSub": "Quien la adquiere",
-    "needSignIn": "Inicia sesión para editar tu perfil."
+    "needSignIn": "Inicia sesión para editar tu perfil.",
+    "pageSub": "Configura cómo apareces en los TBT",
+    "statusSet": "Configurado ✓"
   },
   "profileCreator": {
     "backLabel": "Perfil de Creador",
@@ -233,7 +285,22 @@
     "views": "vistas",
     "save": "Guardar preferencias",
     "saving": "Guardando…",
-    "saved": "Guardado ✓"
+    "saved": "Guardado ✓",
+    "pageSub": "Elige de qué te avisamos",
+    "every": "Cada",
+    "itemDesc": {
+      "viewsCreated": "Cuando ven tus TBT registrados.",
+      "viewsCollection": "Cuando ven los TBT que posees.",
+      "favorites": "Cuando hay nueva actividad en tus favoritos.",
+      "surge": "Cuando una obra despega de repente.",
+      "newLocation": "Autenticación desde un país o IP desconocidos.",
+      "newDevice": "Autenticación desde un dispositivo no reconocido.",
+      "suspicious": "Intentos de acceso marcados como extraños o posiblemente fraudulentos.",
+      "purchases": "Cuando alguien adquiere uno de tus artículos.",
+      "transfers": "Cuando se transfiere un TBT hacia o desde ti.",
+      "newFromFollowed": "Cuando alguien que sigues registra algo nuevo.",
+      "registrations": "Cuando tu TBT se registra en la blockchain."
+    }
   },
   "work": {
     "loading": "Cargando…",

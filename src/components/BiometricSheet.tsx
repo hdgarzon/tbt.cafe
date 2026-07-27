@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { startRegistration } from '@simplewebauthn/browser'
 import { supabase } from '@/lib/supabase'
 import { useLocale } from '@/i18n/LocaleProvider'
+import { Sheet, SheetButton, SheetSuccess } from '@/components/Sheet'
 
 /**
  * Enrolamiento biométrico — companion doc §2.
@@ -26,6 +27,7 @@ export function BiometricSheet({
 }) {
   const { t } = useLocale()
   const [phase, setPhase] = useState<Phase>('idle')
+  const [mode, setMode] = useState<'quick' | 'extra'>('quick')
   const [error, setError] = useState('')
   // El resultado de la ceremonia WebAuthn se guarda hasta que el usuario elige el modo
   const [credential, setCredential] = useState<unknown>(null)
@@ -33,13 +35,16 @@ export function BiometricSheet({
   useEffect(() => {
     if (!open) {
       setPhase('idle')
+      setMode('quick')
       setError('')
       setCredential(null)
     }
   }, [open])
 
   async function accessToken(): Promise<string> {
-    const { data: { session } } = await supabase.auth.getSession()
+    const {
+      data: { session },
+    } = await supabase.auth.getSession()
     if (!session) throw new Error('Session expired')
     return session.access_token
   }
@@ -71,7 +76,7 @@ export function BiometricSheet({
   }
 
   // Paso 2: con el modo elegido, verificar y guardar en el servidor
-  async function finishEnroll(bioMode: 'quick' | 'extra') {
+  async function finishEnroll() {
     setError('')
     setPhase('saving')
     try {
@@ -79,7 +84,7 @@ export function BiometricSheet({
       const res = await fetch('/api/webauthn/register/finish', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ credential, bioMode }),
+        body: JSON.stringify({ credential, bioMode: mode }),
       })
       const json = await res.json()
       if (!res.ok) throw new Error(json.error ?? t.biometric.errors.saveFailed)
@@ -90,89 +95,88 @@ export function BiometricSheet({
     }
   }
 
-  if (!open) return null
-
   return (
-    <div className="absolute inset-0 z-30 flex flex-col justify-end">
-      <div className="absolute inset-0 bg-ink/20" onClick={onClose} />
-
-      <div className="relative bg-paper border-t border-hairline">
-        <div className="h-header flex items-center justify-between px-5 border-b border-hairline">
-          <span className="label-caps">{t.biometric.title}</span>
-          <button type="button" onClick={onClose} aria-label="Close" className="text-[20px] leading-none text-ink-soft">×</button>
-        </div>
-
-        <div className="px-5 py-6">
-          {phase === 'idle' && (
-            <>
-              <p className="text-[12px] text-ink-soft leading-relaxed">
-                {t.biometric.description}
-              </p>
-              {error && <p className="text-[12px] text-t-red mt-4">{error}</p>}
-              <button
-                type="button"
-                onClick={startEnroll}
-                className="w-full mt-6 py-3 text-[13px] tracking-[0.1em] uppercase border border-ink hover:bg-ink hover:text-paper transition-colors"
+    <Sheet open={open} onClose={onClose} kicker={t.authHub.biometricSignIn} title={t.biometric.title}>
+      {(phase === 'idle' || phase === 'prompting') && (
+        <div>
+          <div className="text-center pt-2 pb-1">
+            <div className="w-16 h-16 mx-auto mb-1 rounded-full border border-hairline bg-paper-warm text-ink flex items-center justify-center">
+              <svg
+                width="34"
+                height="34"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.4"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                aria-hidden="true"
               >
-                {t.biometric.setUp}
-              </button>
-            </>
-          )}
+                <path d="M12 11c0 3-1 5-2 7" />
+                <path d="M8 6.5a6 6 0 0 1 8 5.5c0 1 0 2-.3 3" />
+                <path d="M5.5 9A8 8 0 0 1 12 5a8 8 0 0 1 4 1" />
+                <path d="M12 11v1c0 4-1 6-2 8" />
+                <path d="M15.5 12c0 4-.5 5.5-1.2 7.5" />
+              </svg>
+            </div>
+          </div>
 
-          {phase === 'prompting' && (
-            <p className="text-[14px] text-ink-soft py-4">
-              {t.biometric.prompting}
-            </p>
-          )}
+          <p className="text-[12.5px] leading-[1.6] tracking-[0.01em] text-ink-soft text-center">
+            {phase === 'prompting' ? t.biometric.prompting : t.biometric.description}
+          </p>
 
-          {(phase === 'choose' || phase === 'saving') && (
-            <>
-              <p className="text-[13px]">{t.biometric.chooseMode}</p>
-              <div className="mt-4 flex flex-col gap-3">
-                <button
-                  type="button"
-                  disabled={phase === 'saving'}
-                  onClick={() => finishEnroll('quick')}
-                  className="text-left border border-hairline hover:border-ink transition-colors p-4 disabled:opacity-50"
-                >
-                  <div className="text-[14px]">{t.biometric.quickTitle}</div>
-                  <div className="text-[12px] text-ink-soft mt-1">
-                    {t.biometric.quickDesc}
-                  </div>
-                </button>
-                <button
-                  type="button"
-                  disabled={phase === 'saving'}
-                  onClick={() => finishEnroll('extra')}
-                  className="text-left border border-hairline hover:border-ink transition-colors p-4 disabled:opacity-50"
-                >
-                  <div className="text-[14px]">{t.biometric.extraTitle}</div>
-                  <div className="text-[12px] text-ink-soft mt-1">
-                    {t.biometric.extraDesc}
-                  </div>
-                </button>
-              </div>
-              {error && <p className="text-[12px] text-t-red mt-4">{error}</p>}
-            </>
-          )}
+          {error && <p className="text-[11.5px] leading-[1.5] text-t-red mt-3 text-center">{error}</p>}
 
-          {phase === 'done' && (
-            <>
-              <p className="text-[14px]">{t.biometric.registered}</p>
-              <p className="text-[12px] text-ink-soft mt-2">
-                {t.biometric.registeredDesc}
-              </p>
-              <button
-                type="button"
-                onClick={onSaved}
-                className="w-full mt-6 py-3 text-[13px] tracking-[0.1em] uppercase border border-ink hover:bg-ink hover:text-paper transition-colors"
-              >
-                {t.biometric.done}
-              </button>
-            </>
-          )}
+          <SheetButton onClick={startEnroll} disabled={phase === 'prompting'}>
+            {t.biometric.setUp}
+          </SheetButton>
         </div>
-      </div>
-    </div>
+      )}
+
+      {(phase === 'choose' || phase === 'saving') && (
+        <div>
+          <p className="text-[12.5px] leading-[1.6] tracking-[0.01em] text-ink-soft">
+            {t.biometric.chooseMode}
+          </p>
+
+          <div className="mt-[22px] flex flex-col gap-3">
+            {(
+              [
+                ['quick', t.biometric.quickTitle, t.biometric.quickDesc],
+                ['extra', t.biometric.extraTitle, t.biometric.extraDesc],
+              ] as const
+            ).map(([value, title, desc]) => (
+              <button
+                key={value}
+                type="button"
+                onClick={() => setMode(value)}
+                aria-pressed={mode === value}
+                className={`text-left rounded-xl border p-4 transition-colors ${
+                  mode === value ? 'border-ink bg-paper-warm' : 'border-hairline hover:border-ink'
+                }`}
+              >
+                <div className="text-[14px] font-semibold tracking-[0.01em] text-ink">{title}</div>
+                <div className="text-[12px] leading-[1.5] text-ink-soft mt-[5px]">{desc}</div>
+              </button>
+            ))}
+          </div>
+
+          {error && <p className="text-[11.5px] leading-[1.5] text-t-red mt-3">{error}</p>}
+
+          <SheetButton onClick={finishEnroll} disabled={phase === 'saving'}>
+            {t.biometric.chooseSave}
+          </SheetButton>
+        </div>
+      )}
+
+      {phase === 'done' && (
+        <SheetSuccess
+          title={t.biometric.registered}
+          sub={mode === 'quick' ? t.biometric.doneQuick : t.biometric.doneExtra}
+          buttonLabel={t.biometric.done}
+          onDone={onSaved}
+        />
+      )}
+    </Sheet>
   )
 }

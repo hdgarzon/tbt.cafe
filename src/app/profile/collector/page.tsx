@@ -81,34 +81,36 @@ export default function CollectorProfilePage() {
     }
   }
 
-  if (loading) return <div className="flex-1 px-5 py-8 text-[13px] text-ink-soft">{t.authHub.loading}</div>
+  if (loading) return <div className="px-4 pt-6 text-[13px] text-ink-soft">{t.authHub.loading}</div>
   if (!signedIn) {
     return (
-      <div className="flex-1 px-5 py-8">
-        <a href="/profile" className="label-caps hover:text-ink">← {t.profile.title}</a>
+      <div className="px-4 pt-6">
+        <a href="/profile" className="back-link">← {t.profile.title}</a>
         <p className="text-[14px] mt-6">{t.profileCollector.needSignIn}</p>
       </div>
     )
   }
 
   // Los campos de identidad se atenúan (no se deshabilitan) cuando es anónimo
-  const identityDim = anonymous ? 'opacity-40' : ''
+  const identityDim = anonymous ? 'opacity-40 pointer-events-none' : ''
 
   return (
-    <div className="flex-1 flex flex-col">
-      <div className="h-header flex items-center px-5 border-b border-hairline">
-        <a href="/profile" className="label-caps hover:text-ink">← {t.profileCollector.backLabel}</a>
-      </div>
+    <div className="px-4 pt-6">
+      <a href="/profile" className="back-link">← {t.profileCollector.backLabel}</a>
+      <h1 className="page-title">{t.profile.collectorTitle}</h1>
+      <div className="page-sub">{t.profile.collectorSub}</div>
 
-      <div className="px-5 py-6 flex flex-col gap-6">
+      <div className="mt-6 flex flex-col gap-[22px]">
         {/* Categoría — SIEMPRE visible, incluso en modo anónimo */}
         <CategoryPicker value={category} onChange={setCategory} />
 
-        {/* Toggle de anonimato */}
-        <div className="flex items-start justify-between gap-4 py-1">
+        {/* Toggle de anonimato — caja pf-toggle-row */}
+        <div className="flex items-start justify-between gap-3.5 rounded-xl border border-hairline bg-paper-warm p-4">
           <div>
-            <div className="text-[15px]">{t.profileCollector.anonymous}</div>
-            <div className="text-[12px] text-ink-soft mt-1">
+            <div className="text-[13px] font-semibold tracking-[0.01em] text-ink">
+              {t.profileCollector.anonymous}
+            </div>
+            <div className="text-[11.5px] leading-[1.5] text-ink-soft mt-[5px]">
               {t.profileCollector.anonymousHint}
             </div>
           </div>
@@ -118,22 +120,22 @@ export default function CollectorProfilePage() {
             aria-checked={anonymous}
             aria-label={t.profileCollector.anonymous}
             onClick={() => setAnonymous((v) => !v)}
-            className={`relative w-[42px] h-[24px] rounded-full flex-shrink-0 mt-1 transition-colors ${
+            className={`relative w-[46px] h-[26px] rounded-full flex-shrink-0 mt-0.5 transition-colors ${
               anonymous ? 'bg-ink' : 'bg-hairline'
             }`}
           >
             <span
-              className={`absolute top-[3px] w-[18px] h-[18px] rounded-full bg-paper shadow-sm transition-[left] ${
-                anonymous ? 'left-[21px]' : 'left-[3px]'
+              className={`absolute top-[3px] w-5 h-5 rounded-full bg-paper shadow-sm transition-[left] ${
+                anonymous ? 'left-5' : 'left-[3px]'
               }`}
             />
           </button>
         </div>
 
         {/* Campos de identidad — se atenúan cuando es anónimo */}
-        <div className={`flex flex-col gap-6 transition-opacity ${identityDim}`}>
+        <div className={`flex flex-col gap-[22px] transition-opacity ${identityDim}`}>
           {anonymous && (
-            <p className="text-[11px] text-placeholder -mb-2">
+            <p className="text-[11px] text-placeholder -mb-3">
               {t.profileCollector.anonymousFieldsHint}
             </p>
           )}

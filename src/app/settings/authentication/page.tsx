@@ -31,7 +31,9 @@ export default function AuthHubPage() {
   const [sheet, setSheet] = useState<null | 'code' | 'email' | 'bio'>(null)
 
   async function load() {
-    const { data: { user } } = await supabase.auth.getUser()
+    const {
+      data: { user },
+    } = await supabase.auth.getUser()
     if (!user) {
       setLoading(false)
       return
@@ -73,16 +75,14 @@ export default function AuthHubPage() {
   }, [])
 
   if (loading) {
-    return <div className="flex-1 px-5 py-8 text-[13px] text-ink-soft">{t.authHub.loading}</div>
+    return <div className="px-4 pt-6 text-[13px] text-ink-soft">{t.authHub.loading}</div>
   }
 
   if (!phone) {
     return (
-      <div className="flex-1 px-5 py-8">
-        <a href="/" className="label-caps hover:text-ink">← {t.purchase.home}</a>
-        <p className="text-[14px] mt-6">
-          {t.authHub.needSignIn}
-        </p>
+      <div className="px-4 pt-6">
+        <a href="/" className="back-link">← {t.purchase.home}</a>
+        <p className="text-[14px] mt-6">{t.authHub.needSignIn}</p>
       </div>
     )
   }
@@ -91,27 +91,29 @@ export default function AuthHubPage() {
   const emailVerified = !!profile?.recovery_email_verified
 
   return (
-    <div className="flex-1 flex flex-col">
-      <div className="h-header flex items-center px-5 border-b border-hairline">
-        <a href="/" className="label-caps hover:text-ink">← {t.menu.authentication}</a>
-      </div>
+    <div className="px-4 pt-6">
+      <a href="/" className="back-link">← {t.menu.authentication}</a>
+      <h1 className="page-title">{t.authHub.asTitle}</h1>
+      <div className="page-sub">{t.authHub.asSub}</div>
 
-      <div className="flex flex-col">
+      <div className="mt-2">
         {/* 1 · Teléfono móvil */}
-        <Row
-          title={t.authHub.mobilePhone}
+        <SecBlock
+          label={t.authHub.mobilePhone}
           value={maskPhoneE164(phone)}
+          tag={{ label: t.authHub.tagVerified, verified: true }}
           action={t.authHub.change}
           onAction={() => alert('Change-number flow: pendiente de diseño (Master Handoff §16)')}
         />
 
         {/* 2 · Email de recuperación */}
-        <Row
-          title={t.authHub.recoveryEmail}
-          value={
-            profile?.recovery_email
-              ? `${maskEmail(profile.recovery_email)}${emailVerified ? '' : ` · ${t.authHub.unverified}`}`
-              : t.authHub.notConfigured
+        <SecBlock
+          label={t.authHub.recoveryEmail}
+          value={profile?.recovery_email ? maskEmail(profile.recovery_email) : '—'}
+          tag={
+            profile?.recovery_email && emailVerified
+              ? { label: t.authHub.tagVerified, verified: true }
+              : { label: profile?.recovery_email ? t.authHub.unverified : t.authHub.tagNotSet, verified: false }
           }
           action={profile?.recovery_email ? t.authHub.change : t.authHub.add}
           onAction={() => setSheet('email')}
@@ -119,12 +121,16 @@ export default function AuthHubPage() {
         />
 
         {/* 3 · Código privado */}
-        <Row
-          title={t.authHub.privateCode}
-          value={
+        <SecBlock
+          label={t.authHub.privateCode}
+          value={hasCode ? '•••' : '—'}
+          tag={
             hasCode
-              ? `${t.authHub.active} · ${profile?.private_code_freq === 'always' ? t.authHub.always : t.authHub.occasional}`
-              : t.authHub.notConfigured
+              ? {
+                  label: `${t.authHub.tagOn} · ${profile?.private_code_freq === 'always' ? t.authHub.always : t.authHub.occasional}`,
+                  verified: true,
+                }
+              : { label: t.authHub.tagOff, verified: false }
           }
           action={hasCode ? t.authHub.change : t.authHub.setUp}
           onAction={() => setSheet('code')}
@@ -133,13 +139,17 @@ export default function AuthHubPage() {
 
         {/* 4 · Biométrico — oculto si el dispositivo no lo soporta */}
         {bioAvailable && (
-          <Row
-            title={t.authHub.biometricSignIn}
+          <SecBlock
+            label={t.authHub.biometricSignIn}
             value={
               bioCount > 0
-                ? (bioCount > 1 ? t.authHub.activeDevicesPlural : t.authHub.activeDevices).replace('{n}', String(bioCount))
-                : t.authHub.notConfigured
+                ? (bioCount > 1 ? t.authHub.activeDevicesPlural : t.authHub.activeDevices).replace(
+                    '{n}',
+                    String(bioCount)
+                  )
+                : '—'
             }
+            tag={bioCount > 0 ? { label: t.authHub.tagOn, verified: true } : { label: t.authHub.tagOff, verified: false }}
             action={bioCount > 0 ? t.authHub.addDevice : t.authHub.setUp}
             onAction={() => setSheet('bio')}
             hint={t.authHub.biometricHint}
@@ -154,6 +164,7 @@ export default function AuthHubPage() {
           setSheet(null)
           load()
         }}
+        emailVerified={emailVerified}
       />
 
       <RecoveryEmailSheet
@@ -177,35 +188,45 @@ export default function AuthHubPage() {
   )
 }
 
-function Row({
-  title,
+/** Fila sec-block del prototipo — label versalitas, valor grande, tag pill, acción a la derecha. */
+function SecBlock({
+  label,
   value,
+  tag,
   action,
   onAction,
   hint,
 }: {
-  title: string
+  label: string
   value: string
+  tag: { label: string; verified: boolean }
   action: string
   onAction: () => void
   hint?: string
 }) {
   return (
-    <div className="px-5 py-5 border-b border-hairline">
-      <div className="flex items-start justify-between gap-4">
+    <div className="py-[18px] border-b border-hairline first:pt-1">
+      <div className="flex items-start justify-between gap-3.5">
         <div className="min-w-0">
-          <div className="text-[15px]">{title}</div>
-          <div className="text-[13px] text-ink-soft mt-1 truncate">{value}</div>
-          {hint && <div className="text-[11px] text-placeholder mt-1">{hint}</div>}
+          <div className="text-[10px] font-medium tracking-[0.16em] uppercase text-ink-soft">{label}</div>
+          <div className="text-[16px] text-ink mt-[7px] tracking-[0.04em] truncate">{value}</div>
+          <span
+            className={`inline-block mt-[9px] text-[9px] font-semibold tracking-[0.12em] uppercase px-2 py-[3px] rounded-full border ${
+              tag.verified ? 'text-t-green border-t-green' : 'text-ink-soft border-hairline'
+            }`}
+          >
+            {tag.label}
+          </span>
         </div>
         <button
           type="button"
           onClick={onAction}
-          className="label-caps hover:text-ink whitespace-nowrap pt-1"
+          className="shrink-0 mt-0.5 rounded-[9px] border border-ink px-4 py-[9px] text-[10px] font-semibold tracking-[0.12em] uppercase text-ink transition-colors hover:bg-ink hover:text-paper"
         >
           {action}
         </button>
       </div>
+      {hint && <p className="text-[11.5px] leading-[1.55] text-ink-soft mt-3">{hint}</p>}
     </div>
   )
 }

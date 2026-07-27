@@ -2,10 +2,15 @@
 
 import { useState } from 'react'
 import { useLocale } from '@/i18n/LocaleProvider'
+import { FieldLabel } from '@/components/Sheet'
+import { CaretIcon } from '@/components/Brand'
 
 /**
- * Primitivas de formulario compartidas por los perfiles.
- * Estética del sistema: hairlines, sin cajas, etiquetas en versalitas.
+ * Primitivas de formulario compartidas por los perfiles — portadas VERBATIM
+ * del prototipo (.pf-input / .pf-select / .pf-textarea / .pf-save): bordeadas,
+ * redondeadas, con fondo paper, no el estilo hairline-underline de otras
+ * superficies del sistema. Esta es la estética específica de los formularios
+ * largos (perfil de creador/coleccionista, notificaciones).
  *
  * Category/Save labels son idénticos entre creator y collector profiles en
  * los 4 diccionarios, así que estos componentes leen de t.profileCreator
@@ -14,6 +19,9 @@ import { useLocale } from '@/i18n/LocaleProvider'
  */
 
 type Liveness = 'idle' | 'checking' | 'live' | 'unreachable'
+
+const inputBase =
+  'w-full rounded-[11px] border outline-none bg-paper px-[13px] py-[13px] text-[15px] tracking-[0.01em] text-ink transition-colors'
 
 export function Field({
   label,
@@ -76,13 +84,13 @@ export function Field({
   const borderClass =
     urlState === 'ok'
       ? 'border-t-green'
-      : urlState === 'bad'
+      : urlState === 'bad' && touched
         ? 'border-t-red'
         : 'border-hairline focus:border-ink'
 
   return (
-    <label className="block">
-      <span className="label-caps">{label}</span>
+    <div>
+      <FieldLabel>{label}</FieldLabel>
       <input
         type={type}
         value={value}
@@ -95,26 +103,34 @@ export function Field({
           if (urlDomain) checkLiveness()
         }}
         placeholder={placeholder}
-        className={`w-full mt-1 py-2 bg-transparent border-b text-[15px] outline-none transition-colors ${borderClass}`}
+        className={`${inputBase} ${borderClass}`}
       />
-      {urlState === 'bad' && touched && (
-        <span className="text-[11px] text-t-red block">
-          {t.profileCreator.urlDomainError.replace('{domain}', urlDomain ?? '')}
-        </span>
+      {urlDomain && (
+        <div className="min-h-[13px] mt-1.5 text-[11px] leading-[1.4]">
+          {urlState === 'bad' && touched && (
+            <span className="text-t-red">
+              {t.profileCreator.urlDomainError.replace('{domain}', urlDomain)}
+            </span>
+          )}
+          {urlState === 'ok' && liveness !== 'idle' && (
+            <span
+              className={
+                liveness === 'live'
+                  ? 'text-t-green'
+                  : liveness === 'unreachable'
+                    ? 'text-t-red'
+                    : 'text-placeholder'
+              }
+            >
+              {liveness === 'checking' && t.profileCreator.checkingLink}
+              {liveness === 'live' && t.profileCreator.linkLive}
+              {liveness === 'unreachable' && t.profileCreator.linkUnreachable}
+            </span>
+          )}
+        </div>
       )}
-      {urlState === 'ok' && liveness !== 'idle' && (
-        <span
-          className={`text-[11px] block ${
-            liveness === 'live' ? 'text-t-green' : liveness === 'unreachable' ? 'text-t-red' : 'text-placeholder'
-          }`}
-        >
-          {liveness === 'checking' && t.profileCreator.checkingLink}
-          {liveness === 'live' && t.profileCreator.linkLive}
-          {liveness === 'unreachable' && t.profileCreator.linkUnreachable}
-        </span>
-      )}
-      {hint && <span className="text-[11px] text-placeholder block mt-1">{hint}</span>}
-    </label>
+      {hint && <p className="text-[11px] leading-[1.5] text-ink-soft mt-[7px]">{hint}</p>}
+    </div>
   )
 }
 
@@ -130,21 +146,22 @@ export function TextArea({
   placeholder?: string
 }) {
   return (
-    <label className="block">
-      <span className="label-caps">{label}</span>
+    <div>
+      <FieldLabel>{label}</FieldLabel>
       <textarea
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
         rows={3}
-        className="w-full mt-1 py-2 bg-transparent border-b border-hairline text-[15px] outline-none focus:border-ink transition-colors resize-none"
+        className={`${inputBase} border-hairline focus:border-ink resize-y min-h-[88px] leading-[1.5]`}
       />
-    </label>
+    </div>
   )
 }
 
 export type Category = 'individual' | 'group' | 'corporation'
 
+/** Selector de categoría — <select> nativo, igual al prototipo (no una picker de botones). */
 export function CategoryPicker({
   value,
   onChange,
@@ -160,21 +177,22 @@ export function CategoryPicker({
   ]
   return (
     <div>
-      <span className="label-caps">{t.profileCreator.category}</span>
-      <div className="flex gap-2 mt-2">
-        {opts.map(([val, label]) => (
-          <button
-            key={val}
-            type="button"
-            onClick={() => onChange(val)}
-            aria-pressed={value === val}
-            className={`px-3 py-1.5 text-[12px] border transition-colors ${
-              value === val ? 'border-ink text-ink' : 'border-hairline text-ink-soft'
-            }`}
-          >
-            {label}
-          </button>
-        ))}
+      <FieldLabel>{t.profileCreator.category}</FieldLabel>
+      <div className="relative">
+        <select
+          value={value}
+          onChange={(e) => onChange(e.target.value as Category)}
+          className={`${inputBase} border-hairline focus:border-ink appearance-none pr-9 cursor-pointer`}
+        >
+          {opts.map(([val, label]) => (
+            <option key={val} value={val}>
+              {label}
+            </option>
+          ))}
+        </select>
+        <span className="pointer-events-none absolute right-[13px] top-1/2 -translate-y-1/2 text-ink-soft">
+          <CaretIcon />
+        </span>
       </div>
     </div>
   )
@@ -194,15 +212,17 @@ export function SaveBar({
   const { t } = useLocale()
   return (
     <div className="pt-2">
-      {error && <p className="text-[12px] text-t-red mb-3">{error}</p>}
       <button
         type="button"
         onClick={onSave}
         disabled={busy}
-        className="w-full py-3 text-[13px] tracking-[0.1em] uppercase border border-ink transition-colors disabled:border-hairline disabled:text-placeholder enabled:hover:bg-ink enabled:hover:text-paper"
+        className="w-full mt-2 py-4 text-[12px] font-semibold tracking-[0.16em] uppercase bg-ink text-paper rounded-xl transition-[opacity,background] disabled:opacity-60 disabled:cursor-not-allowed enabled:hover:bg-black"
       >
-        {busy ? t.profileCreator.saving : saved ? t.profileCreator.saved : t.profileCreator.save}
+        {busy ? t.profileCreator.saving : t.profileCreator.save}
       </button>
+      <p className="text-[12px] text-t-green text-center mt-3.5 min-h-[16px] tracking-[0.02em]">
+        {error ? <span className="text-t-red">{error}</span> : saved ? t.profileCreator.saved : ''}
+      </p>
     </div>
   )
 }
