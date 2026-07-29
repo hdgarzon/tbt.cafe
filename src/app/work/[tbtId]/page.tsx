@@ -7,6 +7,7 @@ import { useShell } from '@/components/AppShell'
 import { TBT_BACKEND_URL } from '@/lib/backend'
 import { fetchWorkFull, ownerRole, type WorkFull } from '@/lib/work-data'
 import { makeOffer } from '@/lib/offers-data'
+import { quote, money } from '@/lib/fees'
 import { WorkActions } from '@/components/WorkActions'
 import { ProfileTab } from '@/components/work/ProfileTab'
 import { InfoTab } from '@/components/work/InfoTab'
@@ -231,8 +232,19 @@ export default function WorkPage({ params }: { params: { tbtId: string } }) {
 
       {offering && (
         <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/30" onClick={() => setOffering(false)}>
-          <div className="w-full max-w-col bg-paper rounded-t-2xl p-5" onClick={(e) => e.stopPropagation()}>
-            <label className="block mb-[9px] text-[10px] font-medium tracking-[0.18em] uppercase text-ink-soft">
+          <div className="w-full max-w-col bg-paper rounded-t-2xl p-5 max-h-[85vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+            <div className="font-display font-medium text-[18px] text-ink">{t.work.makeOffer}</div>
+            <div className="text-[12px] text-ink-soft mt-1">{work.title}</div>
+            <p className="text-[11.5px] text-ink-soft mt-2 leading-[1.5]">{t.work.offerHeldNote}</p>
+
+            {c.initial_price != null && (
+              <div className="flex items-center justify-between mt-4 pt-4 border-t border-hairline text-[13px]">
+                <span className="text-ink-soft">{t.work.offerLastValue}</span>
+                <span className="text-ink">{money(c.initial_price)} USD</span>
+              </div>
+            )}
+
+            <label className="block mb-[9px] text-[10px] font-medium tracking-[0.18em] uppercase text-ink-soft mt-4">
               {t.work.offerPrompt}
             </label>
             <input
@@ -243,6 +255,26 @@ export default function WorkPage({ params }: { params: { tbtId: string } }) {
               placeholder="0"
               className="w-full px-3.5 py-3 border border-hairline rounded-xl text-[16px] outline-none focus:border-ink transition-colors"
             />
+
+            {(() => {
+              const v = parseFloat(offerAmount.replace(/[^0-9.]/g, ''))
+              if (!isFinite(v) || v <= 0) return null
+              const q = quote(v, c.royalty_pct)
+              return (
+                <div className="mt-3 pt-3 border-t border-hairline">
+                  <div className="flex items-center justify-between text-[13px] font-medium">
+                    <span className="text-ink">{t.work.offerYouWouldPay}</span>
+                    <span className="text-ink">{money(q.buyerTotal)} USD</span>
+                  </div>
+                  <p className="text-[10.5px] text-placeholder mt-1.5 leading-[1.5]">
+                    {t.work.offerRoyaltyNote.replace('{royalty}', money(q.royalty))}
+                  </p>
+                </div>
+              )
+            })()}
+
+            <p className="text-[10.5px] text-placeholder mt-3.5 leading-[1.5]">{t.work.offerNotPayment}</p>
+
             <button
               type="button"
               onClick={sendOffer}
