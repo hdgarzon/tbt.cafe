@@ -3,33 +3,35 @@
 import { useEffect, useState } from 'react'
 import { locales, localeMeta, type Locale } from '@/i18n/config'
 import { useLocale } from '@/i18n/LocaleProvider'
+import { useShell } from '@/components/AppShell'
 import { CloseIcon, CaretIcon } from '@/components/Brand'
 
 /**
- * Menú deslizable en acordeón (Build Spec 01, ÍTEM 1).
- * Entradas: Collections · Profile · Brew TBT · Settings · History
+ * Menú deslizable en acordeón (Build Spec 02, ÍTEM 6 — reemplaza la
+ * estructura de Build Spec 01). Tres secciones, cada una auth-gated: tocar
+ * el encabezado de una sección sin sesión abre autenticación en vez de
+ * expandir. "Acquisitions" pasa a llamarse "Collections" en la UI (la ruta
+ * /collections/acquisitions no cambia); "History"/"Activity" desaparecen —
+ * Transactions cubre el mismo terreno.
  *
- * El cajón ocupa el ancho completo de la columna bloqueada, no una franja
- * parcial: en un móvil el menú tapa la pantalla entera.
+ * TRANSACTIONS: cinco vistas reales — Brews/Offers/Royalties/Sales leen de
+ * history-data.ts (derivadas de works/offers/ownership_history/transfers,
+ * ninguna simulada); Transfers sigue en su propia página ya existente
+ * (/history/transactions), construida en una fase anterior.
  *
- * Language es un selector INLINE (bandera + código de 2 letras) dentro del
- * submenú de Settings, no una página, y exige confirmación antes de aplicar
- * (Master Handoff §6).
- *
- * locale/setLocale vienen del LocaleProvider compartido (root layout), no de
- * props — así la elección de idioma persiste al navegar entre páginas.
+ * Language sigue siendo un selector INLINE dentro de Settings, con
+ * confirmación antes de aplicar (Master Handoff §6). locale/setLocale vienen
+ * del LocaleProvider compartido, no de props.
  */
 
-type Row =
-  | { kind: 'link'; key: string; label: string; href: string }
-  | { kind: 'group'; key: string; label: string; children: { label: string; href: string }[] }
-  | { kind: 'settings'; key: string; label: string }
+type Child = { label: string; href: string }
+type Group = { key: string; label: string; children: Child[]; hasLanguage?: boolean }
 
 export function SlideMenu({ open, onClose }: { open: boolean; onClose: () => void }) {
   const { locale, t, setLocale } = useLocale()
+  const { connected, openAuth } = useShell()
   const [expanded, setExpanded] = useState<string | null>(null)
 
-  // Cerrar con Escape
   useEffect(() => {
     if (!open) return
     const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose()
@@ -37,39 +39,55 @@ export function SlideMenu({ open, onClose }: { open: boolean; onClose: () => voi
     return () => document.removeEventListener('keydown', onKey)
   }, [open, onClose])
 
-  // Al cerrar el menú, replegar el acordeón
   useEffect(() => {
     if (!open) setExpanded(null)
   }, [open])
 
-  /** Cambio de idioma con paso de confirmación — exigido por el spec. */
   function handleLocaleChange(next: Locale) {
     if (next === locale) return
     const message = t.menu.switchTo.replace('{lang}', localeMeta[next].name)
     if (window.confirm(message)) setLocale(next)
   }
 
-  const rows: Row[] = [
+  function toggle(key: string) {
+    if (!connected) {
+      onClose()
+      openAuth()
+      return
+    }
+    setExpanded((cur) => (cur === key ? null : key))
+  }
+
+  const groups: Group[] = [
     {
-      kind: 'group',
-      key: 'collections',
-      label: t.menu.collections,
+      key: 'tbts',
+      label: t.menu.tbts,
       children: [
+        { label: t.menu.brewTbt, href: '/brew' },
         { label: t.menu.favorites, href: '/collections/favorites' },
         { label: t.menu.creations, href: '/collections/creations' },
-        { label: t.menu.acquisitions, href: '/collections/acquisitions' },
+        { label: t.menu.collections, href: '/collections/acquisitions' },
       ],
     },
-    { kind: 'link', key: 'profile', label: t.menu.profile, href: '/profile' },
-    { kind: 'link', key: 'brew', label: t.menu.brewTbt, href: '/brew' },
-    { kind: 'settings', key: 'settings', label: t.menu.settings },
     {
-      kind: 'group',
-      key: 'history',
-      label: t.menu.history,
+      key: 'settings',
+      label: t.menu.settings,
+      hasLanguage: true,
       children: [
-        { label: t.menu.transactions, href: '/history/transactions' },
-        { label: t.menu.activity, href: '/history/activity' },
+        { label: t.menu.authentication, href: '/settings/authentication' },
+        { label: t.menu.notifications, href: '/settings/notifications' },
+        { label: t.menu.profile, href: '/profile' },
+      ],
+    },
+    {
+      key: 'transactions',
+      label: t.menu.transactions,
+      children: [
+        { label: t.menu.brews, href: '/history/brews' },
+        { label: t.menu.offers, href: '/history/offers' },
+        { label: t.menu.royalties, href: '/history/royalties' },
+        { label: t.menu.transfers, href: '/history/transactions' },
+        { label: t.menu.sales, href: '/history/sales' },
       ],
     },
   ]
@@ -83,7 +101,6 @@ export function SlideMenu({ open, onClose }: { open: boolean; onClose: () => voi
 
   return (
     <>
-      {/* Velo */}
       <div
         onClick={onClose}
         aria-hidden="true"
@@ -92,7 +109,6 @@ export function SlideMenu({ open, onClose }: { open: boolean; onClose: () => voi
         }`}
       />
 
-      {/* Cajón — ancho completo de la columna */}
       <nav
         aria-label={t.header.menu}
         aria-hidden={!open}
@@ -101,9 +117,7 @@ export function SlideMenu({ open, onClose }: { open: boolean; onClose: () => voi
         }`}
       >
         <div className="h-header shrink-0 flex items-center justify-between px-4 border-b border-hairline">
-          <span className="text-[12px] font-semibold tracking-[0.22em] uppercase text-ink">
-            {t.header.menu}
-          </span>
+          <span className="text-[12px] font-semibold tracking-[0.22em] uppercase text-ink">{t.header.menu}</span>
           <button
             type="button"
             onClick={onClose}
@@ -115,91 +129,51 @@ export function SlideMenu({ open, onClose }: { open: boolean; onClose: () => voi
         </div>
 
         <div className="flex-1 py-2">
-          {rows.map((row) => {
-            if (row.kind === 'link') {
-              return (
-                <a key={row.key} href={row.href} className={rowClass}>
-                  <span className={labelClass}>{row.label}</span>
-                  {/* El signo se reserva pero se oculta: mantiene alineadas todas las filas */}
-                  <span className={`${signClass} invisible`}>+</span>
-                </a>
-              )
-            }
-
-            const isOpen = expanded === row.key
-
+          {groups.map((group) => {
+            const isOpen = connected && expanded === group.key
             return (
-              <div key={row.key}>
-                <button
-                  type="button"
-                  onClick={() => setExpanded(isOpen ? null : row.key)}
-                  aria-expanded={isOpen}
-                  className={rowClass}
-                >
-                  <span className={labelClass}>{row.label}</span>
-                  <span className={signClass}>{isOpen ? '–' : '+'}</span>
+              <div key={group.key}>
+                <button type="button" onClick={() => toggle(group.key)} aria-expanded={isOpen} className={rowClass}>
+                  <span className={labelClass}>{group.label}</span>
+                  <span className={signClass}>{connected ? (isOpen ? '–' : '+') : '+'}</span>
                 </button>
 
                 <div
                   className={`overflow-hidden bg-paper-warm transition-[max-height] duration-300 ease-in-out ${
-                    isOpen ? 'max-h-[260px] border-b border-hairline' : 'max-h-0'
+                    isOpen ? 'max-h-[320px] border-b border-hairline' : 'max-h-0'
                   }`}
                 >
-                  {row.kind === 'group' &&
-                    row.children.map((child, i) => (
-                      <a
-                        key={child.href}
-                        href={child.href}
-                        className={`${subItemClass} ${i > 0 ? 'border-t border-hairline' : ''}`}
-                      >
-                        {child.label}
-                      </a>
-                    ))}
+                  {group.children.map((child, i) => (
+                    <a key={child.label} href={child.href} className={`${subItemClass} ${i > 0 ? 'border-t border-hairline' : ''}`}>
+                      {child.label}
+                    </a>
+                  ))}
 
-                  {row.kind === 'settings' && (
-                    <>
-                      <a href="/settings/authentication" className={subItemClass}>
-                        {t.menu.authentication}
-                      </a>
-
-                      {/* Language — chip bandera + código, con <select> nativo encima */}
-                      <div
-                        className={`${subItemClass} border-t border-hairline flex items-center justify-between cursor-default`}
-                      >
-                        <span>{t.menu.language}</span>
-                        <div className="relative flex items-center gap-1.5 px-[9px] py-[5px] border border-hairline rounded-lg bg-paper cursor-pointer hover:border-ink transition-colors">
-                          <span className="text-[15px] leading-none" aria-hidden="true">
-                            {localeMeta[locale].flag}
-                          </span>
-                          <span className="text-[11px] font-semibold tracking-[0.1em] text-ink">
-                            {localeMeta[locale].code}
-                          </span>
-                          <span className="text-ink-soft shrink-0">
-                            <CaretIcon />
-                          </span>
-                          <select
-                            value={locale}
-                            onChange={(e) => handleLocaleChange(e.target.value as Locale)}
-                            aria-label={t.menu.language}
-                            /* text-base evita el zoom automático de iOS al enfocar */
-                            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer text-base"
-                          >
-                            {locales.map((l) => (
-                              <option key={l} value={l}>
-                                {localeMeta[l].flag} {localeMeta[l].code}
-                              </option>
-                            ))}
-                          </select>
-                        </div>
+                  {group.hasLanguage && (
+                    <div className={`${subItemClass} border-t border-hairline flex items-center justify-between cursor-default`}>
+                      <span>{t.menu.language}</span>
+                      <div className="relative flex items-center gap-1.5 px-[9px] py-[5px] border border-hairline rounded-lg bg-paper cursor-pointer hover:border-ink transition-colors">
+                        <span className="text-[15px] leading-none" aria-hidden="true">
+                          {localeMeta[locale].flag}
+                        </span>
+                        <span className="text-[11px] font-semibold tracking-[0.1em] text-ink">{localeMeta[locale].code}</span>
+                        <span className="text-ink-soft shrink-0">
+                          <CaretIcon />
+                        </span>
+                        <select
+                          value={locale}
+                          onChange={(e) => handleLocaleChange(e.target.value as Locale)}
+                          aria-label={t.menu.language}
+                          className="absolute inset-0 w-full h-full opacity-0 cursor-pointer text-base"
+                        >
+                          {locales.map((l) => (
+                            <option key={l} value={l}>
+                              {localeMeta[l].flag} {localeMeta[l].code}
+                            </option>
+                          ))}
+                        </select>
                       </div>
-
-                      <a
-                        href="/settings/notifications"
-                        className={`${subItemClass} border-t border-hairline`}
-                      >
-                        {t.menu.notifications}
-                      </a>
-                    </>
+                    </div>
                   )}
                 </div>
               </div>

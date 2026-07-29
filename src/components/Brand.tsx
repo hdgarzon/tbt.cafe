@@ -171,6 +171,48 @@ export function CloseIcon({ size = 18 }: { size?: number }) {
   )
 }
 
+/** Ojo — curación (Build Spec 02, ÍTEM 5; el "critique" renombrado). */
+export function CurateIcon() {
+  return (
+    <svg
+      width="20"
+      height="20"
+      viewBox="0 0 512 512"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="30"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <path d="M32 256s76-118 224-118 224 118 224 118-76 118-224 118S32 256 32 256z" />
+      <path d="M256 182a74 74 0 1 0 56 26" />
+    </svg>
+  )
+}
+
+/** Tres nodos conectados — compartir. */
+export function ShareIcon() {
+  return (
+    <svg
+      width="18"
+      height="18"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.6"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <circle cx="18" cy="5" r="2.6" />
+      <circle cx="6" cy="12" r="2.6" />
+      <circle cx="18" cy="19" r="2.6" />
+      <path d="M8.3 10.8l7.4-4.3M8.3 13.2l7.4 4.3" />
+    </svg>
+  )
+}
+
 /** Cheurón hacia abajo — selectores. */
 export function CaretIcon({ size = 10 }: { size?: number }) {
   return (

@@ -2,34 +2,56 @@
 
 import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
-import { useLocale, type Dictionary } from '@/i18n/LocaleProvider'
+import { useLocale } from '@/i18n/LocaleProvider'
+import { fetchCreations, deriveSeries, onlyFeatured, type CollectionWork, type DerivedGroup } from '@/lib/collections-data'
+import { PersonalTabs, SeriesDropdown, type SortKey, type FilterKey } from '@/components/PersonalTabs'
 
 /**
- * /collections/creations — obras que el usuario ha certificado, propias.
- * A diferencia de /creator/[seg] (público, solo publicadas y certificadas),
- * aquí se ven TODAS las propias — incluidos borradores — porque es su panel.
+ * /collections/creations — Series · Works · Featured (Build Spec 02, ÍTEM 4).
+ * Obras que el usuario registró, agrupadas por serie, más su set destacado.
+ *
+ * Sin sub-línea ESTÁTICA bajo el título (QA #18: "Works you've certified"
+ * se removió a propósito) — pero cada pestaña SÍ lleva su propia línea de
+ * conteo dinámica ("12 works registered", "3 series"), tal como el
+ * prototipo (paintViewWorks/viewSub). No son la misma cosa.
  */
 
-type Work = {
-  id: string
-  tbt_id: string
-  title: string
-  status: 'draft' | 'certified' | 'transferred' | 'archived'
-  media_url: string | null
+const plural = (n: number, one: string, many: string) => (n === 1 ? one : many).replace('{n}', String(n))
+
+type Tab = 'series' | 'works' | 'featured'
+
+function WorkCell({ w }: { w: CollectionWork }) {
+  return (
+    <a
+      href={`/work/${w.tbt_id}`}
+      className="aspect-square rounded-[10px] border border-hairline bg-paper-warm overflow-hidden flex items-center justify-center text-center p-2 font-display text-[13px] text-ink-soft hover:border-ink hover:text-ink transition-colors"
+    >
+      {w.media_url ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img src={w.media_url} alt={w.title} className="w-full h-full object-cover" />
+      ) : (
+        w.title
+      )}
+    </a>
+  )
 }
 
-const STATUS_KEY: Record<Work['status'], keyof Dictionary['myCollections']> = {
-  draft: 'statusDraft',
-  certified: 'statusCertified',
-  transferred: 'statusTransferred',
-  archived: 'statusArchived',
+function sortWorks(works: CollectionWork[], sort: SortKey): CollectionWork[] {
+  const arr = [...works]
+  if (sort === 'az') return arr.sort((a, b) => a.title.localeCompare(b.title))
+  if (sort === 'oldest') return arr.reverse()
+  return arr
 }
 
 export default function CreationsPage() {
   const { t } = useLocale()
   const [loading, setLoading] = useState(true)
   const [signedIn, setSignedIn] = useState(true)
-  const [works, setWorks] = useState<Work[]>([])
+  const [works, setWorks] = useState<CollectionWork[]>([])
+  const [tab, setTab] = useState<Tab>('series')
+  const [seriesFilter, setSeriesFilter] = useState('__all')
+  const [sort, setSort] = useState<SortKey>('recent')
+  const [filter, setFilter] = useState<FilterKey>('all')
 
   useEffect(() => {
     ;(async () => {
@@ -41,12 +63,7 @@ export default function CreationsPage() {
         setLoading(false)
         return
       }
-      const { data } = await supabase
-        .from('works')
-        .select('id, tbt_id, title, status, media_url')
-        .eq('creator_id', user.id)
-        .order('created_at', { ascending: false })
-      setWorks(data ?? [])
+      setWorks(await fetchCreations(user.id))
       setLoading(false)
     })()
   }, [])
@@ -55,41 +72,110 @@ export default function CreationsPage() {
   if (!signedIn) {
     return (
       <div className="px-4 pt-6">
-        <a href="/" className="back-link">← {t.purchase.home}</a>
+        <a href="/" className="back-link">
+          ← {t.purchase.home}
+        </a>
         <p className="text-[14px] mt-6">{t.myCollections.needSignIn}</p>
       </div>
     )
   }
 
+  const series: DerivedGroup[] = deriveSeries(works)
+  const featured = onlyFeatured(works)
+  const worksInSeries = seriesFilter === '__all' ? works : works.filter((w) => w.series_id === seriesFilter)
+  const visibleWorks = sortWorks(worksInSeries, sort)
+
   return (
     <div className="px-4 pt-6">
-      <a href="/" className="back-link">← {t.purchase.home}</a>
+      <a href="/" className="back-link">
+        ← {t.purchase.home}
+      </a>
       <h1 className="page-title">{t.menu.creations}</h1>
-      <div className="page-sub">{t.myCollections.creationsSub}</div>
 
-      {works.length === 0 ? (
-        <p className="page-note">{t.myCollections.creationsEmpty}</p>
-      ) : (
-        <div className="mt-[22px] grid grid-cols-2 gap-3">
-          {works.map((w) => (
-            <a
-              key={w.id}
-              href={`/work/${w.tbt_id}`}
-              className="relative aspect-square rounded-[10px] border border-hairline bg-paper-warm overflow-hidden flex items-center justify-center text-center p-2 font-display text-[14px] text-ink-soft hover:border-ink hover:text-ink transition-colors"
-            >
-              {w.media_url ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img src={w.media_url} alt={w.title} className="w-full h-full object-cover" />
-              ) : (
-                w.title
-              )}
-              <span className="absolute top-1.5 left-1.5 text-[9px] font-semibold tracking-[0.08em] uppercase bg-paper/90 text-ink px-1.5 py-0.5 rounded-full border border-hairline">
-                {t.myCollections[STATUS_KEY[w.status]]}
-              </span>
-            </a>
+      <PersonalTabs
+        tabs={[
+          { key: 'series', label: t.personal.tabSeries },
+          { key: 'works', label: t.personal.tabWorks },
+          { key: 'featured', label: t.personal.tabFeatured },
+        ]}
+        active={tab}
+        onChange={(k) => setTab(k as Tab)}
+      />
+
+      <div className="mt-5 pb-8">
+        {tab === 'series' && (
+          <div className="flex flex-col divide-y divide-hairline">
+            {series.length === 0 ? (
+              <p className="text-[13px] text-ink-soft py-3">{t.creator.seriesEmpty}</p>
+            ) : (
+              <p className="text-[12px] text-ink-soft pb-2">
+                {plural(series.length, t.myCollections.seriesCount, t.myCollections.seriesCountPlural)}
+              </p>
+            )}
+            {series.map((s) => (
+              <button
+                key={s.id}
+                type="button"
+                onClick={() => {
+                  setSeriesFilter(s.id)
+                  setTab('works')
+                }}
+                className="flex items-center justify-between py-3.5 text-left hover:bg-paper-warm transition-colors -mx-1 px-1 rounded-lg"
+              >
+                <span className="text-[14px] font-medium text-ink">{s.name}</span>
+                <span className="text-[11.5px] text-ink-soft shrink-0">
+                  {(s.count === 1 ? t.creator.seriesWorkCount : t.creator.seriesWorkCountPlural).replace('{n}', String(s.count))}
+                </span>
+              </button>
+            ))}
+          </div>
+        )}
+
+        {tab === 'works' && (
+          <div>
+            <SeriesDropdown
+              series={series.map((s) => ({ id: s.id, name: s.name }))}
+              value={seriesFilter}
+              onChange={setSeriesFilter}
+              sort={sort}
+              onSort={setSort}
+              filter={filter}
+              onFilter={setFilter}
+              showFilter={false}
+            />
+            {visibleWorks.length === 0 ? (
+              <p className="text-[13px] text-ink-soft py-6 text-center">{t.myCollections.creationsEmpty}</p>
+            ) : (
+              <>
+                <p className="text-[12px] text-ink-soft mt-3">
+                  {plural(visibleWorks.length, t.myCollections.worksRegisteredCount, t.myCollections.worksRegisteredCountPlural)}
+                </p>
+                <div className="mt-2 grid grid-cols-2 gap-3">
+                  {visibleWorks.map((w) => (
+                    <WorkCell key={w.id} w={w} />
+                  ))}
+                </div>
+              </>
+            )}
+          </div>
+        )}
+
+        {tab === 'featured' &&
+          (featured.length === 0 ? (
+            <p className="text-[13px] text-ink-soft py-6 text-center">{t.creator.worksEmpty}</p>
+          ) : (
+            <>
+              <p className="text-[12px] text-ink-soft pb-2">
+                {plural(featured.length, t.myCollections.featuredCount, t.myCollections.featuredCountPlural)}
+              </p>
+              <div className="grid grid-cols-2 gap-3">
+                {featured.map((w) => (
+                  <WorkCell key={w.id} w={w} />
+                ))}
+              </div>
+            </>
           ))}
-        </div>
-      )}
+      </div>
     </div>
   )
 }
