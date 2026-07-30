@@ -27,6 +27,25 @@ import { CloseIcon, CaretIcon } from '@/components/Brand'
 type Child = { label: string; href: string }
 type Group = { key: string; label: string; children: Child[]; hasLanguage?: boolean }
 
+/** Candado — junto a la etiqueta de sección cuando no hay sesión (prototipo: .m-lock). */
+const LockIcon = () => (
+  <svg
+    width="11"
+    height="11"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2.2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    className="inline-block ml-[7px] -mb-px text-placeholder"
+    aria-hidden="true"
+  >
+    <rect x="4" y="11" width="16" height="10" rx="2" />
+    <path d="M8 11V7a4 4 0 0 1 8 0v4" />
+  </svg>
+)
+
 export function SlideMenu({ open, onClose }: { open: boolean; onClose: () => void }) {
   const { locale, t, setLocale } = useLocale()
   const { connected, openAuth } = useShell()
@@ -129,13 +148,27 @@ export function SlideMenu({ open, onClose }: { open: boolean; onClose: () => voi
         </div>
 
         <div className="flex-1 py-2">
+          {!connected && (
+            <p className="mx-[22px] mt-1 mb-3.5 px-3.5 py-2.5 bg-paper-warm border border-hairline rounded-[10px] text-[11px] leading-[1.6] text-ink-soft">
+              {t.menu.lockedNote} <b className="font-medium text-ink">{t.menu.lockedNoteBold}</b>
+            </p>
+          )}
           {groups.map((group) => {
             const isOpen = connected && expanded === group.key
             return (
               <div key={group.key}>
-                <button type="button" onClick={() => toggle(group.key)} aria-expanded={isOpen} className={rowClass}>
-                  <span className={labelClass}>{group.label}</span>
-                  <span className={signClass}>{connected ? (isOpen ? '–' : '+') : '+'}</span>
+                <button
+                  type="button"
+                  onClick={() => toggle(group.key)}
+                  aria-expanded={isOpen}
+                  aria-disabled={!connected}
+                  className={rowClass}
+                >
+                  <span className={connected ? labelClass : `${labelClass} !text-placeholder`}>
+                    {group.label}
+                    {!connected && <LockIcon />}
+                  </span>
+                  <span className={connected ? signClass : `${signClass} opacity-35`}>{connected && isOpen ? '–' : '+'}</span>
                 </button>
 
                 <div

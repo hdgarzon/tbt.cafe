@@ -64,6 +64,8 @@
     "transfers": "Transfers",
     "sales": "Sales",
     "needSignIn": "Sign in to open this section.",
+    "lockedNote": "These are yours once you're signed in.",
+    "lockedNoteBold": "Tap any of them to connect.",
     "footNote1": "tbt.cafe — Transbit × BROCHA",
     "footNote2": "Transferable Billable Tokens"
   },

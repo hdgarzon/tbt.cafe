@@ -64,6 +64,8 @@
     "transfers": "Transferts",
     "sales": "Ventes",
     "needSignIn": "Connectez-vous pour ouvrir cette section.",
+    "lockedNote": "Ces sections sont les vôtres une fois connecté.",
+    "lockedNoteBold": "Touchez l'une d'elles pour vous connecter.",
     "footNote1": "tbt.cafe — Transbit × BROCHA",
     "footNote2": "Jetons Transférables Facturables"
   },
