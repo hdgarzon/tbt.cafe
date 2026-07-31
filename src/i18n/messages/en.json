@@ -12,7 +12,6 @@
     "grindSub": "Discover creators and works",
     "brew": "Brew",
     "brewSub": "Create your TBT",
-    "searchPlaceholder": "Search creators or TBT ID",
     "welcomeKicker": "Welcome to tbt.cafe",
     "welcomeTitle": "You’re authenticated",
     "welcomeBody": "New here? Learn everything about TBTs on the {roast}. And set up your {profile} as a creator, collector, or both — it’s used whenever you create or acquire a TBT, and it appears on the work’s page.",
@@ -21,6 +20,8 @@
     "dismiss": "Dismiss"
   },
   "search": {
+    "ariaLabel": "Search",
+    "resultsAriaLabel": "Search results",
     "noResults": "No results for “{q}”.",
     "works": "{n} works",
     "collection": "Collection",

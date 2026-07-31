@@ -93,8 +93,21 @@ export async function fetchCreatorWorks(creatorId: string): Promise<PublicWork[]
 export type SearchHit = {
   kind: 'creator' | 'work'
   name: string
-  meta: string
   href: string
+  avatarUrl: string | null
+  /** Monogram hue (0-359), stable per creator — used when there's no avatar. */
+  hue: number
+  /** For a work: its series/collection name, if any. */
+  seriesName?: string | null
+  /** For a work: its creator's display name. */
+  creatorName?: string
+}
+
+/** Hash a string to a stable 0-359 hue, matching tbt-espresso.html's hueFor(). */
+function hueFrom(key: string): number {
+  let h = 7
+  for (const c of key) h = (h * 31 + c.charCodeAt(0)) % 360
+  return h
 }
 
 /** Búsqueda en vivo sobre creadores y obras reales, publicados/certificados. */
@@ -105,13 +118,15 @@ export async function searchCatalog(query: string): Promise<SearchHit[]> {
   const [{ data: creators }, { data: works }] = await Promise.all([
     supabase
       .from('profiles')
-      .select('id, display_name, public_alias')
+      .select('id, display_name, public_alias, avatar_url')
       .eq('is_creator', true)
       .or(`display_name.ilike.%${q}%,public_alias.ilike.%${q}%`)
       .limit(8),
     supabase
       .from('works')
-      .select('tbt_id, title, creator:profiles!works_creator_id_fkey(display_name, public_alias)')
+      .select(
+        'tbt_id, title, media_url, series:work_series(name), creator:profiles!works_creator_id_fkey(display_name, public_alias, avatar_url)'
+      )
       .eq('is_published', true)
       .eq('status', 'certified')
       .ilike('title', `%${q}%`)
@@ -123,18 +138,23 @@ export async function searchCatalog(query: string): Promise<SearchHit[]> {
     return {
       kind: 'creator' as const,
       name: c.public_alias || c.display_name || 'Creator',
-      meta: `/creator/${seg}`,
       href: `/creator/${seg}`,
+      avatarUrl: c.avatar_url,
+      hue: hueFrom(c.id),
     }
   })
 
   const workHits: SearchHit[] = (works ?? []).map((w) => {
     const creator = Array.isArray(w.creator) ? w.creator[0] : w.creator
+    const series = Array.isArray(w.series) ? w.series[0] : w.series
     return {
       kind: 'work' as const,
       name: w.title,
-      meta: creator?.public_alias || creator?.display_name || 'Unknown',
       href: `/work/${w.tbt_id}`,
+      avatarUrl: w.media_url,
+      hue: hueFrom(w.tbt_id),
+      seriesName: series?.name ?? null,
+      creatorName: creator?.public_alias || creator?.display_name || undefined,
     }
   })
 

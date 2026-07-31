@@ -125,50 +125,112 @@ export default function HomePage() {
             onChange={(e) => setQuery(e.target.value)}
             onFocus={() => setSearchFocused(true)}
             onBlur={() => setSearchFocused(false)}
-            placeholder={t.home.searchPlaceholder}
-            aria-label={t.home.searchPlaceholder}
+            aria-label={t.search.ariaLabel}
             autoComplete="off"
             className="flex-1 bg-transparent border-none outline-none p-0 text-[14px] tracking-[0.06em] text-ink"
           />
         </div>
 
         {/* Resultados en vivo */}
-        <div className="mt-1" role="listbox" aria-label={t.home.searchPlaceholder}>
+        <div className="mt-1" role="listbox" aria-label={t.search.resultsAriaLabel}>
           {query.trim() && !searching && hits.length === 0 && (
             <div className="py-3.5 px-0.5 text-[12px] tracking-[0.03em] text-ink-soft">
               {t.search.noResults.replace('{q}', query.trim())}
             </div>
           )}
 
-          {hits.map((h) => (
-            <a
-              key={`${h.kind}-${h.href}-${h.name}`}
-              href={h.href}
-              role="option"
-              aria-selected="false"
-              className="flex items-center gap-3 w-full text-left py-3 px-0.5 border-b border-hairline hover:bg-paper-warm transition-colors"
-            >
-              <span
-                className={`w-10 h-10 shrink-0 border border-hairline bg-paper-warm flex items-center justify-center overflow-hidden ${
-                  h.kind === 'creator' ? 'rounded-full' : 'rounded-lg'
-                }`}
+          {hits.map((h) => {
+            const crumb =
+              h.kind === 'creator'
+                ? t.creator.label
+                : [t.search.work, h.seriesName, h.creatorName].filter(Boolean).join(' │ ')
+            return (
+              <a
+                key={`${h.kind}-${h.href}-${h.name}`}
+                href={h.href}
+                role="option"
+                aria-selected="false"
+                className="flex items-center gap-3 w-full text-left py-2.5 px-0.5 border-b border-hairline hover:bg-paper-warm transition-colors"
               >
-                <span className="font-display text-[16px] text-ink-soft" aria-hidden="true">
-                  {h.kind === 'creator' ? '⬤' : '▦'}
+                <SearchThumb hit={h} />
+                <span className="flex-1 min-w-0">
+                  <span className="block text-[13px] font-medium tracking-[0.02em] text-ink truncate">
+                    {h.name}
+                  </span>
+                  <span className="block text-[10px] tracking-[0.16em] uppercase text-ink-soft mt-[3px] truncate">
+                    {crumb}
+                  </span>
                 </span>
-              </span>
-              <span className="flex-1 min-w-0">
-                <span className="block text-[13px] font-medium tracking-[0.02em] text-ink truncate">
-                  {h.name}
-                </span>
-                <span className="block text-[10px] tracking-[0.16em] uppercase text-ink-soft mt-[3px]">
-                  {h.meta}
-                </span>
-              </span>
-            </a>
-          ))}
+              </a>
+            )
+          })}
       </div>
     </div>
+  )
+}
+
+/** Iniciales de un nombre, para el monograma cuando no hay avatar (máx. 2 palabras). */
+function monogram(name: string): string {
+  return (name || '?')
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((w) => w[0])
+    .join('')
+    .toUpperCase()
+}
+
+/** Avatar/miniatura de un resultado de búsqueda — imagen, o un placeholder fiel al demo. */
+function SearchThumb({ hit }: { hit: SearchHit }) {
+  const isCreator = hit.kind === 'creator'
+  const shape = isCreator ? 'rounded-full' : 'rounded-lg'
+
+  if (hit.avatarUrl) {
+    return (
+      <span className={`w-10 h-10 shrink-0 border border-hairline bg-paper-warm overflow-hidden ${shape}`}>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src={hit.avatarUrl} alt="" className="w-full h-full object-cover" />
+      </span>
+    )
+  }
+
+  if (isCreator) {
+    return (
+      <span
+        className="w-10 h-10 shrink-0 rounded-full flex items-center justify-center"
+        style={{
+          background: `hsl(${hit.hue}, 34%, 94%)`,
+          border: `1px solid hsl(${hit.hue}, 28%, 86%)`,
+        }}
+      >
+        <span
+          className="font-sans text-[12.5px] font-medium tracking-[0.04em]"
+          style={{ color: `hsl(${hit.hue}, 32%, 38%)` }}
+        >
+          {monogram(hit.name)}
+        </span>
+      </span>
+    )
+  }
+
+  return (
+    <span className="w-10 h-10 shrink-0 rounded-lg border border-hairline bg-paper-warm flex items-center justify-center">
+      <svg
+        width="19"
+        height="19"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        className="text-placeholder"
+      >
+        <rect x="3" y="3" width="18" height="18" rx="2" />
+        <circle cx="8.5" cy="8.5" r="1.4" />
+        <path d="M21 15l-5-5L5 21" />
+      </svg>
+    </span>
   )
 }
 
