@@ -135,14 +135,18 @@ export function BrewWizard() {
   const [result, setResult] = useState<{ tbtId: string; title: string; solscanUrl: string } | null>(null)
 
   useEffect(() => {
+    if (!connected) {
+      // tbt-espresso.html's wireBrew(): no intermediate "sign in" screen —
+      // hitting Brew unauthenticated opens the real auth flow immediately,
+      // and resumes here (this effect re-runs) once it succeeds.
+      openAuth()
+      return
+    }
     ;(async () => {
       const {
         data: { user },
       } = await supabase.auth.getUser()
-      if (!user) {
-        setStep('gate')
-        return
-      }
+      if (!user) return
       setUserId(user.id)
 
       // Back from Stripe (create-checkout's successUrl points here): resume
@@ -171,7 +175,7 @@ export function BrewWizard() {
       setStep('chooser')
     })()
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+  }, [connected])
 
   useEffect(() => {
     return () => URL.revokeObjectURL(imagePreview)
@@ -402,18 +406,9 @@ export function BrewWizard() {
   // ---- Render ----------------------------------------------------------
 
   if (step === 'loading') {
+    // Also what's behind the auth modal while unauthenticated — the effect
+    // above opens it immediately and this stays put until it resolves.
     return <div className="px-4 pt-8 text-[13px] text-ink-soft text-center">{t.work.loading}</div>
-  }
-
-  if (!connected) {
-    return (
-      <div className="px-4 pt-10 text-center">
-        <p className="text-[14px] text-ink-soft">{t.brew.needSignIn}</p>
-        <button type="button" onClick={openAuth} className="mt-5 px-6 py-3 bg-ink text-paper rounded-xl text-[12px] font-semibold uppercase tracking-[0.14em]">
-          {t.auth.authTitle}
-        </button>
-      </div>
-    )
   }
 
   if (step === 'gate') {

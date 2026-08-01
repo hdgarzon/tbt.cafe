@@ -751,7 +751,6 @@
     "registeredBody": "\"{title}\" ya está permanentemente en la blockchain.",
     "viewCertificate": "Ver certificado",
     "done": "Listo",
-    "needSignIn": "Inicia sesión para preparar un TBT.",
     "errors": {
       "uploadFailed": "No pudimos subir la imagen",
       "draftFailed": "No pudimos guardar el borrador",

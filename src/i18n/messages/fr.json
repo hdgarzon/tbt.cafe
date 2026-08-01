@@ -751,7 +751,6 @@
     "registeredBody": "\"{title}\" est maintenant définitivement sur la blockchain.",
     "viewCertificate": "Voir le certificat",
     "done": "Terminé",
-    "needSignIn": "Connectez-vous pour préparer un TBT.",
     "errors": {
       "uploadFailed": "Nous n'avons pas pu envoyer l'image",
       "draftFailed": "Nous n'avons pas pu enregistrer le brouillon",

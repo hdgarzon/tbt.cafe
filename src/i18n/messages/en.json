@@ -751,7 +751,6 @@
     "registeredBody": "\"{title}\" is now permanently on the blockchain.",
     "viewCertificate": "View certificate",
     "done": "Done",
-    "needSignIn": "Sign in to brew a TBT.",
     "errors": {
       "uploadFailed": "We couldn't upload the image",
       "draftFailed": "We couldn't save the draft",
