@@ -18,6 +18,53 @@ type Tab = 'profile' | 'series' | 'works' | 'featured'
 
 const STATUS_DOT = { for_sale: 'bg-t-green', reserved: 'bg-t-yellow', not_for_sale: 'bg-ink-soft' } as const
 
+/** Iniciales (máx. 2 palabras) para el avatar monograma cuando no hay foto. */
+function monogram(name: string): string {
+  return (name || '?')
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((w) => w[0])
+    .join('')
+    .toUpperCase()
+}
+
+/**
+ * Normaliza un valor social. El flujo viejo de Forms guardó algunos handles
+ * como arrays JSON en texto (p. ej. `["@panda"]`) que se mostraban crudos;
+ * esto los desenvuelve a `@panda` de forma defensiva, sin depender de una
+ * migración de datos.
+ */
+function cleanSocial(raw: string | null): string | null {
+  if (!raw) return null
+  let v = raw.trim()
+  if (v.startsWith('[')) {
+    try {
+      const parsed = JSON.parse(v)
+      if (Array.isArray(parsed)) v = parsed.filter(Boolean).map(String).join(', ')
+      else v = String(parsed)
+    } catch {
+      v = v.replace(/^\[|\]$/g, '').replace(/"/g, '').trim()
+    }
+  }
+  v = v.replace(/^"|"$/g, '').trim()
+  return v || null
+}
+
+/** Texto compacto del pill social — sin protocolo ni barra final. */
+function socialDisplay(v: string): string {
+  return v.replace(/^https?:\/\//, '').replace(/\/+$/, '')
+}
+
+/** Resuelve un href navegable por red social a partir de un handle o URL. */
+function socialHref(kind: 'website' | 'instagram' | 'linkedin', v: string): string {
+  if (/^https?:\/\//i.test(v)) return v
+  const handle = v.replace(/^@/, '').trim()
+  if (kind === 'instagram') return `https://instagram.com/${handle}`
+  if (kind === 'linkedin') return `https://linkedin.com/in/${handle}`
+  return `https://${v}`
+}
+
 function WorkCell({ w }: { w: PublicWork }) {
   return (
     <a
@@ -83,8 +130,6 @@ export default function CreatorPage({ params }: { params: { seg: string } }) {
     load()
   }, [load])
 
-  const canGoBack = typeof window !== 'undefined' && window.history.length > 1
-
   if (loading) return <div className="px-4 pt-6 text-[13px] text-ink-soft">{t.work.loading}</div>
 
   if (!creator) {
@@ -111,35 +156,54 @@ export default function CreatorPage({ params }: { params: { seg: string } }) {
   const visibleWorks = applySortFilter(worksInSeries, sort, filter)
   const featuredWorks = works.filter((w) => w.is_featured)
 
-  const registeredCount = works.length
-  const registeredLabel = (registeredCount === 1 ? t.creator.registeredCount : t.creator.registeredCountPlural).replace(
-    '{n}',
-    String(registeredCount)
-  )
+  // "N obras en M series" — M = series distintas entre las obras (como seriesOf
+  // del prototipo), no todas las filas de series (algunas pueden estar vacías).
+  const worksCount = works.length
+  const seriesCount = new Set(works.map((w) => w.series_id).filter(Boolean)).size
+  const registeredLabel =
+    seriesCount === 0
+      ? // obras sin serie asignada (flujo viejo de Forms): "N obras", sin "en 0 series"
+        (worksCount === 1 ? t.creator.seriesWorkCount : t.creator.seriesWorkCountPlural).replace('{n}', String(worksCount))
+      : (worksCount === 1 ? t.creator.registeredWork : t.creator.registeredWorks)
+          .replace('{works}', String(worksCount))
+          .replace('{series}', String(seriesCount))
+
+  const socials = (
+    [
+      { kind: 'website', label: t.creator.linkWebsite, value: cleanSocial(creator.social_website) },
+      { kind: 'instagram', label: t.creator.linkInstagram, value: cleanSocial(creator.social_instagram) },
+      { kind: 'linkedin', label: t.creator.linkLinkedin, value: cleanSocial(creator.social_linkedin) },
+    ] as const
+  ).filter((s): s is { kind: 'website' | 'instagram' | 'linkedin'; label: string; value: string } => !!s.value)
+
+  const hasAbout = !!creator.bio || showAka || !!creator.creator_type
 
   return (
     <div className="px-4 pt-5">
       <div className="flex items-center justify-between">
-        {canGoBack ? (
-          <button type="button" onClick={() => window.history.back()} className="back-link !pb-0">
-            ← {t.purchase.home}
-          </button>
-        ) : (
-          <span />
-        )}
+        <button
+          type="button"
+          onClick={() => (typeof window !== 'undefined' && window.history.length > 1 ? window.history.back() : (window.location.href = '/'))}
+          className="back-link !pb-0"
+        >
+          ← {t.creator.back}
+        </button>
         <WorkActions favorite={favoriteTarget} curate={curateTarget} shareLabel={name} shareUrl={`https://tbt.cafe/creator/${seg}`} />
       </div>
 
-      <div className="flex items-center gap-3 mt-4">
-        <div className="w-14 h-14 rounded-full bg-paper-warm border border-hairline overflow-hidden shrink-0 flex items-center justify-center font-display text-[18px] text-ink-soft">
+      <div className="flex items-center gap-3.5 mt-4">
+        <div className="w-[60px] h-[60px] rounded-full bg-paper-warm border border-hairline overflow-hidden shrink-0 flex items-center justify-center font-sans text-[17px] font-medium text-placeholder">
           {creator.avatar_url ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img src={creator.avatar_url} alt={name} className="w-full h-full object-cover" />
           ) : (
-            name.charAt(0).toUpperCase()
+            monogram(name)
           )}
         </div>
-        <h1 className="page-title !mt-0">{name}</h1>
+        <div className="min-w-0">
+          <h1 className="page-title !mt-0">{name}</h1>
+          <div className="text-[11px] tracking-[0.14em] uppercase text-ink-soft mt-1">{t.creator.label}</div>
+        </div>
       </div>
 
       <PersonalTabs
@@ -151,7 +215,7 @@ export default function CreatorPage({ params }: { params: { seg: string } }) {
             key: 'featured',
             label: t.personal.tabFeatured,
             iconOnly: (
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.35" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.35" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                 <path d="M9.6 12.6V5.9a1.15 1.15 0 0 1 2.3 0v5.8" />
                 <path d="M11.9 11.7V5.1a1.15 1.15 0 0 1 2.3 0v6.6" />
                 <path d="M14.2 11.7V6.1a1.15 1.15 0 0 1 2.3 0v6.9" />
@@ -167,62 +231,89 @@ export default function CreatorPage({ params }: { params: { seg: string } }) {
 
       <div className="mt-5 pb-8">
         {tab === 'profile' && (
-          <div>
-            {creator.bio && (
-              <div className="mb-5">
-                <p className={`text-[14px] leading-[1.6] text-ink ${aboutExpanded ? '' : 'line-clamp-2'}`}>{creator.bio}</p>
-                {creator.bio.length > 100 && (
-                  <button type="button" onClick={() => setAboutExpanded((v) => !v)} className="text-[11px] font-medium text-t-cyan mt-1">
-                    {aboutExpanded ? t.creator.less : t.creator.more}
-                  </button>
+          <div className="divide-y divide-hairline">
+            {hasAbout && (
+              <div className="py-[13px]">
+                <div className="text-[9.5px] tracking-[0.16em] uppercase text-placeholder">{t.creator.about}</div>
+                {creator.bio && (
+                  <div className="mt-1.5">
+                    <p className={`font-display text-[16px] leading-[1.5] text-ink ${aboutExpanded ? '' : 'line-clamp-2'}`}>
+                      {creator.bio}
+                    </p>
+                    {creator.bio.length > 100 && (
+                      <button
+                        type="button"
+                        onClick={() => setAboutExpanded((v) => !v)}
+                        className="text-[10px] tracking-[0.14em] uppercase text-t-navy mt-1.5"
+                      >
+                        {aboutExpanded ? t.creator.less : t.creator.more}
+                      </button>
+                    )}
+                  </div>
                 )}
-                <div className="flex flex-wrap gap-x-4 gap-y-1 mt-2.5 text-[11.5px] text-ink-soft">
-                  {showAka && (
-                    <span>
-                      {t.creator.aka}: {creator.display_name}
-                    </span>
-                  )}
-                  {creator.creator_type && (
-                    <span>
-                      {t.creator.type}: {t.profileCreator[creator.creator_type as 'individual' | 'group' | 'corporation'] ?? creator.creator_type}
-                    </span>
-                  )}
-                </div>
+                {(showAka || creator.creator_type) && (
+                  <div className="flex items-baseline flex-wrap mt-[13px] pt-3 border-t border-hairline">
+                    {showAka && (
+                      <span className="inline-flex items-baseline gap-1.5">
+                        <span className="text-[9px] tracking-[0.13em] uppercase text-placeholder">{t.creator.aka}</span>
+                        <span className="text-[12px] text-ink leading-[1.4]">{creator.display_name}</span>
+                      </span>
+                    )}
+                    {showAka && creator.creator_type && <span className="text-[11px] text-hairline mx-[9px]">│</span>}
+                    {creator.creator_type && (
+                      <span className="inline-flex items-baseline gap-1.5">
+                        <span className="text-[9px] tracking-[0.13em] uppercase text-placeholder">{t.creator.type}</span>
+                        <span className="text-[12px] text-ink leading-[1.4]">
+                          {t.profileCreator[creator.creator_type as 'individual' | 'group' | 'corporation'] ?? creator.creator_type}
+                        </span>
+                      </span>
+                    )}
+                  </div>
+                )}
               </div>
             )}
 
-            <a
-              href={`https://tbt.cafe/creator/${seg}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="block w-full text-center py-2.5 mb-5 rounded-lg bg-paper-warm text-t-cyan text-[12px] font-medium hover:underline"
-            >
-              tbt.cafe/creator/{seg}
-            </a>
+            <div className="py-[13px]">
+              <a
+                href={`https://tbt.cafe/creator/${seg}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="block font-mono text-[14.5px] tracking-[0.01em] text-[#9a7b4f] hover:underline"
+              >
+                tbt.cafe/creator/{seg}
+              </a>
+            </div>
 
             {creator.credentials && (
-              <div className="mb-5">
-                <div className="label-caps">{t.creator.credentials}</div>
-                <p className="text-[13px] leading-[1.6] text-ink-soft mt-1.5">{creator.credentials}</p>
+              <div className="py-[13px]">
+                <div className="text-[9.5px] tracking-[0.16em] uppercase text-placeholder">{t.creator.credentials}</div>
+                <p className="text-[12.5px] leading-[1.6] text-ink mt-1.5">{creator.credentials}</p>
               </div>
             )}
 
-            {(creator.social_website || creator.social_instagram || creator.social_linkedin) && (
-              <div className="mb-5">
-                <div className="label-caps mb-1.5">{t.creator.social}</div>
-                <div className="flex flex-col gap-1">
-                  {[creator.social_website, creator.social_instagram, creator.social_linkedin]
-                    .filter((v): v is string => !!v)
-                    .map((url) => (
-                      <a key={url} href={url} target="_blank" rel="noopener noreferrer" className="text-[12.5px] text-t-cyan hover:underline truncate">
-                        {url}
-                      </a>
-                    ))}
+            {socials.length > 0 && (
+              <div className="py-[13px]">
+                <div className="text-[9.5px] tracking-[0.16em] uppercase text-placeholder">{t.creator.socialProof}</div>
+                <div className="flex flex-wrap gap-2 mt-[7px]">
+                  {socials.map((s) => (
+                    <a
+                      key={s.kind}
+                      href={socialHref(s.kind, s.value)}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1.5 border border-hairline rounded-[20px] px-3 py-1.5 text-[11px] text-ink-soft hover:border-ink-soft hover:text-ink transition-colors"
+                    >
+                      {s.label} · {socialDisplay(s.value)}
+                    </a>
+                  ))}
                 </div>
               </div>
             )}
 
-            <p className="text-[12px] text-ink-soft pt-4 border-t border-hairline">{registeredLabel}</p>
+            <div className="py-[13px]">
+              <div className="text-[9.5px] tracking-[0.16em] uppercase text-placeholder">{t.creator.registeredOnTbt}</div>
+              <p className="font-display text-[16px] leading-[1.5] text-ink mt-1.5">{registeredLabel}</p>
+            </div>
           </div>
         )}
 

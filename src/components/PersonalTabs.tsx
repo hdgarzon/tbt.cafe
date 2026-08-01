@@ -21,8 +21,11 @@ export function PersonalTabs({
   active: string
   onChange: (key: string) => void
 }) {
+  // Estilo .cr-tab del prototipo: versalitas con tracking, sin subrayado — el
+  // peso y la tinta (no una línea) marcan la pestaña activa, ya que la barra
+  // ya se apoya en un hairline. Compartido por /creator y las vistas personales.
   return (
-    <div role="tablist" className="flex items-center gap-1 border-b border-hairline mt-5">
+    <div role="tablist" className="flex items-center gap-[22px] border-b border-hairline mt-[22px]">
       {tabs.map((tab) => (
         <button
           key={tab.key}
@@ -32,12 +35,17 @@ export function PersonalTabs({
           title={tab.iconOnly ? tab.label : undefined}
           aria-label={tab.iconOnly ? tab.label : undefined}
           onClick={() => onChange(tab.key)}
-          className={`relative px-3.5 py-3 text-[12px] font-medium tracking-[0.04em] transition-colors ${
-            tab.iconOnly ? 'flex items-center justify-center' : ''
-          } ${active === tab.key ? 'text-ink' : 'text-ink-soft hover:text-ink'}`}
+          className={
+            tab.iconOnly
+              ? `flex items-center pb-[7px] ml-1.5 transition-colors ${
+                  active === tab.key ? 'text-ink' : 'text-placeholder hover:text-ink-soft'
+                }`
+              : `pb-3 text-[11.5px] tracking-[0.16em] uppercase transition-colors ${
+                  active === tab.key ? 'text-ink font-semibold' : 'text-placeholder font-normal hover:text-ink-soft'
+                }`
+          }
         >
           {tab.iconOnly ?? tab.label}
-          {active === tab.key && <span className="absolute left-0 right-0 -bottom-px h-[2px] bg-ink" />}
         </button>
       ))}
     </div>
