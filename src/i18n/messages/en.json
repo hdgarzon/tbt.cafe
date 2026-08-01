@@ -631,6 +631,10 @@
     "tabFeatured": "Featured"
   },
   "brew": {
+    "headlines": "Headlines",
+    "markets": "Markets",
+    "liveSoon": "live soon",
+    "feedPending": "Not connected yet — add a line yourself if you want it on the record.",
     "scanPassLine": "pass line · {n}%",
     "tipValue": "A figure is suggested so you have a starting point, but it is written into the certificate and the royalty terms travel with the work on every future sale — so confirm it rather than accepting it. If the work is not for sale, set the price to zero and royalties to none.",
     "tipRoyalty": "A share of future resales that returns to you automatically each time the work changes hands. Choose a percentage or a fixed amount.",

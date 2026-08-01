@@ -137,6 +137,8 @@ export function BrewWizard() {
   const [coords, setCoords] = useState<{ lat: number; lng: number } | null>(null)
   const [location, setLocation] = useState('')
   const [weather, setWeather] = useState('')
+  const [headlines, setHeadlines] = useState('')
+  const [markets, setMarkets] = useState('')
   const [aiSummary, setAiSummary] = useState('')
   const [editedSummary, setEditedSummary] = useState('')
   const [momentLoading, setMomentLoading] = useState(false)
@@ -432,6 +434,8 @@ export function BrewWizard() {
       location,
       coordinates: coords,
       weather,
+      headlines: headlines.trim() || null,
+      markets: markets.trim() || null,
       aiSummary,
       userEditedSummary: editedSummary !== aiSummary ? editedSummary : null,
     })
@@ -1049,6 +1053,37 @@ export function BrewWizard() {
                 </div>
               </div>
             </div>
+            {/* Titulares y Mercados: el prototipo los marca "live soon" — no hay
+                feed conectado. Van vacíos y editables en vez de con el texto de
+                ejemplo del demo: esto se sella en un certificado permanente y
+                no vamos a inventar noticias en el registro de nadie. */}
+            {(
+              [
+                ['◈', t.brew.headlines, headlines, setHeadlines],
+                ['↗', t.brew.markets, markets, setMarkets],
+              ] as [string, string, string, (v: string) => void][]
+            ).map(([icon, label, value, setValue]) => (
+              <div key={label} className="flex items-start gap-2.5 p-3.5 border-t border-hairline">
+                <span className="text-[15px] w-5 text-center shrink-0">{icon}</span>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-1.5 mb-1">
+                    <span className="text-[10px] uppercase tracking-[0.1em] text-ink-soft">{label}</span>
+                    <span className="text-[9px] uppercase tracking-[0.14em] text-ink-soft border border-hairline rounded-[20px] px-2 py-[3px]">
+                      {t.brew.liveSoon}
+                    </span>
+                  </div>
+                  <div
+                    contentEditable
+                    suppressContentEditableWarning
+                    onBlur={(e) => setValue(e.currentTarget.textContent ?? '')}
+                    className="font-display text-[15px] leading-[1.5] text-ink outline-none empty:before:content-[attr(data-ph)] empty:before:text-placeholder"
+                    data-ph={t.brew.feedPending}
+                  >
+                    {value}
+                  </div>
+                </div>
+              </div>
+            ))}
           </div>
         )}
         <p className="text-[10.5px] text-placeholder mt-2">{t.brew.momentHint}</p>

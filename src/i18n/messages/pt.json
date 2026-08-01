@@ -631,6 +631,10 @@
     "tabFeatured": "Destaques"
   },
   "brew": {
+    "headlines": "Manchetes",
+    "markets": "Mercados",
+    "liveSoon": "em breve ao vivo",
+    "feedPending": "Ainda não ligado — escreva uma linha se quiser que fique no registo.",
     "scanPassLine": "linha de aprovação · {n}%",
     "tipValue": "Sugere-se um valor para ter um ponto de partida, mas fica escrito no certificado e as condições de royalties viajam com a obra em cada venda futura — por isso confirme-o em vez de o aceitar. Se a obra não está à venda, ponha o preço a zero e os royalties a nenhum.",
     "tipRoyalty": "Uma parte das revendas futuras que volta para si automaticamente sempre que a obra muda de mãos. Escolha uma percentagem ou um valor fixo.",

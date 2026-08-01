@@ -195,6 +195,8 @@ export type DraftInput = {
   location: string | null
   coordinates: { lat: number; lng: number } | null
   weather: string | null
+  headlines: string | null
+  markets: string | null
   aiSummary: string | null
   userEditedSummary: string | null
 }
@@ -253,7 +255,8 @@ export async function createDraftWork(
       location: input.location,
       coordinates: input.coordinates,
       weather: input.weather,
-      headlines: null,
+      headlines: input.headlines,
+      markets: input.markets,
       aiSummary: input.aiSummary,
       userEditedSummary: input.userEditedSummary,
       signaturePhone: profile.phone,

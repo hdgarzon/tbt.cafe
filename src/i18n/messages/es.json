@@ -631,6 +631,10 @@
     "tabFeatured": "Destacadas"
   },
   "brew": {
+    "headlines": "Titulares",
+    "markets": "Mercados",
+    "liveSoon": "pronto en vivo",
+    "feedPending": "Aún no conectado — escribe una línea si quieres que quede en el registro.",
     "scanPassLine": "línea de aprobación · {n}%",
     "tipValue": "Se sugiere una cifra para que tengas un punto de partida, pero queda escrita en el certificado y las condiciones de regalías viajan con la obra en cada venta futura — así que confírmala en vez de aceptarla. Si la obra no está a la venta, pon el precio en cero y las regalías en ninguna.",
     "tipRoyalty": "Una parte de las reventas futuras que vuelve a ti automáticamente cada vez que la obra cambia de manos. Elige un porcentaje o un monto fijo.",
