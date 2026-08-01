@@ -631,6 +631,16 @@
     "tabFeatured": "Featured"
   },
   "brew": {
+    "registeredBodyFull": "Your work is permanently on-chain. Your certificate — with your private transfer key — has been sent to your phone.",
+    "certSentTo": "Certificate sent to your phone",
+    "certKeyInside": "Your transfer key is inside — kept private, off this screen.",
+    "didntReceive": "Didn't receive it?",
+    "worksLivesHere": "Your work lives here",
+    "registeredOn": "Registered on",
+    "solanaBlockchain": "Solana blockchain",
+    "verifyOnChain": "Verify on-chain",
+    "verifyOnChainNote": "Opens your record in the Solana block explorer",
+    "viewWork": "View work",
     "sealedTag": "sealed",
     "sealBiometricNote": "Seal with a single touch next time.",
     "sealBiometricLink": "Set up biometric signing",

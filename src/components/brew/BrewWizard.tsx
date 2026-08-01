@@ -84,7 +84,7 @@ type Declaration = 'original' | 'derivative' | 'authorized_edition'
 
 export function BrewWizard() {
   const { t } = useLocale()
-  const { connected, openAuth } = useShell()
+  const { connected, openAuth, maskedPhone } = useShell()
   const params = useSearchParams()
 
   const [step, setStep] = useState<Step>('loading')
@@ -1356,20 +1356,84 @@ export function BrewWizard() {
 
   if (step === 'registered' && result) {
     return (
-      <BrewChrome onClose={close} progressPct={100}>
-        <div className="text-center pt-4">
-          <div className="w-14 h-14 mx-auto rounded-full border-[1.5px] border-t-green text-t-green flex items-center justify-center text-[26px] mb-3">
+      /* p7 del prototipo: sin barra de progreso y sin volver — el registro ya
+         es definitivo, no hay a dónde regresar. */
+      <BrewChrome onClose={close}>
+        <div className="text-center pt-0.5">
+          <div className="w-[54px] h-[54px] mx-auto rounded-full border-[1.5px] border-t-green text-t-green flex items-center justify-center text-[26px] mb-2.5">
             ✓
           </div>
-          <div className="font-display font-medium text-[26px] text-ink">{t.brew.registeredTitle}</div>
-          <p className="text-[13px] text-ink-soft mt-2 px-4">{t.brew.registeredBody.replace('{title}', result.title)}</p>
-          <a href={`/work/${result.tbtId}`} className="block mt-6">
-            <BrewButton>{t.brew.viewCertificate}</BrewButton>
-          </a>
-          <button type="button" onClick={close} className="w-full mt-2.5 py-3 text-[12px] text-ink-soft">
-            {t.brew.done}
-          </button>
+          <div className="font-display font-medium text-[26px] leading-[1.08] text-ink">{t.brew.registeredTitle}</div>
+          <p className="text-[12px] leading-[1.62] text-ink-soft mt-2 px-1.5">{t.brew.registeredBodyFull}</p>
         </div>
+
+        <div className="max-w-[250px] mx-auto mt-3">
+          <div className="border border-hairline rounded-[14px] bg-paper-warm px-4 py-[15px] text-center">
+            <div className="text-[24px] leading-none">✉</div>
+            <div className="text-[12px] font-medium text-ink mt-1.5">
+              {t.brew.certSentTo} {maskedPhone ?? ''}
+            </div>
+            <div className="text-[10px] leading-[1.5] text-placeholder mt-1.5">{t.brew.certKeyInside}</div>
+            <a
+              href="/settings/notifications"
+              className="inline-block mt-2.5 text-[11px] text-ink-soft underline underline-offset-2"
+            >
+              {t.brew.didntReceive}
+            </a>
+          </div>
+        </div>
+
+        <div className="mt-3">
+          <div className="text-[9px] tracking-[0.16em] uppercase text-placeholder text-center mb-2">
+            {t.brew.worksLivesHere}
+          </div>
+          <a
+            href={`/work/${result.tbtId}`}
+            className="flex items-center justify-center gap-2 border border-ink rounded-xl bg-paper-warm p-3.5"
+          >
+            <span className="font-display text-[16px] text-ink">tbt.cafe/work/{result.tbtId}</span>
+            <span className="text-[14px] text-ink-soft">↗</span>
+          </a>
+
+          <div className="flex items-center gap-2.5 pt-2.5 px-0.5 text-[12px] text-ink-soft">
+            <span className="text-t-green text-[14px] leading-none">✓</span>
+            <span>{t.brew.registeredOn}</span>
+            <a
+              href={result.solscanUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1.5 text-t-navy underline underline-offset-2"
+            >
+              <svg width="13" height="11" viewBox="0 0 24 20" fill="none" aria-hidden="true" className="shrink-0">
+                <defs>
+                  <linearGradient id="solbc" x1="0" y1="0" x2="24" y2="20">
+                    <stop offset="0" stopColor="#9945FF" />
+                    <stop offset="1" stopColor="#14F195" />
+                  </linearGradient>
+                </defs>
+                <path d="M4 15.5l3-3h13l-3 3H4z" fill="url(#solbc)" />
+                <path d="M4 4.5l3 3h13l-3-3H4z" fill="url(#solbc)" />
+                <path d="M20 10l-3-3H4l3 3h13z" fill="url(#solbc)" />
+              </svg>
+              {t.brew.solanaBlockchain}
+            </a>
+          </div>
+
+          <a
+            href={result.solscanUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center justify-center gap-1.5 mt-2.5 border border-hairline rounded-[10px] p-[11px] text-ink"
+          >
+            <span className="text-[12px] tracking-[0.04em]">{t.brew.verifyOnChain}</span>
+            <span className="text-[13px] text-ink-soft">↗</span>
+          </a>
+          <div className="text-center text-[10px] text-placeholder mt-1.5">{t.brew.verifyOnChainNote}</div>
+        </div>
+
+        <a href={`/work/${result.tbtId}`} className="block mt-[18px]">
+          <BrewButton>{t.brew.viewWork}</BrewButton>
+        </a>
       </BrewChrome>
     )
   }

@@ -631,6 +631,16 @@
     "tabFeatured": "Destaques"
   },
   "brew": {
+    "registeredBodyFull": "A sua obra está permanentemente na cadeia. O seu certificado — com a sua chave privada de transferência — foi enviado para o seu telemóvel.",
+    "certSentTo": "Certificado enviado para o seu telemóvel",
+    "certKeyInside": "A sua chave de transferência vai dentro — privada, fora deste ecrã.",
+    "didntReceive": "Não recebeu?",
+    "worksLivesHere": "A sua obra vive aqui",
+    "registeredOn": "Registada na",
+    "solanaBlockchain": "blockchain Solana",
+    "verifyOnChain": "Verificar na cadeia",
+    "verifyOnChainNote": "Abre o seu registo no explorador de blocos da Solana",
+    "viewWork": "Ver obra",
     "sealedTag": "selada",
     "sealBiometricNote": "Sele com um único toque da próxima vez.",
     "sealBiometricLink": "Configure a assinatura biométrica",

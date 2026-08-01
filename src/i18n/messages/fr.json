@@ -631,6 +631,16 @@
     "tabFeatured": "En vedette"
   },
   "brew": {
+    "registeredBodyFull": "Votre œuvre est inscrite définitivement sur la chaîne. Votre certificat — avec votre clé de transfert privée — a été envoyé sur votre téléphone.",
+    "certSentTo": "Certificat envoyé sur votre téléphone",
+    "certKeyInside": "Votre clé de transfert est à l’intérieur — privée, hors de cet écran.",
+    "didntReceive": "Pas reçu ?",
+    "worksLivesHere": "Votre œuvre vit ici",
+    "registeredOn": "Enregistrée sur",
+    "solanaBlockchain": "la blockchain Solana",
+    "verifyOnChain": "Vérifier sur la chaîne",
+    "verifyOnChainNote": "Ouvre votre enregistrement dans l’explorateur de blocs Solana",
+    "viewWork": "Voir l’œuvre",
     "sealedTag": "scellée",
     "sealBiometricNote": "Scellez d’un seul geste la prochaine fois.",
     "sealBiometricLink": "Configurez la signature biométrique",
