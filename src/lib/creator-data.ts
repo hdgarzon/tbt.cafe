@@ -50,14 +50,22 @@ const isUuid = (s: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-
 
 /** Resuelve un segmento de URL a un creador real: UUID exacto o alias público. */
 export async function findCreatorBySeg(seg: string): Promise<PublicCreator | null> {
+  // Un alias con espacios/acentos (p. ej. "David Zuleta") llega percent-encoded
+  // en la ruta; hay que decodificarlo antes de comparar contra public_alias.
+  let s = seg
+  try {
+    s = decodeURIComponent(seg)
+  } catch {
+    /* seg ya venía decodificado o mal formado — se usa tal cual */
+  }
   const base = supabase
     .from('profiles')
     .select(
       'id, display_name, public_alias, avatar_url, bio, creator_type, credentials, social_linkedin, social_website, social_instagram'
     )
-  const { data } = isUuid(seg)
-    ? await base.eq('id', seg).maybeSingle()
-    : await base.ilike('public_alias', seg).maybeSingle()
+  const { data } = isUuid(s)
+    ? await base.eq('id', s).maybeSingle()
+    : await base.ilike('public_alias', s).maybeSingle()
   return data
 }
 

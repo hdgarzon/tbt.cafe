@@ -16,8 +16,6 @@ import { PersonalTabs, SeriesDropdown, type SortKey, type FilterKey } from '@/co
 
 type Tab = 'profile' | 'series' | 'works' | 'featured'
 
-const STATUS_DOT = { for_sale: 'bg-t-green', reserved: 'bg-t-yellow', not_for_sale: 'bg-ink-soft' } as const
-
 /** Iniciales (máx. 2 palabras) para el avatar monograma cuando no hay foto. */
 function monogram(name: string): string {
   return (name || '?')
@@ -65,19 +63,41 @@ function socialHref(kind: 'website' | 'instagram' | 'linkedin', v: string): stri
   return `https://${v}`
 }
 
+/** Fondo determinista para una obra sin imagen — cada obra un color estable. */
+function softBg(seed: string): string {
+  let h = 7
+  for (const c of seed) h = (h * 31 + c.charCodeAt(0)) % 360
+  return `linear-gradient(135deg, hsl(${h}, 32%, 90%), hsl(${(h + 40) % 360}, 30%, 82%))`
+}
+
+/**
+ * Celda de obra (.cell del prototipo): la imagen llena el cuadro y el título
+ * va sobre una banda cálida cruzando el centro — la imagen es el objeto y el
+ * título su etiqueta, no un reemplazo. El punto de estado va en un badge blanco
+ * abajo a la derecha, y solo aparece si la obra está en venta o reservada (una
+ * obra simplemente registrada no lleva punto, como en la pared de una galería).
+ */
 function WorkCell({ w }: { w: PublicWork }) {
+  const showDot = w.availability === 'for_sale' || w.availability === 'reserved'
   return (
     <a
       href={`/work/${w.tbt_id}`}
-      className="relative aspect-square rounded-[10px] border border-hairline bg-paper-warm overflow-hidden flex items-center justify-center text-center p-2 font-display text-[13px] text-ink-soft hover:border-ink hover:text-ink transition-colors"
+      className="group relative aspect-square rounded-[10px] border border-hairline overflow-hidden bg-paper-warm flex items-center justify-center"
     >
-      {w.media_url ? (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img src={w.media_url} alt={w.title} className="w-full h-full object-cover" />
-      ) : (
-        w.title
+      <div className="absolute inset-0" style={w.media_url ? undefined : { background: softBg(w.tbt_id) }}>
+        {w.media_url && (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={w.media_url} alt={w.title} className="w-full h-full object-cover" />
+        )}
+      </div>
+      <div className="relative z-[2] w-full bg-paper-warm border-t border-white/50 border-b border-black/[0.06] px-2 py-[9px] text-center font-display text-[14px] leading-[1.25] text-ink shadow-[0_1px_12px_rgba(0,0,0,0.10)] group-hover:bg-white transition-colors">
+        {w.title}
+      </div>
+      {showDot && (
+        <div className="absolute right-2 bottom-2 z-[3] flex items-center rounded-full bg-white/95 p-1 shadow-[0_1px_6px_rgba(0,0,0,0.16)]">
+          <i className={`block w-2 h-2 rounded-full ${w.availability === 'reserved' ? 'bg-[#D9922B]' : 'bg-[#3EA32C]'}`} />
+        </div>
       )}
-      <span className={`absolute top-2 right-2 w-2 h-2 rounded-full ${STATUS_DOT[w.availability]}`} />
     </a>
   )
 }
@@ -328,14 +348,24 @@ export default function CreatorPage({ params }: { params: { seg: string } }) {
                   setSeriesFilter(s.id)
                   setTab('works')
                 }}
-                className="flex items-center justify-between py-3.5 text-left hover:bg-paper-warm transition-colors -mx-1 px-1 rounded-lg"
+                className="flex items-center gap-[13px] w-full py-[13px] px-0.5 text-left hover:bg-paper-warm transition-colors"
               >
-                <span>
-                  <span className="block text-[14px] font-medium text-ink">{s.name}</span>
-                  <span className="block text-[11.5px] text-ink-soft mt-0.5">{name}</span>
+                <span className="w-[42px] h-[42px] shrink-0 rounded-lg border border-hairline bg-paper-warm flex items-center justify-center text-placeholder">
+                  <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                    <rect x="3" y="6" width="18" height="14" rx="2" />
+                    <path d="M7 6V4.5A1.5 1.5 0 0 1 8.5 3h7A1.5 1.5 0 0 1 17 4.5V6" />
+                  </svg>
                 </span>
-                <span className="text-[11.5px] text-ink-soft shrink-0">
-                  {(s.count === 1 ? t.creator.seriesWorkCount : t.creator.seriesWorkCountPlural).replace('{n}', String(s.count))}
+                <span className="flex-1 min-w-0">
+                  <span className="block font-display text-[17px] leading-[1.25] text-ink truncate">{s.name}</span>
+                  <span className="block text-[10.5px] tracking-[0.1em] uppercase text-ink-soft mt-1">
+                    {(s.count === 1 ? t.creator.seriesWorkCount : t.creator.seriesWorkCountPlural).replace('{n}', String(s.count))}
+                  </span>
+                </span>
+                <span className="shrink-0 flex text-placeholder">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                    <path d="M9 6l6 6-6 6" />
+                  </svg>
                 </span>
               </button>
             ))}
@@ -367,6 +397,9 @@ export default function CreatorPage({ params }: { params: { seg: string } }) {
 
         {tab === 'featured' && (
           <div>
+            <div className="flex items-center h-[38px] text-[10.5px] tracking-[0.16em] uppercase text-ink-soft">
+              {t.creator.featuredHeading}
+            </div>
             {featuredWorks.length === 0 ? (
               <p className="text-[13px] text-ink-soft py-6 text-center">{t.creator.worksEmpty}</p>
             ) : (
