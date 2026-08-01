@@ -6,6 +6,7 @@ import { findCreatorBySeg, fetchCreatorWorks, type PublicCreator, type PublicWor
 import { fetchCreatorSeries, type SeriesWithCount } from '@/lib/series-data'
 import { WorkActions } from '@/components/WorkActions'
 import { WorkCell } from '@/components/WorkCell'
+import { BrewInfo } from '@/components/brew/BrewChrome'
 import { PersonalTabs, SeriesDropdown, type SortKey, type FilterKey } from '@/components/PersonalTabs'
 
 /**
@@ -361,6 +362,7 @@ export default function CreatorPage({ params }: { params: { seg: string } }) {
           <div>
             <div className="flex items-center h-[38px] text-[10.5px] tracking-[0.16em] uppercase text-ink-soft">
               {t.creator.featuredHeading}
+              <BrewInfo tip={t.creator.tipFeatured} />
             </div>
             {featuredWorks.length === 0 ? (
               <p className="text-[13px] text-ink-soft py-6 text-center">{t.creator.worksEmpty}</p>

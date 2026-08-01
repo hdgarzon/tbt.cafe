@@ -495,6 +495,7 @@
     "linkWebsite": "Site web",
     "linkInstagram": "Instagram",
     "linkLinkedin": "LinkedIn",
+    "tipFeatured": "Les pièces que ce créateur met en avant — une œuvre récente, une pièce emblématique, ce qu’il veut voir en premier.",
     "featuredHeading": "Œuvres en vedette",
     "registeredOnTbt": "Enregistré sur TBT",
     "registeredWork": "{works} œuvre dans {series} séries",
@@ -630,6 +631,10 @@
     "tabFeatured": "En vedette"
   },
   "brew": {
+    "tipValue": "Un montant est suggéré pour vous donner un point de départ, mais il est inscrit dans le certificat et les conditions de redevances suivent l’œuvre à chaque vente future — confirmez-le plutôt que de l’accepter. Si l’œuvre n’est pas à vendre, mettez le prix à zéro et les redevances à aucune.",
+    "tipRoyalty": "Une part des reventes futures qui vous revient automatiquement chaque fois que l’œuvre change de mains. Choisissez un pourcentage ou un montant fixe.",
+    "tipProtection": "Avant de certifier une œuvre, nous comparons son image à toutes celles déjà enregistrées sur TBT et à des sources publiques sur le web ouvert. Un résultat propre renforce votre revendication. Si quelque chose de similaire existe, vous décidez comment déclarer la relation — votre propre œuvre, une dérivée ou une édition autorisée — et cette déclaration suit le certificat.",
+    "tipMoment": "Ces ancrages sont capturés automatiquement depuis votre position et le monde d’aujourd’hui, puis inscrits dans le certificat. Comme ils font partie d’un registre permanent, lisez-les avant de continuer — chaque ligne est modifiable et vous pouvez retirer ce que vous préférez ne pas publier.",
     "visionTitle": "Votre Vision",
     "visionOptional": "(facultatif)",
     "visionSub": "Enregistrez quelques mots sur l’œuvre — ils font partie du registre d’authenticité.",

@@ -822,7 +822,7 @@ export function BrewWizard() {
         dock={<BrewButton onClick={submitComm1}>{t.brew.next}</BrewButton>}
       >
         <BrewTitle required>{t.brew.valueTitle}</BrewTitle>
-        <p className="text-[13px] text-ink-soft mt-1">{t.brew.valueSub}</p>
+        <div className="text-[12px] leading-[1.62] text-ink-soft mt-2">{t.brew.valueSub}<BrewInfo tip={t.brew.tipValue} /></div>
 
         <div className="grid gap-3 mt-4" style={{ gridTemplateColumns: '1.4fr 1fr' }}>
           <div>
@@ -842,7 +842,7 @@ export function BrewWizard() {
         </div>
 
         <div className="mt-4">
-          <BrewLabel>{t.brew.royalty}</BrewLabel>
+          <BrewLabel info={t.brew.tipRoyalty}>{t.brew.royalty}</BrewLabel>
           <div className="flex gap-2">
             {royaltyOpts.map(([k, label]) => (
               <button
@@ -894,7 +894,7 @@ export function BrewWizard() {
         dock={<BrewButton onClick={submitComm2} disabled={scanState === 'blocked'}>{scanState === 'blocked' ? t.brew.blocked : t.brew.continue}</BrewButton>}
       >
         <div className="font-display font-medium text-[27px] leading-[1.08] text-ink">{t.brew.protectionTitle}</div>
-        <p className="text-[13px] text-ink-soft mt-1">{t.brew.protectionSub}</p>
+        <div className="text-[12px] leading-[1.62] text-ink-soft mt-2">{t.brew.protectionSub}<BrewInfo tip={t.brew.tipProtection} /></div>
 
         <div className="mt-5">
           {scanState === 'idle' && (
@@ -960,7 +960,7 @@ export function BrewWizard() {
     return (
       <BrewChrome onBack={backTo('comm2')} backLabel={t.creator.back} onClose={close} progressPct={STEP_PROGRESS[step]} dock={<BrewButton onClick={() => setStep('ctx2')} disabled={momentLoading}>{t.brew.next}</BrewButton>}>
         <BrewTitle required>{t.brew.momentTitle}</BrewTitle>
-        <p className="text-[13px] text-ink-soft mt-1">{t.brew.momentSub}</p>
+        <div className="text-[12px] leading-[1.62] text-ink-soft mt-2">{t.brew.momentSub}<BrewInfo tip={t.brew.tipMoment} /></div>
 
         {momentLoading ? (
           <p className="text-[13px] text-ink-soft mt-6 text-center">{t.brew.momentLoading}</p>
