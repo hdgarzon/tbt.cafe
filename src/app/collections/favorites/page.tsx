@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useLocale } from '@/i18n/LocaleProvider'
+import { WorkCell } from '@/components/WorkCell'
 import { listFavorites, resolveFavorites, type ResolvedFavorites } from '@/lib/favorites-data'
 import { PersonalTabs } from '@/components/PersonalTabs'
 
@@ -120,18 +121,7 @@ export default function FavoritesPage() {
               </p>
               <div className="grid grid-cols-2 gap-3">
                 {data.works.map((w) => (
-                  <a
-                    key={w.id}
-                    href={`/work/${w.tbt_id}`}
-                    className="aspect-square rounded-[10px] border border-hairline bg-paper-warm overflow-hidden flex items-center justify-center text-center p-2 font-display text-[13px] text-ink-soft hover:border-ink hover:text-ink transition-colors"
-                  >
-                    {w.media_url ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img src={w.media_url} alt={w.title} className="w-full h-full object-cover" />
-                    ) : (
-                      w.title
-                    )}
-                  </a>
+                  <WorkCell key={w.id} tbtId={w.tbt_id} title={w.title} mediaUrl={w.media_url} />
                 ))}
               </div>
             </>

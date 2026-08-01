@@ -27,6 +27,8 @@ type ShellValue = {
   /** Teléfono enmascarado de la sesión, para el hub de autenticación. */
   maskedPhone: string | null
   openAuth: () => void
+  /** Abre el cajón de menú — el prototipo vuelve al Menú desde /profile. */
+  openMenu: () => void
 }
 
 const ShellContext = createContext<ShellValue | null>(null)
@@ -78,7 +80,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
   return (
     <ShellContext.Provider
-      value={{ connected, maskedPhone, openAuth: () => setAuthOpen(true) }}
+      value={{ connected, maskedPhone, openAuth: () => setAuthOpen(true), openMenu: () => setMenuOpen(true) }}
     >
       <Header connected={connected} onToggle={handleToggle} onMenu={() => setMenuOpen(true)} />
 

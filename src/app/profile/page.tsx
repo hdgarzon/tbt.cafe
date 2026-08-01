@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useLocale } from '@/i18n/LocaleProvider'
+import { useShell } from '@/components/AppShell'
 
 /**
  * /profile — selector entre perfil de Creador y de Coleccionista
@@ -14,6 +15,7 @@ import { useLocale } from '@/i18n/LocaleProvider'
  */
 export default function ProfilePage() {
   const { t } = useLocale()
+  const { openMenu } = useShell()
   const [creatorSet, setCreatorSet] = useState(false)
   const [collectorSet, setCollectorSet] = useState(false)
 
@@ -42,7 +44,11 @@ export default function ProfilePage() {
 
   return (
     <div className="px-4 pt-6">
-      <a href="/" className="back-link">← {t.purchase.home}</a>
+      {/* El prototipo vuelve al Menú desde /profile (data-back-menu): va a la
+          home y reabre el cajón, no a una página anterior cualquiera. */}
+      <button type="button" onClick={openMenu} className="back-link">
+        ← {t.profile.backMenu}
+      </button>
       <h1 className="page-title">{t.profile.title}</h1>
       <div className="page-sub">{t.profile.pageSub}</div>
 
@@ -51,7 +57,7 @@ export default function ProfilePage() {
           <a
             key={c.key}
             href={`/profile/${c.key}`}
-            className="text-left rounded-2xl border border-hairline bg-paper p-5 transition-colors hover:border-ink hover:bg-paper-warm"
+            className="block text-left rounded-[14px] border border-hairline bg-paper p-5 transition-colors hover:border-ink hover:bg-paper-warm"
           >
             <div className="font-display font-medium text-[24px] leading-none text-ink mt-1.5">
               {c.title}

@@ -11,6 +11,7 @@ import {
   type CollectionWork,
   type DerivedGroup,
 } from '@/lib/collections-data'
+import { WorkCell } from '@/components/WorkCell'
 import { PersonalTabs, SeriesDropdown, type SortKey, type FilterKey } from '@/components/PersonalTabs'
 
 /**
@@ -23,27 +24,6 @@ import { PersonalTabs, SeriesDropdown, type SortKey, type FilterKey } from '@/co
 type Tab = 'creators' | 'series' | 'works'
 
 const plural = (n: number, one: string, many: string) => (n === 1 ? one : many).replace('{n}', String(n))
-
-function WorkCell({ w }: { w: CollectionWork }) {
-  return (
-    <a
-      href={`/work/${w.tbt_id}`}
-      className="rounded-[10px] border border-hairline bg-paper-warm overflow-hidden transition-colors hover:border-ink group"
-    >
-      <div className="aspect-square flex items-center justify-center text-center p-2 font-display text-[13px] text-ink-soft group-hover:text-ink">
-        {w.media_url ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img src={w.media_url} alt={w.title} className="w-full h-full object-cover" />
-        ) : (
-          w.title
-        )}
-      </div>
-      <div className="px-2 py-1.5 border-t border-hairline text-[10px] tracking-[0.1em] uppercase text-ink-soft truncate">
-        {w.creator_name}
-      </div>
-    </a>
-  )
-}
 
 function sortWorks(works: CollectionWork[], sort: SortKey): CollectionWork[] {
   const arr = [...works]
@@ -198,7 +178,7 @@ export default function AcquisitionsPage() {
                 </p>
                 <div className="mt-2 grid grid-cols-2 gap-3">
                   {visibleWorks.map((w) => (
-                    <WorkCell key={w.id} w={w} />
+                    <WorkCell key={w.id} tbtId={w.tbt_id} title={w.title} mediaUrl={w.media_url} />
                   ))}
                 </div>
               </>

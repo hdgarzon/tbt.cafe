@@ -32,11 +32,11 @@
     "roastSub": "TBT 101",
     "roastNote": "Roast — learn everything about TBTs. What a Transferable Billable Token is, how certification works, royalties, and verification. The onboarding surface, in the spirit of an “NFT 101.”",
     "grindTitle": "Grind",
-    "grindSub": "Discover · Critique · Share · Compare",
-    "grindNote": "Grind — the discovery floor. Browse, critique, share, and compare TBTs. (The Charts live here.)",
+    "grindSub": "Discover · Curate · Share · Compare",
+    "grindNote": "Grind — the discovery floor. Browse, curate, share, and compare TBTs. (The Charts live here.)",
     "brewTitle": "Brew",
     "brewSub": "Create",
-    "brewNote": "Brew — where a creator makes a TBT: upload the work, set price and royalties, and certify it on-chain. The first TBT auto-creates “Collection 1.”"
+    "brewNote": "Brew — where a creator makes a TBT: upload the work, set price and royalties, and certify it on-chain. The first TBT auto-creates “Series 1.”"
   },
   "footer": {
     "credit": "Transbit × BROCHA"
@@ -198,11 +198,12 @@
   "profile": {
     "title": "Profile",
     "creatorTitle": "Creator profile",
-    "creatorSub": "Who certifies the work",
+    "creatorSub": "How you're credited as a maker.",
     "collectorTitle": "Collector profile",
-    "collectorSub": "Who acquires it",
+    "collectorSub": "How you appear as an owner.",
     "needSignIn": "Sign in to edit your profile.",
     "pageSub": "Set up how you appear on TBTs",
+    "backMenu": "Menu",
     "statusSet": "Set up ✓"
   },
   "profileCreator": {

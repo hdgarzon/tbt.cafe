@@ -21,6 +21,13 @@ export function SectionPage({ section }: { section: 'roast' | 'grind' | 'brew' }
 
   return (
     <div className="px-4 pt-6">
+      <button
+        type="button"
+        onClick={() => (typeof window !== 'undefined' && window.history.length > 1 ? window.history.back() : (window.location.href = '/'))}
+        className="back-link"
+      >
+        ← {t.creator.back}
+      </button>
       <div className="urlbar">tbt.cafe/{section}</div>
       <h1 className="page-title">{copy.title}</h1>
       <div className="page-sub">{copy.sub}</div>

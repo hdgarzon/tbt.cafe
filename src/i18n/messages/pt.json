@@ -32,11 +32,11 @@
     "roastSub": "TBT 101",
     "roastNote": "Roast — aprenda tudo sobre os TBT. O que é um Token Transferível Faturável, como funciona a certificação, os direitos autorais e a verificação. A superfície de integração, no espírito de um “NFT 101”.",
     "grindTitle": "Grind",
-    "grindSub": "Descobrir · Criticar · Partilhar · Comparar",
-    "grindNote": "Grind — o piso de descoberta. Explore, critique, partilhe e compare TBT. (As Listas vivem aqui.)",
+    "grindSub": "Descobrir · Curar · Partilhar · Comparar",
+    "grindNote": "Grind — o piso de descoberta. Explore, cure, partilhe e compare TBT. (As Listas vivem aqui.)",
     "brewTitle": "Brew",
     "brewSub": "Criar",
-    "brewNote": "Brew — onde um criador faz um TBT: carrega a obra, define preço e direitos autorais, e certifica-a na cadeia. O primeiro TBT cria “Collection 1” automaticamente."
+    "brewNote": "Brew — onde um criador faz um TBT: carrega a obra, define preço e direitos autorais, e certifica-a na cadeia. O primeiro TBT cria “Series 1” automaticamente."
   },
   "footer": {
     "credit": "Transbit × BROCHA"
@@ -198,11 +198,12 @@
   "profile": {
     "title": "Perfil",
     "creatorTitle": "Perfil de Criador",
-    "creatorSub": "Quem certifica a obra",
+    "creatorSub": "Como você é creditado como autor.",
     "collectorTitle": "Perfil de Colecionador",
-    "collectorSub": "Quem a adquire",
+    "collectorSub": "Como você aparece como proprietário.",
     "needSignIn": "Entre para editar seu perfil.",
     "pageSub": "Configure como aparece nos TBT",
+    "backMenu": "Menu",
     "statusSet": "Configurado ✓"
   },
   "profileCreator": {

@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useLocale } from '@/i18n/LocaleProvider'
 import { fetchCreations, deriveSeries, onlyFeatured, type CollectionWork, type DerivedGroup } from '@/lib/collections-data'
+import { WorkCell } from '@/components/WorkCell'
 import { PersonalTabs, SeriesDropdown, type SortKey, type FilterKey } from '@/components/PersonalTabs'
 
 /**
@@ -19,22 +20,6 @@ import { PersonalTabs, SeriesDropdown, type SortKey, type FilterKey } from '@/co
 const plural = (n: number, one: string, many: string) => (n === 1 ? one : many).replace('{n}', String(n))
 
 type Tab = 'series' | 'works' | 'featured'
-
-function WorkCell({ w }: { w: CollectionWork }) {
-  return (
-    <a
-      href={`/work/${w.tbt_id}`}
-      className="aspect-square rounded-[10px] border border-hairline bg-paper-warm overflow-hidden flex items-center justify-center text-center p-2 font-display text-[13px] text-ink-soft hover:border-ink hover:text-ink transition-colors"
-    >
-      {w.media_url ? (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img src={w.media_url} alt={w.title} className="w-full h-full object-cover" />
-      ) : (
-        w.title
-      )}
-    </a>
-  )
-}
 
 function sortWorks(works: CollectionWork[], sort: SortKey): CollectionWork[] {
   const arr = [...works]
@@ -152,7 +137,7 @@ export default function CreationsPage() {
                 </p>
                 <div className="mt-2 grid grid-cols-2 gap-3">
                   {visibleWorks.map((w) => (
-                    <WorkCell key={w.id} w={w} />
+                    <WorkCell key={w.id} tbtId={w.tbt_id} title={w.title} mediaUrl={w.media_url} />
                   ))}
                 </div>
               </>
@@ -170,7 +155,7 @@ export default function CreationsPage() {
               </p>
               <div className="grid grid-cols-2 gap-3">
                 {featured.map((w) => (
-                  <WorkCell key={w.id} w={w} />
+                  <WorkCell key={w.id} tbtId={w.tbt_id} title={w.title} mediaUrl={w.media_url} />
                 ))}
               </div>
             </>

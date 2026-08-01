@@ -32,11 +32,11 @@
     "roastSub": "TBT 101",
     "roastNote": "Roast — apprenez tout sur les TBT. Ce qu’est un Token Transférable Facturable, comment fonctionne la certification, les redevances et la vérification. La surface d’intégration, dans l’esprit d’un « NFT 101 ».",
     "grindTitle": "Grind",
-    "grindSub": "Découvrir · Critiquer · Partager · Comparer",
-    "grindNote": "Grind — l’étage de la découverte. Parcourez, critiquez, partagez et comparez les TBT. (Les Classements vivent ici.)",
+    "grindSub": "Découvrir · Curation · Partager · Comparer",
+    "grindNote": "Grind — l’étage de la découverte. Parcourez, faites la curation, partagez et comparez les TBT. (Les Classements vivent ici.)",
     "brewTitle": "Brew",
     "brewSub": "Créer",
-    "brewNote": "Brew — là où un créateur fabrique un TBT : téléverse l’œuvre, fixe le prix et les redevances, et la certifie sur la chaîne. Le premier TBT crée « Collection 1 » automatiquement."
+    "brewNote": "Brew — là où un créateur fabrique un TBT : téléverse l’œuvre, fixe le prix et les redevances, et la certifie sur la chaîne. Le premier TBT crée « Series 1 » automatiquement."
   },
   "footer": {
     "credit": "Transbit × BROCHA"
@@ -198,11 +198,12 @@
   "profile": {
     "title": "Profil",
     "creatorTitle": "Profil créateur",
-    "creatorSub": "Qui certifie l'œuvre",
+    "creatorSub": "Comment vous êtes crédité en tant qu'auteur.",
     "collectorTitle": "Profil collectionneur",
-    "collectorSub": "Qui l'acquiert",
+    "collectorSub": "Comment vous apparaissez en tant que propriétaire.",
     "needSignIn": "Connectez-vous pour modifier votre profil.",
     "pageSub": "Configurez votre apparence sur les TBT",
+    "backMenu": "Menu",
     "statusSet": "Configuré ✓"
   },
   "profileCreator": {

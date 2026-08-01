@@ -5,6 +5,7 @@ import { useLocale } from '@/i18n/LocaleProvider'
 import { findCreatorBySeg, fetchCreatorWorks, type PublicCreator, type PublicWork } from '@/lib/creator-data'
 import { fetchCreatorSeries, type SeriesWithCount } from '@/lib/series-data'
 import { WorkActions } from '@/components/WorkActions'
+import { WorkCell } from '@/components/WorkCell'
 import { PersonalTabs, SeriesDropdown, type SortKey, type FilterKey } from '@/components/PersonalTabs'
 
 /**
@@ -61,45 +62,6 @@ function socialHref(kind: 'website' | 'instagram' | 'linkedin', v: string): stri
   if (kind === 'instagram') return `https://instagram.com/${handle}`
   if (kind === 'linkedin') return `https://linkedin.com/in/${handle}`
   return `https://${v}`
-}
-
-/** Fondo determinista para una obra sin imagen — cada obra un color estable. */
-function softBg(seed: string): string {
-  let h = 7
-  for (const c of seed) h = (h * 31 + c.charCodeAt(0)) % 360
-  return `linear-gradient(135deg, hsl(${h}, 32%, 90%), hsl(${(h + 40) % 360}, 30%, 82%))`
-}
-
-/**
- * Celda de obra (.cell del prototipo): la imagen llena el cuadro y el título
- * va sobre una banda cálida cruzando el centro — la imagen es el objeto y el
- * título su etiqueta, no un reemplazo. El punto de estado va en un badge blanco
- * abajo a la derecha, y solo aparece si la obra está en venta o reservada (una
- * obra simplemente registrada no lleva punto, como en la pared de una galería).
- */
-function WorkCell({ w }: { w: PublicWork }) {
-  const showDot = w.availability === 'for_sale' || w.availability === 'reserved'
-  return (
-    <a
-      href={`/work/${w.tbt_id}`}
-      className="group relative aspect-square rounded-[10px] border border-hairline overflow-hidden bg-paper-warm flex items-center justify-center"
-    >
-      <div className="absolute inset-0" style={w.media_url ? undefined : { background: softBg(w.tbt_id) }}>
-        {w.media_url && (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img src={w.media_url} alt={w.title} className="w-full h-full object-cover" />
-        )}
-      </div>
-      <div className="relative z-[2] w-full bg-paper-warm border-t border-white/50 border-b border-black/[0.06] px-2 py-[9px] text-center font-display text-[14px] leading-[1.25] text-ink shadow-[0_1px_12px_rgba(0,0,0,0.10)] group-hover:bg-white transition-colors">
-        {w.title}
-      </div>
-      {showDot && (
-        <div className="absolute right-2 bottom-2 z-[3] flex items-center rounded-full bg-white/95 p-1 shadow-[0_1px_6px_rgba(0,0,0,0.16)]">
-          <i className={`block w-2 h-2 rounded-full ${w.availability === 'reserved' ? 'bg-[#D9922B]' : 'bg-[#3EA32C]'}`} />
-        </div>
-      )}
-    </a>
-  )
 }
 
 function applySortFilter(works: PublicWork[], sort: SortKey, filter: FilterKey): PublicWork[] {
@@ -388,7 +350,7 @@ export default function CreatorPage({ params }: { params: { seg: string } }) {
             ) : (
               <div className="mt-4 grid grid-cols-2 gap-3">
                 {visibleWorks.map((w) => (
-                  <WorkCell key={w.id} w={w} />
+                  <WorkCell key={w.id} tbtId={w.tbt_id} title={w.title} mediaUrl={w.media_url} availability={w.availability} />
                 ))}
               </div>
             )}
@@ -405,7 +367,7 @@ export default function CreatorPage({ params }: { params: { seg: string } }) {
             ) : (
               <div className="grid grid-cols-2 gap-3">
                 {featuredWorks.map((w) => (
-                  <WorkCell key={w.id} w={w} />
+                  <WorkCell key={w.id} tbtId={w.tbt_id} title={w.title} mediaUrl={w.media_url} availability={w.availability} />
                 ))}
               </div>
             )}
