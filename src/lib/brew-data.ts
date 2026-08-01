@@ -360,3 +360,53 @@ export async function completeTbt(
     return { error: 'completeFailed' }
   }
 }
+
+// ---- Espresso ------------------------------------------------------------
+
+export type WorkFields = { title: string; aboutWork: string; creationDate: string; assetLinks: string[] }
+export type ValueFields = {
+  marketPrice: number | null
+  currency: string
+  royaltyType: 'none' | 'percentage' | 'fixed'
+  royaltyValue: number | null
+}
+
+/**
+ * Extracción conversacional (EXTRACT SEAM del prototipo) — real, contra la
+ * ruta Gemini de Forms. Devuelve null si no se pudo extraer: en ese caso el
+ * front deja los campos vacíos para que el creador los escriba, nunca
+ * inventa un valor que terminaría en un certificado permanente.
+ */
+export async function extractFields(field: 'work', text: string): Promise<WorkFields | null>
+export async function extractFields(field: 'value', text: string): Promise<ValueFields | null>
+export async function extractFields(field: 'work' | 'value', text: string): Promise<unknown> {
+  const auth = await authHeader()
+  if (!auth) return null
+  try {
+    const res = await fetch(`${TBT_BACKEND_URL}/api/espresso/extract`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...auth },
+      body: JSON.stringify({ field, text }),
+    })
+    if (!res.ok) return null
+    const data = await res.json()
+    return data.fields ?? null
+  } catch {
+    return null
+  }
+}
+
+export type ImageDescription = { caption?: string; tags?: string[]; colors?: string[] }
+
+/** Lectura de la imagen (describe) — alimenta categoría/material sin preguntar. */
+export async function describeImage(file: File): Promise<ImageDescription | null> {
+  const form = new FormData()
+  form.append('file', file)
+  try {
+    const res = await fetch(`${TBT_BACKEND_URL}/api/tbt-image/describe`, { method: 'POST', body: form })
+    if (!res.ok) return null
+    return await res.json()
+  } catch {
+    return null
+  }
+}

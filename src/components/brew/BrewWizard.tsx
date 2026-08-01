@@ -6,6 +6,7 @@ import { useLocale } from '@/i18n/LocaleProvider'
 import { useShell } from '@/components/AppShell'
 import { supabase } from '@/lib/supabase'
 import { BrewChrome, BrewTitle, BrewInfo, BrewButton, BrewLabel, BrewInput, BrewSelect } from '@/components/brew/BrewChrome'
+import { EspressoFlow, type EspressoResult } from '@/components/brew/EspressoFlow'
 import { money } from '@/lib/fees'
 import type { SeriesWithCount } from '@/lib/series-data'
 import {
@@ -37,6 +38,7 @@ type Step =
   | 'loading'
   | 'gate'
   | 'chooser'
+  | 'espresso'
   | 'work1'
   | 'work2'
   | 'work3'
@@ -55,6 +57,7 @@ const STEP_PROGRESS: Record<Step, number> = {
   loading: 0,
   gate: 0,
   chooser: 0,
+  espresso: 25,
   work1: 6,
   work2: 13,
   work3: 19,
@@ -570,8 +573,8 @@ export function BrewWizard() {
 
         <button
           type="button"
-          onClick={() => setMsg(t.brew.espressoComingSoon)}
-          className="block w-full text-left border border-hairline rounded-2xl p-4 mt-3 opacity-60"
+          onClick={() => setStep('espresso')}
+          className="block w-full text-left border border-hairline rounded-2xl p-4 mt-3 hover:border-ink transition-colors"
         >
           <div className="flex items-center justify-between">
             <span className="font-display text-[19px] text-ink">{t.brew.espressoName}</span>
@@ -591,6 +594,34 @@ export function BrewWizard() {
   const backTo = (s: Step) => () => {
     setMsg('')
     setStep(s)
+  }
+
+  if (step === 'espresso') {
+    return (
+      <EspressoFlow
+        onBack={backTo('chooser')}
+        onClose={close}
+        onComplete={(r: EspressoResult) => {
+          // Espresso recoge los MISMOS datos; se vuelcan en el estado de Cold
+          // Brew y se entrega en el Seal (phase 5 sub 3 del prototipo).
+          setImageFile(r.imageFile)
+          setImagePreview(URL.createObjectURL(r.imageFile))
+          setTitle(r.title)
+          setAboutWork(r.aboutWork)
+          setCreatedDate(r.createdDate)
+          setAssetLinks(r.assetLinks.length ? r.assetLinks : [''])
+          setMarketPrice(r.marketPrice)
+          setCurrency(r.currency)
+          setRoyaltyType(r.royaltyType)
+          setRoyaltyValue(r.royaltyValue)
+          setScanState(r.scanState)
+          setScanScore(r.scanScore)
+          if (r.material) setMaterial(r.material)
+          setStep('ctx1')
+          loadMoment()
+        }}
+      />
+    )
   }
 
   if (step === 'work1') {
