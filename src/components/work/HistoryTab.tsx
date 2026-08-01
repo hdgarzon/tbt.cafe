@@ -29,17 +29,17 @@ export function HistoryTab({ workId }: { workId: string }) {
   return (
     <div className="flex flex-col">
       {events.map((e, i) => (
-        <div key={e.id} className="flex gap-3">
-          <div className="flex flex-col items-center">
-            <span className={`w-2 h-2 rounded-full mt-1.5 ${i === 0 ? 'bg-ink' : 'bg-hairline'}`} />
-            {i < events.length - 1 && <span className="flex-1 w-px bg-hairline my-1" />}
+        <div key={e.id} className="flex gap-[13px] py-3.5 border-b border-hairline last:border-b-0">
+          <div className="flex flex-col items-center pt-[3px]">
+            <span className={`w-[9px] h-[9px] rounded-full ${i === 0 ? 'bg-ink' : 'bg-hairline'}`} />
+            {i < events.length - 1 && <span className="flex-1 w-px bg-hairline mt-[5px] min-h-[16px]" />}
           </div>
-          <div className="flex-1 pb-5 min-w-0">
-            <div className="flex items-baseline justify-between gap-2">
-              <span className="text-[13px] font-medium text-ink">
+          <div className="flex-1 min-w-0">
+            <div className="flex items-baseline justify-between gap-2.5">
+              <span className="text-[12px] font-medium text-ink">
                 {t.myCollections[EVENT_LABEL_KEY[e.event]] ?? e.event}
               </span>
-              <span className="text-[11px] text-ink-soft shrink-0">{new Date(e.occurred_at).toLocaleDateString()}</span>
+              <span className="text-[10px] text-placeholder shrink-0">{new Date(e.occurred_at).toLocaleDateString()}</span>
             </div>
             {e.actor_label && <div className="text-[12px] text-ink-soft mt-0.5">{e.actor_label}</div>}
             {e.amount != null && (

@@ -7,10 +7,11 @@ import type { WorkFull } from '@/lib/work-data'
 const STATUS_LABEL_KEY = { for_sale: 'forSale', reserved: 'reserved', not_for_sale: 'notForSale' } as const
 const STATUS_DOT = { for_sale: 'bg-t-green', reserved: 'bg-t-yellow', not_for_sale: 'bg-ink-soft' } as const
 
+// .wk-row del prototipo: etiqueta versalita diminuta a la izquierda, valor a la derecha.
 const Row = ({ k, v }: { k: string; v: React.ReactNode }) => (
-  <div className="flex items-center justify-between py-2.5 text-[13px]">
-    <span className="text-ink-soft">{k}</span>
-    <span className="text-ink text-right">{v}</span>
+  <div className="flex items-baseline justify-between gap-3.5 py-[11px]">
+    <span className="text-[10px] tracking-[0.13em] uppercase text-placeholder shrink-0">{k}</span>
+    <span className="text-[12.5px] text-ink text-right leading-[1.5]">{v}</span>
   </div>
 )
 
@@ -44,8 +45,8 @@ export function InfoTab({ work }: { work: WorkFull }) {
   return (
     <div>
       <div className="pb-5 mb-5 border-b border-hairline">
-        <div className="label-caps">{t.info.value}</div>
-        <div className="font-display text-[26px] leading-tight text-ink mt-2">{price}</div>
+        <div className="text-[9.5px] tracking-[0.16em] uppercase text-placeholder">{t.info.value}</div>
+        <div className="font-display text-[27px] leading-none text-ink mt-2">{price}</div>
         <div className="flex flex-col divide-y divide-hairline mt-1">
           <Row
             k={t.info.status}
@@ -64,7 +65,7 @@ export function InfoTab({ work }: { work: WorkFull }) {
       </div>
 
       <div className="pb-5 mb-5 border-b border-hairline">
-        <div className="label-caps">{t.info.blockchain}</div>
+        <div className="text-[9.5px] tracking-[0.16em] uppercase text-placeholder">{t.info.blockchain}</div>
         {explorerUrl ? (
           <a
             href={explorerUrl}
@@ -92,7 +93,7 @@ export function InfoTab({ work }: { work: WorkFull }) {
       </div>
 
       <div>
-        <div className="label-caps">{t.info.protection}</div>
+        <div className="text-[9.5px] tracking-[0.16em] uppercase text-placeholder">{t.info.protection}</div>
         <div className="flex items-start gap-2.5 mt-2.5">
           <span className="mt-0.5 shrink-0 w-4 h-4 rounded-full bg-t-green/15 text-t-green flex items-center justify-center">
             <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">

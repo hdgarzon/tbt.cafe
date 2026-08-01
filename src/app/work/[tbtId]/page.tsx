@@ -62,8 +62,6 @@ export default function WorkPage({ params }: { params: { tbtId: string } }) {
     load()
   }, [load])
 
-  const canGoBack = typeof window !== 'undefined' && window.history.length > 1
-
   if (loading) return <div className="px-4 pt-6 text-[13px] text-ink-soft">{t.work.loading}</div>
 
   if (notFound || !work) {
@@ -119,54 +117,47 @@ export default function WorkPage({ params }: { params: { tbtId: string } }) {
   }
 
   // Matriz de comercio del hero (ÍTEM 1): disponibilidad × taking-offers.
+  // .wk-act del prototipo — píldora clara con sombra si hay acción (Buy/Offer),
+  // píldora oscura estática si es solo una etiqueta (Reserved/Not for sale).
+  const wkActLive =
+    'inline-flex items-center gap-2 rounded-[22px] px-[18px] py-[11px] bg-paper text-ink text-[11.5px] font-medium tracking-[0.12em] uppercase shadow-[0_3px_16px_rgba(0,0,0,0.34)]'
+  const wkActStatic =
+    'inline-flex items-center gap-2 rounded-[22px] px-[18px] py-[11px] bg-[rgba(20,19,18,0.72)] text-white border border-white/20 text-[11.5px] font-medium tracking-[0.12em] uppercase'
   let heroControl: ReactNode
   if (c.availability === 'for_sale') {
     heroControl = (
-      <button
-        type="button"
-        onClick={buy}
-        disabled={buying}
-        className="flex items-center gap-1.5 px-4 py-2.5 rounded-full bg-paper text-ink text-[12px] font-semibold shadow-md disabled:opacity-60"
-      >
-        <span className="w-1.5 h-1.5 rounded-full bg-t-green" />
+      <button type="button" onClick={buy} disabled={buying} className={`${wkActLive} disabled:opacity-60`}>
+        <span className="w-2 h-2 rounded-full bg-[#3EA32C]" />
         {buying ? t.work.starting : t.work.buy}
       </button>
     )
   } else if (c.taking_offers) {
     heroControl = (
-      <button
-        type="button"
-        onClick={() => setOffering(true)}
-        className="px-4 py-2.5 rounded-full bg-paper text-ink text-[12px] font-semibold shadow-md"
-      >
+      <button type="button" onClick={() => setOffering(true)} className={wkActLive}>
         {t.work.makeOffer}
       </button>
     )
   } else if (c.availability === 'reserved') {
     heroControl = (
-      <span className="flex items-center gap-1.5 px-4 py-2.5 rounded-full bg-paper text-ink text-[12px] font-semibold shadow-md">
-        <span className="w-1.5 h-1.5 rounded-full bg-t-yellow" />
+      <span className={wkActStatic}>
+        <span className="w-2 h-2 rounded-full bg-[#D9922B]" />
         {t.action.reserved}
       </span>
     )
   } else {
-    heroControl = (
-      <span className="px-4 py-2.5 rounded-full bg-ink/70 text-paper text-[12px] font-semibold backdrop-blur-sm">
-        {t.action.notForSale}
-      </span>
-    )
+    heroControl = <span className={wkActStatic}>{t.action.notForSale}</span>
   }
 
   return (
     <div className="px-4 pt-5">
       <div className="flex items-center justify-between">
-        {canGoBack ? (
-          <button type="button" onClick={() => window.history.back()} className="back-link !pb-0">
-            ← {t.purchase.home}
-          </button>
-        ) : (
-          <span />
-        )}
+        <button
+          type="button"
+          onClick={() => (typeof window !== 'undefined' && window.history.length > 1 ? window.history.back() : (window.location.href = '/'))}
+          className="back-link !pb-0"
+        >
+          ← {t.creator.back}
+        </button>
         <WorkActions
           favorite={{ type: 'work', id: work.id }}
           curate={{ type: 'work', id: work.id, label: work.title }}
@@ -190,19 +181,18 @@ export default function WorkPage({ params }: { params: { tbtId: string } }) {
         )}
       </div>
 
-      <div role="tablist" className="flex items-center gap-1 border-b border-hairline mt-4">
+      <div role="tablist" className="flex items-center gap-[22px] border-b border-hairline mt-[22px]">
         {(['profile', 'info', 'history'] as const).map((k) => (
           <button
             key={k}
             role="tab"
             aria-selected={tab === k}
             onClick={() => setTab(k)}
-            className={`relative px-3.5 py-3 text-[12px] font-medium transition-colors ${
-              tab === k ? 'text-ink' : 'text-ink-soft hover:text-ink'
+            className={`pb-3 text-[11.5px] tracking-[0.16em] uppercase transition-colors ${
+              tab === k ? 'text-ink font-semibold' : 'text-placeholder font-normal hover:text-ink-soft'
             }`}
           >
             {t.work[TAB_KEY[k]]}
-            {tab === k && <span className="absolute left-0 right-0 -bottom-px h-[2px] bg-ink" />}
           </button>
         ))}
         {role && (
@@ -212,13 +202,12 @@ export default function WorkPage({ params }: { params: { tbtId: string } }) {
             title={t.work.tabAction}
             aria-label={t.work.tabAction}
             onClick={() => setTab('action')}
-            className={`relative px-3.5 py-3 transition-colors ${tab === 'action' ? 'text-t-magenta' : 'text-ink-soft hover:text-t-magenta'}`}
+            className={`flex items-center pb-[7px] ml-0.5 transition-colors ${tab === 'action' ? 'text-t-magenta' : 'text-t-magenta/60 hover:text-t-magenta'}`}
           >
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" aria-hidden="true">
+            <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" aria-hidden="true">
               <circle cx="12" cy="12" r="9.2" />
               <path d="M8.6 15.4L12 7.6l3.4 7.8M9.9 13.1h4.2" strokeLinecap="round" strokeLinejoin="round" />
             </svg>
-            {tab === 'action' && <span className="absolute left-0 right-0 -bottom-px h-[2px] bg-t-magenta" />}
           </button>
         )}
       </div>

@@ -73,15 +73,15 @@ export function ProfileTab({
   return (
     <div>
       <div
-        className="relative w-full aspect-square rounded-2xl overflow-hidden bg-paper-warm"
+        className="relative w-full aspect-[4/3] rounded-[14px] border border-hairline overflow-hidden bg-paper-warm"
         style={work.media_url ? { backgroundImage: `url(${work.media_url})`, backgroundSize: 'cover', backgroundPosition: 'center' } : undefined}
       >
         <div className="absolute bottom-3 right-3">{heroControl}</div>
       </div>
 
-      <div className="mt-5">
-        <div className="label-caps">{t.work.aboutHeading}</div>
-        <p className="text-[14px] leading-[1.6] text-ink mt-2">
+      <div className="py-4 border-b border-hairline">
+        <div className="text-[9.5px] tracking-[0.16em] uppercase text-placeholder">{t.work.aboutHeading}</div>
+        <p className="font-display text-[16px] leading-[1.55] text-ink mt-1.5">
           {work.description ? (
             <EditableRow
               value={work.description}
@@ -98,33 +98,33 @@ export function ProfileTab({
           href={`https://tbt.cafe/work/${work.tbt_id}`}
           target="_blank"
           rel="noopener noreferrer"
-          className="inline-block mt-3 text-[12px] font-medium text-t-cyan hover:underline"
+          className="inline-block mt-3 font-mono text-[14.5px] tracking-[0.01em] text-[#9a7b4f] hover:underline"
         >
           tbt.cafe/work/{work.tbt_id}
         </a>
       </div>
 
       {work.context && (
-        <div className="mt-5 pt-5 border-t border-hairline">
-          <div className="label-caps">{t.work.context}</div>
-          <p className="text-[13px] leading-[1.65] text-ink-soft mt-2">{work.context}</p>
+        <div className="py-4 border-b border-hairline">
+          <div className="text-[9.5px] tracking-[0.16em] uppercase text-placeholder">{t.work.context}</div>
+          <p className="font-display text-[16px] leading-[1.55] text-ink mt-1.5">{work.context}</p>
         </div>
       )}
 
-      <div className="mt-5 pt-5 border-t border-hairline">
-        <div className="label-caps mb-2">{t.work.details}</div>
-        <div className="flex flex-col divide-y divide-hairline text-[13px]">
+      <div className="py-4">
+        <div className="text-[9.5px] tracking-[0.16em] uppercase text-placeholder mb-1">{t.work.details}</div>
+        <div className="flex flex-col">
           {work.series && (
-            <div className="flex items-center justify-between py-2.5">
-              <span className="text-ink-soft">{t.work.series}</span>
-              <a href={`/creator/${work.creator_id}`} className="text-ink hover:underline">
+            <div className="flex items-baseline justify-between gap-3.5 py-[11px] border-b border-[#F1EFE8]">
+              <span className="text-[10px] tracking-[0.13em] uppercase text-placeholder shrink-0">{t.work.series}</span>
+              <a href={`/creator/${work.creator_id}`} className="text-[12.5px] text-ink text-right hover:underline">
                 {work.series.name}
               </a>
             </div>
           )}
-          <div className="flex items-center justify-between py-2.5">
-            <span className="text-ink-soft">{t.work.category}</span>
-            <span className="text-ink">
+          <div className="flex items-baseline justify-between gap-3.5 py-[11px] border-b border-[#F1EFE8]">
+            <span className="text-[10px] tracking-[0.13em] uppercase text-placeholder shrink-0">{t.work.category}</span>
+            <span className="text-[12.5px] text-ink text-right">
               {work.category ? (
                 <EditableRow value={work.category} canEdit={canEdit} onSave={(v) => save(saveCategory, v)} />
               ) : (
@@ -132,9 +132,9 @@ export function ProfileTab({
               )}
             </span>
           </div>
-          <div className="flex items-center justify-between py-2.5">
-            <span className="text-ink-soft">{t.work.material}</span>
-            <span className="text-ink">
+          <div className="flex items-baseline justify-between gap-3.5 py-[11px] border-b border-[#F1EFE8]">
+            <span className="text-[10px] tracking-[0.13em] uppercase text-placeholder shrink-0">{t.work.material}</span>
+            <span className="text-[12.5px] text-ink text-right">
               {work.technique ? (
                 <EditableRow value={work.technique} canEdit={canEdit} onSave={(v) => save(saveTechnique, v)} />
               ) : (
@@ -142,9 +142,9 @@ export function ProfileTab({
               )}
             </span>
           </div>
-          <div className="flex items-center justify-between py-2.5">
-            <span className="text-ink-soft">{t.work.created}</span>
-            <span className="flex items-center gap-1.5 text-ink">
+          <div className="flex items-baseline justify-between gap-3.5 py-[11px]">
+            <span className="text-[10px] tracking-[0.13em] uppercase text-placeholder shrink-0">{t.work.created}</span>
+            <span className="flex items-center gap-1.5 text-[12.5px] text-ink text-right">
               {work.certified_at ? new Date(work.certified_at).getFullYear() : '—'}
               <span className="inline-flex items-center gap-1 text-[10px] text-ink-soft">
                 <LockIcon />
