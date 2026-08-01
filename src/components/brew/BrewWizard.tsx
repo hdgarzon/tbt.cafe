@@ -344,7 +344,7 @@ export function BrewWizard() {
   }
 
   // ---- Context --------------------------------------------------------------
-  async function loadMoment() {
+  async function loadMoment(override?: { title?: string; category?: string; material?: string }) {
     setMomentLoading(true)
     let lat: number | undefined
     let lng: number | undefined
@@ -363,9 +363,9 @@ export function BrewWizard() {
       creatorAlias: profile?.public_alias || profile?.legal_name || '',
       creatorBio: profile?.bio ?? undefined,
       creatorType: profile?.creator_type ?? 'individual',
-      workTitle: title,
-      workCategory: t.brew.categories[category],
-      workMaterial: material || undefined,
+      workTitle: override?.title ?? title,
+      workCategory: override?.category ?? t.brew.categories[category],
+      workMaterial: override?.material ?? material ?? undefined,
       lat,
       lng,
     })
@@ -618,7 +618,9 @@ export function BrewWizard() {
           setScanScore(r.scanScore)
           if (r.material) setMaterial(r.material)
           setStep('ctx1')
-          loadMoment()
+          // Los setState de arriba no se han aplicado todavía; sin pasar los
+          // valores, loadMoment generaría el contexto con el título vacío.
+          loadMoment({ title: r.title, category: r.category ?? undefined, material: r.material ?? undefined })
         }}
       />
     )
