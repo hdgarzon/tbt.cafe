@@ -26,11 +26,11 @@ import {
  * Cold Brew — el flujo de certificación paso a paso (tbt-espresso.html,
  * chooser → p3..p7). Reemplaza el stub de /brew (Build Spec 01).
  *
- * Deliberadamente fuera de esta pasada: "Your Vision" (grabación de audio/
- * video opcional del prototipo) y Espresso (el flujo conversacional — ver
- * el chooser). Todo lo demás llama al backend real, retocado para CORS en
- * esta misma sesión: escaneo de originalidad, generación de contexto con
- * IA, Stripe, minteo en Solana.
+ * Fuera de alcance: Espresso, el flujo conversacional (ver el chooser).
+ * Todo lo demás llama al backend real: escaneo de originalidad, generación
+ * de contexto con IA, Stripe y minteo en Solana. Donde el prototipo simula
+ * (el reproductor de "Your Vision", la caja "Demo · preview a result" del
+ * escaneo) aquí se hace de verdad o simplemente no se copia.
  */
 
 type Step =
@@ -898,8 +898,19 @@ export function BrewWizard() {
 
         <div className="mt-5">
           {scanState === 'idle' && (
-            <div className="border border-hairline rounded-2xl p-7 text-center">
-              <BrewButton onClick={runScan}>{t.brew.runScan}</BrewButton>
+            /* El prototipo añade aquí una caja "Demo · preview a result" con
+               Pass/Soft match/Block: es un atajo del demo para ver los tres
+               finales sin backend. Aquí el escaneo es real, así que no va. */
+            <div className="border border-hairline rounded-2xl px-6 py-[30px] text-center">
+              <div className="text-[30px] leading-none text-placeholder">🛡</div>
+              <div className="h-5" />
+              <button
+                type="button"
+                onClick={runScan}
+                className="inline-flex items-center justify-center px-[26px] py-3 bg-ink text-paper rounded-xl text-[12px] font-semibold tracking-[0.16em] uppercase enabled:hover:bg-black transition-opacity"
+              >
+                {t.brew.runScan}
+              </button>
             </div>
           )}
           {scanState === 'scanning' && (
