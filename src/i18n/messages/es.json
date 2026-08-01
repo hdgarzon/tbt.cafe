@@ -630,6 +630,15 @@
     "tabFeatured": "Destacadas"
   },
   "brew": {
+    "visionTitle": "Tu Visión",
+    "visionOptional": "(opcional)",
+    "visionSub": "Graba unas palabras sobre la obra — pasan a formar parte del registro de autenticidad.",
+    "visionHint": "Toca para grabar · hasta 1 minuto · audio o video",
+    "visionRecording": "Grabando…",
+    "visionStop": "Detener",
+    "visionReRecord": "Volver a grabar",
+    "visionAudioClip": "Clip de audio",
+    "visionVideoClip": "Clip de video",
     "imageEmptyTitle": "Aún no hay imagen",
     "imageEmptyHint": "Toma una foto o elige un archivo abajo",
     "tipAssetAnchors": "Enlaces a donde vive tu obra en línea — un video de YouTube, una carpeta de Drive, un hash de IPFS, un portafolio. Anclan el certificado a los archivos reales.",
@@ -767,6 +776,7 @@
     "viewCertificate": "Ver certificado",
     "done": "Listo",
     "errors": {
+      "recordFailed": "No pudimos acceder al micrófono o la cámara",
       "uploadFailed": "No pudimos subir la imagen",
       "draftFailed": "No pudimos guardar el borrador",
       "checkoutFailed": "No pudimos iniciar el pago",

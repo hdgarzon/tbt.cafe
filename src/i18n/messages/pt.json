@@ -630,6 +630,15 @@
     "tabFeatured": "Destaques"
   },
   "brew": {
+    "visionTitle": "A Sua Visão",
+    "visionOptional": "(opcional)",
+    "visionSub": "Grave umas palavras sobre a obra — passam a fazer parte do registo de autenticidade.",
+    "visionHint": "Toque para gravar · até 1 minuto · áudio ou vídeo",
+    "visionRecording": "A gravar…",
+    "visionStop": "Parar",
+    "visionReRecord": "Gravar de novo",
+    "visionAudioClip": "Clipe de áudio",
+    "visionVideoClip": "Clipe de vídeo",
     "imageEmptyTitle": "Ainda não há imagem",
     "imageEmptyHint": "Tire uma foto ou escolha um ficheiro abaixo",
     "tipAssetAnchors": "Links para onde a sua obra vive online — um vídeo do YouTube, uma pasta do Drive, um hash IPFS, um portefólio. Ancoram o certificado aos ficheiros reais.",
@@ -767,6 +776,7 @@
     "viewCertificate": "Ver certificado",
     "done": "Concluído",
     "errors": {
+      "recordFailed": "Não conseguimos aceder ao microfone ou à câmara",
       "uploadFailed": "Não conseguimos enviar a imagem",
       "draftFailed": "Não conseguimos salvar o rascunho",
       "checkoutFailed": "Não conseguimos iniciar o pagamento",

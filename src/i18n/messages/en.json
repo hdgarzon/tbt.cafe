@@ -630,6 +630,15 @@
     "tabFeatured": "Featured"
   },
   "brew": {
+    "visionTitle": "Your Vision",
+    "visionOptional": "(optional)",
+    "visionSub": "Record a short piece about the work — it becomes part of the authenticity record.",
+    "visionHint": "Tap to record · up to 1 minute · audio or video",
+    "visionRecording": "Recording…",
+    "visionStop": "Stop",
+    "visionReRecord": "Re-record",
+    "visionAudioClip": "Audio clip",
+    "visionVideoClip": "Video clip",
     "imageEmptyTitle": "No image yet",
     "imageEmptyHint": "Take a photo or choose a file below",
     "tipAssetAnchors": "Links to where your work lives online — a YouTube video, a Drive folder, an IPFS hash, a portfolio page. They anchor the certificate to the real files.",
@@ -767,6 +776,7 @@
     "viewCertificate": "View certificate",
     "done": "Done",
     "errors": {
+      "recordFailed": "We couldn’t access the microphone or camera",
       "uploadFailed": "We couldn't upload the image",
       "draftFailed": "We couldn't save the draft",
       "checkoutFailed": "We couldn't start the payment",

@@ -39,6 +39,7 @@ type Step =
   | 'chooser'
   | 'work1'
   | 'work2'
+  | 'work3'
   | 'comm1'
   | 'comm2'
   | 'ctx1'
@@ -48,19 +49,22 @@ type Step =
   | 'minting'
   | 'registered'
 
+// progFill() del prototipo: cada fase ocupa un cuarto de la barra y cada
+// sub-paso avanza sub/(n+1) dentro de su cuarto — nunca arranca en cero.
 const STEP_PROGRESS: Record<Step, number> = {
   loading: 0,
   gate: 0,
   chooser: 0,
-  work1: 12,
-  work2: 22,
-  comm1: 37,
-  comm2: 45,
-  ctx1: 58,
-  ctx2: 66,
-  ctx3: 74,
-  payment: 90,
-  minting: 96,
+  work1: 6,
+  work2: 13,
+  work3: 19,
+  comm1: 33,
+  comm2: 42,
+  ctx1: 56,
+  ctx2: 63,
+  ctx3: 69,
+  payment: 88,
+  minting: 94,
   registered: 100,
 }
 
@@ -100,6 +104,14 @@ export function BrewWizard() {
   const [imageFile, setImageFile] = useState<File | null>(null)
   const [imagePreview, setImagePreview] = useState('')
   const [aboutWork, setAboutWork] = useState('')
+
+  // Your Vision (grabación opcional de audio/vídeo)
+  const [visionFile, setVisionFile] = useState<File | null>(null)
+  const [visionKind, setVisionKind] = useState<'audio' | 'video' | null>(null)
+  const [visionUrl, setVisionUrl] = useState('')
+  const [recording, setRecording] = useState(false)
+  const recorderRef = useRef<MediaRecorder | null>(null)
+  const recStopTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const [assetLinks, setAssetLinks] = useState<string[]>([''])
   const fileInputRef = useRef<HTMLInputElement>(null)
   const cameraInputRef = useRef<HTMLInputElement>(null)
@@ -190,6 +202,23 @@ export function BrewWizard() {
     return () => URL.revokeObjectURL(imagePreview)
   }, [imagePreview])
 
+  // Al salir del asistente hay que soltar micrófono/cámara y el objeto URL:
+  // dejar la pista viva mantiene el indicador de grabación del sistema encendido.
+  useEffect(() => {
+    return () => {
+      if (recStopTimerRef.current) clearTimeout(recStopTimerRef.current)
+      const mr = recorderRef.current
+      if (mr && mr.state !== 'inactive') mr.stop()
+      mr?.stream?.getTracks().forEach((tr) => tr.stop())
+    }
+  }, [])
+
+  useEffect(() => {
+    return () => {
+      if (visionUrl) URL.revokeObjectURL(visionUrl)
+    }
+  }, [visionUrl])
+
   function close() {
     window.location.href = '/'
   }
@@ -211,7 +240,52 @@ export function BrewWizard() {
   async function submitWork2() {
     if (!imageFile) return setMsg(t.brew.errors.imageRequired)
     setMsg('')
-    setStep('comm1')
+    setStep('work3')
+  }
+
+  // ---- Your Vision --------------------------------------------------------
+  /** Graba con MediaRecorder; el prototipo tope en 1 minuto, igual aquí. */
+  async function startRecording(kind: 'audio' | 'video') {
+    setMsg('')
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia(
+        kind === 'video' ? { audio: true, video: true } : { audio: true }
+      )
+      const mr = new MediaRecorder(stream)
+      const chunks: BlobPart[] = []
+      mr.ondataavailable = (e) => {
+        if (e.data.size) chunks.push(e.data)
+      }
+      mr.onstop = () => {
+        const type = mr.mimeType || (kind === 'video' ? 'video/webm' : 'audio/webm')
+        const blob = new Blob(chunks, { type })
+        const ext = type.includes('mp4') ? 'mp4' : 'webm'
+        setVisionFile(new File([blob], `vision.${ext}`, { type }))
+        setVisionKind(kind)
+        setVisionUrl(URL.createObjectURL(blob))
+        stream.getTracks().forEach((tr) => tr.stop())
+      }
+      recorderRef.current = mr
+      mr.start()
+      setRecording(true)
+      recStopTimerRef.current = setTimeout(stopRecording, 60_000)
+    } catch {
+      setMsg(t.brew.errors.recordFailed)
+    }
+  }
+
+  function stopRecording() {
+    if (recStopTimerRef.current) clearTimeout(recStopTimerRef.current)
+    const mr = recorderRef.current
+    if (mr && mr.state !== 'inactive') mr.stop()
+    setRecording(false)
+  }
+
+  function discardVision() {
+    if (visionUrl) URL.revokeObjectURL(visionUrl)
+    setVisionFile(null)
+    setVisionKind(null)
+    setVisionUrl('')
   }
 
   // ---- Commercial / Protection --------------------------------------------
@@ -326,8 +400,8 @@ export function BrewWizard() {
       imageFile,
       aboutWork,
       assetLinks,
-      audioVideoFile: null,
-      audioVideoType: null,
+      audioVideoFile: visionFile,
+      audioVideoType: visionKind,
       marketPrice: parseFloat(marketPrice.replace(/[^0-9.]/g, '')) || 0,
       currency,
       royaltyType,
@@ -651,6 +725,88 @@ export function BrewWizard() {
     )
   }
 
+  if (step === 'work3') {
+    return (
+      <BrewChrome
+        onBack={backTo('work2')}
+        backLabel={t.creator.back}
+        onClose={close}
+        progressPct={STEP_PROGRESS[step]}
+        dock={<BrewButton onClick={() => setStep('comm1')}>{t.brew.continue}</BrewButton>}
+      >
+        <BrewTitle optional={t.brew.visionOptional}>{t.brew.visionTitle}</BrewTitle>
+        <p className="text-[12px] leading-[1.62] text-ink-soft mt-2">{t.brew.visionSub}</p>
+
+        {visionUrl ? (
+          <div className="mt-4 rounded-xl border border-hairline p-3">
+            {visionKind === 'video' ? (
+              // eslint-disable-next-line jsx-a11y/media-has-caption
+              <video src={visionUrl} controls className="w-full rounded-lg bg-black" />
+            ) : (
+              // eslint-disable-next-line jsx-a11y/media-has-caption
+              <audio src={visionUrl} controls className="w-full" />
+            )}
+            <div className="flex items-center justify-between mt-2.5">
+              <span className="text-[10px] text-placeholder">
+                {visionKind === 'video' ? t.brew.visionVideoClip : t.brew.visionAudioClip}
+              </span>
+              <button type="button" onClick={discardVision} className="text-[11px] text-ink-soft hover:text-ink transition-colors">
+                ↺ {t.brew.visionReRecord}
+              </button>
+            </div>
+          </div>
+        ) : (
+          <div className="mt-5 rounded-[14px] border border-hairline bg-paper-warm px-5 py-[22px] flex flex-col items-center gap-4">
+            {recording ? (
+              <>
+                <button
+                  type="button"
+                  onClick={stopRecording}
+                  aria-label={t.brew.visionStop}
+                  className="w-14 h-14 rounded-full border border-t-red bg-white flex items-center justify-center"
+                >
+                  <span className="block w-4 h-4 rounded-[3px] bg-t-red" />
+                </button>
+                <div className="text-[11px] text-ink-soft">{t.brew.visionRecording}</div>
+              </>
+            ) : (
+              <>
+                <div className="flex gap-5">
+                  <button
+                    type="button"
+                    onClick={() => startRecording('audio')}
+                    aria-label={t.brew.visionTitle}
+                    className="w-14 h-14 rounded-full border border-ink bg-white flex items-center justify-center"
+                  >
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" className="text-ink" aria-hidden="true">
+                      <rect x="9" y="2" width="6" height="12" rx="3" />
+                      <path d="M5 10a7 7 0 0 0 14 0" />
+                      <line x1="12" y1="17" x2="12" y2="21" />
+                    </svg>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => startRecording('video')}
+                    aria-label={t.brew.visionVideoClip}
+                    className="w-14 h-14 rounded-full border border-ink bg-white flex items-center justify-center"
+                  >
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" className="text-ink" aria-hidden="true">
+                      <rect x="2" y="6" width="13" height="12" rx="2" />
+                      <path d="M22 8l-7 4 7 4V8z" />
+                    </svg>
+                  </button>
+                </div>
+                <div className="text-[11px] text-ink-soft text-center">{t.brew.visionHint}</div>
+              </>
+            )}
+          </div>
+        )}
+
+        {msg && <p className="text-[12px] text-t-red mt-3.5">{msg}</p>}
+      </BrewChrome>
+    )
+  }
+
   if (step === 'comm1') {
     const royaltyOpts: [RoyaltyChoice, string][] = [
       ['none', t.brew.royaltyNone],
@@ -659,7 +815,7 @@ export function BrewWizard() {
     ]
     return (
       <BrewChrome
-        onBack={backTo('work2')}
+        onBack={backTo('work3')}
         backLabel={t.creator.back}
         onClose={close}
         progressPct={STEP_PROGRESS[step]}

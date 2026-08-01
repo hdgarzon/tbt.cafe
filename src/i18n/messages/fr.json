@@ -630,6 +630,15 @@
     "tabFeatured": "En vedette"
   },
   "brew": {
+    "visionTitle": "Votre Vision",
+    "visionOptional": "(facultatif)",
+    "visionSub": "Enregistrez quelques mots sur l’œuvre — ils font partie du registre d’authenticité.",
+    "visionHint": "Touchez pour enregistrer · jusqu’à 1 minute · audio ou vidéo",
+    "visionRecording": "Enregistrement…",
+    "visionStop": "Arrêter",
+    "visionReRecord": "Réenregistrer",
+    "visionAudioClip": "Clip audio",
+    "visionVideoClip": "Clip vidéo",
     "imageEmptyTitle": "Pas encore d’image",
     "imageEmptyHint": "Prenez une photo ou choisissez un fichier ci-dessous",
     "tipAssetAnchors": "Des liens vers l’endroit où vit votre œuvre en ligne — une vidéo YouTube, un dossier Drive, un hash IPFS, un portfolio. Ils ancrent le certificat aux fichiers réels.",
@@ -767,6 +776,7 @@
     "viewCertificate": "Voir le certificat",
     "done": "Terminé",
     "errors": {
+      "recordFailed": "Nous n’avons pas pu accéder au micro ou à la caméra",
       "uploadFailed": "Nous n'avons pas pu envoyer l'image",
       "draftFailed": "Nous n'avons pas pu enregistrer le brouillon",
       "checkoutFailed": "Nous n'avons pas pu démarrer le paiement",
