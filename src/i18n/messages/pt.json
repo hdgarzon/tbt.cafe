@@ -631,6 +631,7 @@
     "tabFeatured": "Destaques"
   },
   "brew": {
+    "scanPassLine": "linha de aprovação · {n}%",
     "tipValue": "Sugere-se um valor para ter um ponto de partida, mas fica escrito no certificado e as condições de royalties viajam com a obra em cada venda futura — por isso confirme-o em vez de o aceitar. Se a obra não está à venda, ponha o preço a zero e os royalties a nenhum.",
     "tipRoyalty": "Uma parte das revendas futuras que volta para si automaticamente sempre que a obra muda de mãos. Escolha uma percentagem ou um valor fixo.",
     "tipProtection": "Antes de certificar uma obra comparamos a sua imagem com todas as já registadas no TBT e com fontes públicas na web aberta. Um resultado limpo reforça a sua reivindicação. Se existir algo semelhante, você decide como declarar a relação — obra própria, derivada ou edição autorizada — e essa declaração viaja com o certificado.",

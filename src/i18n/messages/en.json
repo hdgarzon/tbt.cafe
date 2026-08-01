@@ -631,6 +631,7 @@
     "tabFeatured": "Featured"
   },
   "brew": {
+    "scanPassLine": "pass line · {n}%",
     "tipValue": "A figure is suggested so you have a starting point, but it is written into the certificate and the royalty terms travel with the work on every future sale — so confirm it rather than accepting it. If the work is not for sale, set the price to zero and royalties to none.",
     "tipRoyalty": "A share of future resales that returns to you automatically each time the work changes hands. Choose a percentage or a fixed amount.",
     "tipProtection": "Before a work is certified we compare its image against every work already registered on TBT and against public sources on the open web. A clean result strengthens your claim. If something similar exists, you decide how to declare the relationship — your own work, a derivative, or an authorised edition — and that declaration travels with the certificate.",

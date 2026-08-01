@@ -75,6 +75,10 @@ const CATEGORY_KEYS = [
 
 const CURRENCIES = ['USD', 'EUR', 'COP', 'MXN']
 
+// Umbrales REALES del backend (tbt-image/similarity): ≥0.75 avisa, ≥0.9 bloquea.
+// El prototipo dibuja la línea en 60% porque su escaneo es simulado.
+const PASS_LINE = 75
+
 type ScanState = 'idle' | 'scanning' | 'clear' | 'warning' | 'blocked'
 type Declaration = 'original' | 'derivative' | 'authorized_edition'
 
@@ -125,6 +129,8 @@ export function BrewWizard() {
   // Protection
   const [scanState, setScanState] = useState<ScanState>('idle')
   const [scanScore, setScanScore] = useState(0)
+  /** Valor que sube en el medidor mientras aterriza el resultado real. */
+  const [scanAnim, setScanAnim] = useState(0)
   const [declaration, setDeclaration] = useState<Declaration>('original')
 
   // Context
@@ -296,10 +302,25 @@ export function BrewWizard() {
   async function runScan() {
     if (!imageFile) return
     setScanState('scanning')
+    setScanAnim(0)
     const result = await runSimilarityScan(imageFile)
     const score = 'score' in result && result.score != null ? Math.round(result.score * 100) : 0
+    const status = result.status === 'skipped' ? 'clear' : result.status
+    // El medidor sube hasta el puntaje real con la misma curva del prototipo
+    // (ease-out ~1.4s) y recién ahí se muestra el veredicto.
+    await new Promise<void>((resolve) => {
+      const dur = 1400
+      const start = performance.now()
+      const tick = (now: number) => {
+        const p = Math.min(1, (now - start) / dur)
+        setScanAnim(Math.round((1 - Math.pow(1 - p, 2)) * score))
+        if (p < 1) requestAnimationFrame(tick)
+        else resolve()
+      }
+      requestAnimationFrame(tick)
+    })
     setScanScore(score)
-    setScanState(result.status === 'skipped' ? 'clear' : result.status)
+    setScanState(status)
   }
 
   function submitComm2() {
@@ -914,17 +935,40 @@ export function BrewWizard() {
             </div>
           )}
           {scanState === 'scanning' && (
-            <div className="border border-hairline rounded-2xl p-7 text-center">
+            <div className="border border-hairline rounded-2xl px-[18px] py-[22px] text-center">
               <div className="text-[11px] uppercase tracking-[0.14em] text-ink-soft mb-4">{t.brew.scanning}</div>
-              <div className="w-10 h-10 mx-auto border-2 border-hairline border-t-ink rounded-full animate-spin" />
+              <div className="relative h-[74px] flex items-end justify-center gap-[3px]">
+                {Array.from({ length: 11 }, (_, i) => (
+                  <span key={i} className="cb-bar" style={{ animationDelay: `${i * 0.08}s` }} />
+                ))}
+              </div>
+              {/* Medidor: verde hasta la línea de aprobación, rojo después */}
+              <div
+                className="relative mt-5 h-2 rounded"
+                style={{ background: `linear-gradient(90deg,#eef6ec 0%,#eef6ec ${PASS_LINE}%,#fdf0ec ${PASS_LINE}%,#fdf0ec 100%)` }}
+              >
+                <div className="absolute -top-[5px] -bottom-[5px] w-0.5 bg-ink rounded-sm" style={{ left: `${PASS_LINE}%` }} />
+                <div
+                  className="absolute left-0 top-0 bottom-0 rounded bg-t-navy opacity-85"
+                  style={{ width: `${scanAnim}%` }}
+                />
+              </div>
+              <div className="flex justify-between mt-1.5 text-[9px] text-placeholder">
+                <span>0%</span>
+                <span>{t.brew.scanPassLine.replace('{n}', String(PASS_LINE))}</span>
+                <span>100%</span>
+              </div>
+              <div className={`font-display text-[26px] mt-3.5 ${scanAnim >= PASS_LINE ? 'text-t-red' : 'text-ink'}`}>
+                {scanAnim}%
+              </div>
             </div>
           )}
           {scanState === 'clear' && (
-            <div className="border border-t-green/40 bg-t-green/5 rounded-2xl p-5 text-center">
-              <div className="w-11 h-11 mx-auto rounded-full border-[1.5px] border-t-green text-t-green flex items-center justify-center text-[20px] mb-3">
+            <div className="border border-hairline rounded-2xl px-4 py-6 text-center">
+              <div className="w-[52px] h-[52px] mx-auto mb-3.5 rounded-full border-[1.5px] border-t-green text-t-green flex items-center justify-center text-[24px]">
                 ✓
               </div>
-              <div className="font-display text-[18px] text-ink">{t.brew.scanCleanTitle}</div>
+              <div className="font-display text-[20px] text-ink">{t.brew.scanCleanTitle}</div>
               <p className="text-[12px] text-ink-soft mt-1.5">{t.brew.scanCleanBody.replace('{score}', String(scanScore))}</p>
             </div>
           )}

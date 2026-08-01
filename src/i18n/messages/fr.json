@@ -631,6 +631,7 @@
     "tabFeatured": "En vedette"
   },
   "brew": {
+    "scanPassLine": "seuil · {n}%",
     "tipValue": "Un montant est suggéré pour vous donner un point de départ, mais il est inscrit dans le certificat et les conditions de redevances suivent l’œuvre à chaque vente future — confirmez-le plutôt que de l’accepter. Si l’œuvre n’est pas à vendre, mettez le prix à zéro et les redevances à aucune.",
     "tipRoyalty": "Une part des reventes futures qui vous revient automatiquement chaque fois que l’œuvre change de mains. Choisissez un pourcentage ou un montant fixe.",
     "tipProtection": "Avant de certifier une œuvre, nous comparons son image à toutes celles déjà enregistrées sur TBT et à des sources publiques sur le web ouvert. Un résultat propre renforce votre revendication. Si quelque chose de similaire existe, vous décidez comment déclarer la relation — votre propre œuvre, une dérivée ou une édition autorisée — et cette déclaration suit le certificat.",
