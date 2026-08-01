@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { useLocale } from '@/i18n/LocaleProvider'
 import { BrewChrome, BrewButton } from '@/components/brew/BrewChrome'
-import { runSimilarityScan, describeImage, extractFields } from '@/lib/brew-data'
+import { runSimilarityScan, describeImage, extractFields, generateContext } from '@/lib/brew-data'
 
 /**
  * Espresso — la vía rápida del chooser (tbt-espresso.html).
@@ -32,9 +32,12 @@ export type EspressoResult = {
   royaltyValue: string
   scanState: 'clear' | 'warning' | 'blocked'
   scanScore: number
+  location: string
+  weather: string
+  aiSummary: string
 }
 
-type Stage = 'image' | 'confirmImage' | 'scan' | 'work' | 'value' | 'review'
+type Stage = 'image' | 'confirmImage' | 'scan' | 'work' | 'value' | 'context' | 'review'
 type Turn = { from: 'bot' | 'me'; text: string }
 
 /** El reconocimiento de voz no está tipado en lib.dom; sólo lo que usamos. */
@@ -90,6 +93,9 @@ export function EspressoFlow({
   const [scanScore, setScanScore] = useState(0)
 
   const [work, setWork] = useState({ title: '', aboutWork: '', createdDate: '', assetLinks: [] as string[] })
+  const [location, setLocation] = useState('')
+  const [weather, setWeather] = useState('')
+  const [contextText, setContextText] = useState('')
   const [value, setValue] = useState({
     marketPrice: '',
     currency: 'USD',
@@ -184,10 +190,47 @@ export function EspressoFlow({
         })
       } else setNote(e.noExtract)
       setBusy(false)
-      setStage('review')
+      setStage('context')
+      say(e.writingContext)
+      void draftContext(f?.marketPrice != null ? String(f.marketPrice) : '')
       return
     }
     setBusy(false)
+  }
+
+  /** El demo redacta el Contexto dentro del hilo y sólo entonces pasa al Seal. */
+  async function draftContext(_price: string) {
+    setBusy(true)
+    let lat: number | undefined
+    let lng: number | undefined
+    try {
+      const pos = await new Promise<GeolocationPosition>((res, rej) =>
+        navigator.geolocation.getCurrentPosition(res, rej, { timeout: 6000 })
+      )
+      lat = pos.coords.latitude
+      lng = pos.coords.longitude
+    } catch {
+      /* sin ubicación el backend igual redacta, sólo que sin lugar ni clima */
+    }
+    const r = await generateContext({
+      creatorAlias: '',
+      creatorType: 'individual',
+      workTitle: work.title,
+      workCategory: category ?? '',
+      workMaterial: material ?? undefined,
+      lat,
+      lng,
+    })
+    setBusy(false)
+    if ('error' in r) {
+      setNote(t.brew.errors.contextFailed)
+      setStage('review')
+      return
+    }
+    setLocation(r.location)
+    setWeather(r.weather)
+    setContextText(r.summary)
+    setStage('review')
   }
 
   function toggleVoice() {
@@ -239,14 +282,21 @@ export function EspressoFlow({
             >
               {t.brew.takePhoto}
             </button>
-            <label className="flex-1 flex flex-col items-center gap-1.5 border border-hairline bg-paper-warm rounded-xl px-2.5 py-3.5 text-[12px] text-ink-soft cursor-pointer">
+            <button
+              type="button"
+              onClick={() => fileRef.current?.click()}
+              className="flex-1 flex flex-col items-center gap-1.5 border border-hairline bg-paper-warm rounded-xl px-2.5 py-3.5 text-[12px] text-ink-soft"
+            >
               {t.brew.chooseFile}
-              <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={(ev) => pickImage(ev.target.files?.[0])} />
-            </label>
+            </button>
           </div>
-          <input ref={camRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={(ev) => pickImage(ev.target.files?.[0])} />
         </div>
       )}
+
+      {/* Montados siempre: en la confirmación "elegir otra" necesita este input,
+          y si vive dentro del paso anterior el ref queda vacío. */}
+      <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={(ev) => pickImage(ev.target.files?.[0])} />
+      <input ref={camRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={(ev) => pickImage(ev.target.files?.[0])} />
 
       {stage === 'confirmImage' && imageUrl && (
         <div className="mt-4">
@@ -335,6 +385,17 @@ export function EspressoFlow({
             />
           </div>
 
+          {contextText && (
+            <div className="mt-3.5">
+              <div className="text-[9px] tracking-[0.16em] uppercase text-placeholder mb-2">{t.brew.contextTitle}</div>
+              <textarea
+                value={contextText}
+                onChange={(ev) => setContextText(ev.target.value)}
+                className="w-full min-h-[160px] border border-hairline rounded-[14px] p-3.5 font-display text-[15px] leading-[1.6] text-ink outline-none focus:border-ink transition-colors bg-[#FCFBFA] resize-none"
+              />
+            </div>
+          )}
+
           <div className="mt-4">
             <BrewButton
               onClick={() =>
@@ -353,6 +414,9 @@ export function EspressoFlow({
                   royaltyValue: value.royaltyValue,
                   scanState,
                   scanScore,
+                  location,
+                  weather,
+                  aiSummary: contextText,
                 })
               }
               disabled={!work.title.trim() || scanState === 'blocked'}

@@ -617,10 +617,13 @@ export function BrewWizard() {
           setScanState(r.scanState)
           setScanScore(r.scanScore)
           if (r.material) setMaterial(r.material)
-          setStep('ctx1')
-          // Los setState de arriba no se han aplicado todavía; sin pasar los
-          // valores, loadMoment generaría el contexto con el título vacío.
-          loadMoment({ title: r.title, category: r.category ?? undefined, material: r.material ?? undefined })
+          // Espresso ya redactó el Contexto en el hilo, así que entrega en el
+          // Seal, como en el prototipo (CB.toSeal), sin repetir esas pantallas.
+          setLocation(r.location)
+          setWeather(r.weather)
+          setAiSummary(r.aiSummary)
+          setEditedSummary(r.aiSummary)
+          setStep('ctx3')
         }}
       />
     )
