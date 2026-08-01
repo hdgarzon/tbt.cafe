@@ -630,6 +630,9 @@
     "tabFeatured": "Featured"
   },
   "brew": {
+    "imageEmptyTitle": "No image yet",
+    "imageEmptyHint": "Take a photo or choose a file below",
+    "tipAssetAnchors": "Links to where your work lives online — a YouTube video, a Drive folder, an IPFS hash, a portfolio page. They anchor the certificate to the real files.",
     "required": "Required",
     "optional": "(optional)",
     "tipDimensions": "The size of the work in its own terms — cm or inches for physical pieces, pixels or resolution for digital, duration for time-based work.",

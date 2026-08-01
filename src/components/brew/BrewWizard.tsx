@@ -5,7 +5,7 @@ import { useSearchParams } from 'next/navigation'
 import { useLocale } from '@/i18n/LocaleProvider'
 import { useShell } from '@/components/AppShell'
 import { supabase } from '@/lib/supabase'
-import { BrewChrome, BrewTitle, BrewButton, BrewLabel, BrewInput, BrewSelect } from '@/components/brew/BrewChrome'
+import { BrewChrome, BrewTitle, BrewInfo, BrewButton, BrewLabel, BrewInput, BrewSelect } from '@/components/brew/BrewChrome'
 import { money } from '@/lib/fees'
 import type { SeriesWithCount } from '@/lib/series-data'
 import {
@@ -560,30 +560,45 @@ export function BrewWizard() {
     return (
       <BrewChrome
         onBack={backTo('work1')}
-        backLabel={t.brew.workTitle}
+        backLabel={t.creator.back}
         onClose={close}
         progressPct={STEP_PROGRESS[step]}
-        dock={<BrewButton onClick={submitWork2}>{t.brew.continue}</BrewButton>}
+        dock={<BrewButton onClick={submitWork2}>{t.brew.next}</BrewButton>}
       >
-        <div className="font-display font-medium text-[20px] text-ink">{t.brew.imageTitle}</div>
-        <p className="text-[13px] text-ink-soft mt-1">{t.brew.imageSub}</p>
+        <BrewTitle required>{t.brew.imageTitle}</BrewTitle>
+        <p className="text-[12px] leading-[1.62] text-ink-soft mt-2">{t.brew.imageSub}</p>
 
-        <div
-          className="mt-4 w-full aspect-square rounded-2xl border border-hairline bg-paper-warm bg-cover bg-center flex items-center justify-center"
-          style={imagePreview ? { backgroundImage: `url(${imagePreview})` } : undefined}
-        >
-          {!imagePreview && <span className="text-[13px] text-placeholder">{t.brew.imageTitle}</span>}
-        </div>
+        {imagePreview ? (
+          <div
+            className="mt-[18px] w-full aspect-[4/3] rounded-[14px] border border-hairline bg-paper-warm bg-cover bg-center"
+            style={{ backgroundImage: `url(${imagePreview})` }}
+          />
+        ) : (
+          <div className="mt-[18px] w-full aspect-[4/3] rounded-[14px] border border-dashed border-hairline bg-paper-warm flex flex-col items-center justify-center gap-2 text-center">
+            <span className="text-[26px] leading-none text-placeholder">▣</span>
+            <span className="text-[12px] text-ink-soft">{t.brew.imageEmptyTitle}</span>
+            <span className="text-[11px] text-placeholder">{t.brew.imageEmptyHint}</span>
+          </div>
+        )}
 
         <div className="flex gap-2.5 mt-3">
           <button
             type="button"
             onClick={() => cameraInputRef.current?.click()}
-            className="flex-1 flex flex-col items-center gap-1.5 border border-ink rounded-xl py-3.5"
+            className="flex-1 flex flex-col items-center justify-center gap-1.5 border border-ink bg-white rounded-xl px-2.5 py-3.5"
           >
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" className="text-ink" aria-hidden="true">
+              <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
+              <circle cx="12" cy="13" r="4" />
+            </svg>
             <span className="text-[12px] font-medium text-ink">{t.brew.takePhoto}</span>
           </button>
-          <label className="flex-1 flex flex-col items-center gap-1.5 border border-hairline bg-paper-warm rounded-xl py-3.5 cursor-pointer">
+          <label className="flex-1 flex flex-col items-center justify-center gap-1.5 border border-hairline bg-paper-warm rounded-xl px-2.5 py-3.5 cursor-pointer">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" className="text-ink-soft" aria-hidden="true">
+              <rect x="3" y="3" width="18" height="18" rx="2" />
+              <circle cx="8.5" cy="8.5" r="1.5" />
+              <path d="M21 15l-5-5L5 21" />
+            </svg>
             <span className="text-[12px] text-ink-soft">{t.brew.chooseFile}</span>
             <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={(e) => pickImage(e.target.files?.[0])} />
           </label>
@@ -610,7 +625,8 @@ export function BrewWizard() {
 
         <div className="mt-4">
           <BrewLabel>
-            {t.brew.assetAnchors} <span className="normal-case tracking-normal text-placeholder">· {t.brew.assetAnchorsHint}</span>
+            {t.brew.assetAnchors} <span className="normal-case tracking-normal font-normal text-placeholder">· {t.brew.assetAnchorsHint}</span>
+            <BrewInfo tip={t.brew.tipAssetAnchors} />
           </BrewLabel>
           {assetLinks.map((link, i) => (
             <BrewInput
@@ -644,12 +660,12 @@ export function BrewWizard() {
     return (
       <BrewChrome
         onBack={backTo('work2')}
-        backLabel={t.brew.imageTitle}
+        backLabel={t.creator.back}
         onClose={close}
         progressPct={STEP_PROGRESS[step]}
         dock={<BrewButton onClick={submitComm1}>{t.brew.next}</BrewButton>}
       >
-        <div className="font-display font-medium text-[20px] text-ink">{t.brew.valueTitle}</div>
+        <BrewTitle required>{t.brew.valueTitle}</BrewTitle>
         <p className="text-[13px] text-ink-soft mt-1">{t.brew.valueSub}</p>
 
         <div className="grid gap-3 mt-4" style={{ gridTemplateColumns: '1.4fr 1fr' }}>
@@ -716,12 +732,12 @@ export function BrewWizard() {
     return (
       <BrewChrome
         onBack={backTo('comm1')}
-        backLabel={t.brew.valueTitle}
+        backLabel={t.creator.back}
         onClose={close}
         progressPct={STEP_PROGRESS[step]}
         dock={<BrewButton onClick={submitComm2} disabled={scanState === 'blocked'}>{scanState === 'blocked' ? t.brew.blocked : t.brew.continue}</BrewButton>}
       >
-        <div className="font-display font-medium text-[20px] text-ink">{t.brew.protectionTitle}</div>
+        <div className="font-display font-medium text-[27px] leading-[1.08] text-ink">{t.brew.protectionTitle}</div>
         <p className="text-[13px] text-ink-soft mt-1">{t.brew.protectionSub}</p>
 
         <div className="mt-5">
@@ -786,8 +802,8 @@ export function BrewWizard() {
 
   if (step === 'ctx1') {
     return (
-      <BrewChrome onBack={backTo('comm2')} backLabel={t.brew.protectionTitle} onClose={close} progressPct={STEP_PROGRESS[step]} dock={<BrewButton onClick={() => setStep('ctx2')} disabled={momentLoading}>{t.brew.next}</BrewButton>}>
-        <div className="font-display font-medium text-[20px] text-ink">{t.brew.momentTitle}</div>
+      <BrewChrome onBack={backTo('comm2')} backLabel={t.creator.back} onClose={close} progressPct={STEP_PROGRESS[step]} dock={<BrewButton onClick={() => setStep('ctx2')} disabled={momentLoading}>{t.brew.next}</BrewButton>}>
+        <BrewTitle required>{t.brew.momentTitle}</BrewTitle>
         <p className="text-[13px] text-ink-soft mt-1">{t.brew.momentSub}</p>
 
         {momentLoading ? (
@@ -833,8 +849,8 @@ export function BrewWizard() {
 
   if (step === 'ctx2') {
     return (
-      <BrewChrome onBack={backTo('ctx1')} backLabel={t.brew.momentTitle} onClose={close} progressPct={STEP_PROGRESS[step]} dock={<BrewButton onClick={() => setStep('ctx3')}>{t.brew.continue}</BrewButton>}>
-        <div className="font-display font-medium text-[20px] text-ink">{t.brew.contextTitle}</div>
+      <BrewChrome onBack={backTo('ctx1')} backLabel={t.creator.back} onClose={close} progressPct={STEP_PROGRESS[step]} dock={<BrewButton onClick={() => setStep('ctx3')}>{t.brew.continue}</BrewButton>}>
+        <div className="font-display font-medium text-[27px] leading-[1.08] text-ink">{t.brew.contextTitle}</div>
         <p className="text-[13px] text-ink-soft mt-1">{t.brew.contextSub}</p>
 
         <div className="flex items-center gap-1.5 mt-4 mb-2">
@@ -855,8 +871,8 @@ export function BrewWizard() {
 
   if (step === 'ctx3') {
     return (
-      <BrewChrome onBack={backTo('ctx2')} backLabel={t.brew.contextTitle} onClose={close} progressPct={STEP_PROGRESS[step]}>
-        <div className="font-display font-medium text-[20px] text-ink">{t.brew.sealTitle}</div>
+      <BrewChrome onBack={backTo('ctx2')} backLabel={t.creator.back} onClose={close} progressPct={STEP_PROGRESS[step]}>
+        <div className="font-display font-medium text-[27px] leading-[1.08] text-ink">{t.brew.sealTitle}</div>
         <p className="text-[13px] text-ink-soft mt-1">{t.brew.sealSub}</p>
 
         <div className="border border-hairline rounded-2xl p-3.5 mt-4">

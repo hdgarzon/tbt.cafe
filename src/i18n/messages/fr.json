@@ -630,6 +630,9 @@
     "tabFeatured": "En vedette"
   },
   "brew": {
+    "imageEmptyTitle": "Pas encore d’image",
+    "imageEmptyHint": "Prenez une photo ou choisissez un fichier ci-dessous",
+    "tipAssetAnchors": "Des liens vers l’endroit où vit votre œuvre en ligne — une vidéo YouTube, un dossier Drive, un hash IPFS, un portfolio. Ils ancrent le certificat aux fichiers réels.",
     "required": "Requis",
     "optional": "(facultatif)",
     "tipDimensions": "La taille de l’œuvre dans ses propres termes — cm ou pouces pour les pièces physiques, pixels ou résolution pour le numérique, durée pour les œuvres temporelles.",

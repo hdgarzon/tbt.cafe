@@ -630,6 +630,9 @@
     "tabFeatured": "Destacadas"
   },
   "brew": {
+    "imageEmptyTitle": "Aún no hay imagen",
+    "imageEmptyHint": "Toma una foto o elige un archivo abajo",
+    "tipAssetAnchors": "Enlaces a donde vive tu obra en línea — un video de YouTube, una carpeta de Drive, un hash de IPFS, un portafolio. Anclan el certificado a los archivos reales.",
     "required": "Obligatorio",
     "optional": "(opcional)",
     "tipDimensions": "El tamaño de la obra en sus propios términos — cm o pulgadas para piezas físicas, píxeles o resolución para digital, duración para obra basada en tiempo.",
