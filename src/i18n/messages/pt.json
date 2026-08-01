@@ -631,6 +631,7 @@
     "tabFeatured": "Destaques"
   },
   "brew": {
+    "sealedTag": "selada",
     "sealBiometricNote": "Sele com um único toque da próxima vez.",
     "sealBiometricLink": "Configure a assinatura biométrica",
     "sealBiometricTail": "nas definições de Autenticação.",
@@ -767,7 +768,7 @@
     "sealedHint": "Bloqueado e pronto para registrar",
     "pressAndHold": "Pressione e segure o anel",
     "registerTitle": "Registre sua Obra",
-    "registerSub": "Sua obra selada está retida para registro. Pague e ela ficará permanentemente na blockchain.",
+    "registerSub": "A sua obra selada fica retida para o registo. Pague dentro da janela e fica permanentemente na cadeia.",
     "registrationFee": "Taxa de registro",
     "registrationFeeNote": "Solana · certificado · MMS",
     "promoToggle": "Tem um código promocional?",

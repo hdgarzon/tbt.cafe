@@ -631,6 +631,7 @@
     "tabFeatured": "En vedette"
   },
   "brew": {
+    "sealedTag": "scellée",
     "sealBiometricNote": "Scellez d’un seul geste la prochaine fois.",
     "sealBiometricLink": "Configurez la signature biométrique",
     "sealBiometricTail": "dans les paramètres d’Authentification.",
@@ -767,7 +768,7 @@
     "sealedHint": "Verrouillée et prête à être enregistrée",
     "pressAndHold": "Appuyez et maintenez l'anneau",
     "registerTitle": "Enregistrez votre Œuvre",
-    "registerSub": "Votre œuvre scellée est retenue pour l'enregistrement. Payez et elle sera définitivement sur la chaîne.",
+    "registerSub": "Votre œuvre scellée est retenue pour l’enregistrement. Payez dans le délai et elle est inscrite définitivement sur la chaîne.",
     "registrationFee": "Frais d'enregistrement",
     "registrationFeeNote": "Solana · certificat · MMS",
     "promoToggle": "Vous avez un code promo ?",

@@ -151,6 +151,9 @@ export function BrewWizard() {
   const [promoCode, setPromoCode] = useState('')
   const [promoMsg, setPromoMsg] = useState('')
   const [promoDiscount, setPromoDiscount] = useState<{ type: 'percentage' | 'fixed'; value: number } | null>(null)
+  /** Ventana de pago del prototipo (10:00). Ojo: es decorativa — nada la
+      hace vencer ni libera el borrador, igual que en tbt-espresso.html. */
+  const [payLeft, setPayLeft] = useState(600)
   const [mintSteps, setMintSteps] = useState(1)
   const [result, setResult] = useState<{ tbtId: string; title: string; solscanUrl: string } | null>(null)
   /** Ya resolvimos una sesión válida y colocamos el paso inicial. */
@@ -209,6 +212,12 @@ export function BrewWizard() {
   useEffect(() => {
     return () => URL.revokeObjectURL(imagePreview)
   }, [imagePreview])
+
+  useEffect(() => {
+    if (step !== 'payment') return
+    const iv = setInterval(() => setPayLeft((v) => (v > 0 ? v - 1 : 0)), 1000)
+    return () => clearInterval(iv)
+  }, [step])
 
   // Al salir del asistente hay que soltar micrófono/cámara y el objeto URL:
   // dejar la pista viva mantiene el indicador de grabación del sistema encendido.
@@ -1229,11 +1238,19 @@ export function BrewWizard() {
     const price = 8
     return (
       <BrewChrome
+        onBack={backTo('ctx3')}
+        backLabel={t.creator.back}
         onClose={close}
         progressPct={STEP_PROGRESS[step]}
         dock={
           <div>
             <BrewButton onClick={pay} disabled={busy}>
+              {!(promoDiscount?.type === 'percentage' && promoDiscount.value >= 100) && (
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="inline-block mr-1.5 -mt-0.5" aria-hidden="true">
+                  <rect x="4" y="10" width="16" height="11" rx="2" />
+                  <path d="M8 10V7a4 4 0 0 1 8 0v3" />
+                </svg>
+              )}
               {promoDiscount?.type === 'percentage' && promoDiscount.value >= 100
                 ? t.brew.registerFree
                 : t.brew.payToRegister.replace('{amount}', `$${price}`)}
@@ -1242,16 +1259,36 @@ export function BrewWizard() {
           </div>
         }
       >
-        <div className="font-display font-medium text-[22px] text-ink">{t.brew.registerTitle}</div>
-        <p className="text-[13px] text-ink-soft mt-2">{t.brew.registerSub}</p>
+        <div className="flex items-center justify-between gap-2.5">
+          <div className="font-display font-medium text-[25px] leading-[1.08] text-ink">{t.brew.registerTitle}</div>
+          <div
+            className={`flex items-center gap-1.5 shrink-0 border rounded-[20px] px-[11px] py-[5px] ${
+              payLeft <= 60 ? 'border-t-red text-t-red' : 'border-hairline text-ink'
+            }`}
+          >
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <circle cx="12" cy="12" r="9" /><path d="M12 7v5l3 2" />
+            </svg>
+            <span className="text-[12px] font-medium tabular-nums">
+              {Math.floor(payLeft / 60)}:{String(payLeft % 60).padStart(2, '0')}
+            </span>
+          </div>
+        </div>
+        <p className="text-[12px] leading-[1.62] text-ink-soft mt-2">{t.brew.registerSub}</p>
 
         <div className="border border-hairline rounded-2xl mt-4 p-3.5">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-lg bg-paper-warm shrink-0" />
             <div className="flex-1">
               <div className="text-[13px] font-medium text-ink">{title}</div>
-              <div className="text-[10.5px] text-ink-soft">{t.brew.categories[category]}</div>
+              <div className="text-[10.5px] text-ink-soft">
+                {t.brew.categories[category]} · {t.brew.sealedTag}
+              </div>
             </div>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="text-t-green shrink-0" aria-hidden="true">
+              <rect x="4" y="11" width="16" height="10" rx="2" />
+              <path d="M8 11V7a4 4 0 0 1 8 0v4" />
+            </svg>
           </div>
           <div className="flex items-center justify-between pt-3 mt-3 border-t border-hairline">
             <div>

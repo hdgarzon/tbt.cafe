@@ -631,6 +631,7 @@
     "tabFeatured": "Featured"
   },
   "brew": {
+    "sealedTag": "sealed",
     "sealBiometricNote": "Seal with a single touch next time.",
     "sealBiometricLink": "Set up biometric signing",
     "sealBiometricTail": "in Authentication settings.",
@@ -767,7 +768,7 @@
     "sealedHint": "Locked and ready to register",
     "pressAndHold": "Press and hold the ring",
     "registerTitle": "Register Your Work",
-    "registerSub": "Your sealed work is held for registration. Pay and it's permanently on-chain.",
+    "registerSub": "Your sealed work is held for registration. Pay within the window and it's permanently on-chain.",
     "registrationFee": "Registration fee",
     "registrationFeeNote": "Solana · certificate · MMS",
     "promoToggle": "Have a promo code?",
