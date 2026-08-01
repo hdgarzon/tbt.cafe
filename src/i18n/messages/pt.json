@@ -631,6 +631,8 @@
     "tabFeatured": "Destaques"
   },
   "brew": {
+    "tagToConnect": "etiqueta para ligar",
+    "pasteLink": "cole um link",
     "headlines": "Manchetes",
     "markets": "Mercados",
     "liveSoon": "em breve ao vivo",
@@ -748,7 +750,7 @@
     "momentHint": "Capturado automaticamente da sua localização e do mundo hoje · toque em qualquer linha para editar.",
     "momentLoading": "Localizando você…",
     "contextTitle": "O Contexto",
-    "contextSub": "Escrito a partir das âncoras e dos detalhes — para que a obra possa ser entendida por qualquer pessoa, mesmo sem vê-la.",
+    "contextSub": "Escrito a partir das âncoras, dos detalhes e de uma leitura da própria imagem — para que a obra possa ser entendida por qualquer um, mesmo sem a ver, e por aquilo que vier a encontrá-la depois.",
     "contextGenerated": "Gerado · seu para refinar",
     "regenerate": "Regenerar",
     "sealTitle": "Sele o Registro",

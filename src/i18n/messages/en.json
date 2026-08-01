@@ -631,6 +631,8 @@
     "tabFeatured": "Featured"
   },
   "brew": {
+    "tagToConnect": "tag to connect",
+    "pasteLink": "paste a link",
     "headlines": "Headlines",
     "markets": "Markets",
     "liveSoon": "live soon",
@@ -748,7 +750,7 @@
     "momentHint": "Auto-captured from your location and the world today · tap any line to edit it.",
     "momentLoading": "Locating you…",
     "contextTitle": "The Context",
-    "contextSub": "Written from the anchors and the details — so the work can be understood by anyone, even unseen.",
+    "contextSub": "Written from the anchors, the details, and a reading of the image itself — so the work can be understood by anyone, even unseen, and by whatever comes to find it later.",
     "contextGenerated": "Generated · yours to refine",
     "regenerate": "Regenerate",
     "sealTitle": "Seal the Record",

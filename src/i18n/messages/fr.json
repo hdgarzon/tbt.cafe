@@ -631,6 +631,8 @@
     "tabFeatured": "En vedette"
   },
   "brew": {
+    "tagToConnect": "taguez pour relier",
+    "pasteLink": "collez un lien",
     "headlines": "Actualités",
     "markets": "Marchés",
     "liveSoon": "bientôt en direct",
@@ -748,7 +750,7 @@
     "momentHint": "Capturé automatiquement depuis votre position et le monde d'aujourd'hui · touchez une ligne pour la modifier.",
     "momentLoading": "Localisation en cours…",
     "contextTitle": "Le Contexte",
-    "contextSub": "Rédigé à partir des ancrages et des détails — pour que l'œuvre puisse être comprise par n'importe qui, même sans la voir.",
+    "contextSub": "Écrit à partir des ancrages, des détails et d’une lecture de l’image elle-même — pour que l’œuvre soit comprise par quiconque, même sans la voir, et par ce qui viendra la trouver plus tard.",
     "contextGenerated": "Généré · à vous de peaufiner",
     "regenerate": "Régénérer",
     "sealTitle": "Scellez le Registre",

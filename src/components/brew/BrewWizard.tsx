@@ -1096,21 +1096,35 @@ export function BrewWizard() {
   if (step === 'ctx2') {
     return (
       <BrewChrome onBack={backTo('ctx1')} backLabel={t.creator.back} onClose={close} progressPct={STEP_PROGRESS[step]} dock={<BrewButton onClick={() => setStep('ctx3')}>{t.brew.continue}</BrewButton>}>
-        <div className="font-display font-medium text-[27px] leading-[1.08] text-ink">{t.brew.contextTitle}</div>
-        <p className="text-[13px] text-ink-soft mt-1">{t.brew.contextSub}</p>
+        <BrewTitle required>{t.brew.contextTitle}</BrewTitle>
+        <p className="text-[12px] leading-[1.62] text-ink-soft mt-2">{t.brew.contextSub}</p>
 
-        <div className="flex items-center gap-1.5 mt-4 mb-2">
-          <span className="text-[11px] text-ink-soft">✦ {t.brew.contextGenerated}</span>
-          <button type="button" onClick={regenerateContext} disabled={momentLoading} className="ml-auto text-[11px] text-ink-soft flex items-center gap-1">
-            ↺ {t.brew.regenerate}
+        <div className="flex items-center gap-[7px] mt-4 mb-2">
+          <span className="text-t-magenta text-[14px] leading-none">✦</span>
+          <span className="text-[9px] tracking-[0.16em] uppercase text-placeholder">{t.brew.contextGenerated}</span>
+          <button
+            type="button"
+            onClick={regenerateContext}
+            disabled={momentLoading}
+            className="ml-auto flex items-center gap-1 text-[11px] text-ink-soft hover:text-ink transition-colors disabled:opacity-60"
+          >
+            <span className="text-[13px] leading-none">↻</span>
+            {t.brew.regenerate}
           </button>
         </div>
         <textarea
           value={editedSummary}
           onChange={(e) => setEditedSummary(e.target.value)}
-          rows={10}
-          className="w-full border border-hairline rounded-2xl p-4 font-display text-[15px] leading-[1.6] text-ink outline-none focus:border-ink transition-colors bg-[#FCFBFA] resize-none"
+          className="w-full min-h-[250px] border border-hairline rounded-[14px] p-4 font-display text-[15.5px] leading-[1.66] text-ink outline-none focus:border-ink transition-colors bg-[#FCFBFA] resize-none"
         />
+        <div className="flex gap-3 mt-[9px] text-[10px] text-placeholder">
+          <span>
+            <span className="text-t-navy font-semibold">#</span> {t.brew.tagToConnect}
+          </span>
+          <span>
+            <span className="text-t-navy">🔗</span> {t.brew.pasteLink}
+          </span>
+        </div>
       </BrewChrome>
     )
   }
