@@ -1130,17 +1130,26 @@ export function BrewWizard() {
   }
 
   if (step === 'ctx3') {
+    // El demo ancla "lugar · fecha"; la fecha es la de hoy, cuando se sella.
+    const sealDate = new Date().toLocaleDateString(undefined, { day: '2-digit', month: 'short', year: 'numeric' })
     return (
       <BrewChrome onBack={backTo('ctx2')} backLabel={t.creator.back} onClose={close} progressPct={STEP_PROGRESS[step]}>
-        <div className="font-display font-medium text-[27px] leading-[1.08] text-ink">{t.brew.sealTitle}</div>
-        <p className="text-[13px] text-ink-soft mt-1">{t.brew.sealSub}</p>
+        <BrewTitle required>{t.brew.sealTitle}</BrewTitle>
+        <p className="text-[12px] leading-[1.62] text-ink-soft mt-2">{t.brew.sealSub}</p>
 
         <div className="border border-hairline rounded-2xl p-3.5 mt-4">
           {[
             [t.brew.sealCreator, profile?.public_alias || profile?.legal_name || ''],
             [t.brew.sealWork, title],
-            [t.brew.sealValue, marketPrice ? `${money(parseFloat(marketPrice) || 0)} ${currency}` : '—'],
-            [t.brew.sealAnchored, location],
+            [
+              t.brew.sealValue,
+              marketPrice
+                ? `${money(parseFloat(marketPrice) || 0)} ${currency}${
+                    royaltyType === 'percentage' ? ` · ${royaltyValue}%` : royaltyType === 'fixed' ? ` · ${money(parseFloat(royaltyValue) || 0)}` : ''
+                  }`
+                : '—',
+            ],
+            [t.brew.sealAnchored, [location, sealDate].filter(Boolean).join(' · ')],
           ].map(([k, v], i) => (
             <div key={k} className={`flex items-start justify-between gap-3 py-1.5 text-[12.5px] ${i > 0 ? 'border-t border-hairline' : ''}`}>
               <span className="text-ink-soft shrink-0">{k}</span>
@@ -1181,13 +1190,34 @@ export function BrewWizard() {
               />
             </svg>
             <div className="absolute inset-0 flex flex-col items-center justify-center gap-1">
-              <span className="text-[24px]">{sealHolding >= 1 ? '✓' : '🔒'}</span>
+              {sealHolding >= 1 ? (
+                <span className="text-[24px] leading-none text-t-green">✓</span>
+              ) : (
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" className="text-ink" aria-hidden="true">
+                  <rect x="4" y="11" width="16" height="10" rx="2" />
+                  <path d="M8 11V7a4 4 0 0 1 8 0v4" />
+                </svg>
+              )}
               <span className="text-[9px] font-semibold uppercase tracking-[0.14em] text-ink-soft">
                 {sealHolding >= 1 ? t.brew.sealed : t.brew.holdToSeal}
               </span>
             </div>
           </button>
           <p className="text-[11px] text-placeholder mt-3.5">{t.brew.pressAndHold}</p>
+        </div>
+
+        <div className="flex items-start gap-2 border border-hairline rounded-[10px] bg-paper-warm px-3 py-[11px] mt-5">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" className="text-ink-soft mt-px shrink-0" aria-hidden="true">
+            <path d="M12 11v5" /><path d="M8 11a4 4 0 0 1 8 0v3" /><path d="M5 12a7 7 0 0 1 14 0v4" />
+            <path d="M8.5 19.5c.6-1 .9-2.2.9-3.5" />
+          </svg>
+          <div className="text-[11.5px] leading-[1.55] text-ink-soft">
+            {t.brew.sealBiometricNote}{' '}
+            <a href="/settings/authentication" className="text-ink underline">
+              {t.brew.sealBiometricLink}
+            </a>{' '}
+            {t.brew.sealBiometricTail}
+          </div>
         </div>
 
         {msg && <p className="text-[12px] text-t-red mt-4 text-center">{msg}</p>}

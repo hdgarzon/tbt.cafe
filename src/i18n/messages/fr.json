@@ -631,6 +631,9 @@
     "tabFeatured": "En vedette"
   },
   "brew": {
+    "sealBiometricNote": "Scellez d’un seul geste la prochaine fois.",
+    "sealBiometricLink": "Configurez la signature biométrique",
+    "sealBiometricTail": "dans les paramètres d’Authentification.",
     "tagToConnect": "taguez pour relier",
     "pasteLink": "collez un lien",
     "headlines": "Actualités",

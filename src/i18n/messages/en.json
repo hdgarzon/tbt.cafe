@@ -631,6 +631,9 @@
     "tabFeatured": "Featured"
   },
   "brew": {
+    "sealBiometricNote": "Seal with a single touch next time.",
+    "sealBiometricLink": "Set up biometric signing",
+    "sealBiometricTail": "in Authentication settings.",
     "tagToConnect": "tag to connect",
     "pasteLink": "paste a link",
     "headlines": "Headlines",

@@ -631,6 +631,9 @@
     "tabFeatured": "Destacadas"
   },
   "brew": {
+    "sealBiometricNote": "Sella con un solo toque la próxima vez.",
+    "sealBiometricLink": "Configura la firma biométrica",
+    "sealBiometricTail": "en los ajustes de Autenticación.",
     "tagToConnect": "etiqueta para conectar",
     "pasteLink": "pega un enlace",
     "headlines": "Titulares",
