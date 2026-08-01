@@ -630,6 +630,10 @@
     "tabFeatured": "Destacadas"
   },
   "brew": {
+    "required": "Obligatorio",
+    "optional": "(opcional)",
+    "tipDimensions": "El tamaño de la obra en sus propios términos — cm o pulgadas para piezas físicas, píxeles o resolución para digital, duración para obra basada en tiempo.",
+    "tipSeries": "Una serie agrupa tu propia obra — un conjunto de piezas que van juntas. Toda obra pertenece a una. Si aún no has creado ninguna, esta inicia Series 1, que puedes renombrar cuando quieras.",
     "categories": {
       "painting": "Pintura",
       "sculpture": "Escultura",

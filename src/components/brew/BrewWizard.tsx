@@ -5,7 +5,7 @@ import { useSearchParams } from 'next/navigation'
 import { useLocale } from '@/i18n/LocaleProvider'
 import { useShell } from '@/components/AppShell'
 import { supabase } from '@/lib/supabase'
-import { BrewChrome, BrewButton, BrewLabel, BrewInput, BrewSelect } from '@/components/brew/BrewChrome'
+import { BrewChrome, BrewTitle, BrewButton, BrewLabel, BrewInput, BrewSelect } from '@/components/brew/BrewChrome'
 import { money } from '@/lib/fees'
 import type { SeriesWithCount } from '@/lib/series-data'
 import {
@@ -133,20 +133,29 @@ export function BrewWizard() {
   const [promoDiscount, setPromoDiscount] = useState<{ type: 'percentage' | 'fixed'; value: number } | null>(null)
   const [mintSteps, setMintSteps] = useState(1)
   const [result, setResult] = useState<{ tbtId: string; title: string; solscanUrl: string } | null>(null)
+  /** Ya resolvimos una sesión válida y colocamos el paso inicial. */
+  const resolvedRef = useRef(false)
 
   useEffect(() => {
-    if (!connected) {
-      // tbt-espresso.html's wireBrew(): no intermediate "sign in" screen —
-      // hitting Brew unauthenticated opens the real auth flow immediately,
-      // and resumes here (this effect re-runs) once it succeeds.
-      openAuth()
-      return
-    }
     ;(async () => {
+      // `connected` cambia de false a true al restaurarse la sesión, lo que
+      // vuelve a disparar este efecto; sin esta guarda reiniciaría el asistente
+      // encima de lo que el creador ya llevaba escrito.
+      if (resolvedRef.current) return
+      // Hay que preguntarle a Supabase, NO a `connected`: el shell arranca en
+      // false y solo pasa a true cuando termina de restaurar la sesión, así
+      // que decidir con él abría el modal a un usuario ya autenticado.
       const {
         data: { user },
       } = await supabase.auth.getUser()
-      if (!user) return
+      if (!user) {
+        // wireBrew() de tbt-espresso.html: sin pantalla intermedia — sin sesión
+        // se abre la autenticación real y, al lograrse, `connected` cambia,
+        // este efecto se vuelve a ejecutar y continúa el flujo.
+        openAuth()
+        return
+      }
+      resolvedRef.current = true
       setUserId(user.id)
 
       // Back from Stripe (create-checkout's successUrl points here): resume
@@ -478,8 +487,8 @@ export function BrewWizard() {
 
   if (step === 'work1') {
     return (
-      <BrewChrome onBack={backTo('chooser')} backLabel={t.brew.chooserTitle} onClose={close} progressPct={STEP_PROGRESS[step]} dock={<BrewButton onClick={submitWork1}>{t.brew.next}</BrewButton>}>
-        <div className="font-display font-medium text-[20px] text-ink">{t.brew.workTitle}</div>
+      <BrewChrome onBack={backTo('chooser')} backLabel={t.creator.back} onClose={close} progressPct={STEP_PROGRESS[step]} dock={<BrewButton onClick={submitWork1}>{t.brew.next}</BrewButton>}>
+        <BrewTitle required>{t.brew.workTitle}</BrewTitle>
 
         <div className="mt-4">
           <BrewLabel required>{t.brew.fieldTitle}</BrewLabel>
@@ -503,7 +512,7 @@ export function BrewWizard() {
             <BrewInput value={material} onChange={(e) => setMaterial(e.target.value)} placeholder={t.brew.fieldMaterialPlaceholder} />
           </div>
           <div>
-            <BrewLabel>{t.brew.fieldDimensions}</BrewLabel>
+            <BrewLabel info={t.brew.tipDimensions}>{t.brew.fieldDimensions}</BrewLabel>
             <BrewInput value={dimensions} onChange={(e) => setDimensions(e.target.value)} placeholder={t.brew.fieldDimensionsPlaceholder} />
           </div>
         </div>
@@ -523,7 +532,7 @@ export function BrewWizard() {
         </div>
 
         <div className="mt-3.5">
-          <BrewLabel>{t.brew.fieldSeries}</BrewLabel>
+          <BrewLabel info={t.brew.tipSeries}>{t.brew.fieldSeries}</BrewLabel>
           <BrewSelect value={seriesChoice} onChange={(e) => setSeriesChoice(e.target.value)}>
             {series.map((s) => (
               <option key={s.id} value={s.id}>

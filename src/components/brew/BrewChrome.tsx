@@ -1,6 +1,7 @@
 'use client'
 
-import type { ReactNode } from 'react'
+import { useState, type ReactNode } from 'react'
+import { useLocale } from '@/i18n/LocaleProvider'
 
 /**
  * Envoltorio compartido del wizard de Cold Brew (prototipo: chrome()/top()).
@@ -30,8 +31,8 @@ export function BrewChrome({
 
       <div className="flex items-center justify-between px-4 py-2 shrink-0">
         {onBack ? (
-          <button type="button" onClick={onBack} className="flex items-center gap-1 text-[13px] text-ink-soft hover:text-ink transition-colors -ml-1 px-1 py-1">
-            <span className="text-[17px] leading-none">‹</span>
+          <button type="button" onClick={onBack} className="flex items-center gap-[5px] py-0.5 text-[11px] font-medium tracking-[0.14em] uppercase text-ink-soft hover:text-ink transition-colors">
+            <span className="text-[16px] leading-none">‹</span>
             {backLabel}
           </button>
         ) : (
@@ -41,7 +42,7 @@ export function BrewChrome({
           type="button"
           onClick={onClose}
           aria-label="Close"
-          className="w-8 h-8 flex items-center justify-center rounded-lg text-ink-soft hover:bg-paper-warm hover:text-ink transition-colors"
+          className="w-8 h-8 flex items-center justify-center rounded-full border border-hairline text-[15px] leading-none text-ink hover:bg-paper-warm hover:border-ink transition-colors"
         >
           ✕
         </button>
@@ -49,7 +50,7 @@ export function BrewChrome({
 
       {progressPct != null && (
         <div className="h-[3px] bg-hairline mx-4 rounded-full overflow-hidden shrink-0">
-          <div className="h-full bg-ink transition-[width] duration-300 ease-out" style={{ width: `${progressPct}%` }} />
+          <div className="h-full bg-t-magenta transition-[width] duration-300 ease-out" style={{ width: `${progressPct}%` }} />
         </div>
       )}
 
@@ -87,11 +88,67 @@ export function BrewButton({
   )
 }
 
-export function BrewLabel({ children, required }: { children: ReactNode; required?: boolean }) {
+/**
+ * Título de paso con su etiqueta de obligatoriedad — titleReq()/titleOpt() del
+ * prototipo: el display serif a la izquierda y "✦ Required" (o "(optional)")
+ * alineado a la línea base, a la derecha.
+ */
+export function BrewTitle({ children, required, optional }: { children: ReactNode; required?: boolean; optional?: string }) {
+  const { t } = useLocale()
+  return (
+    <div className="flex items-baseline justify-between gap-2.5 pr-1">
+      <div className="font-display font-medium text-[27px] leading-[1.08] text-ink">{children}</div>
+      {required && (
+        <span className="inline-flex items-center gap-[5px] mr-0.5 text-[10px] font-medium tracking-[0.14em] uppercase text-ink-soft whitespace-nowrap">
+          <span className="text-t-magenta text-[12px]">✦</span>
+          {t.brew.required}
+        </span>
+      )}
+      {optional && <span className="text-[11px] text-placeholder whitespace-nowrap">{optional}</span>}
+    </div>
+  )
+}
+
+/**
+ * Ícono ⓘ que despliega una nota (cb-info + cb-tip del prototipo). El texto
+ * vive donde se usa, así que la nota se muestra debajo del bloque contenedor.
+ */
+export function BrewInfo({ tip }: { tip: string }) {
+  const [open, setOpen] = useState(false)
+  return (
+    <>
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        aria-expanded={open}
+        className="inline-flex items-center justify-center w-[15px] h-[15px] ml-[5px] align-[1px] rounded-full border border-placeholder text-ink-soft font-serif italic text-[9px] leading-none hover:border-ink hover:text-ink transition-colors"
+      >
+        i
+      </button>
+      {open && (
+        <span className="block normal-case tracking-normal font-normal mt-2 rounded-[10px] border border-hairline bg-paper-warm px-3 py-2.5 text-[11px] leading-[1.5] text-ink-soft">
+          {tip}
+        </span>
+      )}
+    </>
+  )
+}
+
+export function BrewLabel({
+  children,
+  required,
+  info,
+}: {
+  children: ReactNode
+  required?: boolean
+  /** Nota opcional desplegable con el ícono ⓘ, como en el prototipo. */
+  info?: string
+}) {
   return (
     <label className="block mb-[9px] text-[10px] font-medium tracking-[0.18em] uppercase text-ink-soft">
       {children}
       {required && <span className="text-t-magenta ml-1">✦</span>}
+      {info && <BrewInfo tip={info} />}
     </label>
   )
 }
@@ -101,7 +158,7 @@ export function BrewInput(props: React.InputHTMLAttributes<HTMLInputElement>) {
   return (
     <input
       {...rest}
-      className={`w-full px-3.5 py-3 border border-hairline rounded-xl text-[14px] outline-none focus:border-ink transition-colors placeholder:text-placeholder ${className ?? ''}`}
+      className={`w-full p-3.5 border border-hairline rounded-xl text-[15px] outline-none focus:border-ink transition-colors placeholder:text-placeholder ${className ?? ''}`}
     />
   )
 }
@@ -111,7 +168,7 @@ export function BrewSelect(props: React.SelectHTMLAttributes<HTMLSelectElement>)
   return (
     <select
       {...rest}
-      className={`w-full px-3.5 py-3 border border-hairline rounded-xl text-[14px] outline-none focus:border-ink transition-colors bg-paper appearance-none cursor-pointer ${className ?? ''}`}
+      className={`w-full p-3.5 pr-9 border border-hairline rounded-xl text-[15px] outline-none focus:border-ink transition-colors bg-white appearance-none cursor-pointer bg-[length:12px_8px] bg-no-repeat bg-[right_14px_center] bg-[image:var(--cb-caret)] ${className ?? ''}`}
     >
       {children}
     </select>

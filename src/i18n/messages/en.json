@@ -630,6 +630,10 @@
     "tabFeatured": "Featured"
   },
   "brew": {
+    "required": "Required",
+    "optional": "(optional)",
+    "tipDimensions": "The size of the work in its own terms — cm or inches for physical pieces, pixels or resolution for digital, duration for time-based work.",
+    "tipSeries": "A series groups your own work — a body of pieces that belong together. Every work belongs to one. If you haven’t made a series yet, this one starts Series 1, which you can rename at any time.",
     "categories": {
       "painting": "Painting",
       "sculpture": "Sculpture",
