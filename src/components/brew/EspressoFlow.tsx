@@ -70,10 +70,19 @@ export function EspressoFlow({
   onBack,
   onClose,
   onComplete,
+  creatorAlias,
+  creatorBio,
+  creatorType,
+  defaultCategory,
 }: {
   onBack: () => void
   onClose: () => void
   onComplete: (r: EspressoResult) => void
+  /** generate-context exige alias, título y categoría: sin ellos responde 400. */
+  creatorAlias: string
+  creatorBio?: string
+  creatorType: 'individual' | 'group' | 'corporation'
+  defaultCategory: string
 }) {
   const { t, locale } = useLocale()
   const e = t.espresso
@@ -213,10 +222,11 @@ export function EspressoFlow({
       /* sin ubicación el backend igual redacta, sólo que sin lugar ni clima */
     }
     const r = await generateContext({
-      creatorAlias: '',
-      creatorType: 'individual',
+      creatorAlias,
+      creatorBio,
+      creatorType,
       workTitle: work.title,
-      workCategory: category ?? '',
+      workCategory: category || defaultCategory,
       workMaterial: material ?? undefined,
       lat,
       lng,

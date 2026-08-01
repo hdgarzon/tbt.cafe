@@ -601,6 +601,10 @@ export function BrewWizard() {
       <EspressoFlow
         onBack={backTo('chooser')}
         onClose={close}
+        creatorAlias={profile?.public_alias || profile?.legal_name || ''}
+        creatorBio={profile?.bio ?? undefined}
+        creatorType={profile?.creator_type ?? 'individual'}
+        defaultCategory={t.brew.categories[category]}
         onComplete={(r: EspressoResult) => {
           // Espresso recoge los MISMOS datos; se vuelcan en el estado de Cold
           // Brew y se entrega en el Seal (phase 5 sub 3 del prototipo).
