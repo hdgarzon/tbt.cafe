@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { useLocale } from '@/i18n/LocaleProvider'
 import { BrewChrome, BrewButton } from '@/components/brew/BrewChrome'
+import { ContextEditor } from '@/components/brew/ContextEditor'
 import { runSimilarityScan, describeImage, extractFields, generateContext } from '@/lib/brew-data'
 
 /**
@@ -398,10 +399,10 @@ export function EspressoFlow({
           {contextText && (
             <div className="mt-3.5">
               <div className="text-[9px] tracking-[0.16em] uppercase text-placeholder mb-2">{t.brew.contextTitle}</div>
-              <textarea
+              <ContextEditor
                 value={contextText}
-                onChange={(ev) => setContextText(ev.target.value)}
-                className="w-full min-h-[160px] border border-hairline rounded-[14px] p-3.5 font-display text-[15px] leading-[1.6] text-ink outline-none focus:border-ink transition-colors bg-[#FCFBFA] resize-none"
+                onChange={setContextText}
+                className="w-full min-h-[160px] border border-hairline rounded-[14px] p-3.5 font-display text-[15px] leading-[1.6] text-ink outline-none focus:border-ink transition-colors bg-[#FCFBFA] overflow-y-auto"
               />
             </div>
           )}

@@ -659,6 +659,9 @@
     "voiceUnsupported": "La voz no está disponible en este navegador — escribe."
   },
   "brew": {
+    "windowLapsed": "La ventana se cerró, pero tu obra sellada sigue guardada como borrador — puedes pagar cuando quieras.",
+    "adjustPlaceholder": "Dime qué ajustar — o edita arriba",
+    "adjustApply": "Aplicar",
     "registeredBodyFull": "Tu obra está permanentemente en cadena. Tu certificado — con tu clave privada de transferencia — fue enviado a tu teléfono.",
     "certSentTo": "Certificado enviado a tu teléfono",
     "certKeyInside": "Tu clave de transferencia va dentro — privada, fuera de esta pantalla.",

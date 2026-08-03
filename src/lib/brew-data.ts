@@ -127,6 +127,8 @@ export async function generateContext(input: {
   workMaterial?: string
   lat?: number
   lng?: number
+  /** Instrucción de reescritura del creador (caja "tell me what to adjust"). */
+  adjust?: string
 }): Promise<ContextResult | { error: string }> {
   const auth = await authHeader()
   if (!auth) return { error: 'needSignIn' }
@@ -138,6 +140,7 @@ export async function generateContext(input: {
         creator: { alias: input.creatorAlias, bio: input.creatorBio, creatorType: input.creatorType },
         work: { title: input.workTitle, category: input.workCategory, material: input.workMaterial },
         location: input.lat != null && input.lng != null ? { lat: input.lat, lng: input.lng } : undefined,
+        adjust: input.adjust,
       }),
     })
     const body = await res.json()

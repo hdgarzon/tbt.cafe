@@ -659,6 +659,9 @@
     "voiceUnsupported": "A voz não está disponível neste navegador — escreva."
   },
   "brew": {
+    "windowLapsed": "A janela fechou, mas a sua obra selada continua guardada como rascunho — pode pagar quando quiser.",
+    "adjustPlaceholder": "Diga o que ajustar — ou edite acima",
+    "adjustApply": "Aplicar",
     "registeredBodyFull": "A sua obra está permanentemente na cadeia. O seu certificado — com a sua chave privada de transferência — foi enviado para o seu telemóvel.",
     "certSentTo": "Certificado enviado para o seu telemóvel",
     "certKeyInside": "A sua chave de transferência vai dentro — privada, fora deste ecrã.",

@@ -7,6 +7,7 @@ import { useShell } from '@/components/AppShell'
 import { supabase } from '@/lib/supabase'
 import { BrewChrome, BrewTitle, BrewInfo, BrewButton, BrewLabel, BrewInput, BrewSelect } from '@/components/brew/BrewChrome'
 import { EspressoFlow, type EspressoResult } from '@/components/brew/EspressoFlow'
+import { ContextEditor } from '@/components/brew/ContextEditor'
 import { money } from '@/lib/fees'
 import type { SeriesWithCount } from '@/lib/series-data'
 import {
@@ -145,6 +146,7 @@ export function BrewWizard() {
   const [aiSummary, setAiSummary] = useState('')
   const [editedSummary, setEditedSummary] = useState('')
   const [momentLoading, setMomentLoading] = useState(false)
+  const [adjust, setAdjust] = useState('')
   const [sealHolding, setSealHolding] = useState(0) // 0..1
   const sealTimerRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
@@ -154,8 +156,9 @@ export function BrewWizard() {
   const [promoCode, setPromoCode] = useState('')
   const [promoMsg, setPromoMsg] = useState('')
   const [promoDiscount, setPromoDiscount] = useState<{ type: 'percentage' | 'fixed'; value: number } | null>(null)
-  /** Ventana de pago del prototipo (10:00). Ojo: es decorativa — nada la
-      hace vencer ni libera el borrador, igual que en tbt-espresso.html. */
+  /** Ventana de pago del prototipo (10:00). Nada la hace vencer en el backend,
+      así que al llegar a cero se dice la verdad en vez de insinuar una pérdida:
+      la obra sellada sigue guardada como borrador. */
   const [payLeft, setPayLeft] = useState(600)
   const [mintSteps, setMintSteps] = useState(1)
   const [result, setResult] = useState<{ tbtId: string; title: string; solscanUrl: string } | null>(null)
@@ -388,6 +391,7 @@ export function BrewWizard() {
       workMaterial: material || undefined,
       lat: coords?.lat,
       lng: coords?.lng,
+      adjust: adjust.trim() || undefined,
     })
     setMomentLoading(false)
     if ('error' in result) return setMsg(t.brew.errors.contextFailed)
@@ -1137,6 +1141,28 @@ export function BrewWizard() {
         )}
         <p className="text-[10.5px] text-placeholder mt-2">{t.brew.momentHint}</p>
 
+        {/* "Tell me what to adjust" del prototipo — reescribe el Contexto vía
+            generate-context, que ya acepta la instrucción (hdgarzon/tbt#5). */}
+        <div className="mt-4">
+          <textarea
+            value={adjust}
+            onChange={(ev) => setAdjust(ev.target.value)}
+            placeholder={t.brew.adjustPlaceholder}
+            rows={2}
+            className="w-full p-3.5 border border-hairline rounded-xl text-[14px] outline-none focus:border-ink transition-colors resize-none placeholder:text-placeholder"
+          />
+          {adjust.trim() && (
+            <button
+              type="button"
+              onClick={regenerateContext}
+              disabled={momentLoading}
+              className="mt-2 px-4 py-2 border border-ink rounded-lg text-[11px] font-semibold tracking-[0.1em] uppercase text-ink disabled:opacity-60"
+            >
+              {momentLoading ? t.brew.momentLoading : t.brew.adjustApply}
+            </button>
+          )}
+        </div>
+
         {msg && <p className="text-[12px] text-t-red mt-3.5">{msg}</p>}
       </BrewChrome>
     )
@@ -1161,10 +1187,10 @@ export function BrewWizard() {
             {t.brew.regenerate}
           </button>
         </div>
-        <textarea
+        <ContextEditor
           value={editedSummary}
-          onChange={(e) => setEditedSummary(e.target.value)}
-          className="w-full min-h-[250px] border border-hairline rounded-[14px] p-4 font-display text-[15.5px] leading-[1.66] text-ink outline-none focus:border-ink transition-colors bg-[#FCFBFA] resize-none"
+          onChange={setEditedSummary}
+          className="w-full min-h-[250px] border border-hairline rounded-[14px] p-4 font-display text-[15.5px] leading-[1.66] text-ink outline-none focus:border-ink transition-colors bg-[#FCFBFA] overflow-y-auto"
         />
         <div className="flex gap-3 mt-[9px] text-[10px] text-placeholder">
           <span>
@@ -1314,7 +1340,9 @@ export function BrewWizard() {
             </span>
           </div>
         </div>
-        <p className="text-[12px] leading-[1.62] text-ink-soft mt-2">{t.brew.registerSub}</p>
+        <p className="text-[12px] leading-[1.62] text-ink-soft mt-2">
+          {payLeft > 0 ? t.brew.registerSub : t.brew.windowLapsed}
+        </p>
 
         <div className="border border-hairline rounded-2xl mt-4 p-3.5">
           <div className="flex items-center gap-3">

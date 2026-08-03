@@ -8,6 +8,7 @@ import { AuthSheet } from '@/components/AuthSheet'
 import { BiometricSignInSheet } from '@/components/BiometricSignInSheet'
 import { supabase } from '@/lib/supabase'
 import { maskPhone, type Country } from '@/lib/countries'
+import { maskPhoneE164 } from '@/lib/masking'
 
 /**
  * Shell de la app — la columna única del prototipo.
@@ -46,14 +47,21 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const [authOpen, setAuthOpen] = useState(false)
   const [bioAuthOpen, setBioAuthOpen] = useState(false)
 
-  // Restaurar sesión existente al montar y seguir sus cambios
+  // Restaurar sesión existente al montar y seguir sus cambios.
+  // El teléfono se deriva de la sesión, no sólo de la autenticación en curso:
+  // al volver de Stripe la página se recarga y el certificado tiene que poder
+  // decir a qué número se envió.
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
-      if (data.session) setConnected(true)
+      if (data.session) {
+        setConnected(true)
+        if (data.session.user.phone) setMaskedPhone(maskPhoneE164(data.session.user.phone))
+      }
     })
     const { data: sub } = supabase.auth.onAuthStateChange((_event, session) => {
       setConnected(Boolean(session))
       if (!session) setMaskedPhone(null)
+      else if (session.user.phone) setMaskedPhone(maskPhoneE164(session.user.phone))
     })
     return () => sub.subscription.unsubscribe()
   }, [])
