@@ -663,7 +663,8 @@
     "voiceUnsupported": "Voice isn’t available in this browser — type instead."
   },
   "brew": {
-    "windowLapsed": "The hold lapsed, but your sealed work is still saved as a draft — you can pay whenever you like.",
+    "sealAgain": "Seal again",
+    "windowLapsed": "The seal expired. Seal the work again to register it — nothing was lost.",
     "adjustPlaceholder": "Tell me what to adjust — or just edit above",
     "adjustApply": "Apply",
     "registeredBodyFull": "Your work is permanently on-chain. Your certificate — with your private transfer key — has been sent to your phone.",

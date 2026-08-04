@@ -663,7 +663,8 @@
     "voiceUnsupported": "La voix n’est pas disponible dans ce navigateur — écrivez."
   },
   "brew": {
-    "windowLapsed": "Le délai est écoulé, mais votre œuvre scellée reste enregistrée en brouillon — vous pouvez payer quand vous voulez.",
+    "sealAgain": "Sceller à nouveau",
+    "windowLapsed": "Le sceau a expiré. Scellez à nouveau l’œuvre pour l’enregistrer — rien n’est perdu.",
     "adjustPlaceholder": "Dites-moi quoi ajuster — ou modifiez ci-dessus",
     "adjustApply": "Appliquer",
     "registeredBodyFull": "Votre œuvre est inscrite définitivement sur la chaîne. Votre certificat — avec votre clé de transfert privée — a été envoyé sur votre téléphone.",

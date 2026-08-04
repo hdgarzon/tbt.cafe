@@ -244,7 +244,12 @@ export async function createDraftWork(
     seriesId = await ensureFirstSeries(userId)
   }
 
+  // Ventana de pago: el sellado congela precio, regalías, contexto y escaneo
+  // en un instante, y eso queda en un certificado permanente. create-checkout
+  // la hace cumplir (hdgarzon/tbt#6); al vencer se vuelve a sellar.
+  const PAYMENT_WINDOW_MS = 10 * 60 * 1000
   const contextData = {
+    paymentWindowExpiresAt: new Date(Date.now() + PAYMENT_WINDOW_MS).toISOString(),
     creatorData: buildCreatorDataBlob(profile),
     commProData: {
       marketPrice: String(input.marketPrice),
@@ -412,4 +417,12 @@ export async function describeImage(file: File): Promise<ImageDescription | null
   } catch {
     return null
   }
+}
+
+
+/** Vencimiento de la ventana de pago de un borrador, o null si no tiene. */
+export async function fetchPaymentWindow(workId: string): Promise<number | null> {
+  const { data } = await supabase.from('works').select('context_data').eq('id', workId).single()
+  const iso = (data?.context_data as { paymentWindowExpiresAt?: string } | null)?.paymentWindowExpiresAt
+  return iso ? Date.parse(iso) : null
 }

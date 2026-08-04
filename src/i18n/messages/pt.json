@@ -663,7 +663,8 @@
     "voiceUnsupported": "A voz não está disponível neste navegador — escreva."
   },
   "brew": {
-    "windowLapsed": "A janela fechou, mas a sua obra selada continua guardada como rascunho — pode pagar quando quiser.",
+    "sealAgain": "Selar de novo",
+    "windowLapsed": "O selo expirou. Sele a obra de novo para a registar — nada se perdeu.",
     "adjustPlaceholder": "Diga o que ajustar — ou edite acima",
     "adjustApply": "Aplicar",
     "registeredBodyFull": "A sua obra está permanentemente na cadeia. O seu certificado — com a sua chave privada de transferência — foi enviado para o seu telemóvel.",

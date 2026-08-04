@@ -11,6 +11,7 @@ import { ContextEditor } from '@/components/brew/ContextEditor'
 import { money } from '@/lib/fees'
 import type { SeriesWithCount } from '@/lib/series-data'
 import {
+  fetchPaymentWindow,
   fetchCreatorProfile,
   isCreatorProfileComplete,
   fetchSeriesOptions,
@@ -156,9 +157,9 @@ export function BrewWizard() {
   const [promoCode, setPromoCode] = useState('')
   const [promoMsg, setPromoMsg] = useState('')
   const [promoDiscount, setPromoDiscount] = useState<{ type: 'percentage' | 'fixed'; value: number } | null>(null)
-  /** Ventana de pago del prototipo (10:00). Nada la hace vencer en el backend,
-      así que al llegar a cero se dice la verdad en vez de insinuar una pérdida:
-      la obra sellada sigue guardada como borrador. */
+  /** Fin real de la ventana de pago (epoch ms), guardado con el borrador.
+      Un contador local se reiniciaría al volver de Stripe; esto no. */
+  const [payDeadline, setPayDeadline] = useState<number | null>(null)
   const [payLeft, setPayLeft] = useState(600)
   const [mintSteps, setMintSteps] = useState(1)
   const [result, setResult] = useState<{ tbtId: string; title: string; solscanUrl: string } | null>(null)
@@ -220,10 +221,18 @@ export function BrewWizard() {
   }, [imagePreview])
 
   useEffect(() => {
-    if (step !== 'payment') return
-    const iv = setInterval(() => setPayLeft((v) => (v > 0 ? v - 1 : 0)), 1000)
+    if (step !== 'payment' || payDeadline == null) return
+    const tick = () => setPayLeft(Math.max(0, Math.round((payDeadline - Date.now()) / 1000)))
+    tick()
+    const iv = setInterval(tick, 1000)
     return () => clearInterval(iv)
-  }, [step])
+  }, [step, payDeadline])
+
+  // Al volver de Stripe la página se recarga: el vencimiento se relee del borrador.
+  useEffect(() => {
+    if (step !== 'payment' || !workId || payDeadline != null) return
+    fetchPaymentWindow(workId).then((d) => d && setPayDeadline(d))
+  }, [step, workId, payDeadline])
 
   // Al salir del asistente hay que soltar micrófono/cámara y el objeto URL:
   // dejar la pista viva mantiene el indicador de grabación del sistema encendido.
@@ -473,6 +482,7 @@ export function BrewWizard() {
       return
     }
     setWorkId(id)
+    setPayDeadline(Date.now() + 10 * 60 * 1000)
     setStep('payment')
   }
 
@@ -508,6 +518,12 @@ export function BrewWizard() {
     )
     if (result.error) {
       setBusy(false)
+      // create-checkout rechaza con 409 si el sello venció (hdgarzon/tbt#6).
+      if (result.error === 'payment_window_expired') {
+        setPayLeft(0)
+        setPayDeadline(Date.now())
+        return
+      }
       setMsg(t.brew.errors.checkoutFailed)
       return
     }
@@ -1321,6 +1337,11 @@ export function BrewWizard() {
         onClose={close}
         progressPct={STEP_PROGRESS[step]}
         dock={
+          payLeft <= 0 ? (
+            // Vencido: no hay un botón de pago que el backend vaya a aceptar.
+            // Volver a sellar recaptura los anclajes y abre una ventana nueva.
+            <BrewButton onClick={() => setStep('ctx3')}>{t.brew.sealAgain}</BrewButton>
+          ) : (
           <div>
             <BrewButton onClick={pay} disabled={busy}>
               {!(promoDiscount?.type === 'percentage' && promoDiscount.value >= 100) && (
@@ -1335,6 +1356,7 @@ export function BrewWizard() {
             </BrewButton>
             <p className="text-center text-[10px] text-placeholder mt-2.5">{t.brew.securedByStripe}</p>
           </div>
+          )
         }
       >
         <div className="flex items-center justify-between gap-2.5">
