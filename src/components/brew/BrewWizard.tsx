@@ -11,7 +11,7 @@ import { ContextEditor } from '@/components/brew/ContextEditor'
 import { money } from '@/lib/fees'
 import type { SeriesWithCount } from '@/lib/series-data'
 import {
-  fetchPaymentWindow,
+  fetchDraftForResume,
   fetchCreatorProfile,
   isCreatorProfileComplete,
   fetchSeriesOptions,
@@ -165,6 +165,7 @@ export function BrewWizard() {
   const [result, setResult] = useState<{ tbtId: string; title: string; solscanUrl: string } | null>(null)
   /** Ya resolvimos una sesión válida y colocamos el paso inicial. */
   const resolvedRef = useRef(false)
+  const resumedRef = useRef(false)
 
   useEffect(() => {
     ;(async () => {
@@ -200,6 +201,7 @@ export function BrewWizard() {
       }
       if (returningWorkId && status === 'cancel') {
         setWorkId(returningWorkId)
+        setProfile(await fetchCreatorProfile(user.id))
         setStep('payment')
         return
       }
@@ -228,11 +230,29 @@ export function BrewWizard() {
     return () => clearInterval(iv)
   }, [step, payDeadline])
 
-  // Al volver de Stripe la página se recarga: el vencimiento se relee del borrador.
+  // Al volver de Stripe la página se recarga y solo sobrevive el workId de la
+  // URL: se relee el borrador para que el vencimiento, la tarjeta de pago y un
+  // eventual resellado tengan los datos reales y no una pantalla vacía.
   useEffect(() => {
-    if (step !== 'payment' || !workId || payDeadline != null) return
-    fetchPaymentWindow(workId).then((d) => d && setPayDeadline(d))
-  }, [step, workId, payDeadline])
+    if (step !== 'payment' || !workId || resumedRef.current) return
+    resumedRef.current = true
+    fetchDraftForResume(workId).then((d) => {
+      if (!d) return
+      if (d.windowEndsAt) setPayDeadline(d.windowEndsAt)
+      if (!title) {
+        setTitle(d.title)
+        // La categoría se guarda como etiqueta traducida, no como clave.
+        const key = CATEGORY_KEYS.find((k) => t.brew.categories[k] === d.category)
+        if (key) setCategory(key)
+        setImagePreview(d.imageUrl)
+        setMarketPrice(d.marketPrice)
+        setCurrency(d.currency)
+        setRoyaltyType(d.royaltyType)
+        setRoyaltyValue(d.royaltyValue)
+        setLocation(d.location)
+      }
+    })
+  }, [step, workId, title, t.brew.categories])
 
   // Al salir del asistente hay que soltar micrófono/cámara y el objeto URL:
   // dejar la pista viva mantiene el indicador de grabación del sistema encendido.

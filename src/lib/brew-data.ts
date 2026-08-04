@@ -420,9 +420,46 @@ export async function describeImage(file: File): Promise<ImageDescription | null
 }
 
 
-/** Vencimiento de la ventana de pago de un borrador, o null si no tiene. */
-export async function fetchPaymentWindow(workId: string): Promise<number | null> {
-  const { data } = await supabase.from('works').select('context_data').eq('id', workId).single()
-  const iso = (data?.context_data as { paymentWindowExpiresAt?: string } | null)?.paymentWindowExpiresAt
-  return iso ? Date.parse(iso) : null
+export type ResumedDraft = {
+  /** Fin de la ventana de pago (epoch ms), o null si el borrador no la tiene. */
+  windowEndsAt: number | null
+  title: string
+  category: string
+  imageUrl: string
+  marketPrice: string
+  currency: string
+  royaltyType: RoyaltyChoice
+  royaltyValue: string
+  location: string
+}
+
+/**
+ * Relee un borrador sellado. Al volver de Stripe la página se recarga y el
+ * asistente solo conserva el workId de la URL, así que sin esto la pantalla de
+ * pago — y el resellado, si la ventana venció — quedan sin datos.
+ */
+export async function fetchDraftForResume(workId: string): Promise<ResumedDraft | null> {
+  const { data } = await supabase
+    .from('works')
+    .select('title, category, media_url, market_price, currency, royalty_type, royalty_value, context_data')
+    .eq('id', workId)
+    .single()
+  if (!data) return null
+
+  const cd = data.context_data as
+    | { paymentWindowExpiresAt?: string; contextData?: { location?: string } }
+    | null
+  const iso = cd?.paymentWindowExpiresAt
+
+  return {
+    windowEndsAt: iso ? Date.parse(iso) : null,
+    title: data.title ?? '',
+    category: data.category ?? '',
+    imageUrl: data.media_url ?? '',
+    marketPrice: data.market_price != null ? String(data.market_price) : '',
+    currency: data.currency ?? 'USD',
+    royaltyType: (data.royalty_type ?? 'none') as RoyaltyChoice,
+    royaltyValue: data.royalty_value != null ? String(data.royalty_value) : '',
+    location: cd?.contextData?.location ?? '',
+  }
 }
