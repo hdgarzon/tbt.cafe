@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useLocale, type Dictionary } from '@/i18n/LocaleProvider'
+import { useShell } from '@/components/AppShell'
 
 /**
  * Notificaciones — Master Handoff §15.
@@ -109,6 +110,7 @@ function withDefaults(stored: Prefs): Prefs {
 
 export default function NotificationsPage() {
   const { t } = useLocale()
+  const { openMenu } = useShell()
   const [loading, setLoading] = useState(true)
   const [signedIn, setSignedIn] = useState(true)
   const [prefs, setPrefs] = useState<Prefs>({})
@@ -175,7 +177,7 @@ export default function NotificationsPage() {
 
   return (
     <div className="px-4 pt-6">
-      <a href="/" className="back-link">← {t.notifications.backLabel}</a>
+      <button type="button" onClick={openMenu} className="back-link">← {t.profile.backSettings}</button>
       <h1 className="page-title">{t.notifications.backLabel}</h1>
       <div className="page-sub">{t.notifications.pageSub}</div>
 

@@ -119,9 +119,9 @@ export default function CreatorProfilePage() {
 
   return (
     <div className="px-4 pt-6">
-      <a href="/profile" className="back-link">← {t.profileCreator.backLabel}</a>
+      <a href="/profile" className="back-link">← {t.profile.backProfile}</a>
       <h1 className="page-title">{t.profile.creatorTitle}</h1>
-      <div className="page-sub">{t.profile.creatorSub}</div>
+      <div className="page-sub">{t.profile.creatorFormSub}</div>
 
       <div className="mt-6 flex flex-col gap-[22px]">
         <CategoryPicker value={category} onChange={setCategory} />

@@ -196,6 +196,10 @@
     }
   },
   "profile": {
+    "creatorFormSub": "A sua identidade como autor",
+    "collectorFormSub": "Como você aparece como proprietário",
+    "backSettings": "Configurações",
+    "backProfile": "Perfil",
     "title": "Perfil",
     "creatorTitle": "Perfil de Criador",
     "creatorSub": "Como você é creditado como autor.",

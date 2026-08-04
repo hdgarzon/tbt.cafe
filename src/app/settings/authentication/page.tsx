@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useLocale } from '@/i18n/LocaleProvider'
+import { useShell } from '@/components/AppShell'
 import { maskEmail, maskPhoneE164 } from '@/lib/masking'
 import { PrivateCodeSheet } from '@/components/PrivateCodeSheet'
 import { RecoveryEmailSheet } from '@/components/RecoveryEmailSheet'
@@ -23,6 +24,7 @@ type Profile = {
 
 export default function AuthHubPage() {
   const { t } = useLocale()
+  const { openMenu } = useShell()
   const [loading, setLoading] = useState(true)
   const [phone, setPhone] = useState<string | null>(null)
   const [profile, setProfile] = useState<Profile | null>(null)
@@ -92,7 +94,7 @@ export default function AuthHubPage() {
 
   return (
     <div className="px-4 pt-6">
-      <a href="/" className="back-link">← {t.menu.authentication}</a>
+      <button type="button" onClick={openMenu} className="back-link">← {t.profile.backSettings}</button>
       <h1 className="page-title">{t.authHub.asTitle}</h1>
       <div className="page-sub">{t.authHub.asSub}</div>
 

@@ -196,6 +196,10 @@
     }
   },
   "profile": {
+    "creatorFormSub": "Your identity as a maker",
+    "collectorFormSub": "How you appear as an owner",
+    "backSettings": "Settings",
+    "backProfile": "Profile",
     "title": "Profile",
     "creatorTitle": "Creator profile",
     "creatorSub": "How you're credited as a maker.",

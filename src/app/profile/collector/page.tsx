@@ -96,9 +96,9 @@ export default function CollectorProfilePage() {
 
   return (
     <div className="px-4 pt-6">
-      <a href="/profile" className="back-link">← {t.profileCollector.backLabel}</a>
+      <a href="/profile" className="back-link">← {t.profile.backProfile}</a>
       <h1 className="page-title">{t.profile.collectorTitle}</h1>
-      <div className="page-sub">{t.profile.collectorSub}</div>
+      <div className="page-sub">{t.profile.collectorFormSub}</div>
 
       <div className="mt-6 flex flex-col gap-[22px]">
         {/* Categoría — SIEMPRE visible, incluso en modo anónimo */}
