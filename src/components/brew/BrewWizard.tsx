@@ -324,17 +324,29 @@ export function BrewWizard() {
     const score = 'score' in result && result.score != null ? Math.round(result.score * 100) : 0
     const status = result.status === 'skipped' ? 'clear' : result.status
     // El medidor sube hasta el puntaje real con la misma curva del prototipo
-    // (ease-out ~1.4s) y recién ahí se muestra el veredicto.
+    // (ease-out ~1.4s). requestAnimationFrame NO corre con la pestaña en
+    // segundo plano — y alguien que cambia de app mientras espera volvería a
+    // un escaneo colgado en 0% para siempre. Por eso el veredicto también sale
+    // por temporizador: la animación es cosmética, el resultado no depende de ella.
+    const dur = 1400
     await new Promise<void>((resolve) => {
-      const dur = 1400
+      let done = false
+      const finish = () => {
+        if (done) return
+        done = true
+        setScanAnim(score)
+        resolve()
+      }
       const start = performance.now()
       const tick = (now: number) => {
+        if (done) return
         const p = Math.min(1, (now - start) / dur)
         setScanAnim(Math.round((1 - Math.pow(1 - p, 2)) * score))
         if (p < 1) requestAnimationFrame(tick)
-        else resolve()
+        else finish()
       }
       requestAnimationFrame(tick)
+      setTimeout(finish, dur + 200)
     })
     setScanScore(score)
     setScanState(status)
