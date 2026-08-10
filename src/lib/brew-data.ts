@@ -315,7 +315,7 @@ export async function startRegistration(
   cancelUrl: string,
   /** Si el cliente cree que esta registración la cubre tbt.cafe (Spec 01 §1.5). */
   covered = false
-): Promise<{ free?: true; checkoutUrl?: string; error?: string }> {
+): Promise<{ free?: true; clientSecret?: string; checkoutUrl?: string; error?: string }> {
   const auth = await authHeader()
   if (!auth) return { error: 'needSignIn' }
 
@@ -340,11 +340,21 @@ export async function startRegistration(
     const res = await fetch(`${TBT_BACKEND_URL}/api/stripe/create-checkout`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', ...auth },
-      body: JSON.stringify({ type: 'tbt_creation', workId, successUrl, cancelUrl }),
+      // Checkout embebido (Spec 01 §3.1): el creador no sale de tbt.cafe.
+      // `successUrl` sigue siendo el retorno; en este modo Stripe no admite
+      // una URL de cancelación aparte.
+      body: JSON.stringify({
+        type: 'tbt_creation',
+        workId,
+        embedded: true,
+        returnUrl: successUrl,
+        successUrl,
+        cancelUrl,
+      }),
     })
     const body = await res.json()
     if (!res.ok) return { error: body.error ?? 'checkoutFailed' }
-    return { checkoutUrl: body.checkoutUrl }
+    return { clientSecret: body.clientSecret, checkoutUrl: body.checkoutUrl }
   } catch {
     return { error: 'checkoutFailed' }
   }

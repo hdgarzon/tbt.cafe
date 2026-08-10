@@ -9,6 +9,7 @@ import { BrewChrome, BrewTitle, BrewInfo, BrewButton, BrewLabel, BrewInput, Brew
 import { EspressoFlow, type EspressoResult } from '@/components/brew/EspressoFlow'
 import { ContextEditor } from '@/components/brew/ContextEditor'
 import { fetchCoveredStatus, type CoveredStatus } from '@/lib/covered-data'
+import { EmbeddedCheckoutSheet } from '@/components/EmbeddedCheckoutSheet'
 import { money } from '@/lib/fees'
 import type { SeriesWithCount } from '@/lib/series-data'
 import {
@@ -163,6 +164,7 @@ export function BrewWizard() {
   const [payDeadline, setPayDeadline] = useState<number | null>(null)
   const [payLeft, setPayLeft] = useState(600)
   const [covered, setCovered] = useState<CoveredStatus | null>(null)
+  const [clientSecret, setClientSecret] = useState<string | null>(null)
   const [mintSteps, setMintSteps] = useState(1)
   const [result, setResult] = useState<{ tbtId: string; title: string; solscanUrl: string } | null>(null)
   /** Ya resolvimos una sesión válida y colocamos el paso inicial. */
@@ -560,6 +562,13 @@ export function BrewWizard() {
     if (result.free) {
       setStep('minting')
       runMintSteps(workId)
+      return
+    }
+    // Embebido: el formulario se monta aquí mismo. Solo se cae al redirect si
+    // el backend no devolvió client_secret (despliegue viejo).
+    if (result.clientSecret) {
+      setClientSecret(result.clientSecret)
+      setBusy(false)
       return
     }
     if (result.checkoutUrl) window.location.href = result.checkoutUrl
@@ -1361,6 +1370,10 @@ export function BrewWizard() {
   if (step === 'payment') {
     const price = 8
     return (
+      <>
+      {clientSecret && (
+        <EmbeddedCheckoutSheet clientSecret={clientSecret} onClose={() => setClientSecret(null)} />
+      )}
       <BrewChrome
         onBack={backTo('ctx3')}
         backLabel={t.creator.back}
@@ -1480,6 +1493,7 @@ export function BrewWizard() {
 
         {msg && <p className="text-[12px] text-t-red mt-4">{msg}</p>}
       </BrewChrome>
+      </>
     )
   }
 
