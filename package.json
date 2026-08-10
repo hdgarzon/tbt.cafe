@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "check:fees": "npx --yes tsx scripts/fees-check.ts"
   },
   "dependencies": {
     "@simplewebauthn/browser": "^13.3.0",

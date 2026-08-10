@@ -361,7 +361,8 @@
       "needSignIn": "Connectez-vous pour acheter cette œuvre.",
       "buyFailed": "Nous n'avons pas pu démarrer l'achat",
       "offerFailed": "Nous n'avons pas pu envoyer l'offre",
-      "saveFailed": "Nous n'avons pas pu enregistrer la modification"
+      "saveFailed": "Nous n'avons pas pu enregistrer la modification",
+      "belowFloor": "Une redevance fixe s’applique. Le minimum est de {min} USD."
     }
   },
   "info": {
@@ -385,7 +386,8 @@
     "scanPassed": "Analyse de protection réussie",
     "scanDetail": "Vérifié par rapport aux œuvres enregistrées et aux sources publiques · aucun conflit",
     "imageFingerprint": "Empreinte de l'image",
-    "scanned": "Analysée"
+    "scanned": "Analysée",
+    "royaltyNone": "Aucune"
   },
   "action": {
     "transferThisWork": "Transférer cette œuvre",
@@ -445,7 +447,8 @@
       "respondFailed": "Nous n'avons pas pu traiter votre réponse",
       "invalidPhone": "Vérifiez le numéro de téléphone.",
       "invalidValue": "Vérifiez la valeur."
-    }
+    },
+    "creatorRoyaltyFixed": "Redevance du créateur"
   },
   "transferAccept": {
     "loading": "Chargement…",
@@ -571,7 +574,8 @@
     "transferFrom": "De",
     "transferStatusCompleted": "Terminé",
     "transferStatusPending": "En attente",
-    "transferStatusCancelled": "Annulé"
+    "transferStatusCancelled": "Annulé",
+    "royaltyRowFixed": "Redevance de revente · fixe"
   },
   "actions": {
     "favorite": "Ajouter aux favoris",
@@ -847,6 +851,9 @@
       "imageRequired": "Ajoutez une image pour continuer",
       "titleRequired": "Donnez un titre à l'œuvre",
       "categoryRequired": "Choisissez une catégorie"
-    }
+    },
+    "coveredByTbt": "Offert par tbt.cafe",
+    "coveredNote": "Celle-ci est pour nous — il vous reste {n} enregistrements gratuits.",
+    "coveredNoteOne": "Celle-ci est pour nous — il vous reste 1 enregistrement gratuit."
   }
 }

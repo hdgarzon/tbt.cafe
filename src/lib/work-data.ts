@@ -1,4 +1,5 @@
 import { supabase } from '@/lib/supabase'
+import type { Royalty, RoyaltyType } from '@/lib/fees'
 
 /**
  * Capa de datos de la obra — todo lo que /work/[tbtId] necesita leer y
@@ -19,7 +20,17 @@ export type WorkCommerce = {
   availability: Availability
   taking_offers: boolean
   royalty_pct: number
+  /** 'none' | 'percentage' | 'fixed' — una regalía fija es absoluta (Spec 01 §2.1). */
+  royalty_type: RoyaltyType
+  /** El porcentaje o el monto fijo, según `royalty_type`. */
+  royalty_value: number
   royalty_locked: boolean
+}
+
+/** Los términos de regalía de la obra, en la forma que espera `@/lib/fees`. */
+export function royaltyOf(c: WorkCommerce | null): Royalty {
+  if (!c) return { type: 'none', value: 0 }
+  return { type: c.royalty_type, value: c.royalty_value }
 }
 
 export type WorkFull = {
@@ -49,6 +60,8 @@ const COMMERCE_DEFAULT: WorkCommerce = {
   availability: 'not_for_sale',
   taking_offers: false,
   royalty_pct: 10,
+  royalty_type: 'percentage',
+  royalty_value: 10,
   royalty_locked: false,
 }
 
@@ -61,7 +74,7 @@ export async function fetchWorkFull(tbtId: string): Promise<WorkFull | null> {
        certified_at, mint_address, is_featured, current_owner_id, creator_id,
        series:work_series(id, name, slug),
        creator:profiles!works_creator_id_fkey(id, public_alias, display_name),
-       commerce:work_commerce(initial_price, currency, availability, taking_offers, royalty_pct, royalty_locked),
+       commerce:work_commerce(initial_price, currency, availability, taking_offers, royalty_pct, royalty_type, royalty_value, royalty_locked),
        context:context_snapshots(ai_summary, user_edited_summary)`
     )
     .eq('tbt_id', tbtId)

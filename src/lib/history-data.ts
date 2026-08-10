@@ -1,4 +1,5 @@
 import { supabase } from '@/lib/supabase'
+import { royaltyAmountOf, type Royalty } from '@/lib/fees'
 
 /**
  * Capa de datos de las cinco vistas de Transactions (Build Spec 02, ÍTEM 6 —
@@ -94,7 +95,7 @@ export async function fetchOffersLedger(userId: string): Promise<OfferRow[]> {
   return [...madeRows, ...receivedRows].sort((a, b) => (a.when < b.when ? 1 : -1))
 }
 
-export type RoyaltyRow = { id: string; tbtId: string; title: string; when: string; pct: number; amount: number }
+export type RoyaltyRow = { id: string; tbtId: string; title: string; when: string; royalty: Royalty; amount: number }
 
 /**
  * Regalías pagadas al usuario como creador — derivadas de ownership_history
@@ -105,7 +106,7 @@ export type RoyaltyRow = { id: string; tbtId: string; title: string; when: strin
 export async function fetchRoyalties(userId: string): Promise<RoyaltyRow[]> {
   const { data: myWorks } = await supabase
     .from('works')
-    .select('id, tbt_id, title, commerce:work_commerce(royalty_pct)')
+    .select('id, tbt_id, title, commerce:work_commerce(royalty_pct, royalty_type, royalty_value)')
     .eq('creator_id', userId)
   const works = myWorks ?? []
   if (!works.length) return []
@@ -125,7 +126,11 @@ export async function fetchRoyalties(userId: string): Promise<RoyaltyRow[]> {
     .map((e) => {
       const w = workOf.get(e.work_id)
       const commerce = Array.isArray(w?.commerce) ? w?.commerce[0] : w?.commerce
-      const pct = commerce?.royalty_pct ?? 10
+      // Toda ruta de dinero resuelve por royaltyAmountOf; ningún sitio calcula
+      // valor × pct por su cuenta (Spec 01 §2.1).
+      const r: Royalty = commerce
+        ? { type: commerce.royalty_type, value: commerce.royalty_value }
+        : { type: 'percentage', value: 10 }
       const price = Number(e.price)
       if (!price) return null
       return {
@@ -133,8 +138,8 @@ export async function fetchRoyalties(userId: string): Promise<RoyaltyRow[]> {
         tbtId: w?.tbt_id ?? '',
         title: w?.title ?? '',
         when: e.created_at,
-        pct,
-        amount: Math.round(price * (pct / 100) * 100) / 100,
+        royalty: r,
+        amount: Math.round(royaltyAmountOf(r, price) * 100) / 100,
       }
     })
     .filter((r): r is RoyaltyRow => r !== null)

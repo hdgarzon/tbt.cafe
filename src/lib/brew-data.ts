@@ -312,10 +312,21 @@ export async function startRegistration(
   workId: string,
   couponCode: string | undefined,
   successUrl: string,
-  cancelUrl: string
+  cancelUrl: string,
+  /** Si el cliente cree que esta registración la cubre tbt.cafe (Spec 01 §1.5). */
+  covered = false
 ): Promise<{ free?: true; checkoutUrl?: string; error?: string }> {
   const auth = await authHeader()
   if (!auth) return { error: 'needSignIn' }
+
+  // Una registración cubierta no tiene nada que elegir: se certifica directo.
+  // Quien decide de verdad es complete-tbt, que resuelve la asignación del
+  // creador del lado del servidor; si no está de acuerdo, responde error y el
+  // asistente cae al cobro normal.
+  if (covered) {
+    const result = await completeTbt(workId)
+    if (!('error' in result)) return { free: true }
+  }
 
   if (couponCode) {
     const coupon = await validateCoupon(couponCode)

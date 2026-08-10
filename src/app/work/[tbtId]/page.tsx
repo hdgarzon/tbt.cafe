@@ -5,9 +5,9 @@ import { supabase } from '@/lib/supabase'
 import { useLocale } from '@/i18n/LocaleProvider'
 import { useShell } from '@/components/AppShell'
 import { TBT_BACKEND_URL } from '@/lib/backend'
-import { fetchWorkFull, ownerRole, type WorkFull } from '@/lib/work-data'
+import { fetchWorkFull, ownerRole, royaltyOf, type WorkFull } from '@/lib/work-data'
 import { makeOffer } from '@/lib/offers-data'
-import { quote, money } from '@/lib/fees'
+import { quote, money, minPriceFor } from '@/lib/fees'
 import { WorkActions } from '@/components/WorkActions'
 import { ProfileTab } from '@/components/work/ProfileTab'
 import { InfoTab } from '@/components/work/InfoTab'
@@ -109,6 +109,12 @@ export default function WorkPage({ params }: { params: { tbtId: string } }) {
     if (!connected) return openAuth()
     const amount = parseFloat(offerAmount.replace(/[^0-9.]/g, ''))
     if (!isFinite(amount) || amount <= 0) return
+    // Piso de regalía fija (Spec 01 §2.2): una oferta por debajo dejaría al
+    // vendedor pagando por vender, así que se rechaza indicando el mínimo.
+    const floor = minPriceFor(royaltyOf(c))
+    if (floor > 0 && amount < floor) {
+      return setMsg(t.work.errors.belowFloor.replace('{min}', money(floor)))
+    }
     const { error } = await makeOffer(work!.id, amount, c.availability === 'for_sale')
     if (error) return setMsg(t.work.errors.offerFailed)
     setMsg(t.work.offerSent)
@@ -248,7 +254,7 @@ export default function WorkPage({ params }: { params: { tbtId: string } }) {
             {(() => {
               const v = parseFloat(offerAmount.replace(/[^0-9.]/g, ''))
               if (!isFinite(v) || v <= 0) return null
-              const q = quote(v, c.royalty_pct)
+              const q = quote(v, royaltyOf(c))
               return (
                 <div className="mt-3 pt-3 border-t border-hairline">
                   <div className="flex items-center justify-between text-[13px] font-medium">

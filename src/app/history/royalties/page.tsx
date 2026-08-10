@@ -64,7 +64,11 @@ export default function RoyaltiesPage() {
                 key={r.id}
                 href={r.tbtId ? `/work/${r.tbtId}` : undefined}
                 title={r.title}
-                what={t.myCollections.royaltyRow.replace('{pct}', String(r.pct))}
+                what={
+                  r.royalty.type === 'fixed'
+                    ? t.myCollections.royaltyRowFixed
+                    : t.myCollections.royaltyRow.replace('{pct}', String(r.royalty.value))
+                }
                 amount={`${money(r.amount)} USD`}
                 when={new Date(r.when).toLocaleDateString()}
               />

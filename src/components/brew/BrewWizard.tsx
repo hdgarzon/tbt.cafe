@@ -8,6 +8,7 @@ import { supabase } from '@/lib/supabase'
 import { BrewChrome, BrewTitle, BrewInfo, BrewButton, BrewLabel, BrewInput, BrewSelect } from '@/components/brew/BrewChrome'
 import { EspressoFlow, type EspressoResult } from '@/components/brew/EspressoFlow'
 import { ContextEditor } from '@/components/brew/ContextEditor'
+import { fetchCoveredStatus, type CoveredStatus } from '@/lib/covered-data'
 import { money } from '@/lib/fees'
 import type { SeriesWithCount } from '@/lib/series-data'
 import {
@@ -161,6 +162,7 @@ export function BrewWizard() {
       Un contador local se reiniciaría al volver de Stripe; esto no. */
   const [payDeadline, setPayDeadline] = useState<number | null>(null)
   const [payLeft, setPayLeft] = useState(600)
+  const [covered, setCovered] = useState<CoveredStatus | null>(null)
   const [mintSteps, setMintSteps] = useState(1)
   const [result, setResult] = useState<{ tbtId: string; title: string; solscanUrl: string } | null>(null)
   /** Ya resolvimos una sesión válida y colocamos el paso inicial. */
@@ -229,6 +231,13 @@ export function BrewWizard() {
     const iv = setInterval(tick, 1000)
     return () => clearInterval(iv)
   }, [step, payDeadline])
+
+  // Asignación cubierta del creador (Spec 01 §1.5). Se consulta al llegar al
+  // paso de pago; quien decide de verdad es complete-tbt.
+  useEffect(() => {
+    if (step !== 'payment' || !userId || covered) return
+    fetchCoveredStatus(userId).then(setCovered)
+  }, [step, userId, covered])
 
   // Al volver de Stripe la página se recarga y solo sobrevive el workId de la
   // URL: se relee el borrador para que el vencimiento, la tarjeta de pago y un
@@ -534,7 +543,8 @@ export function BrewWizard() {
       workId,
       promoDiscount ? promoCode.trim() : undefined,
       `${origin}/brew?workId=${workId}&status=success&session_id={CHECKOUT_SESSION_ID}`,
-      `${origin}/brew?workId=${workId}&status=cancel`
+      `${origin}/brew?workId=${workId}&status=cancel`,
+      covered?.isCovered ?? false
     )
     if (result.error) {
       setBusy(false)
@@ -1364,17 +1374,19 @@ export function BrewWizard() {
           ) : (
           <div>
             <BrewButton onClick={pay} disabled={busy}>
-              {!(promoDiscount?.type === 'percentage' && promoDiscount.value >= 100) && (
+              {!(promoDiscount?.type === 'percentage' && promoDiscount.value >= 100) && !covered?.isCovered && (
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="inline-block mr-1.5 -mt-0.5" aria-hidden="true">
                   <rect x="4" y="10" width="16" height="11" rx="2" />
                   <path d="M8 10V7a4 4 0 0 1 8 0v3" />
                 </svg>
               )}
-              {promoDiscount?.type === 'percentage' && promoDiscount.value >= 100
+              {covered?.isCovered || (promoDiscount?.type === 'percentage' && promoDiscount.value >= 100)
                 ? t.brew.registerFree
                 : t.brew.payToRegister.replace('{amount}', `$${price}`)}
             </BrewButton>
-            <p className="text-center text-[10px] text-placeholder mt-2.5">{t.brew.securedByStripe}</p>
+            {!covered?.isCovered && (
+              <p className="text-center text-[10px] text-placeholder mt-2.5">{t.brew.securedByStripe}</p>
+            )}
           </div>
           )
         }
@@ -1398,6 +1410,15 @@ export function BrewWizard() {
           {payLeft > 0 ? t.brew.registerSub : t.brew.windowLapsed}
         </p>
 
+        {covered?.isCovered && (
+          <div className="mt-3.5 border border-t-green/30 bg-t-green/[0.06] rounded-xl px-3.5 py-2.5 text-[11.5px] leading-[1.55] text-ink">
+            {(covered.remaining === 1 ? t.brew.coveredNoteOne : t.brew.coveredNote).replace(
+              '{n}',
+              String(covered.remaining)
+            )}
+          </div>
+        )}
+
         <div className="border border-hairline rounded-2xl mt-4 p-3.5">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-lg bg-paper-warm shrink-0" />
@@ -1417,7 +1438,21 @@ export function BrewWizard() {
               <div className="text-[12.5px] text-ink">{t.brew.registrationFee}</div>
               <div className="text-[10px] text-placeholder mt-0.5">{t.brew.registrationFeeNote}</div>
             </div>
-            <div className="font-display text-[18px] text-ink">${price.toFixed(2)}</div>
+            {/* La tarifa SIEMPRE se muestra (Spec 01 §1.5): decir el valor y
+                asumirlo se lee como generosidad; mostrar $0 se lee como que no
+                vale nada. */}
+            <div className="text-right">
+              <div
+                className={`font-display text-[18px] ${
+                  covered?.isCovered ? 'line-through text-placeholder' : 'text-ink'
+                }`}
+              >
+                ${price.toFixed(2)}
+              </div>
+              {covered?.isCovered && (
+                <div className="text-[10px] font-medium text-t-green mt-0.5">{t.brew.coveredByTbt}</div>
+              )}
+            </div>
           </div>
         </div>
 

@@ -58,7 +58,17 @@ export function InfoTab({ work }: { work: WorkFull }) {
             }
           />
           <Row k={t.info.offers} v={c.taking_offers ? t.info.openToOffers : t.info.notTakingOffers} />
-          <Row k={t.info.royalty} v={`${c.royalty_pct}% · ${t.info.deducted}`} />
+          {/* Una regalía fija se muestra como monto, nunca como porcentaje (Spec 01 §2.4). */}
+          <Row
+            k={t.info.royalty}
+            v={
+              c.royalty_type === 'none' || !c.royalty_value
+                ? t.info.royaltyNone
+                : c.royalty_type === 'fixed'
+                  ? `${money(c.royalty_value)} USD · ${t.info.deducted}`
+                  : `${c.royalty_value}% · ${t.info.deducted}`
+            }
+          />
           <Row k={t.info.currentOwner} v={work.creator?.public_alias || work.creator?.display_name || t.work.unknownArtist} />
           <Row k={t.info.initialPrice} v={price} />
         </div>

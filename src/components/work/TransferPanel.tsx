@@ -5,7 +5,7 @@ import { useLocale } from '@/i18n/LocaleProvider'
 import { PhonePicker } from '@/components/PhonePicker'
 import { transferQuote, money } from '@/lib/fees'
 import { createTransfer } from '@/lib/transfer-data'
-import type { WorkFull } from '@/lib/work-data'
+import { royaltyOf, type WorkFull } from '@/lib/work-data'
 
 /**
  * Panel de transferencia — reemplaza EN SITIO el contenido de la pestaña
@@ -24,7 +24,7 @@ export function TransferPanel({
   onBack: () => void
 }) {
   const { t } = useLocale()
-  const royaltyPct = work.commerce?.royalty_pct ?? 10
+  const royalty = royaltyOf(work.commerce)
 
   const [name, setName] = useState('')
   const [phone1, setPhone1] = useState('')
@@ -36,7 +36,7 @@ export function TransferPanel({
   const [busy, setBusy] = useState(false)
 
   const numValue = parseFloat(value.replace(/[^0-9.]/g, '')) || 0
-  const q = transferQuote(numValue, royaltyPct, senderIsCreator)
+  const q = transferQuote(numValue, royalty, senderIsCreator)
   const mismatch = phone1 && phone2 && phone1 !== phone2
 
   async function submit() {
@@ -111,7 +111,12 @@ export function TransferPanel({
         </div>
         {q.royalty > 0 && (
           <div className="flex items-center justify-between py-2">
-            <span className="text-ink-soft">{t.transfer.creatorRoyalty.replace('{pct}', String(royaltyPct))}</span>
+            {/* Una regalía fija nunca muestra porcentaje: no aplica ninguno (Spec 01 §2.4). */}
+            <span className="text-ink-soft">
+              {royalty.type === 'fixed'
+                ? t.transfer.creatorRoyaltyFixed
+                : t.transfer.creatorRoyalty.replace('{pct}', String(royalty.value))}
+            </span>
             <span className="text-ink">{money(q.royalty)}</span>
           </div>
         )}

@@ -1,42 +1,96 @@
 /**
- * Modelo de tarifas — portado VERBATIM del prototipo tbt-espresso.html.
+ * Modelo de dinero — Backend Spec 01 §1 y §2 (7 ago 2026).
  * Fuente de verdad única para precios, regalías y tarifas en toda la app.
  *
- * - Tarifa de servicio plana: $8 (sin porcentaje en ventas estándar).
- * - Escalón marginal: 2.3% sobre la parte del precio por encima de $20,000.
- * - Procesamiento Stripe: 2.9% + $0.30.
- * - La regalía y todas las tarifas se DEDUCEN del precio, no se suman encima:
- *   el comprador paga exactamente lo que se muestra.
+ * Reemplaza el modelo anterior, en el que el comprador pagaba exactamente el
+ * precio y el procesamiento se calculaba sobre el precio completo. Tres cambios:
+ *
+ *  - El comprador paga `precio + 8`. La tarifa de servicio se cobra en AMBOS
+ *    lados: $8 al comprador y $8 descontados al vendedor, $16 por venta.
+ *  - El procesamiento se calcula sobre `regalía + 8`, no sobre el precio, y lo
+ *    absorbe solo el vendedor. Nunca se le suma al comprador.
+ *  - Desaparece el escalón del 2.3% sobre la parte por encima de $20,000. Ese
+ *    2.3% ahora es la comisión de cobro de payouts (§1.4).
+ *
+ * La regalía puede ser porcentaje o monto fijo. Una regalía fija es absoluta:
+ * se debe completa sea cual sea el valor, incluso en una donación de valor cero.
  */
+
 export const FEE = {
+  /** Tarifa de servicio, cobrada a cada lado de una venta. */
   service: 8,
-  scaleRate: 0.023,
-  scaleFrom: 20_000,
   stripePct: 0.029,
   stripeFlat: 0.3,
+  /** Comisión de cobro de payout (§1.4), no de venta. */
+  payoutRate: 0.023,
 } as const
+
+export type RoyaltyType = 'none' | 'percentage' | 'fixed'
+
+/** Los términos de regalía de una obra. `value` es el porcentaje o el monto. */
+export type Royalty = { type: RoyaltyType; value: number }
+
+/**
+ * Resolución de regalía — §2.1. Ninguna ruta de dinero puede calcular
+ * `valor × pct` por su cuenta: todas pasan por aquí.
+ */
+export function royaltyAmountOf(r: Royalty, value: number): number {
+  if (r.type === 'none' || !r.value) return 0
+  if (r.type === 'fixed') return r.value
+  return value * (r.value / 100)
+}
+
+/**
+ * Piso de precio para una regalía fija — §2.2. Sin él, un precio bajo dejaría
+ * al vendedor pagando por vender. Se previene con el piso y no cobrándole la
+ * diferencia: no hay pagos de faltante ni fondos retenidos.
+ *
+ * Los porcentajes no necesitan piso. Las transferencias tampoco lo llevan
+ * (§2.3): ahí paga el emisor y ve el costo completo antes de confirmar.
+ */
+export function minPriceFor(r: Royalty): number {
+  if (r.type !== 'fixed' || !r.value) return 0
+  return r.value + Math.max(r.value * 0.05, 25)
+}
 
 export type Quote = {
   price: number
   royalty: number
+  /** Lo que se le cobra al comprador: precio + tarifa de servicio. */
   buyerTotal: number
   service: number
-  scale: number
   processing: number
   sellerNet: number
+  /** Lo que recibe la plataforma: $8 de cada lado. */
+  platformFee: number
 }
 
-/** Desglose de una venta directa (Buy). */
-export function quote(price: number, royaltyPct: number): Quote {
-  const buyerTotal = price // lo mostrado es lo cobrado
-  const royalty = price * (royaltyPct / 100)
-  const scale = Math.max(0, price - FEE.scaleFrom) * FEE.scaleRate
-  const processing = price * FEE.stripePct + FEE.stripeFlat
-  const sellerNet = price - royalty - FEE.service - scale - processing
-  return { price, royalty, buyerTotal, service: FEE.service, scale, processing, sellerNet }
+/**
+ * Desglose de una venta directa — §1.1.
+ *
+ * Cifras de referencia que esta función debe reproducir exactas:
+ *
+ *   precio  regalía   comprador  procesamiento   vendedor
+ *   12,000  10% 1,200  12,008.00         35.33  10,756.67
+ *   18,000  10% 1,800  18,008.00         52.73  16,139.27
+ *   45,000  10% 4,500  45,008.00        131.03  40,360.97
+ *    5,000  fija 1,200  5,008.00         35.33   3,756.67
+ */
+export function quote(price: number, r: Royalty): Quote {
+  const royalty = royaltyAmountOf(r, price)
+  const processing = (royalty + FEE.service) * FEE.stripePct + FEE.stripeFlat
+  return {
+    price,
+    royalty,
+    buyerTotal: price + FEE.service,
+    service: FEE.service,
+    processing,
+    sellerNet: price - royalty - FEE.service - processing,
+    platformFee: FEE.service * 2,
+  }
 }
 
-export const XFER_FEE = 8
+export const XFER_FEE = FEE.service
 
 export type TransferQuote = {
   value: number
@@ -47,15 +101,33 @@ export type TransferQuote = {
 }
 
 /**
- * Desglose de una transferencia. El emisor paga tarifa + procesamiento; si no
- * es el creador, también la regalía al creador. El valor en sí es procedencia
- * registrada en cadena, NO custodiado por la plataforma.
+ * Desglose de una transferencia — §1.2. Paga el emisor; no hay comprador. El
+ * valor en sí es procedencia registrada en cadena, NO custodiado por la
+ * plataforma.
+ *
+ * Una transferencia puede valer cero. Con regalía porcentual la regalía es
+ * entonces cero; con regalía fija se debe completa igual.
  */
-export function transferQuote(value: number, royaltyPct: number, senderIsCreator: boolean): TransferQuote {
-  const royalty = senderIsCreator ? 0 : value * (royaltyPct / 100)
+export function transferQuote(value: number, r: Royalty, senderIsCreator: boolean): TransferQuote {
+  const royalty = senderIsCreator ? 0 : royaltyAmountOf(r, value)
   const processing = (royalty + XFER_FEE) * FEE.stripePct + FEE.stripeFlat
-  const total = royalty + XFER_FEE + processing
-  return { value, royalty, transferFee: XFER_FEE, processing, total }
+  return { value, royalty, transferFee: XFER_FEE, processing, total: royalty + XFER_FEE + processing }
+}
+
+/** Lo que le queda al creador de una regalía — §1.3. El proveedor absorbe el procesamiento. */
+export function royaltyPayout(royaltyAmount: number): number {
+  return royaltyAmount - FEE.service
+}
+
+export type PayoutQuote = { gross: number; payoutFee: number; methodFee: number; net: number }
+
+/**
+ * Cobro de un bloque de payout — §1.4. `methodFee` sale del registro de métodos
+ * de pago (Área 2 §3), que depende del país y del método.
+ */
+export function payoutQuote(gross: number, methodFee: number): PayoutQuote {
+  const payoutFee = gross * FEE.payoutRate
+  return { gross, payoutFee, methodFee, net: gross - payoutFee - methodFee }
 }
 
 /** Formato de dinero consistente con el prototipo (sin decimales para enteros). */
@@ -64,4 +136,14 @@ export function money(v: number): string {
     minimumFractionDigits: Number.isInteger(v) ? 0 : 2,
     maximumFractionDigits: 2,
   })
+}
+
+/**
+ * Etiqueta de regalía — §2.4. Una regalía fija nunca muestra un porcentaje,
+ * porque no aplica ninguno.
+ */
+export function royaltyLabel(r: Royalty, value: number, noneLabel: string): string {
+  if (r.type === 'none' || !r.value) return noneLabel
+  const amount = money(royaltyAmountOf(r, value))
+  return r.type === 'fixed' ? `${amount} USD` : `${r.value}% · ${amount} USD`
 }
