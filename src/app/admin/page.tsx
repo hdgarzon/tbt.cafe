@@ -82,6 +82,14 @@ export default function AdminPage() {
   const [internal, setInternal] = useState(false)
   const [busy, setBusy] = useState(false)
   const [note, setNote] = useState('')
+  const [section, setSection] = useState<'tickets' | 'config'>('tickets')
+  const [config, setConfig] = useState<{
+    config: { covered_brews_enabled: boolean; covered_brews_count: number } | null
+    covered: { count: number; borneInRecent: number }
+    canChangeRules: boolean
+  } | null>(null)
+  const [ruleReason, setRuleReason] = useState('')
+  const [countDraft, setCountDraft] = useState('')
 
   const load = useCallback(async () => {
     if (!stepUp) return
@@ -103,6 +111,9 @@ export default function AdminPage() {
       setCanApprove(aBody.canApprove === true)
       setMe(aBody.me ?? null)
     }
+    const cRes = await fetch(`${TBT_BACKEND_URL}/api/admin/config`, { headers: auth })
+    if (cRes.ok) setConfig(await cRes.json())
+
     setState('ready')
   }, [filter, stepUp])
 
@@ -189,6 +200,29 @@ export default function AdminPage() {
       return
     }
     setDraft('')
+    load()
+  }
+
+  async function changeRule(action: 'covered_count' | 'covered_kill_switch', value: number | boolean) {
+    const auth = await authHeader(stepUp)
+    if (!auth) return
+    if (!ruleReason.trim()) {
+      setNote('A reason is required. Write what you are doing and why.')
+      return
+    }
+    setBusy(true)
+    setNote('')
+    const res = await fetch(`${TBT_BACKEND_URL}/api/admin/config`, {
+      method: 'POST',
+      headers: { ...auth, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action, value, reason: ruleReason.trim() }),
+    })
+    const body = await res.json().catch(() => ({}))
+    setBusy(false)
+    // 202 means it is waiting for a second person, which is the rule working,
+    // not a failure.
+    setNote(body.message ?? body.error ?? 'Done')
+    setRuleReason('')
     load()
   }
 
@@ -297,6 +331,93 @@ export default function AdminPage() {
         </section>
       )}
 
+      <div className="flex gap-5 mt-5 mb-1 border-b border-hairline">
+        {(['tickets', 'config'] as const).map((k) => (
+          <button
+            key={k}
+            type="button"
+            onClick={() => setSection(k)}
+            className={`pb-2.5 text-[11px] font-medium tracking-[0.16em] uppercase transition-colors border-b-2 -mb-px ${
+              section === k ? 'border-ink text-ink' : 'border-transparent text-ink-soft'
+            }`}
+          >
+            {k === 'tickets' ? 'Tickets' : 'Configuration'}
+          </button>
+        ))}
+      </div>
+
+      {section === 'config' && (
+        <section className="mt-5">
+          <div className="text-[11px] font-medium tracking-[0.16em] uppercase text-ink-soft mb-2">
+            Covered registrations
+          </div>
+          <div className="border border-hairline rounded-2xl p-4">
+            <p className="text-[11.5px] leading-[1.6] text-ink-soft">
+              Exposure is uncapped: per creator and not time-boxed. Five thousand creators using ten
+              each is $400,000 absorbed. The kill switch is the control.
+            </p>
+            <div className="flex items-center justify-between mt-3.5 py-2 border-t border-hairline text-[12.5px]">
+              <span className="text-ink-soft">Programme</span>
+              <span className="text-ink">
+                {config?.config?.covered_brews_enabled ? 'Running' : 'Stopped'}
+              </span>
+            </div>
+            <div className="flex items-center justify-between py-2 border-t border-hairline text-[12.5px]">
+              <span className="text-ink-soft">Free registrations per creator</span>
+              <span className="text-ink">{config?.config?.covered_brews_count ?? '—'}</span>
+            </div>
+            <div className="flex items-center justify-between py-2 border-t border-hairline text-[12.5px]">
+              <span className="text-ink-soft">Covered so far</span>
+              <span className="text-ink">{config?.covered.count ?? 0}</span>
+            </div>
+
+            {config?.canChangeRules && (
+              <div className="mt-4 pt-3.5 border-t border-hairline">
+                <textarea
+                  value={ruleReason}
+                  onChange={(e) => setRuleReason(e.target.value)}
+                  placeholder="Why are you changing this? Required, and it goes in the audit log."
+                  className="w-full px-3.5 py-3 border border-hairline rounded-xl text-[14px] min-h-16 resize-none outline-none focus:border-ink"
+                />
+                <div className="flex gap-2 mt-2.5 flex-wrap items-center">
+                  <button
+                    type="button"
+                    disabled={busy}
+                    onClick={() =>
+                      changeRule('covered_kill_switch', !config?.config?.covered_brews_enabled)
+                    }
+                    className="px-3.5 py-2 rounded-lg border border-t-red text-t-red text-[11px] font-medium tracking-[0.12em] uppercase disabled:opacity-50"
+                  >
+                    {config?.config?.covered_brews_enabled ? 'Stop new allowances' : 'Resume'}
+                  </button>
+                  <input
+                    value={countDraft}
+                    onChange={(e) => setCountDraft(e.target.value)}
+                    inputMode="numeric"
+                    placeholder="Count"
+                    className="w-20 px-3 py-2 border border-hairline rounded-lg text-[13px] outline-none focus:border-ink"
+                  />
+                  <button
+                    type="button"
+                    disabled={busy || !countDraft.trim()}
+                    onClick={() => changeRule('covered_count', Number(countDraft))}
+                    className="px-3.5 py-2 rounded-lg border border-hairline text-ink-soft text-[11px] font-medium tracking-[0.12em] uppercase disabled:opacity-50"
+                  >
+                    Set count
+                  </button>
+                </div>
+                <p className="text-[10.5px] text-placeholder mt-2">
+                  Both need a second person to approve before they take effect.
+                </p>
+              </div>
+            )}
+          </div>
+          {note && <p className="text-[11.5px] text-ink-soft mt-3">{note}</p>}
+        </section>
+      )}
+
+      {section === 'tickets' && (
+      <>
       <div className="flex gap-1.5 mt-6 mb-3 flex-wrap">
         {['open', 'answered', 'resolved', 'closed'].map((s) => (
           <button
@@ -427,6 +548,8 @@ export default function AdminPage() {
             </div>
           ))}
         </div>
+      )}
+      </>
       )}
     </div>
   )
