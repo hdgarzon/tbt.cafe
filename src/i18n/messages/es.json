@@ -918,5 +918,36 @@
     "escalated": "Se lo pasé a una persona. Es la solicitud {ref} — no tendrás que explicarlo otra vez.",
     "needSignIn": "Autentícate para preguntar por tus propios registros.",
     "boundary": "Explico y guío. Todo lo que mueve dinero se queda en el producto, detrás de su propia confirmación."
+  },
+  "feed": {
+    "tab": "Avisos",
+    "title": "Notificaciones",
+    "empty": "Estás al día. Los avisos nuevos aparecerán aquí.",
+    "needSignIn": "Autentícate para ver tus notificaciones.",
+    "markAll": "Marcar todo leído",
+    "events": {
+      "registrations": "{title} quedó registrada y ya se puede verificar.",
+      "ticket_system": "Abrimos una solicitud por ti: {subject}",
+      "ticket_reply": "El equipo respondió a {ref}.",
+      "purchases": "Se completó una compra.",
+      "transfers": "Una transferencia necesita tu atención.",
+      "offer_received": "Recibiste una oferta.",
+      "offer_accepted": "Aceptaron tu oferta.",
+      "offer_declined": "Rechazaron tu oferta.",
+      "offer_expiring": "Una oferta está por vencer.",
+      "new_location": "Autenticación desde un lugar nuevo.",
+      "new_device": "Autenticación desde un dispositivo nuevo.",
+      "suspicious": "Actividad sospechosa en tu cuenta.",
+      "views_created": "Una obra tuya está llamando la atención.",
+      "views_collection": "Una obra de tu colección está llamando la atención.",
+      "favorites": "Actividad en uno de tus favoritos.",
+      "surge": "La atención sobre una obra se está acelerando.",
+      "new_from_followed": "Alguien que sigues registró una obra nueva.",
+      "payout_available": "Tienes un cobro listo para retirar.",
+      "payout_released": "Se liberaron fondos que estaban pendientes.",
+      "payout_completed": "Tu cobro se completó.",
+      "payout_failed": "No pudimos completar un cobro.",
+      "payout_destination": "Cambió el destino de tus cobros."
+    }
   }
 }

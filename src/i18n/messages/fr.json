@@ -918,5 +918,36 @@
     "escalated": "J'ai transmis cela à une personne. C'est la demande {ref} — vous n'aurez pas à l'expliquer à nouveau.",
     "needSignIn": "Authentifiez-vous pour poser des questions sur vos propres registres.",
     "boundary": "J'explique et j'oriente. Tout ce qui déplace de l'argent reste dans le produit, derrière sa propre confirmation."
+  },
+  "feed": {
+    "tab": "Alertes",
+    "title": "Notifications",
+    "empty": "Vous êtes à jour. Les nouvelles alertes apparaîtront ici.",
+    "needSignIn": "Authentifiez-vous pour voir vos notifications.",
+    "markAll": "Tout marquer comme lu",
+    "events": {
+      "registrations": "{title} a été enregistrée et est désormais vérifiable.",
+      "ticket_system": "Nous avons ouvert une demande pour vous : {subject}",
+      "ticket_reply": "L'équipe a répondu à {ref}.",
+      "purchases": "Un achat a été finalisé.",
+      "transfers": "Un transfert demande votre attention.",
+      "offer_received": "Vous avez reçu une offre.",
+      "offer_accepted": "Votre offre a été acceptée.",
+      "offer_declined": "Votre offre a été refusée.",
+      "offer_expiring": "Une offre va bientôt expirer.",
+      "new_location": "Authentification depuis un nouveau lieu.",
+      "new_device": "Authentification depuis un nouvel appareil.",
+      "suspicious": "Activité suspecte sur votre compte.",
+      "views_created": "Une de vos œuvres attire l'attention.",
+      "views_collection": "Une œuvre de votre collection attire l'attention.",
+      "favorites": "Activité sur l'un de vos favoris.",
+      "surge": "L'attention sur une œuvre s'accélère.",
+      "new_from_followed": "Une personne que vous suivez a enregistré une œuvre.",
+      "payout_available": "Un versement est prêt à être perçu.",
+      "payout_released": "Des fonds en attente ont été libérés.",
+      "payout_completed": "Votre perception est terminée.",
+      "payout_failed": "Un versement n'a pas pu être effectué.",
+      "payout_destination": "La destination de vos versements a changé."
+    }
   }
 }

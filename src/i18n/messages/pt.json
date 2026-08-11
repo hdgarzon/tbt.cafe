@@ -918,5 +918,36 @@
     "escalated": "Passei isso para uma pessoa. É a solicitação {ref} — você não vai precisar explicar de novo.",
     "needSignIn": "Autentique-se para perguntar sobre os seus registros.",
     "boundary": "Eu explico e oriento. Tudo que movimenta dinheiro fica no produto, atrás da sua própria confirmação."
+  },
+  "feed": {
+    "tab": "Avisos",
+    "title": "Notificações",
+    "empty": "Você está em dia. Novos avisos aparecerão aqui.",
+    "needSignIn": "Autentique-se para ver suas notificações.",
+    "markAll": "Marcar tudo como lido",
+    "events": {
+      "registrations": "{title} foi registrada e já pode ser verificada.",
+      "ticket_system": "Abrimos uma solicitação para você: {subject}",
+      "ticket_reply": "A equipe respondeu a {ref}.",
+      "purchases": "Uma compra foi concluída.",
+      "transfers": "Uma transferência precisa da sua atenção.",
+      "offer_received": "Você recebeu uma oferta.",
+      "offer_accepted": "Sua oferta foi aceita.",
+      "offer_declined": "Sua oferta foi recusada.",
+      "offer_expiring": "Uma oferta está prestes a vencer.",
+      "new_location": "Autenticação de um novo local.",
+      "new_device": "Autenticação de um novo dispositivo.",
+      "suspicious": "Atividade suspeita na sua conta.",
+      "views_created": "Uma obra sua está chamando atenção.",
+      "views_collection": "Uma obra da sua coleção está chamando atenção.",
+      "favorites": "Atividade em um dos seus favoritos.",
+      "surge": "A atenção sobre uma obra está acelerando.",
+      "new_from_followed": "Alguém que você segue registrou uma nova obra.",
+      "payout_available": "Há um valor pronto para receber.",
+      "payout_released": "Fundos pendentes foram liberados.",
+      "payout_completed": "Seu recebimento foi concluído.",
+      "payout_failed": "Não conseguimos concluir um recebimento.",
+      "payout_destination": "O destino dos seus recebimentos mudou."
+    }
   }
 }

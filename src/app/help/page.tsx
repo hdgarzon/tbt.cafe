@@ -16,6 +16,7 @@ import { supabase } from '@/lib/supabase'
 import { useLocale } from '@/i18n/LocaleProvider'
 import { useShell } from '@/components/AppShell'
 import { AssistantChat } from '@/components/AssistantChat'
+import { NotificationFeed } from '@/components/NotificationFeed'
 import {
   TICKET_CATEGORIES,
   fetchMyTickets,
@@ -38,7 +39,7 @@ export default function HelpPage() {
   const [msg, setMsg] = useState('')
   const [replyTo, setReplyTo] = useState<string | null>(null)
   // El asistente es triaje del sistema de solicitudes, así que viven juntos.
-  const [tab, setTab] = useState<'ask' | 'requests'>('ask')
+  const [tab, setTab] = useState<'alerts' | 'ask' | 'requests'>('alerts')
   const [replyBody, setReplyBody] = useState('')
 
   const load = useCallback(async (uid: string) => setTickets(await fetchMyTickets(uid)), [])
@@ -105,7 +106,7 @@ export default function HelpPage() {
       <h1 className="font-display font-medium text-[27px] leading-[1.08] text-ink">{t.help.title}</h1>
 
       <div className="flex gap-5 mt-4 mb-1 border-b border-hairline">
-        {(['ask', 'requests'] as const).map((k) => (
+        {(['alerts', 'ask', 'requests'] as const).map((k) => (
           <button
             key={k}
             type="button"
@@ -114,10 +115,16 @@ export default function HelpPage() {
               tab === k ? 'border-ink text-ink' : 'border-transparent text-ink-soft'
             }`}
           >
-            {k === 'ask' ? t.assistant.tab : t.assistant.tabRequests}
+            {k === 'alerts' ? t.feed.tab : k === 'ask' ? t.assistant.tab : t.assistant.tabRequests}
           </button>
         ))}
       </div>
+
+      {tab === 'alerts' && (
+        <div className="mt-5">
+          <NotificationFeed />
+        </div>
+      )}
 
       {tab === 'ask' && (
         <div className="mt-5">
