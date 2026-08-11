@@ -67,6 +67,15 @@ async function authHeader(stepUp: string | null) {
   return headers
 }
 
+function Row({ k, v }: { k: string; v: string }) {
+  return (
+    <div className="flex items-center justify-between py-1.5 border-t border-hairline text-[12.5px] first:border-t-0">
+      <span className="text-ink-soft">{k}</span>
+      <span className="text-ink text-right">{v}</span>
+    </div>
+  )
+}
+
 export default function AdminPage() {
   const [state, setState] = useState<'stepup' | 'loading' | 'denied' | 'ready'>('stepup')
   const [stepUp, setStepUp] = useState<string | null>(null)
@@ -82,7 +91,11 @@ export default function AdminPage() {
   const [internal, setInternal] = useState(false)
   const [busy, setBusy] = useState(false)
   const [note, setNote] = useState('')
-  const [section, setSection] = useState<'tickets' | 'config'>('tickets')
+  const [section, setSection] = useState<'tickets' | 'people' | 'config'>('tickets')
+  const [query, setQuery] = useState('')
+  const [results, setResults] = useState<Array<Record<string, string | boolean | null>>>([])
+  const [person, setPerson] = useState<Record<string, any> | null>(null)
+  const [revealed, setRevealed] = useState<Record<string, string | null>>({})
   const [config, setConfig] = useState<{
     config: { covered_brews_enabled: boolean; covered_brews_count: number } | null
     covered: { count: number; borneInRecent: number }
@@ -201,6 +214,48 @@ export default function AdminPage() {
     }
     setDraft('')
     load()
+  }
+
+  async function search() {
+    const auth = await authHeader(stepUp)
+    if (!auth || !query.trim()) return
+    setBusy(true)
+    setPerson(null)
+    const res = await fetch(`${TBT_BACKEND_URL}/api/admin/people?q=${encodeURIComponent(query.trim())}`, {
+      headers: auth,
+    })
+    const body = await res.json().catch(() => ({}))
+    setBusy(false)
+    setResults(body.people ?? [])
+  }
+
+  async function openPerson(id: string) {
+    const auth = await authHeader(stepUp)
+    if (!auth) return
+    setBusy(true)
+    setRevealed({})
+    const res = await fetch(`${TBT_BACKEND_URL}/api/admin/people?id=${id}`, { headers: auth })
+    const body = await res.json().catch(() => ({}))
+    setBusy(false)
+    setPerson(body.person ?? null)
+  }
+
+  /**
+   * Revelar es una acción, no una lectura: el backend registra quién miró qué y
+   * de quién. Por eso hay un botón y no simplemente el dato a la vista.
+   */
+  async function reveal(personId: string, field: 'phone' | 'email' | 'recovery_email') {
+    const auth = await authHeader(stepUp)
+    if (!auth) return
+    setBusy(true)
+    const res = await fetch(`${TBT_BACKEND_URL}/api/admin/people`, {
+      method: 'POST',
+      headers: { ...auth, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ personId, field }),
+    })
+    const body = await res.json().catch(() => ({}))
+    setBusy(false)
+    if (res.ok) setRevealed((prev) => ({ ...prev, [field]: body.value }))
   }
 
   async function changeRule(action: 'covered_count' | 'covered_kill_switch', value: number | boolean) {
@@ -332,7 +387,7 @@ export default function AdminPage() {
       )}
 
       <div className="flex gap-5 mt-5 mb-1 border-b border-hairline">
-        {(['tickets', 'config'] as const).map((k) => (
+        {(['tickets', 'people', 'config'] as const).map((k) => (
           <button
             key={k}
             type="button"
@@ -341,10 +396,153 @@ export default function AdminPage() {
               section === k ? 'border-ink text-ink' : 'border-transparent text-ink-soft'
             }`}
           >
-            {k === 'tickets' ? 'Tickets' : 'Configuration'}
+            {k === 'tickets' ? 'Tickets' : k === 'people' ? 'People' : 'Configuration'}
           </button>
         ))}
       </div>
+
+      {section === 'people' && (
+        <section className="mt-5">
+          <div className="flex gap-2">
+            <input
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && search()}
+              placeholder="Name, alias, phone, email or TBT-ID"
+              className="flex-1 px-3.5 py-3 border border-hairline rounded-xl text-[14px] outline-none focus:border-ink"
+            />
+            <button
+              type="button"
+              onClick={search}
+              disabled={busy}
+              className="px-4 rounded-xl bg-ink text-paper text-[11px] font-semibold tracking-[0.14em] uppercase disabled:opacity-50"
+            >
+              Find
+            </button>
+          </div>
+
+          {!person && results.length > 0 && (
+            <div className="flex flex-col gap-2 mt-4">
+              {results.map((r) => (
+                <button
+                  key={String(r.id)}
+                  type="button"
+                  onClick={() => openPerson(String(r.id))}
+                  className="text-left border border-hairline rounded-xl p-3.5 hover:bg-paper-warm transition-colors"
+                >
+                  <div className="text-[13px] font-medium text-ink">{String(r.alias ?? '—')}</div>
+                  <div className="text-[11px] text-ink-soft mt-0.5">
+                    {String(r.emailMasked ?? '—')} · {String(r.phoneMasked ?? '—')}
+                  </div>
+                </button>
+              ))}
+            </div>
+          )}
+
+          {!person && results.length === 0 && query && !busy && (
+            <p className="text-[12px] text-placeholder mt-4">Nobody matched that.</p>
+          )}
+
+          {person && (
+            <div className="mt-4">
+              <button
+                type="button"
+                onClick={() => setPerson(null)}
+                className="text-[11px] font-medium tracking-[0.12em] uppercase text-ink-soft"
+              >
+                ‹ Back to results
+              </button>
+
+              <div className="border border-hairline rounded-2xl p-4 mt-3">
+                <div className="text-[15px] font-medium text-ink">
+                  {person.identity.alias ?? person.identity.displayName ?? '—'}
+                </div>
+                <div className="text-[11px] text-ink-soft mt-0.5">
+                  {person.identity.isCreator ? 'Creator' : 'Collector'}
+                  {person.identity.category ? ` · ${person.identity.category}` : ''}
+                  {person.identity.language ? ` · ${person.identity.language}` : ''}
+                </div>
+
+                {/* Masked by default. Revealing is an action that gets logged. */}
+                {(['phone', 'email'] as const).map((f) => (
+                  <div key={f} className="flex items-center justify-between py-2 mt-1 border-t border-hairline text-[12.5px]">
+                    <span className="text-ink-soft capitalize">{f}</span>
+                    <span className="flex items-center gap-2">
+                      <span className="text-ink">
+                        {revealed[f] ?? (f === 'phone' ? person.identity.phoneMasked : person.identity.emailMasked) ?? '—'}
+                      </span>
+                      {!revealed[f] && (f === 'phone' ? person.identity.hasPhone : person.identity.hasEmail) && (
+                        <button
+                          type="button"
+                          onClick={() => reveal(person.id, f)}
+                          disabled={busy}
+                          className="text-[10px] tracking-[0.12em] uppercase text-ink-soft underline disabled:opacity-50"
+                        >
+                          Reveal
+                        </button>
+                      )}
+                    </span>
+                  </div>
+                ))}
+                <p className="text-[10px] text-placeholder mt-1">
+                  Revealing writes your name into the audit log.
+                </p>
+              </div>
+
+              <div className="border border-hairline rounded-2xl p-4 mt-3">
+                <div className="text-[11px] font-medium tracking-[0.16em] uppercase text-ink-soft mb-2">
+                  Authentication
+                </div>
+                <Row k="Private code" v={person.authentication.privateCodeSet ? `Set · ${person.authentication.privateCodeFrequency ?? '—'}` : 'Not set'} />
+                <Row k="Recovery email" v={person.authentication.recoveryEmailVerified ? 'Verified' : person.authentication.recoveryEmailMasked ? 'Unverified' : 'None'} />
+                <Row k="Biometric devices" v={String(person.authentication.devices.length)} />
+                {person.authentication.devices.map((d: any, i: number) => (
+                  <div key={i} className="text-[11px] text-ink-soft pl-1 py-1">
+                    {d.label ?? 'Device'} · {d.mode ?? '—'} · last used{' '}
+                    {d.lastUsedAt ? new Date(d.lastUsedAt).toLocaleDateString() : 'never'}
+                  </div>
+                ))}
+              </div>
+
+              <div className="border border-hairline rounded-2xl p-4 mt-3">
+                <div className="text-[11px] font-medium tracking-[0.16em] uppercase text-ink-soft mb-2">Works</div>
+                <Row k="Created" v={String(person.works.created)} />
+                <Row k="Still held" v={String(person.works.stillHeld)} />
+                <Row k="Transferred away" v={String(person.works.transferredAway)} />
+                <Row k="Free registrations granted" v={String(person.coveredRegistrationsGranted)} />
+                {person.works.recent.map((w: any) => (
+                  <div key={w.tbt_id} className="text-[11px] text-ink-soft py-1">
+                    {w.tbt_id} · {w.title} · {w.status}
+                  </div>
+                ))}
+              </div>
+
+              {person.tickets.length > 0 && (
+                <div className="border border-hairline rounded-2xl p-4 mt-3">
+                  <div className="text-[11px] font-medium tracking-[0.16em] uppercase text-ink-soft mb-2">
+                    Requests
+                  </div>
+                  {person.tickets.map((t: any) => (
+                    <div key={t.ref} className="flex items-center justify-between py-1.5 text-[12px]">
+                      <span className="text-ink-soft">
+                        {t.severity === 'financial' && <span className="inline-block w-1.5 h-1.5 rounded-full bg-t-red mr-1.5" />}
+                        {t.ref} · {t.subject}
+                      </span>
+                      <span className="text-placeholder">{t.status}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Saying these do not exist yet beats rendering empty panels that
+                  read as "no activity". */}
+              <p className="text-[11px] text-placeholder mt-3">
+                Not built yet: {person.notBuiltYet.join(', ')}.
+              </p>
+            </div>
+          )}
+        </section>
+      )}
 
       {section === 'config' && (
         <section className="mt-5">
