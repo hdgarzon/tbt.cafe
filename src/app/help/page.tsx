@@ -15,6 +15,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useLocale } from '@/i18n/LocaleProvider'
 import { useShell } from '@/components/AppShell'
+import { AssistantChat } from '@/components/AssistantChat'
 import {
   TICKET_CATEGORIES,
   fetchMyTickets,
@@ -36,6 +37,8 @@ export default function HelpPage() {
   const [busy, setBusy] = useState(false)
   const [msg, setMsg] = useState('')
   const [replyTo, setReplyTo] = useState<string | null>(null)
+  // El asistente es triaje del sistema de solicitudes, así que viven juntos.
+  const [tab, setTab] = useState<'ask' | 'requests'>('ask')
   const [replyBody, setReplyBody] = useState('')
 
   const load = useCallback(async (uid: string) => setTickets(await fetchMyTickets(uid)), [])
@@ -101,6 +104,29 @@ export default function HelpPage() {
     <div className="px-4 pt-6 pb-10">
       <h1 className="font-display font-medium text-[27px] leading-[1.08] text-ink">{t.help.title}</h1>
 
+      <div className="flex gap-5 mt-4 mb-1 border-b border-hairline">
+        {(['ask', 'requests'] as const).map((k) => (
+          <button
+            key={k}
+            type="button"
+            onClick={() => setTab(k)}
+            className={`pb-2.5 text-[11px] font-medium tracking-[0.16em] uppercase transition-colors border-b-2 -mb-px ${
+              tab === k ? 'border-ink text-ink' : 'border-transparent text-ink-soft'
+            }`}
+          >
+            {k === 'ask' ? t.assistant.tab : t.assistant.tabRequests}
+          </button>
+        ))}
+      </div>
+
+      {tab === 'ask' && (
+        <div className="mt-5">
+          <AssistantChat />
+        </div>
+      )}
+
+      {tab === 'requests' && (
+      <>
       <div className="border border-hairline rounded-2xl p-4 mt-5">
         <div className="text-[13px] font-medium text-ink">{t.help.openRequest}</div>
 
@@ -236,6 +262,8 @@ export default function HelpPage() {
             </div>
           ))}
         </div>
+      )}
+      </>
       )}
     </div>
   )
