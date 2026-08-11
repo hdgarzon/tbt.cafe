@@ -7,13 +7,18 @@
  * with little return. Customer-facing content authored here is a different
  * question and must exist in all four languages (§4.2).
  *
- * INCOMPLETE, and the gap is deliberate rather than forgotten: §1.4 requires
- * biometric + private code on admin access regardless of action value, and
- * there is no private-code verification endpoint yet — only set and clear. The
- * membership check below is a real gate, but it is not the step-up the spec
- * asks for.
+ * §1.4 — admin access requires biometric AND private code, whatever the action
+ * is worth, and the session is short. Both factors are presented here before
+ * anything loads; the resulting token is sent with every admin call and the
+ * backend refuses without it.
+ *
+ * The private code is 3-5 characters and the app itself calls it a convenience
+ * layer rather than a real second factor, so failed attempts are counted and
+ * locked server-side. Without that, four digits are ten thousand guesses in
+ * front of the most privileged surface in the product.
  */
 import { useCallback, useEffect, useState } from 'react'
+import { startAuthentication } from '@simplewebauthn/browser'
 import { supabase } from '@/lib/supabase'
 import { TBT_BACKEND_URL } from '@/lib/backend'
 
@@ -52,15 +57,21 @@ type Approval = {
   expires_at: string
 }
 
-async function authHeader() {
+async function authHeader(stepUp: string | null) {
   const {
     data: { session },
   } = await supabase.auth.getSession()
-  return session ? { Authorization: `Bearer ${session.access_token}` } : null
+  if (!session) return null
+  const headers: Record<string, string> = { Authorization: `Bearer ${session.access_token}` }
+  if (stepUp) headers['x-admin-step-up'] = stepUp
+  return headers
 }
 
 export default function AdminPage() {
-  const [state, setState] = useState<'loading' | 'denied' | 'ready'>('loading')
+  const [state, setState] = useState<'stepup' | 'loading' | 'denied' | 'ready'>('stepup')
+  const [stepUp, setStepUp] = useState<string | null>(null)
+  const [code, setCode] = useState('')
+  const [stepMsg, setStepMsg] = useState('')
   const [tickets, setTickets] = useState<Ticket[]>([])
   const [approvals, setApprovals] = useState<Approval[]>([])
   const [canApprove, setCanApprove] = useState(false)
@@ -73,7 +84,8 @@ export default function AdminPage() {
   const [note, setNote] = useState('')
 
   const load = useCallback(async () => {
-    const auth = await authHeader()
+    if (!stepUp) return
+    const auth = await authHeader(stepUp)
     if (!auth) return setState('denied')
 
     const [tRes, aRes] = await Promise.all([
@@ -92,14 +104,76 @@ export default function AdminPage() {
       setMe(aBody.me ?? null)
     }
     setState('ready')
-  }, [filter])
+  }, [filter, stepUp])
 
   useEffect(() => {
     load()
   }, [load])
 
+  /**
+   * Los dos factores antes de que cargue nada. Si el biométrico no se completa
+   * no se pide el código: un step-up a medias no vale, y el backend lo
+   * rechazaría de todos modos.
+   */
+  async function doStepUp() {
+    setBusy(true)
+    setStepMsg('')
+    try {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession()
+      if (!session) {
+        setState('denied')
+        return
+      }
+      const bearer = { Authorization: `Bearer ${session.access_token}`, 'Content-Type': 'application/json' }
+
+      const begin = await fetch('/api/webauthn/auth/begin', { method: 'POST', headers: bearer })
+      const beginBody = await begin.json()
+      if (!begin.ok) {
+        setStepMsg('Enrol a biometric on this device first.')
+        return
+      }
+      const credential = await startAuthentication({ optionsJSON: beginBody.options })
+      const finish = await fetch('/api/webauthn/auth/finish', {
+        method: 'POST',
+        headers: bearer,
+        body: JSON.stringify({ credential }),
+      })
+      if (!finish.ok) {
+        setStepMsg('Biometric check failed.')
+        return
+      }
+
+      const res = await fetch('/api/admin/step-up', {
+        method: 'POST',
+        headers: bearer,
+        body: JSON.stringify({ code: code.trim(), biometric: true }),
+      })
+      const body = await res.json()
+      if (!res.ok) {
+        // El bloqueo se dice con su hora: callarlo solo haría que insistieran.
+        if (body.error === 'locked') {
+          setStepMsg(`Too many attempts. Locked until ${new Date(body.lockedUntil).toLocaleTimeString()}.`)
+        } else if (body.error === 'invalid_code') {
+          setStepMsg('That code is not right.')
+        } else {
+          setStepMsg('Could not verify.')
+        }
+        return
+      }
+      setCode('')
+      setStepUp(body.token)
+      setState('loading')
+    } catch {
+      setStepMsg('Could not verify.')
+    } finally {
+      setBusy(false)
+    }
+  }
+
   async function act(payload: Record<string, unknown>) {
-    const auth = await authHeader()
+    const auth = await authHeader(stepUp)
     if (!auth) return
     setBusy(true)
     setNote('')
@@ -119,7 +193,7 @@ export default function AdminPage() {
   }
 
   async function decide(approvalId: string, decision: 'approved' | 'rejected') {
-    const auth = await authHeader()
+    const auth = await authHeader(stepUp)
     if (!auth) return
     setBusy(true)
     const res = await fetch(`${TBT_BACKEND_URL}/api/admin/approvals`, {
@@ -133,6 +207,36 @@ export default function AdminPage() {
     load()
   }
 
+  if (state === 'stepup') {
+    return (
+      <div className="px-4 pt-6">
+        <h1 className="font-display font-medium text-[27px] leading-[1.08] text-ink">Admin</h1>
+        <div className="border border-hairline rounded-2xl p-4 mt-5">
+          <p className="text-[12px] leading-[1.6] text-ink-soft">
+            Admin access needs your biometric and your private code, every time. The session lasts
+            15 minutes.
+          </p>
+          <input
+            value={code}
+            onChange={(e) => setCode(e.target.value)}
+            type="password"
+            inputMode="numeric"
+            placeholder="Private code"
+            className="w-full mt-3.5 px-3.5 py-3 border border-hairline rounded-xl text-[16px] outline-none focus:border-ink transition-colors"
+          />
+          <button
+            type="button"
+            onClick={doStepUp}
+            disabled={busy || !code.trim()}
+            className="w-full mt-3 py-4 text-[12px] font-semibold tracking-[0.16em] uppercase bg-ink text-paper rounded-xl disabled:opacity-50"
+          >
+            Verify
+          </button>
+          {stepMsg && <p className="text-[11.5px] text-t-red mt-2.5">{stepMsg}</p>}
+        </div>
+      </div>
+    )
+  }
   if (state === 'loading') return <div className="px-4 pt-6 text-[13px] text-ink-soft">Loading…</div>
   if (state === 'denied') {
     return (
