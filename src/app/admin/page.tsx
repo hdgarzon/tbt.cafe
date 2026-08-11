@@ -91,7 +91,17 @@ export default function AdminPage() {
   const [internal, setInternal] = useState(false)
   const [busy, setBusy] = useState(false)
   const [note, setNote] = useState('')
-  const [section, setSection] = useState<'tickets' | 'people' | 'config'>('tickets')
+  const [section, setSection] = useState<'board' | 'tickets' | 'people' | 'config'>('board')
+  const [board, setBoard] = useState<{
+    registrations: { today: number; last7: number; last30: number }
+    transfers30: number
+    offersOpen: number
+    tickets: { financial: number; secondary: number }
+    coveredRegistrations: number
+    approvalsPending: number
+    failing: Array<{ what: string; count: number; where: string }>
+    notBuiltYet: string[]
+  } | null>(null)
   const [query, setQuery] = useState('')
   const [results, setResults] = useState<Array<Record<string, string | boolean | null>>>([])
   const [person, setPerson] = useState<Record<string, any> | null>(null)
@@ -126,6 +136,9 @@ export default function AdminPage() {
     }
     const cRes = await fetch(`${TBT_BACKEND_URL}/api/admin/config`, { headers: auth })
     if (cRes.ok) setConfig(await cRes.json())
+
+    const bRes = await fetch(`${TBT_BACKEND_URL}/api/admin/dashboard`, { headers: auth })
+    if (bRes.ok) setBoard(await bRes.json())
 
     setState('ready')
   }, [filter, stepUp])
@@ -387,7 +400,7 @@ export default function AdminPage() {
       )}
 
       <div className="flex gap-5 mt-5 mb-1 border-b border-hairline">
-        {(['tickets', 'people', 'config'] as const).map((k) => (
+        {(['board', 'tickets', 'people', 'config'] as const).map((k) => (
           <button
             key={k}
             type="button"
@@ -396,10 +409,65 @@ export default function AdminPage() {
               section === k ? 'border-ink text-ink' : 'border-transparent text-ink-soft'
             }`}
           >
-            {k === 'tickets' ? 'Tickets' : k === 'people' ? 'People' : 'Configuration'}
+            {k === 'board' ? 'Board' : k === 'tickets' ? 'Tickets' : k === 'people' ? 'People' : 'Configuration'}
           </button>
         ))}
       </div>
+
+      {section === 'board' && board && (
+        <section className="mt-5">
+          {/* What is broken goes first, not buried under counts. Someone opening
+              this in the morning should see overnight damage immediately. */}
+          {board.failing.length > 0 ? (
+            <div className="border border-t-red/50 bg-t-red/[0.05] rounded-2xl p-4">
+              <div className="text-[11px] font-medium tracking-[0.16em] uppercase text-t-red mb-2">
+                Needs attention
+              </div>
+              {board.failing.map((f) => (
+                <div key={f.what} className="flex items-center justify-between py-1.5 text-[12.5px]">
+                  <span className="text-ink">{f.what}</span>
+                  <span className="text-t-red font-medium">{f.count}</span>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="border border-hairline rounded-2xl p-4">
+              <p className="text-[12.5px] text-ink-soft">Nothing is failing right now.</p>
+            </div>
+          )}
+
+          {board.approvalsPending > 0 && (
+            <div className="border border-t-yellow/50 bg-t-yellow/[0.05] rounded-2xl p-4 mt-3 text-[12.5px] text-ink">
+              {board.approvalsPending} action{board.approvalsPending === 1 ? '' : 's'} waiting for a
+              second person.
+            </div>
+          )}
+
+          <div className="border border-hairline rounded-2xl p-4 mt-3">
+            <div className="text-[11px] font-medium tracking-[0.16em] uppercase text-ink-soft mb-2">
+              Registrations
+            </div>
+            <Row k="Today" v={String(board.registrations.today)} />
+            <Row k="Last 7 days" v={String(board.registrations.last7)} />
+            <Row k="Last 30 days" v={String(board.registrations.last30)} />
+          </div>
+
+          <div className="border border-hairline rounded-2xl p-4 mt-3">
+            <div className="text-[11px] font-medium tracking-[0.16em] uppercase text-ink-soft mb-2">
+              Activity
+            </div>
+            <Row k="Transfers, last 30 days" v={String(board.transfers30)} />
+            <Row k="Open offers" v={String(board.offersOpen)} />
+            <Row k="Open requests · money" v={String(board.tickets.financial)} />
+            <Row k="Open requests · other" v={String(board.tickets.secondary)} />
+            <Row k="Registrations covered by tbt.cafe" v={String(board.coveredRegistrations)} />
+          </div>
+
+          <p className="text-[11px] text-placeholder mt-3">
+            Not built yet: {board.notBuiltYet.join(', ')}.
+          </p>
+        </section>
+      )}
 
       {section === 'people' && (
         <section className="mt-5">
