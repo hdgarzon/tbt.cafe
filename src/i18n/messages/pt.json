@@ -282,7 +282,8 @@
       "tbtActivity": "Atividade TBT",
       "security": "Segurança",
       "securityNote": "Ativadas por padrão, deliberadamente.",
-      "transactional": "Transacional"
+      "transactional": "Transacional",
+      "support": "Suporte"
     },
     "items": {
       "viewsCreated": "Visualizações em obras criadas",
@@ -295,7 +296,13 @@
       "purchases": "Compras",
       "transfers": "Transferências",
       "newFromFollowed": "Novidades de seguidos",
-      "registrations": "Confirmações de registro"
+      "registrations": "Confirmações de registro",
+      "offerReceived": "Oferta recebida",
+      "offerAccepted": "Oferta aceita",
+      "offerDeclined": "Oferta recusada",
+      "offerExpiring": "Oferta prestes a vencer",
+      "ticketReply": "A equipe respondeu sua solicitação",
+      "ticketSystem": "Abrimos uma solicitação para você"
     },
     "notifyPast": "Notificar a partir de",
     "views": "visualizações",
@@ -315,8 +322,16 @@
       "purchases": "Quando alguém adquire um dos seus itens.",
       "transfers": "Quando um TBT é transferido de ou para si.",
       "newFromFollowed": "Quando alguém que segue regista algo novo.",
-      "registrations": "Quando o seu TBT é registado na blockchain."
-    }
+      "registrations": "Quando o seu TBT é registado na blockchain.",
+      "offerReceived": "Alguém fez uma oferta por uma obra sua.",
+      "offerAccepted": "Uma oferta que você fez foi aceita.",
+      "offerDeclined": "Uma oferta que você fez foi recusada.",
+      "offerExpiring": "Uma oferta está prestes a vencer.",
+      "ticketReply": "Chegou uma resposta a uma de suas solicitações.",
+      "ticketSystem": "Detectamos algo e abrimos uma solicitação para você."
+    },
+    "alwaysOn": "Sempre ativa",
+    "lockedNote": "Esta protege você, por isso não pode ser desativada."
   },
   "work": {
     "loading": "Carregando…",

@@ -19,7 +19,17 @@ import { useShell } from '@/components/AppShell'
  * (build(t) más abajo) vienen del diccionario activo.
  */
 
-type ItemDef = { id: string; threshold?: boolean; defaultOn: boolean }
+type ItemDef = {
+  id: string
+  threshold?: boolean
+  defaultOn: boolean
+  /**
+   * Protectora: siempre encendida y visiblemente bloqueada (Spec 06 §5.3).
+   * Quien pudiera silenciarlas podría redirigir fondos o dejar sin avisar que
+   * el dinero no llegó, así que el interruptor no existe para ellas.
+   */
+  locked?: boolean
+}
 type CategoryDef = { key: string; security?: boolean; items: ItemDef[] }
 
 const STRUCTURE: CategoryDef[] = [
@@ -30,6 +40,9 @@ const STRUCTURE: CategoryDef[] = [
       { id: 'views_collection', threshold: true, defaultOn: true },
       { id: 'favorites', defaultOn: true },
       { id: 'surge', defaultOn: true },
+      // El spec lo sitúa en actividad de TBT, no en transaccional: seguir a
+      // alguien es señal de mercado, no una transacción.
+      { id: 'new_from_followed', defaultOn: false },
     ],
   },
   {
@@ -38,7 +51,7 @@ const STRUCTURE: CategoryDef[] = [
     items: [
       { id: 'new_location', defaultOn: true },
       { id: 'new_device', defaultOn: true },
-      { id: 'suspicious', defaultOn: true },
+      { id: 'suspicious', defaultOn: true, locked: true },
     ],
   },
   {
@@ -46,8 +59,20 @@ const STRUCTURE: CategoryDef[] = [
     items: [
       { id: 'purchases', defaultOn: true },
       { id: 'transfers', defaultOn: true },
-      { id: 'new_from_followed', defaultOn: false },
       { id: 'registrations', defaultOn: true },
+      { id: 'offer_received', defaultOn: true },
+      { id: 'offer_accepted', defaultOn: true },
+      { id: 'offer_declined', defaultOn: true },
+      { id: 'offer_expiring', defaultOn: true },
+    ],
+  },
+  {
+    key: 'support',
+    items: [
+      { id: 'ticket_reply', defaultOn: true },
+      // Un fallo de dinero o de entrega del certificado se cuenta siempre
+      // (Spec 03 §7, Spec 06 §5.3).
+      { id: 'ticket_system', defaultOn: true, locked: true },
     ],
   },
 ]
@@ -64,6 +89,12 @@ const ITEM_LABEL_KEY: Record<string, keyof Dictionary['notifications']['items']>
   transfers: 'transfers',
   new_from_followed: 'newFromFollowed',
   registrations: 'registrations',
+  offer_received: 'offerReceived',
+  offer_accepted: 'offerAccepted',
+  offer_declined: 'offerDeclined',
+  offer_expiring: 'offerExpiring',
+  ticket_reply: 'ticketReply',
+  ticket_system: 'ticketSystem',
 }
 
 /** Construye las categorías con las etiquetas traducidas del diccionario activo. */
@@ -72,6 +103,7 @@ function buildCategories(t: Dictionary) {
     tbt: t.notifications.categories.tbtActivity,
     security: t.notifications.categories.security,
     transactional: t.notifications.categories.transactional,
+    support: t.notifications.categories.support,
   }
   const notes: Record<string, string | undefined> = {
     security: t.notifications.categories.securityNote,
@@ -100,7 +132,9 @@ function withDefaults(stored: Prefs): Prefs {
     for (const item of cat.items) {
       const s = stored[item.id]
       out[item.id] = {
-        on: s?.on ?? item.defaultOn,
+        // Una protectora va encendida aunque haya quedado apagada de antes:
+        // si no, seguiría silenciada sin que nadie lo note (Spec 06 §5.3).
+        on: item.locked ? true : s?.on ?? item.defaultOn,
         threshold: item.threshold ? s?.threshold ?? THRESHOLDS[0] : undefined,
       }
     }
@@ -221,6 +255,20 @@ export default function NotificationsPage() {
                   )}
                 </div>
 
+                {/* Las protectoras no se pueden apagar: se muestran encendidas,
+                    con candado y una razón, en vez de un interruptor que
+                    engañaría al no hacer nada. */}
+                {item.locked ? (
+                  <div className="flex items-center gap-1.5 shrink-0 mt-0.5" title={t.notifications.lockedNote}>
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="text-ink-soft" aria-hidden="true">
+                      <rect x="4" y="11" width="16" height="10" rx="2" />
+                      <path d="M8 11V7a4 4 0 0 1 8 0v4" />
+                    </svg>
+                    <span className="text-[10px] font-medium tracking-[0.12em] uppercase text-ink-soft">
+                      {t.notifications.alwaysOn}
+                    </span>
+                  </div>
+                ) : (
                 <button
                   type="button"
                   role="switch"
@@ -237,6 +285,7 @@ export default function NotificationsPage() {
                     }`}
                   />
                 </button>
+                )}
               </div>
             )
           })}
