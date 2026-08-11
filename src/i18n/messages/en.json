@@ -68,7 +68,8 @@
     "lockedNote": "These are yours once you're signed in.",
     "lockedNoteBold": "Tap any of them to connect.",
     "footNote1": "tbt.cafe — Transbit × BROCHA",
-    "footNote2": "Transferable Billable Tokens"
+    "footNote2": "Transferable Billable Tokens",
+    "help": "Help"
   },
   "auth": {
     "termsPrefix": "I agree to the",
@@ -855,5 +856,38 @@
     "coveredByTbt": "Covered by tbt.cafe",
     "coveredNote": "This one is on us — {n} free registrations remaining.",
     "coveredNoteOne": "This one is on us — 1 free registration remaining."
+  },
+  "help": {
+    "title": "Help",
+    "openRequest": "Open a request",
+    "subject": "Subject",
+    "describe": "Describe what's happening…",
+    "submit": "Submit request",
+    "needBoth": "Add a subject and description",
+    "submitted": "Request submitted",
+    "yourRequests": "Your requests",
+    "empty": "No requests yet. Anything you open will appear here with the team's replies.",
+    "gateTitle": "Help requests need authentication",
+    "gateSub": "Authenticate to open a request and see replies from the team.",
+    "authenticate": "Authenticate",
+    "support": "tbt.cafe Support",
+    "you": "You",
+    "replyPlaceholder": "Reply…",
+    "sendReply": "Send reply",
+    "systemBadge": "Opened by tbt.cafe",
+    "categories": {
+      "payments": "Payments",
+      "payouts": "Payouts",
+      "transfers": "Transfers",
+      "registration": "Registration",
+      "authentication": "Authentication & Access",
+      "other": "Other"
+    },
+    "status": {
+      "open": "Open",
+      "answered": "Answered",
+      "resolved": "Resolved",
+      "closed": "Closed"
+    }
   }
 }

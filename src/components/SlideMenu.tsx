@@ -96,6 +96,7 @@ export function SlideMenu({ open, onClose }: { open: boolean; onClose: () => voi
         { label: t.menu.authentication, href: '/settings/authentication' },
         { label: t.menu.notifications, href: '/settings/notifications' },
         { label: t.menu.profile, href: '/profile' },
+        { label: t.menu.help, href: '/help' },
       ],
     },
     {

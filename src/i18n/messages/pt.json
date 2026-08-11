@@ -68,7 +68,8 @@
     "lockedNote": "Estas seções são suas assim que você entrar.",
     "lockedNoteBold": "Toque em qualquer uma para conectar.",
     "footNote1": "tbt.cafe — Transbit × BROCHA",
-    "footNote2": "Tokens Transferíveis Faturáveis"
+    "footNote2": "Tokens Transferíveis Faturáveis",
+    "help": "Ajuda"
   },
   "auth": {
     "termsPrefix": "Concordo com os",
@@ -855,5 +856,38 @@
     "coveredByTbt": "Coberto pela tbt.cafe",
     "coveredNote": "Esta é por nossa conta — restam {n} registros gratuitos.",
     "coveredNoteOne": "Esta é por nossa conta — resta 1 registro gratuito."
+  },
+  "help": {
+    "title": "Ajuda",
+    "openRequest": "Abrir uma solicitação",
+    "subject": "Assunto",
+    "describe": "Conte o que está acontecendo…",
+    "submit": "Enviar solicitação",
+    "needBoth": "Escreva um assunto e uma descrição",
+    "submitted": "Solicitação enviada",
+    "yourRequests": "Suas solicitações",
+    "empty": "Ainda não há solicitações. As que você abrir aparecerão aqui com as respostas da equipe.",
+    "gateTitle": "Solicitações de ajuda exigem autenticação",
+    "gateSub": "Autentique-se para abrir uma solicitação e ver as respostas da equipe.",
+    "authenticate": "Autenticar",
+    "support": "Suporte do tbt.cafe",
+    "you": "Você",
+    "replyPlaceholder": "Responder…",
+    "sendReply": "Enviar resposta",
+    "systemBadge": "Aberta pelo tbt.cafe",
+    "categories": {
+      "payments": "Pagamentos",
+      "payouts": "Recebimentos",
+      "transfers": "Transferências",
+      "registration": "Registro",
+      "authentication": "Autenticação e acesso",
+      "other": "Outro"
+    },
+    "status": {
+      "open": "Aberta",
+      "answered": "Respondida",
+      "resolved": "Resolvida",
+      "closed": "Fechada"
+    }
   }
 }
