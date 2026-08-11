@@ -25,24 +25,67 @@ export const runtime = 'edge'
 const W = 1200
 const H = 630
 
+/** Papel y tinta de la casa, en literales: aquí no llegan los tokens de Tailwind. */
+const PAPER = '#f4f2ef'
+const INK = '#141312'
+const INK_SOFT = '#6b665f'
+
+/**
+ * El renderizador solo entiende PNG y JPEG. Un WebP lo hace fallar, y ese fallo
+ * salía como 200 con cero bytes — que las plataformas cachean igual que una
+ * imagen buena. Se comprueban los bytes reales, no la extensión: una URL puede
+ * mentir sobre lo que sirve.
+ */
+async function loadArtwork(url: string): Promise<string | null> {
+  try {
+    const res = await fetch(url)
+    if (!res.ok) return null
+    const buf = new Uint8Array(await res.arrayBuffer())
+
+    const isPng = buf[0] === 0x89 && buf[1] === 0x50 && buf[2] === 0x4e && buf[3] === 0x47
+    const isJpeg = buf[0] === 0xff && buf[1] === 0xd8 && buf[2] === 0xff
+    if (!isPng && !isJpeg) return null
+
+    let bin = ''
+    for (let i = 0; i < buf.length; i++) bin += String.fromCharCode(buf[i])
+    return `data:${isPng ? 'image/png' : 'image/jpeg'};base64,${btoa(bin)}`
+  } catch {
+    return null
+  }
+}
+
 export async function GET(request: Request, { params }: { params: { slug: string } }) {
   // La ruta se publica como /og/{TBT-ID}.png para que la URL termine en una
   // extensión de imagen, que es lo que esperan varios rastreadores.
   const tbtId = decodeURIComponent(params.slug).replace(/\.(png|jpg|jpeg)$/i, '')
 
-  const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  )
-  const { data } = await supabase
-    .from('works')
-    .select('title, media_url, creator:profiles!works_creator_id_fkey(public_alias, display_name)')
-    .eq('tbt_id', tbtId)
-    .single()
+  let title = 'tbt.cafe'
+  let creator = ''
+  let artwork: string | null = null
 
-  const creatorRow = Array.isArray(data?.creator) ? data?.creator[0] : data?.creator
-  const creator = creatorRow?.public_alias || creatorRow?.display_name || ''
-  const title = data?.title ?? 'tbt.cafe'
+  try {
+    const supabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+    )
+    const { data } = await supabase
+      .from('works')
+      .select('title, media_url, creator:profiles!works_creator_id_fkey(public_alias, display_name)')
+      .eq('tbt_id', tbtId)
+      .single()
+
+    if (data) {
+      const creatorRow = Array.isArray(data.creator) ? data.creator[0] : data.creator
+      creator = creatorRow?.public_alias || creatorRow?.display_name || ''
+      title = data.title || title
+      if (data.media_url) artwork = await loadArtwork(data.media_url)
+    }
+  } catch (error) {
+    // Se sigue adelante con la tarjeta tipográfica: una previsualización sin la
+    // obra sirve; una respuesta vacía cacheada durante un año, no.
+    console.error('[og] lookup failed for', tbtId, error)
+  }
+
   const alt = ogImageAlt(localeFromAcceptLanguage(request.headers.get('accept-language')), title, creator)
 
   return new ImageResponse(
@@ -53,32 +96,32 @@ export async function GET(request: Request, { params }: { params: { slug: string
           height: '100%',
           display: 'flex',
           flexDirection: 'column',
-          backgroundColor: '#f4f2ef',
+          backgroundColor: PAPER,
           padding: 48,
         }}
       >
         <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          {data?.media_url ? (
+          {artwork ? (
             // `contain` es lo que garantiza que la obra nunca salga truncada.
             // next/image no existe dentro de ImageResponse: aquí solo se
             // admite <img>, así que la regla no aplica.
             // eslint-disable-next-line @next/next/no-img-element
             <img
-              src={data.media_url}
+              src={artwork}
               alt={alt}
               style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }}
             />
           ) : (
-            <div style={{ fontSize: 64, color: '#b8b2a8' }}>tbt.cafe</div>
+            <div style={{ fontSize: 56, color: INK_SOFT, letterSpacing: 3 }}>tbt.cafe</div>
           )}
         </div>
 
         <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginTop: 32 }}>
           <div style={{ display: 'flex', flexDirection: 'column' }}>
-            <div style={{ fontSize: 40, color: '#141312', lineHeight: 1.1 }}>{title}</div>
-            {creator && <div style={{ fontSize: 26, color: '#6b665f', marginTop: 8 }}>{creator}</div>}
+            <div style={{ fontSize: 40, color: INK, lineHeight: 1.1 }}>{title}</div>
+            {creator ? <div style={{ fontSize: 26, color: INK_SOFT, marginTop: 8 }}>{creator}</div> : null}
           </div>
-          <div style={{ fontSize: 22, color: '#6b665f', letterSpacing: 2 }}>tbt.cafe</div>
+          <div style={{ fontSize: 22, color: INK_SOFT, letterSpacing: 2 }}>tbt.cafe</div>
         </div>
       </div>
     ),
