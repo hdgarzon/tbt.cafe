@@ -91,7 +91,13 @@ export default function AdminPage() {
   const [internal, setInternal] = useState(false)
   const [busy, setBusy] = useState(false)
   const [note, setNote] = useState('')
-  const [section, setSection] = useState<'board' | 'tickets' | 'people' | 'config'>('board')
+  const [section, setSection] = useState<'board' | 'tickets' | 'people' | 'works' | 'money' | 'config'>('board')
+  const [workQuery, setWorkQuery] = useState('')
+  const [workHits, setWorkHits] = useState<Array<Record<string, string>>>([])
+  const [work, setWork] = useState<Record<string, any> | null>(null)
+  const [notActionable, setNotActionable] = useState<string[]>([])
+  const [annotation, setAnnotation] = useState('')
+  const [txns, setTxns] = useState<Record<string, any> | null>(null)
   const [board, setBoard] = useState<{
     registrations: { today: number; last7: number; last30: number }
     transfers30: number
@@ -227,6 +233,52 @@ export default function AdminPage() {
     }
     setDraft('')
     load()
+  }
+
+  async function findWork() {
+    const auth = await authHeader(stepUp)
+    if (!auth || !workQuery.trim()) return
+    setBusy(true)
+    setWork(null)
+    const res = await fetch(`${TBT_BACKEND_URL}/api/admin/works?q=${encodeURIComponent(workQuery.trim())}`, { headers: auth })
+    const body = await res.json().catch(() => ({}))
+    setBusy(false)
+    setWorkHits(body.works ?? [])
+  }
+
+  async function openWork(tbtId: string) {
+    const auth = await authHeader(stepUp)
+    if (!auth) return
+    setBusy(true)
+    const res = await fetch(`${TBT_BACKEND_URL}/api/admin/works?tbtId=${encodeURIComponent(tbtId)}`, { headers: auth })
+    const body = await res.json().catch(() => ({}))
+    setBusy(false)
+    setWork(body.work ?? null)
+    setNotActionable(body.notActionable ?? [])
+  }
+
+  async function annotate(tbtId: string, kind: 'note' | 'correction' | 'flag') {
+    const auth = await authHeader(stepUp)
+    if (!auth || !annotation.trim()) return
+    setBusy(true)
+    await fetch(`${TBT_BACKEND_URL}/api/admin/works`, {
+      method: 'POST',
+      headers: { ...auth, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ tbtId, kind, body: annotation.trim() }),
+    })
+    setBusy(false)
+    setAnnotation('')
+    openWork(tbtId)
+  }
+
+  async function loadTxns() {
+    const auth = await authHeader(stepUp)
+    if (!auth) return
+    setBusy(true)
+    const res = await fetch(`${TBT_BACKEND_URL}/api/admin/transactions`, { headers: auth })
+    const body = await res.json().catch(() => ({}))
+    setBusy(false)
+    setTxns(body)
   }
 
   async function search() {
@@ -400,16 +452,29 @@ export default function AdminPage() {
       )}
 
       <div className="flex gap-5 mt-5 mb-1 border-b border-hairline">
-        {(['board', 'tickets', 'people', 'config'] as const).map((k) => (
+        {(['board', 'tickets', 'people', 'works', 'money', 'config'] as const).map((k) => (
           <button
             key={k}
             type="button"
-            onClick={() => setSection(k)}
+            onClick={() => {
+              setSection(k)
+              if (k === 'money' && !txns) loadTxns()
+            }}
             className={`pb-2.5 text-[11px] font-medium tracking-[0.16em] uppercase transition-colors border-b-2 -mb-px ${
               section === k ? 'border-ink text-ink' : 'border-transparent text-ink-soft'
             }`}
           >
-            {k === 'board' ? 'Board' : k === 'tickets' ? 'Tickets' : k === 'people' ? 'People' : 'Configuration'}
+            {k === 'board'
+              ? 'Board'
+              : k === 'tickets'
+                ? 'Tickets'
+                : k === 'people'
+                  ? 'People'
+                  : k === 'works'
+                    ? 'Works'
+                    : k === 'money'
+                      ? 'Money'
+                      : 'Configuration'}
           </button>
         ))}
       </div>
@@ -465,6 +530,218 @@ export default function AdminPage() {
 
           <p className="text-[11px] text-placeholder mt-3">
             Not built yet: {board.notBuiltYet.join(', ')}.
+          </p>
+        </section>
+      )}
+
+      {section === 'works' && (
+        <section className="mt-5">
+          <div className="flex gap-2">
+            <input
+              value={workQuery}
+              onChange={(e) => setWorkQuery(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && findWork()}
+              placeholder="TBT-ID or title"
+              className="flex-1 px-3.5 py-3 border border-hairline rounded-xl text-[14px] outline-none focus:border-ink"
+            />
+            <button
+              type="button"
+              onClick={findWork}
+              disabled={busy}
+              className="px-4 rounded-xl bg-ink text-paper text-[11px] font-semibold tracking-[0.14em] uppercase disabled:opacity-50"
+            >
+              Find
+            </button>
+          </div>
+
+          {!work && workHits.length > 0 && (
+            <div className="flex flex-col gap-2 mt-4">
+              {workHits.map((w) => (
+                <button
+                  key={w.tbt_id}
+                  type="button"
+                  onClick={() => openWork(w.tbt_id)}
+                  className="text-left border border-hairline rounded-xl p-3.5 hover:bg-paper-warm transition-colors"
+                >
+                  <div className="text-[13px] font-medium text-ink">{w.title}</div>
+                  <div className="text-[11px] text-ink-soft mt-0.5">
+                    {w.tbt_id} · {w.status} · {w.mint_address ? 'on chain' : 'no chain write'}
+                  </div>
+                </button>
+              ))}
+            </div>
+          )}
+
+          {work && (
+            <div className="mt-4">
+              <button
+                type="button"
+                onClick={() => setWork(null)}
+                className="text-[11px] font-medium tracking-[0.12em] uppercase text-ink-soft"
+              >
+                ‹ Back
+              </button>
+
+              <div className="border border-hairline rounded-2xl p-4 mt-3">
+                <div className="text-[15px] font-medium text-ink">{work.title}</div>
+                <div className="text-[11px] text-ink-soft mt-0.5">{work.tbtId} · {work.category}</div>
+                <div className="mt-2.5">
+                  <Row k="Status" v={work.status ?? '—'} />
+                  <Row k="Payment" v={work.paymentStatus ?? '—'} />
+                  <Row k="Certificate delivery" v={work.mmsDelivery ?? '—'} />
+                  <Row k="Certified" v={work.certifiedAt ? new Date(work.certifiedAt).toLocaleDateString() : '—'} />
+                </div>
+              </div>
+
+              <div className="border border-hairline rounded-2xl p-4 mt-3">
+                <div className="text-[11px] font-medium tracking-[0.16em] uppercase text-ink-soft mb-2">Chain</div>
+                <Row k="Network" v={work.chain.network ?? '—'} />
+                <Row k="Mint" v={work.chain.mintAddress ?? 'not written'} />
+                <Row k="NFT status" v={work.chain.nftStatus ?? '—'} />
+                {work.chain.explorerUrl && (
+                  <a href={work.chain.explorerUrl} target="_blank" rel="noreferrer" className="text-[11px] text-ink-soft underline">
+                    Open in explorer
+                  </a>
+                )}
+                <p className="text-[10.5px] text-placeholder mt-2">
+                  Arweave and Bitcoin anchors are not written yet.
+                </p>
+              </div>
+
+              {work.commerce && (
+                <div className="border border-hairline rounded-2xl p-4 mt-3">
+                  <div className="text-[11px] font-medium tracking-[0.16em] uppercase text-ink-soft mb-2">Commerce</div>
+                  <Row k="Availability" v={work.commerce.availability ?? '—'} />
+                  <Row k="Price" v={work.commerce.price != null ? `${work.commerce.price} ${work.commerce.currency}` : '—'} />
+                  <Row
+                    k="Royalty"
+                    v={
+                      work.commerce.royaltyType === 'fixed'
+                        ? `${work.commerce.royaltyValue} ${work.commerce.currency} fixed`
+                        : work.commerce.royaltyType === 'percentage'
+                          ? `${work.commerce.royaltyValue}%`
+                          : 'None'
+                    }
+                  />
+                  <Row k="Royalty locked" v={work.commerce.royaltyLocked ? 'Yes — cannot be changed' : 'No'} />
+                </div>
+              )}
+
+              {work.ownership.length > 0 && (
+                <div className="border border-hairline rounded-2xl p-4 mt-3">
+                  <div className="text-[11px] font-medium tracking-[0.16em] uppercase text-ink-soft mb-2">Ownership</div>
+                  {work.ownership.map((o: any, i: number) => (
+                    <div key={i} className="text-[11.5px] text-ink-soft py-1">
+                      {o.sequence_number}. {o.event_type} · {o.owner_name ?? '—'}
+                      {o.price ? ` · ${o.price} ${o.currency ?? ''}` : ''}
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* §6 — the tool must not imply these are possible. */}
+              <div className="border border-hairline rounded-2xl p-4 mt-3">
+                <div className="text-[11px] font-medium tracking-[0.16em] uppercase text-ink-soft mb-2">
+                  Annotations
+                </div>
+                {work.annotations.map((a: any) => (
+                  <div key={a.id} className="border-t border-hairline py-2 first:border-t-0">
+                    <div className="text-[10.5px] tracking-[0.12em] uppercase text-ink-soft">
+                      {a.kind} · {a.actor_name} · {new Date(a.created_at).toLocaleDateString()}
+                    </div>
+                    <p className="text-[12px] leading-[1.55] text-ink mt-0.5">{a.body}</p>
+                  </div>
+                ))}
+                <textarea
+                  value={annotation}
+                  onChange={(e) => setAnnotation(e.target.value)}
+                  placeholder="Add a note, a flag, or a corrective record"
+                  className="w-full mt-3 px-3.5 py-3 border border-hairline rounded-xl text-[14px] min-h-16 resize-none outline-none focus:border-ink"
+                />
+                <div className="flex gap-2 mt-2 flex-wrap">
+                  {(['note', 'flag', 'correction'] as const).map((k) => (
+                    <button
+                      key={k}
+                      type="button"
+                      disabled={busy || !annotation.trim()}
+                      onClick={() => annotate(work.tbtId, k)}
+                      className="px-3.5 py-2 rounded-lg border border-hairline text-ink-soft text-[11px] font-medium tracking-[0.12em] uppercase disabled:opacity-50 capitalize"
+                    >
+                      {k}
+                    </button>
+                  ))}
+                </div>
+                <p className="text-[10.5px] text-placeholder mt-2">
+                  Annotations are append-only. A correction supersedes; it never erases.
+                </p>
+              </div>
+
+              <div className="border border-hairline rounded-2xl p-4 mt-3">
+                <div className="text-[11px] font-medium tracking-[0.16em] uppercase text-ink-soft mb-1.5">
+                  Not possible, by design
+                </div>
+                {notActionable.map((n) => (
+                  <div key={n} className="text-[11.5px] text-placeholder py-0.5">· {n}</div>
+                ))}
+                <p className="text-[10.5px] text-placeholder mt-2 leading-[1.5]">
+                  A certificate the issuer can quietly revise is not a certificate.
+                </p>
+              </div>
+            </div>
+          )}
+        </section>
+      )}
+
+      {section === 'money' && txns && (
+        <section className="mt-5">
+          <div className="border border-hairline rounded-2xl p-4">
+            <div className="text-[11px] font-medium tracking-[0.16em] uppercase text-ink-soft mb-2">
+              Current model
+            </div>
+            <Row k="Service fee" v={`$${txns.model.serviceFee} — charged on both sides`} />
+            <Row k="Platform per sale" v={`$${txns.model.platformPerSale}`} />
+            <Row k="Processing" v={txns.model.processing} />
+            <Row k="Processing borne by" v={txns.model.processingBorneBy} />
+          </div>
+
+          <div className="text-[11px] font-medium tracking-[0.16em] uppercase text-ink-soft mt-6 mb-2">
+            Transfers
+          </div>
+          {(txns.transfers ?? []).length === 0 ? (
+            <p className="text-[12px] text-placeholder">None.</p>
+          ) : (
+            (txns.transfers ?? []).map((t: any) => (
+              <div key={t.id} className="border border-hairline rounded-xl p-3.5 mb-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-[12.5px] font-medium text-ink">{t.title ?? t.tbtId ?? '—'}</span>
+                  <span className="text-[10.5px] text-placeholder">{t.status} · {t.paymentStatus ?? '—'}</span>
+                </div>
+                <div className="mt-1.5">
+                  <Row k="Recorded value" v={String(t.money.value)} />
+                  <Row k="Royalty" v={String(t.money.royalty)} />
+                  <Row k="Service fee" v={String(t.money.serviceFee)} />
+                  <Row k="Processing" v={String(t.money.processing)} />
+                  <Row k="Sender pays" v={String(t.money.senderPays)} />
+                </div>
+                {t.stripe.session && (
+                  <div className="text-[10px] text-placeholder mt-1.5 break-all">{t.stripe.session}</div>
+                )}
+              </div>
+            ))
+          )}
+
+          <div className="text-[11px] font-medium tracking-[0.16em] uppercase text-ink-soft mt-6 mb-2">
+            Registrations
+          </div>
+          {(txns.registrations ?? []).map((r: any) => (
+            <div key={r.id} className="flex items-center justify-between py-1.5 text-[12px] border-b border-hairline">
+              <span className="text-ink-soft">{new Date(r.created_at).toLocaleDateString()} · {r.status}</span>
+              <span className="text-ink">{r.amount} {String(r.currency).toUpperCase()}</span>
+            </div>
+          ))}
+
+          <p className="text-[11px] text-placeholder mt-3">
+            Not built yet: {(txns.notBuiltYet ?? []).join(', ')}.
           </p>
         </section>
       )}
