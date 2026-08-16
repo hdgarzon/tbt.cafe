@@ -91,13 +91,14 @@ export default function AdminPage() {
   const [internal, setInternal] = useState(false)
   const [busy, setBusy] = useState(false)
   const [note, setNote] = useState('')
-  const [section, setSection] = useState<'board' | 'tickets' | 'people' | 'works' | 'money' | 'config'>('board')
+  const [section, setSection] = useState<'board' | 'tickets' | 'people' | 'works' | 'money' | 'health' | 'config'>('board')
   const [workQuery, setWorkQuery] = useState('')
   const [workHits, setWorkHits] = useState<Array<Record<string, string>>>([])
   const [work, setWork] = useState<Record<string, any> | null>(null)
   const [notActionable, setNotActionable] = useState<string[]>([])
   const [annotation, setAnnotation] = useState('')
   const [txns, setTxns] = useState<Record<string, any> | null>(null)
+  const [obs, setObs] = useState<Record<string, any> | null>(null)
   const [board, setBoard] = useState<{
     registrations: { today: number; last7: number; last30: number }
     transfers30: number
@@ -269,6 +270,16 @@ export default function AdminPage() {
     setBusy(false)
     setAnnotation('')
     openWork(tbtId)
+  }
+
+  async function loadObs() {
+    const auth = await authHeader(stepUp)
+    if (!auth) return
+    setBusy(true)
+    const res = await fetch(`${TBT_BACKEND_URL}/api/admin/observability`, { headers: auth })
+    const body = await res.json().catch(() => ({}))
+    setBusy(false)
+    setObs(body)
   }
 
   async function loadTxns() {
@@ -452,13 +463,14 @@ export default function AdminPage() {
       )}
 
       <div className="flex gap-5 mt-5 mb-1 border-b border-hairline">
-        {(['board', 'tickets', 'people', 'works', 'money', 'config'] as const).map((k) => (
+        {(['board', 'tickets', 'people', 'works', 'money', 'health', 'config'] as const).map((k) => (
           <button
             key={k}
             type="button"
             onClick={() => {
               setSection(k)
               if (k === 'money' && !txns) loadTxns()
+              if (k === 'health' && !obs) loadObs()
             }}
             className={`pb-2.5 text-[11px] font-medium tracking-[0.16em] uppercase transition-colors border-b-2 -mb-px ${
               section === k ? 'border-ink text-ink' : 'border-transparent text-ink-soft'
@@ -474,7 +486,9 @@ export default function AdminPage() {
                     ? 'Works'
                     : k === 'money'
                       ? 'Money'
-                      : 'Configuration'}
+                      : k === 'health'
+                        ? 'Health'
+                        : 'Configuration'}
           </button>
         ))}
       </div>
@@ -689,6 +703,65 @@ export default function AdminPage() {
               </div>
             </div>
           )}
+        </section>
+      )}
+
+      {section === 'health' && obs && (
+        <section className="mt-5">
+          <div className="text-[11px] text-placeholder mb-3">Last {obs.windowHours} hours.</div>
+
+          <div className="text-[11px] font-medium tracking-[0.16em] uppercase text-ink-soft mb-2">
+            Grouped failures
+          </div>
+          {(obs.failures ?? []).length === 0 ? (
+            <p className="text-[12px] text-placeholder">No provider failures recorded.</p>
+          ) : (
+            (obs.failures ?? []).map((f: any, i: number) => (
+              <div key={i} className="border border-hairline rounded-xl p-3.5 mb-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-[12.5px] font-medium text-ink">
+                    {f.provider} · {f.operation}
+                  </span>
+                  <span className="text-[12px] text-t-red font-medium">{f.occurrences}</span>
+                </div>
+                <div className="text-[11px] text-ink-soft mt-1 break-all">{f.error_code}</div>
+                <div className="text-[10.5px] text-placeholder mt-1">
+                  first {new Date(f.first_seen).toLocaleString()} · last{' '}
+                  {new Date(f.last_seen).toLocaleString()}
+                </div>
+              </div>
+            ))
+          )}
+
+          <div className="text-[11px] font-medium tracking-[0.16em] uppercase text-ink-soft mt-6 mb-2">
+            Providers
+          </div>
+          {(obs.providers ?? []).length === 0 ? (
+            <p className="text-[12px] text-placeholder">Nothing recorded in this window.</p>
+          ) : (
+            <div className="border border-hairline rounded-2xl p-4">
+              {(obs.providers ?? []).map((p: any) => (
+                <Row
+                  key={p.provider}
+                  k={p.provider}
+                  v={`${p.calls} calls · ${p.failureRate}% failed${p.avgLatencyMs != null ? ` · ${p.avgLatencyMs}ms avg` : ''}`}
+                />
+              ))}
+            </div>
+          )}
+
+          <div className="text-[11px] font-medium tracking-[0.16em] uppercase text-ink-soft mt-6 mb-2">
+            Chain writes
+          </div>
+          <div className="border border-hairline rounded-2xl p-4">
+            <Row k="Certified without a mint" v={String(obs.chain.certifiedWithoutMint)} />
+            <Row k="Certificate deliveries failed" v={String(obs.chain.certificateDeliveriesFailed)} />
+          </div>
+
+          {/* An empty panel and an uninstrumented one look identical. */}
+          <p className="text-[11px] text-placeholder mt-3">
+            Not instrumented yet: {(obs.notInstrumentedYet ?? []).join(', ')}.
+          </p>
         </section>
       )}
 
