@@ -1,4 +1,5 @@
 import { supabase } from '@/lib/supabase'
+import { normalizeImage } from '@/lib/normalize-image'
 import { TBT_BACKEND_URL } from '@/lib/backend'
 import type { SeriesWithCount } from '@/lib/series-data'
 
@@ -92,9 +93,15 @@ export async function fetchSeriesOptions(creatorId: string): Promise<SeriesWithC
 
 /** Sube un archivo a works-media (mismo bucket y convención de ruta que Forms) y devuelve su URL pública. */
 async function uploadWorksMedia(userId: string, file: File, prefix = ''): Promise<string | null> {
-  const ext = file.name.split('.').pop() || 'bin'
+  /*
+   * Las imágenes se normalizan a PNG o JPEG antes de guardarse. El audio y el
+   * vídeo pasan sin tocar: normalizeImage solo actúa sobre imágenes y devuelve
+   * el archivo intacto cuando no lo es.
+   */
+  const upload = file.type.startsWith('image/') ? await normalizeImage(file) : file
+  const ext = upload.name.split('.').pop() || 'bin'
   const fileName = `${userId}/${prefix}${Date.now()}.${ext}`
-  const { error } = await supabase.storage.from('works-media').upload(fileName, file)
+  const { error } = await supabase.storage.from('works-media').upload(fileName, upload)
   if (error) return null
   const {
     data: { publicUrl },
