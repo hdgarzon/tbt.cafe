@@ -77,7 +77,7 @@ function Row({ k, v }: { k: string; v: string }) {
 }
 
 export default function AdminPage() {
-  const [state, setState] = useState<'stepup' | 'loading' | 'denied' | 'ready'>('stepup')
+  const [state, setState] = useState<'checking' | 'signedout' | 'stepup' | 'loading' | 'denied' | 'ready'>('checking')
   const [stepUp, setStepUp] = useState<string | null>(null)
   const [code, setCode] = useState('')
   const [stepMsg, setStepMsg] = useState('')
@@ -132,7 +132,8 @@ export default function AdminPage() {
       fetch(`${TBT_BACKEND_URL}/api/admin/tickets?status=${filter}`, { headers: auth }),
       fetch(`${TBT_BACKEND_URL}/api/admin/approvals`, { headers: auth }),
     ])
-    if (tRes.status === 403 || tRes.status === 401) return setState('denied')
+    if (tRes.status === 401) return setState('signedout')
+    if (tRes.status === 403) return setState('denied')
 
     const tBody = await tRes.json()
     setTickets(tBody.tickets ?? [])
@@ -156,6 +157,21 @@ export default function AdminPage() {
     load()
   }, [load])
 
+  /*
+   * Sin sesión no tiene sentido pedir el biométrico: falla y el mensaje culpa a
+   * la persona de no ser del equipo cuando lo único que pasa es que el token
+   * expiró. Los de Supabase duran alrededor de una hora.
+   */
+  useEffect(() => {
+    if (state !== 'checking') return
+    ;(async () => {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession()
+      setState(session ? 'stepup' : 'signedout')
+    })()
+  }, [state])
+
   /**
    * Los dos factores antes de que cargue nada. Si el biométrico no se completa
    * no se pide el código: un step-up a medias no vale, y el backend lo
@@ -170,7 +186,7 @@ export default function AdminPage() {
         data: { session },
       } = await supabase.auth.getSession()
       if (!session) {
-        setState('denied')
+        setState('signedout')
         return
       }
       const bearer = { Authorization: `Bearer ${session.access_token}`, 'Content-Type': 'application/json' }
@@ -208,7 +224,7 @@ export default function AdminPage() {
         data: { session },
       } = await supabase.auth.getSession()
       if (!session) {
-        setState('denied')
+        setState('signedout')
         return
       }
       const bearer = { Authorization: `Bearer ${session.access_token}`, 'Content-Type': 'application/json' }
@@ -473,6 +489,27 @@ export default function AdminPage() {
       </div>
     )
   }
+  if (state === 'checking') return <div className="px-4 pt-6 text-[13px] text-ink-soft">Loading…</div>
+
+  if (state === 'signedout') {
+    return (
+      <div className="px-4 pt-6">
+        <h1 className="font-display font-medium text-[27px] leading-[1.08] text-ink">Admin</h1>
+        <div className="border border-hairline rounded-2xl p-4 mt-5">
+          <p className="text-[12.5px] leading-[1.6] text-ink">
+            Your session has expired. Sign in again, then come back here.
+          </p>
+          <a
+            href="/"
+            className="inline-block mt-3.5 px-5 py-3 rounded-xl bg-ink text-paper text-[11.5px] font-semibold tracking-[0.14em] uppercase"
+          >
+            Go to sign in
+          </a>
+        </div>
+      </div>
+    )
+  }
+
   if (state === 'loading') return <div className="px-4 pt-6 text-[13px] text-ink-soft">Loading…</div>
   if (state === 'denied') {
     return (
