@@ -18,8 +18,8 @@ import { hashCode } from '@/lib/private-code'
  * fila de otro.
  */
 
-const MIN_LEN = 3
-const MAX_LEN = 5
+
+import { PRIVATE_CODE_MIN as MIN_LEN, PRIVATE_CODE_MAX as MAX_LEN } from '@/lib/private-code-rules'
 
 function clientFor(token: string) {
   return createClient(

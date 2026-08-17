@@ -13,8 +13,7 @@ import { Sheet, SheetButton, FieldLabel } from '@/components/Sheet'
  * la API route lo hashea con scrypt y solo persiste el hash.
  */
 
-const MIN_LEN = 3
-const MAX_LEN = 5
+import { PRIVATE_CODE_MIN as MIN_LEN, PRIVATE_CODE_MAX as MAX_LEN } from '@/lib/private-code-rules'
 
 export function PrivateCodeSheet({
   open,

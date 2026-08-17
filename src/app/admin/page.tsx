@@ -21,6 +21,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { startAuthentication } from '@simplewebauthn/browser'
 import { supabase } from '@/lib/supabase'
 import { TBT_BACKEND_URL } from '@/lib/backend'
+import { PRIVATE_CODE_MIN, PRIVATE_CODE_MAX } from '@/lib/private-code-rules'
 
 type Reply = {
   id: string
@@ -481,10 +482,13 @@ export default function AdminPage() {
             <>
               <input
                 value={code}
-                onChange={(e) => setCode(e.target.value)}
+                // Mismo tope que al fijarlo. Sin él, un código más largo se
+                // aceptaba, no podía coincidir nunca, y gastaba un intento.
+                onChange={(e) => setCode(e.target.value.slice(0, PRIVATE_CODE_MAX))}
+                maxLength={PRIVATE_CODE_MAX}
                 type="password"
                 inputMode="numeric"
-                placeholder="Private code"
+                placeholder={`Private code (${PRIVATE_CODE_MIN}-${PRIVATE_CODE_MAX})`}
                 autoFocus
                 className="w-full mt-3 px-3.5 py-3 border border-hairline rounded-xl text-[16px] outline-none focus:border-ink transition-colors"
               />
