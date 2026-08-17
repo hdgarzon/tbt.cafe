@@ -17,6 +17,13 @@ import { verifyCode } from '@/lib/private-code'
  *
  * Se responde igual —"código incorrecto"— tanto si la persona no tiene código
  * puesto como si lo puso mal, para no confirmar cuál de las dos cosas ocurre.
+ *
+ * El biométrico se comprueba consumiendo una prueba emitida por
+ * /api/webauthn/auth/finish, que es la única ruta que verifica la aserción.
+ * Antes esto era un booleano del cliente: quien hiciera un POST directo con
+ * `biometric: true` se saltaba el sensor y dejaba el código de 3-5 caracteres
+ * como único obstáculo. Una comprobación que el cliente puede afirmar por su
+ * cuenta no es una comprobación.
  */
 
 const TTL_MINUTES = 15
@@ -38,7 +45,10 @@ export async function POST(request: NextRequest) {
     const token = request.headers.get('authorization')?.replace(/^Bearer\s+/i, '')
     if (!token) return NextResponse.json({ error: 'Not authenticated' }, { status: 401 })
 
-    const { code, biometric } = (await request.json()) as { code?: string; biometric?: boolean }
+    const { code, biometricProof } = (await request.json()) as {
+      code?: string
+      biometricProof?: string
+    }
     if (typeof code !== 'string' || !code) {
       return NextResponse.json({ error: 'Code required' }, { status: 400 })
     }
@@ -90,9 +100,16 @@ export async function POST(request: NextRequest) {
 
     await admin.rpc('private_code_clear_failures', { who: user.id })
 
-    // El spec pide los dos factores. Si el biométrico no se presentó se dice
-    // claramente, en vez de emitir un step-up a medias que parezca completo.
-    if (biometric !== true) {
+    // El spec pide los dos factores. La prueba se consume aquí: es de un solo
+    // uso y atómica, así que dos peticiones no pueden gastar la misma.
+    if (!biometricProof) {
+      return NextResponse.json({ error: 'biometric_required' }, { status: 428 })
+    }
+    const { data: proofOk } = await admin.rpc('consume_biometric_proof', {
+      who: user.id,
+      hash: createHash('sha256').update(biometricProof).digest('hex'),
+    })
+    if (proofOk !== true) {
       return NextResponse.json({ error: 'biometric_required' }, { status: 428 })
     }
 

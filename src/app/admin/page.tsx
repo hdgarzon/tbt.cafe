@@ -81,6 +81,8 @@ export default function AdminPage() {
   const [stepUp, setStepUp] = useState<string | null>(null)
   const [code, setCode] = useState('')
   const [stepMsg, setStepMsg] = useState('')
+  /** Prueba emitida por el finish de WebAuthn; el step-up la exige. */
+  const [bioProof, setBioProof] = useState<string | null>(null)
   const [tickets, setTickets] = useState<Ticket[]>([])
   const [approvals, setApprovals] = useState<Approval[]>([])
   const [canApprove, setCanApprove] = useState(false)
@@ -159,7 +161,8 @@ export default function AdminPage() {
    * no se pide el código: un step-up a medias no vale, y el backend lo
    * rechazaría de todos modos.
    */
-  async function doStepUp() {
+  /** Primer factor. El código no se pide hasta que este pasa. */
+  async function doBiometric() {
     setBusy(true)
     setStepMsg('')
     try {
@@ -182,17 +185,40 @@ export default function AdminPage() {
       const finish = await fetch('/api/webauthn/auth/finish', {
         method: 'POST',
         headers: bearer,
-        body: JSON.stringify({ credential }),
+        body: JSON.stringify({ credential, userId: session.user.id }),
       })
-      if (!finish.ok) {
+      const finishBody = await finish.json().catch(() => ({}))
+      if (!finish.ok || !finishBody.biometricProof) {
         setStepMsg('Biometric check failed.')
         return
       }
+      setBioProof(finishBody.biometricProof)
+    } catch {
+      setStepMsg('Biometric check failed.')
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  async function doStepUp() {
+    setBusy(true)
+    setStepMsg('')
+    try {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession()
+      if (!session) {
+        setState('denied')
+        return
+      }
+      const bearer = { Authorization: `Bearer ${session.access_token}`, 'Content-Type': 'application/json' }
 
       const res = await fetch('/api/admin/step-up', {
         method: 'POST',
         headers: bearer,
-        body: JSON.stringify({ code: code.trim(), biometric: true }),
+        // La prueba viene del finish de WebAuthn. El servidor la consume; no
+        // acepta que el cliente afirme haber puesto el dedo.
+        body: JSON.stringify({ code: code.trim(), biometricProof: bioProof }),
       })
       const body = await res.json()
       if (!res.ok) {
@@ -207,6 +233,7 @@ export default function AdminPage() {
         return
       }
       setCode('')
+      setBioProof(null)
       setStepUp(body.token)
       setState('loading')
     } catch {
@@ -381,22 +408,66 @@ export default function AdminPage() {
             Admin access needs your biometric and your private code, every time. The session lasts
             15 minutes.
           </p>
-          <input
-            value={code}
-            onChange={(e) => setCode(e.target.value)}
-            type="password"
-            inputMode="numeric"
-            placeholder="Private code"
-            className="w-full mt-3.5 px-3.5 py-3 border border-hairline rounded-xl text-[16px] outline-none focus:border-ink transition-colors"
-          />
-          <button
-            type="button"
-            onClick={doStepUp}
-            disabled={busy || !code.trim()}
-            className="w-full mt-3 py-4 text-[12px] font-semibold tracking-[0.16em] uppercase bg-ink text-paper rounded-xl disabled:opacity-50"
-          >
-            Verify
-          </button>
+
+          {/* En este orden a propósito: el código no se pide hasta que el
+              biométrico pasa, que es lo que dice §1.4 y lo que el servidor
+              exige de todos modos. */}
+          <div className="flex items-center gap-2.5 mt-4 pb-3.5 border-b border-hairline">
+            <span
+              className={`w-5 h-5 rounded-full border flex items-center justify-center text-[10px] ${
+                bioProof ? 'border-t-green text-t-green' : 'border-hairline text-ink-soft'
+              }`}
+            >
+              {bioProof ? '✓' : '1'}
+            </span>
+            <span className="flex-1 text-[12.5px] text-ink">Biometric</span>
+            {!bioProof && (
+              <button
+                type="button"
+                onClick={doBiometric}
+                disabled={busy}
+                className="px-3.5 py-2 rounded-lg bg-ink text-paper text-[11px] font-medium tracking-[0.12em] uppercase disabled:opacity-50"
+              >
+                Verify
+              </button>
+            )}
+          </div>
+
+          <div className="flex items-center gap-2.5 mt-3.5">
+            <span
+              className={`w-5 h-5 rounded-full border flex items-center justify-center text-[10px] ${
+                bioProof ? 'border-ink text-ink' : 'border-hairline text-placeholder'
+              }`}
+            >
+              2
+            </span>
+            <span className={`text-[12.5px] ${bioProof ? 'text-ink' : 'text-placeholder'}`}>
+              Private code
+            </span>
+          </div>
+
+          {bioProof && (
+            <>
+              <input
+                value={code}
+                onChange={(e) => setCode(e.target.value)}
+                type="password"
+                inputMode="numeric"
+                placeholder="Private code"
+                autoFocus
+                className="w-full mt-3 px-3.5 py-3 border border-hairline rounded-xl text-[16px] outline-none focus:border-ink transition-colors"
+              />
+              <button
+                type="button"
+                onClick={doStepUp}
+                disabled={busy || !code.trim()}
+                className="w-full mt-3 py-4 text-[12px] font-semibold tracking-[0.16em] uppercase bg-ink text-paper rounded-xl disabled:opacity-50"
+              >
+                Enter
+              </button>
+            </>
+          )}
+
           {stepMsg && <p className="text-[11.5px] text-t-red mt-2.5">{stepMsg}</p>}
         </div>
       </div>

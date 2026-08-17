@@ -3,6 +3,7 @@ import { verifyAuthenticationResponse } from '@simplewebauthn/server'
 import { isoBase64URL } from '@simplewebauthn/server/helpers'
 import { createAdminClient } from '@/lib/supabase-admin'
 import { rpFromRequest } from '@/lib/webauthn'
+import { randomBytes, createHash } from 'crypto'
 
 /**
  * POST /api/webauthn/auth/finish — companion doc §5.3 + §6 (sign_count).
@@ -169,8 +170,25 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: verifyErr?.message ?? 'No se pudo canjear la sesión' }, { status: 500 })
   }
 
+  /*
+   * Prueba de que el biométrico ocurrió DE VERDAD.
+   *
+   * Esta ruta es la única que verifica la aserción de WebAuthn, así que es la
+   * única que puede afirmarlo. El step-up de administración la exige en vez de
+   * un booleano que el cliente pueda inventarse (Spec 07 §1.4).
+   *
+   * Se guarda el hash y se gasta al usarse; dura dos minutos, lo justo para
+   * llegar a escribir el código privado.
+   */
+  const proof = randomBytes(32).toString('hex')
+  await admin.from('biometric_proofs').insert({
+    user_id: userId,
+    token_hash: createHash('sha256').update(proof).digest('hex'),
+  })
+
   return NextResponse.json({
     verified: true,
+    biometricProof: proof,
     access_token: sessionData.session.access_token,
     refresh_token: sessionData.session.refresh_token,
   })
