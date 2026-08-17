@@ -870,7 +870,9 @@
     },
     "coveredByTbt": "Coberto pela tbt.cafe",
     "coveredNote": "Esta é por nossa conta — restam {n} registros gratuitos.",
-    "coveredNoteOne": "Esta é por nossa conta — resta 1 registro gratuito."
+    "coveredNoteOne": "Esta é por nossa conta — resta 1 registro gratuito.",
+    "registerCovered": "Registrar",
+    "coveredNoteLast": "Esta é por nossa conta — é o seu último registro gratuito."
   },
   "help": {
     "title": "Ajuda",

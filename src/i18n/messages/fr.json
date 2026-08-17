@@ -870,7 +870,9 @@
     },
     "coveredByTbt": "Offert par tbt.cafe",
     "coveredNote": "Celle-ci est pour nous — il vous reste {n} enregistrements gratuits.",
-    "coveredNoteOne": "Celle-ci est pour nous — il vous reste 1 enregistrement gratuit."
+    "coveredNoteOne": "Celle-ci est pour nous — il vous reste 1 enregistrement gratuit.",
+    "registerCovered": "Enregistrer",
+    "coveredNoteLast": "Celle-ci est pour nous — c'est votre dernier enregistrement gratuit."
   },
   "help": {
     "title": "Aide",

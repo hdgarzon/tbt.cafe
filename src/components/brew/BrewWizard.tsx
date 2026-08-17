@@ -1393,9 +1393,14 @@ export function BrewWizard() {
                   <path d="M8 10V7a4 4 0 0 1 8 0v3" />
                 </svg>
               )}
-              {covered?.isCovered || (promoDiscount?.type === 'percentage' && promoDiscount.value >= 100)
-                ? t.brew.registerFree
-                : t.brew.payToRegister.replace('{amount}', `$${price}`)}
+              {/* Una cubierta nunca se presenta como $0 (Spec 01 §1.5): la
+                  tarifa ya está arriba, tachada y asumida. Un cupón del 100%
+                  sí es cero de verdad, y conserva su etiqueta. */}
+              {covered?.isCovered
+                ? t.brew.registerCovered
+                : promoDiscount?.type === 'percentage' && promoDiscount.value >= 100
+                  ? t.brew.registerFree
+                  : t.brew.payToRegister.replace('{amount}', `$${price}`)}
             </BrewButton>
             {!covered?.isCovered && (
               <p className="text-center text-[10px] text-placeholder mt-2.5">{t.brew.securedByStripe}</p>
@@ -1425,10 +1430,16 @@ export function BrewWizard() {
 
         {covered?.isCovered && (
           <div className="mt-3.5 border border-t-green/30 bg-t-green/[0.06] rounded-xl px-3.5 py-2.5 text-[11.5px] leading-[1.55] text-ink">
-            {(covered.remaining === 1 ? t.brew.coveredNoteOne : t.brew.coveredNote).replace(
-              '{n}',
-              String(covered.remaining)
-            )}
+            {/* `remaining` incluye la de ahora; el texto habla de las que
+                quedan DESPUÉS de esta. */}
+            {(() => {
+              const afterThis = Math.max(0, covered.remaining - 1)
+              if (afterThis === 0) return t.brew.coveredNoteLast
+              return (afterThis === 1 ? t.brew.coveredNoteOne : t.brew.coveredNote).replace(
+                '{n}',
+                String(afterThis)
+              )
+            })()}
           </div>
         )}
 

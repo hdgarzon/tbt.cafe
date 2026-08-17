@@ -870,7 +870,9 @@
     },
     "coveredByTbt": "Covered by tbt.cafe",
     "coveredNote": "This one is on us — {n} free registrations remaining.",
-    "coveredNoteOne": "This one is on us — 1 free registration remaining."
+    "coveredNoteOne": "This one is on us — 1 free registration remaining.",
+    "registerCovered": "Register",
+    "coveredNoteLast": "This one is on us — it's your last free registration."
   },
   "help": {
     "title": "Help",
