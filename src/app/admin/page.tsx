@@ -191,24 +191,30 @@ export default function AdminPage() {
       }
       const bearer = { Authorization: `Bearer ${session.access_token}`, 'Content-Type': 'application/json' }
 
-      const begin = await fetch('/api/webauthn/auth/begin', { method: 'POST', headers: bearer })
-      const beginBody = await begin.json()
+      // Rutas propias del step-up, no las de login: aquí ya hay sesión, la
+      // identidad se conoce y no debe emitirse ninguna sesión nueva.
+      const begin = await fetch('/api/admin/step-up/begin', { method: 'POST', headers: bearer })
+      const beginBody = await begin.json().catch(() => ({}))
       if (!begin.ok) {
-        setStepMsg('Enrol a biometric on this device first.')
+        setStepMsg(
+          beginBody.error === 'no_credentials'
+            ? 'No biometric is enrolled for tbt.cafe on this device. Enrol one in Settings › Authentication.'
+            : 'Could not start the biometric check.'
+        )
         return
       }
       const credential = await startAuthentication({ optionsJSON: beginBody.options })
-      const finish = await fetch('/api/webauthn/auth/finish', {
+      const verify = await fetch('/api/admin/step-up/verify', {
         method: 'POST',
         headers: bearer,
-        body: JSON.stringify({ credential, userId: session.user.id }),
+        body: JSON.stringify({ credential }),
       })
-      const finishBody = await finish.json().catch(() => ({}))
-      if (!finish.ok || !finishBody.biometricProof) {
+      const verifyBody = await verify.json().catch(() => ({}))
+      if (!verify.ok || !verifyBody.biometricProof) {
         setStepMsg('Biometric check failed.')
         return
       }
-      setBioProof(finishBody.biometricProof)
+      setBioProof(verifyBody.biometricProof)
     } catch {
       setStepMsg('Biometric check failed.')
     } finally {
