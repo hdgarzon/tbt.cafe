@@ -170,3 +170,8 @@ textarea::placeholder {
   background: var(--hairline);
   animation: cb-bar 0.9s ease-in-out infinite;
 }
+
+/* Tira de pestañas desplazable sin barra visible — la app está fijada a 390px
+   y siete pestañas no caben. */
+.no-scrollbar::-webkit-scrollbar { display: none; }
+.no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }

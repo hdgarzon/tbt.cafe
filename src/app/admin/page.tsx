@@ -589,7 +589,9 @@ export default function AdminPage() {
         </section>
       )}
 
-      <div className="flex gap-5 mt-5 mb-1 border-b border-hairline">
+      {/* Siete pestañas no caben en la columna de 390px a la que está fijada la
+          app. Sin desplazamiento, la última quedaba fuera y era inalcanzable. */}
+      <div className="flex gap-5 mt-5 mb-1 border-b border-hairline overflow-x-auto no-scrollbar">
         {(['board', 'tickets', 'people', 'works', 'money', 'health', 'config'] as const).map((k) => (
           <button
             key={k}
@@ -599,7 +601,7 @@ export default function AdminPage() {
               if (k === 'money' && !txns) loadTxns()
               if (k === 'health' && !obs) loadObs()
             }}
-            className={`pb-2.5 text-[11px] font-medium tracking-[0.16em] uppercase transition-colors border-b-2 -mb-px ${
+            className={`pb-2.5 shrink-0 whitespace-nowrap text-[11px] font-medium tracking-[0.16em] uppercase transition-colors border-b-2 -mb-px ${
               section === k ? 'border-ink text-ink' : 'border-transparent text-ink-soft'
             }`}
           >
@@ -615,7 +617,7 @@ export default function AdminPage() {
                       ? 'Money'
                       : k === 'health'
                         ? 'Health'
-                        : 'Configuration'}
+                        : 'Config'}
           </button>
         ))}
       </div>
@@ -883,6 +885,19 @@ export default function AdminPage() {
           <div className="border border-hairline rounded-2xl p-4">
             <Row k="Certified without a mint" v={String(obs.chain.certifiedWithoutMint)} />
             <Row k="Certificate deliveries failed" v={String(obs.chain.certificateDeliveriesFailed)} />
+            {/* "No lo sabemos" no es "no falló". Sin esta fila el panel decía
+                cero para algo que llevaba meses sin entregarse. */}
+            <Row
+              k="Deliveries with no record"
+              v={String(obs.chain.certificateDeliveriesUnknown ?? 0)}
+            />
+          </div>
+          {(obs.chain.certificateDeliveriesUnknown ?? 0) > 0 && (
+            <p className="text-[11px] leading-[1.5] text-placeholder mt-2">
+              Those predate delivery tracking. Unknown is not the same as fine.
+            </p>
+          )}
+          <div className="hidden">
           </div>
 
           {/* An empty panel and an uninstrumented one look identical. */}
