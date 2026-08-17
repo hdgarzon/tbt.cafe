@@ -247,11 +247,20 @@ export default function AdminPage() {
         // El bloqueo se dice con su hora: callarlo solo haría que insistieran.
         if (body.error === 'locked') {
           setStepMsg(`Too many attempts. Locked until ${new Date(body.lockedUntil).toLocaleTimeString()}.`)
+          setBioProof(null)
         } else if (body.error === 'invalid_code') {
-          setStepMsg('That code is not right.')
+          // La prueba NO se consumió, pero caduca. Reintentar con la misma
+          // acabaría fallando por un motivo distinto al real, así que se vuelve
+          // al primer paso y se dice por qué.
+          setStepMsg('That code is not right. Verify the biometric again to retry.')
+          setBioProof(null)
+        } else if (body.error === 'biometric_required') {
+          setStepMsg('The biometric check expired. Verify it again.')
+          setBioProof(null)
         } else {
           setStepMsg('Could not verify.')
         }
+        setCode('')
         return
       }
       setCode('')
