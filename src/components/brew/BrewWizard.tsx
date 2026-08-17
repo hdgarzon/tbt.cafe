@@ -170,6 +170,17 @@ export function BrewWizard() {
   /** Ya resolvimos una sesión válida y colocamos el paso inicial. */
   const resolvedRef = useRef(false)
   const resumedRef = useRef(false)
+  /**
+   * Certificar es caro y NO es idempotente: mintea, envía el certificado,
+   * descuenta la asignación cubierta y notifica. Se dispara una sola vez por
+   * obra.
+   *
+   * Hace falta aquí y no en el efecto porque la guarda de aquel se pone después
+   * de un `await`: cuando `connected` pasa de false a true el efecto vuelve a
+   * correr, y las dos invocaciones pasan el control antes de que ninguna lo
+   * marque. Eso mandaba dos certificados y dos avisos por un solo registro.
+   */
+  const mintingRef = useRef<string | null>(null)
 
   useEffect(() => {
     ;(async () => {
@@ -575,6 +586,8 @@ export function BrewWizard() {
   }
 
   function runMintSteps(id: string, sessionId?: string) {
+    if (mintingRef.current === id) return
+    mintingRef.current = id
     setMintSteps(1)
     const iv = setInterval(() => {
       setMintSteps((s) => (s < 4 ? s + 1 : s))
@@ -584,6 +597,8 @@ export function BrewWizard() {
       setMintSteps(4)
       setTimeout(() => {
         if ('error' in res) {
+          // Falló: se libera para que el creador pueda reintentar.
+          mintingRef.current = null
           setMsg(t.brew.errors.completeFailed)
           setStep('payment')
           return
