@@ -5,6 +5,7 @@ import { useLocale } from '@/i18n/LocaleProvider'
 import { PhonePicker } from '@/components/PhonePicker'
 import { transferQuote, money } from '@/lib/fees'
 import { createTransfer } from '@/lib/transfer-data'
+import { LadderGate } from '@/components/LadderGate'
 import { royaltyOf, type WorkFull } from '@/lib/work-data'
 
 /**
@@ -34,22 +35,36 @@ export function TransferPanel({
   const [value, setValue] = useState('')
   const [err, setErr] = useState('')
   const [busy, setBusy] = useState(false)
+  const [ladderOpen, setLadderOpen] = useState(false)
 
   const numValue = parseFloat(value.replace(/[^0-9.]/g, '')) || 0
   const q = transferQuote(numValue, royalty, senderIsCreator)
   const mismatch = phone1 && phone2 && phone1 !== phone2
 
-  async function submit() {
+  /**
+   * Iniciar una transferencia es una acción de VENDEDOR, y el §5.1 la gatea en
+   * el mismo escalón de $500 que una compra. Se valida el formulario primero:
+   * pedir la huella para luego decir que falta un campo sería pedirla dos veces.
+   *
+   * Una transferencia de valor cero cae por debajo del umbral y no añade
+   * fricción — el emisor ya ve el costo completo antes de confirmar (§2.3).
+   */
+  function submit() {
     setErr('')
     if (!name.trim() || !phone1 || !value.trim()) return setErr(t.transfer.fillAll)
     if (mismatch) return setErr(t.transfer.numbersMismatch)
+    setLadderOpen(true)
+  }
 
+  async function submitAuthorized(biometricProof: string | null) {
+    setLadderOpen(false)
     setBusy(true)
     const { checkoutUrl, error } = await createTransfer({
       workId: work.id,
       recipientPhone: phone1,
       recipientName: name.trim(),
       value: numValue,
+      biometricProof,
     })
     if (error) {
       setErr(t.transfer.errors?.[error as keyof typeof t.transfer.errors] ?? t.transfer.errors.transferFailed)
@@ -147,6 +162,13 @@ export function TransferPanel({
         {busy ? t.transfer.authorizing : t.transfer.payAmountAndSend.replace('{amount}', `${money(q.total)} USD`)}
       </button>
       <p className="text-center text-[10px] text-placeholder mt-2">{t.transfer.securedByStripe}</p>
+      <LadderGate
+        open={ladderOpen}
+        action="transfer_initiate"
+        amount={numValue}
+        onAuthorized={submitAuthorized}
+        onCancel={() => setLadderOpen(false)}
+      />
     </div>
   )
 }

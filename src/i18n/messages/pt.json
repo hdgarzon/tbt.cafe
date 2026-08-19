@@ -1029,5 +1029,14 @@
     "collectFailed": "Não foi possível concluir o recebimento.",
     "collectedToast": "Recebido — {id}",
     "processingNote": "O seu bloco de repasse foi criado. O envio ao seu destino vem em seguida."
+  },
+  "ladder": {
+    "title": "Confirme que é você",
+    "biometricWhy": "Isto passa de {threshold} USD, então pedimos a sua digital antes de mover o dinheiro.",
+    "threeDsNote": "Acima de {threshold} USD o seu banco também confirma o cartão. Isso acontece depois de você digitá-lo, não agora.",
+    "proceed": "Continuar",
+    "cancel": "Cancelar",
+    "failed": "A verificação não passou, então nada foi cobrado.",
+    "noBiometric": "Não há biometria cadastrada neste aparelho. Cadastre em Configurações › Autenticação."
   }
 }

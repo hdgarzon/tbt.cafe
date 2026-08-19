@@ -50,6 +50,8 @@ export type CreateTransferInput = {
   recipientPhone: string // E.164, +12035551234
   recipientName: string
   value: number
+  /** Prueba biométrica cuando la escalera la exige (Spec 01 §5.1). */
+  biometricProof?: string | null
 }
 
 async function authHeader(): Promise<{ Authorization: string } | null> {
@@ -78,6 +80,7 @@ export async function createTransfer(input: CreateTransferInput): Promise<{ chec
         recipientPhone: input.recipientPhone,
         recipientName: input.recipientName,
         value: input.value,
+        biometricProof: input.biometricProof ?? null,
         successUrl: `${origin}/work/${input.workId}?transfer=sent`,
         cancelUrl: `${origin}/work/${input.workId}?transfer=cancelled`,
       }),
