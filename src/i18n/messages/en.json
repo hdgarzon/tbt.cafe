@@ -1051,5 +1051,13 @@
     "willBelongTo": "will belong to",
     "registration": "Registration",
     "thisWork": "This work"
+  },
+  "roast": {
+    "questions": "Questions",
+    "noQuestions": "No questions yet — ask the first one.",
+    "ask": "Ask",
+    "askPlaceholder": "Ask a question about this article",
+    "postFailed": "That could not be posted.",
+    "someone": "Someone"
   }
 }
