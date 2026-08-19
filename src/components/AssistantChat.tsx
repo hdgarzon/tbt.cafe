@@ -190,7 +190,14 @@ export function AssistantChat() {
 
         {busy && (
           <div className="self-start rounded-2xl px-3.5 py-2.5 bg-paper-warm border border-hairline">
-            <span className="text-[12.5px] text-placeholder">…</span>
+            {/* Tres puntos escalonados, no un "…" quieto: el asistente puede
+                tardar, y un carácter inmóvil no distingue "pensando" de
+                "colgado". */}
+            <span className="flex items-center gap-1" aria-hidden="true">
+              <span className="esp-dot" />
+              <span className="esp-dot" style={{ animationDelay: '0.16s' }} />
+              <span className="esp-dot" style={{ animationDelay: '0.32s' }} />
+            </span>
           </div>
         )}
 

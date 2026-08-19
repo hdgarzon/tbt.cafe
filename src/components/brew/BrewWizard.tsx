@@ -1114,8 +1114,11 @@ export function BrewWizard() {
               </div>
             </div>
           )}
+          {/* Las tarjetas de resultado entran con un desvanecido corto — el
+              escaneo termina de golpe y una tarjeta que aparece seca se lee
+              como un salto. */}
           {scanState === 'clear' && (
-            <div className="border border-hairline rounded-2xl px-4 py-6 text-center">
+            <div className="animate-cb-fade border border-hairline rounded-2xl px-4 py-6 text-center">
               <div className="w-[52px] h-[52px] mx-auto mb-3.5 rounded-full border-[1.5px] border-t-green text-t-green flex items-center justify-center text-[24px]">
                 ✓
               </div>
@@ -1124,7 +1127,7 @@ export function BrewWizard() {
             </div>
           )}
           {(scanState === 'warning' || scanState === 'blocked') && (
-            <div className={`border rounded-2xl p-4 ${scanState === 'blocked' ? 'border-t-red/40 bg-t-red/5' : 'border-hairline'}`}>
+            <div className={`animate-cb-fade border rounded-2xl p-4 ${scanState === 'blocked' ? 'border-t-red/40 bg-t-red/5' : 'border-hairline'}`}>
               <div className="text-[13px] font-medium text-ink">
                 {scanState === 'blocked' ? t.brew.scanBlockTitle : t.brew.scanWarnTitle}
               </div>
@@ -1547,7 +1550,7 @@ export function BrewWizard() {
         <div className="text-center pt-4">
           <div className="font-display font-medium text-[22px] text-ink">{t.brew.mintingTitle}</div>
           <p className="text-[13px] text-ink-soft mt-2">{t.brew.mintingSub}</p>
-          <div className="w-16 h-16 mx-auto mt-7 border-2 border-hairline border-t-t-navy rounded-full animate-spin" />
+          <div className="w-16 h-16 mx-auto mt-7 border-2 border-hairline border-t-t-navy rounded-full animate-cb-spin" />
           <div className="mt-6 text-left max-w-[220px] mx-auto">
             {steps.map((s, i) => {
               const state = i < mintSteps - 1 ? 'done' : i === mintSteps - 1 ? 'active' : 'pending'

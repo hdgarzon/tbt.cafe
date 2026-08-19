@@ -333,6 +333,15 @@ export function EspressoFlow({
       {asking && (
         <div className="mt-5">
           <p className="text-[11px] text-placeholder mb-2">{stage === 'work' ? e.askWorkHint : e.askValueHint}</p>
+          {/* Pulso mientras escucha. El placeholder ya cambia, pero un texto
+              que cambia no se lee como "te estoy oyendo ahora". */}
+          {listening && (
+            <div className="flex items-center gap-2 mb-2 text-[11.5px] text-ink-soft">
+              <span className="esp-pulse" aria-hidden="true" />
+              <span>{e.listening}</span>
+            </div>
+          )}
+
           <div className="flex items-end gap-2">
             <textarea
               value={draft}
