@@ -873,7 +873,10 @@
     "coveredNote": "Celle-ci est pour nous — il vous reste {n} enregistrements gratuits.",
     "coveredNoteOne": "Celle-ci est pour nous — il vous reste 1 enregistrement gratuit.",
     "registerCovered": "Enregistrer",
-    "coveredNoteLast": "Celle-ci est pour nous — c'est votre dernier enregistrement gratuit."
+    "coveredNoteLast": "Celle-ci est pour nous — c'est votre dernier enregistrement gratuit.",
+    "promoApplied": "{value} de réduction appliquée.",
+    "promoAppliedFixed": "{value} USD de réduction appliquée.",
+    "promoNotAccepted": "Ce code n'est pas valable pour ce paiement."
   },
   "help": {
     "title": "Aide",
@@ -1038,5 +1041,10 @@
     "cancel": "Annuler",
     "failed": "La vérification n'a pas abouti, rien n'a donc été débité.",
     "noBiometric": "Aucune biométrie n'est enregistrée sur cet appareil. Enregistrez-en une dans Réglages › Authentification."
+  },
+  "recap": {
+    "willBelongTo": "reviendra à",
+    "registration": "Enregistrement",
+    "thisWork": "Cette œuvre"
   }
 }

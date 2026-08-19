@@ -172,7 +172,11 @@ export function TransferPanel({
       </button>
       <p className="text-center text-[10px] text-placeholder mt-2">{t.transfer.securedByStripe}</p>
       {clientSecret && (
-        <EmbeddedCheckoutSheet clientSecret={clientSecret} onClose={() => setClientSecret(null)} />
+        <EmbeddedCheckoutSheet
+          clientSecret={clientSecret}
+          onClose={() => setClientSecret(null)}
+          recap={{ what: work.title, forWhom: name.trim(), amount: `${money(q.total)} USD` }}
+        />
       )}
 
       <LadderGate

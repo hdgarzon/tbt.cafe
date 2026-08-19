@@ -314,7 +314,19 @@ export default function WorkPage({ params }: { params: { tbtId: string } }) {
       )}
 
       {clientSecret && (
-        <EmbeddedCheckoutSheet clientSecret={clientSecret} onClose={() => setClientSecret(null)} />
+        <EmbeddedCheckoutSheet
+          clientSecret={clientSecret}
+          onClose={() => setClientSecret(null)}
+          // Sin "para quién": en una compra el destinatario es quien está
+          // pagando. El prototipo sí lo muestra porque allí el comprador acaba
+          // de escribir sus datos de coleccionista y la línea se los confirma;
+          // aquí no hay nada que confirmar, y decirle su propio nombre a quien
+          // compra no añade nada.
+          recap={{
+            what: work.title,
+            amount: `${money(quote(c.initial_price ?? 0, royaltyOf(c)).buyerTotal)} USD`,
+          }}
+        />
       )}
 
       <LadderGate
