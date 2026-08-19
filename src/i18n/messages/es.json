@@ -1029,5 +1029,14 @@
     "collectFailed": "No se pudo completar el cobro.",
     "collectedToast": "Cobrado — {id}",
     "processingNote": "Tu bloque de cobro está creado. El envío a tu destino va después."
+  },
+  "ladder": {
+    "title": "Confirma que eres tú",
+    "biometricWhy": "Esto supera los {threshold} USD, así que te pedimos la huella antes de mover el dinero.",
+    "threeDsNote": "Por encima de {threshold} USD tu banco también confirma la tarjeta. Eso pasa después de escribirla, no ahora.",
+    "proceed": "Continuar",
+    "cancel": "Cancelar",
+    "failed": "La comprobación no salió, así que no se cobró nada.",
+    "noBiometric": "No hay biométrico registrado en este dispositivo. Regístralo en Ajustes › Autenticación."
   }
 }

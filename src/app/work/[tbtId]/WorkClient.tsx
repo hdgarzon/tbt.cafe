@@ -5,6 +5,7 @@ import { supabase } from '@/lib/supabase'
 import { useLocale } from '@/i18n/LocaleProvider'
 import { useShell } from '@/components/AppShell'
 import { TBT_BACKEND_URL } from '@/lib/backend'
+import { LadderGate } from '@/components/LadderGate'
 import { fetchWorkFull, ownerRole, royaltyOf, type WorkFull } from '@/lib/work-data'
 import { makeOffer } from '@/lib/offers-data'
 import { quote, money, minPriceFor } from '@/lib/fees'
@@ -46,6 +47,7 @@ export default function WorkPage({ params }: { params: { tbtId: string } }) {
   const [offering, setOffering] = useState(false)
   const [offerAmount, setOfferAmount] = useState('')
   const [msg, setMsg] = useState('')
+  const [ladderOpen, setLadderOpen] = useState(false)
 
   const load = useCallback(async () => {
     const {
@@ -78,9 +80,22 @@ export default function WorkPage({ params }: { params: { tbtId: string } }) {
   const c = work.commerce!
   const shareUrl = `https://tbt.cafe/work/${work.tbt_id}`
 
-  async function buy() {
+  /**
+   * Comprar exige biométrico desde $500 y biométrico + 3DS desde $1.000
+   * (Spec 01 §5.1). El portón resuelve cuál de los tres casos es y, por debajo
+   * del umbral, no aparece.
+   *
+   * La prueba viaja al backend, que vuelve a derivar lo exigido del precio que
+   * él conoce. Este componente decide qué PEDIR; no decide qué se acepta.
+   */
+  function buy() {
     setMsg('')
     if (!connected) return openAuth()
+    setLadderOpen(true)
+  }
+
+  async function buyAuthorized(biometricProof: string | null) {
+    setLadderOpen(false)
     setBuying(true)
     try {
       const {
@@ -94,7 +109,7 @@ export default function WorkPage({ params }: { params: { tbtId: string } }) {
       const res = await fetch(`${TBT_BACKEND_URL}/api/stripe/create-purchase`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
-        body: JSON.stringify({ workId: work!.id }),
+        body: JSON.stringify({ workId: work!.id, biometricProof }),
       })
       const body = await res.json()
       if (!res.ok) throw new Error(body.error ?? t.work.errors.buyFailed)
@@ -286,6 +301,14 @@ export default function WorkPage({ params }: { params: { tbtId: string } }) {
           {msg}
         </p>
       )}
+
+      <LadderGate
+        open={ladderOpen}
+        action="purchase"
+        amount={c.initial_price ?? null}
+        onAuthorized={buyAuthorized}
+        onCancel={() => setLadderOpen(false)}
+      />
     </div>
   )
 }

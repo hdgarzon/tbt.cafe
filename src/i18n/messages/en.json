@@ -1029,5 +1029,14 @@
     "collectFailed": "The collection could not be completed.",
     "collectedToast": "Collected — {id}",
     "processingNote": "Your payout block is created. The transfer to your destination follows."
+  },
+  "ladder": {
+    "title": "Confirm it's you",
+    "biometricWhy": "This is over {threshold} USD, so we ask for your fingerprint before the money moves.",
+    "threeDsNote": "Above {threshold} USD your bank confirms the card as well. That happens after you enter it, not now.",
+    "proceed": "Continue",
+    "cancel": "Cancel",
+    "failed": "The check did not go through, so nothing was charged.",
+    "noBiometric": "No biometric is enrolled on this device. Enrol one in Settings › Authentication."
   }
 }

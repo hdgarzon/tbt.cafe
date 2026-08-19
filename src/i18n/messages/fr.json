@@ -1029,5 +1029,14 @@
     "collectFailed": "L'encaissement n'a pas pu être finalisé.",
     "collectedToast": "Encaissé — {id}",
     "processingNote": "Votre bloc de versement est créé. Le virement vers votre destination suit."
+  },
+  "ladder": {
+    "title": "Confirmez que c'est vous",
+    "biometricWhy": "Le montant dépasse {threshold} USD, nous demandons donc votre empreinte avant de déplacer l'argent.",
+    "threeDsNote": "Au-dessus de {threshold} USD votre banque confirme aussi la carte. Cela se produit après l'avoir saisie, pas maintenant.",
+    "proceed": "Continuer",
+    "cancel": "Annuler",
+    "failed": "La vérification n'a pas abouti, rien n'a donc été débité.",
+    "noBiometric": "Aucune biométrie n'est enregistrée sur cet appareil. Enregistrez-en une dans Réglages › Authentification."
   }
 }
