@@ -219,6 +219,55 @@ textarea::placeholder {
   }
 }
 
+/* Icono de notificaciones — tres estados del prototipo, VERBATIM.
+     desconectado  opacidad .35 y en gris
+     authed        opacidad .7, sin filtro, en calma
+     active        opacidad plena y parpadeo de 1,4s, con el punto magenta
+   El punto solo aparece en `active`: un badge permanente deja de significar
+   nada. */
+@keyframes notif-flash {
+  0%, 100% { opacity: 1; }
+  50% { opacity: .45; }
+}
+.notif-img { opacity: .35; filter: grayscale(1); transition: opacity .2s; }
+.notif-authed .notif-img { opacity: .7; filter: none; }
+.notif-active .notif-img { opacity: 1; filter: none; animation: notif-flash 1.4s ease-in-out infinite; }
+
+@media (prefers-reduced-motion: reduce) {
+  .notif-active .notif-img { animation: none; }
+}
+
+/* Vapor de la caja Brew — steamRise del prototipo, VERBATIM.
+   Cinco volutas desfasadas para que nunca coincidan. Solo transform y opacity,
+   así que va en GPU; el desenfoque se hornea una vez y no se anima. */
+@keyframes steam-rise {
+  0%   { opacity: 0;   transform: translateY(0)     translateX(0)    scale(.6); }
+  15%  { opacity: .85; }
+  45%  { opacity: .6;  transform: translateY(-30px) translateX(-6px) scale(1.4); }
+  75%  { opacity: .28; }
+  100% { opacity: 0;   transform: translateY(-58px) translateX(6px)  scale(2.1); }
+}
+.brew-steam i {
+  position: absolute;
+  bottom: 10px;
+  width: 11px;
+  height: 11px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.85);
+  filter: blur(6px);
+  opacity: 0;
+  will-change: transform, opacity;
+}
+.brew-steam i:nth-child(1) { left: 30%; animation: steam-rise 3.8s ease-in-out infinite; }
+.brew-steam i:nth-child(2) { left: 44%; animation: steam-rise 4.4s ease-in-out 0.7s infinite; }
+.brew-steam i:nth-child(3) { left: 56%; animation: steam-rise 4.1s ease-in-out 1.5s infinite; }
+.brew-steam i:nth-child(4) { left: 66%; animation: steam-rise 4.7s ease-in-out 2.3s infinite; }
+.brew-steam i:nth-child(5) { left: 50%; animation: steam-rise 3.5s ease-in-out 3s infinite; }
+
+@media (prefers-reduced-motion: reduce) {
+  .brew-steam i { animation: none; opacity: .3; }
+}
+
 /* Pulso del anillo biométrico al reconocer la huella — bioRingPulse del
    prototipo, VERBATIM. Medio segundo, una sola vez: acusa recibo del dedo. */
 @keyframes bio-ring-pulse {

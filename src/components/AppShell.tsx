@@ -4,11 +4,15 @@ import { createContext, useContext, useEffect, useState } from 'react'
 import { Header } from '@/components/Header'
 import { Footer } from '@/components/Footer'
 import { SlideMenu } from '@/components/SlideMenu'
+import { StandingSheet } from '@/components/Sheet'
+import { SupportPanel } from '@/components/SupportPanel'
+import { fetchUnreadCount } from '@/lib/notifications-data'
 import { AuthSheet } from '@/components/AuthSheet'
 import { BiometricSignInSheet } from '@/components/BiometricSignInSheet'
 import { supabase } from '@/lib/supabase'
 import { maskPhone, type Country } from '@/lib/countries'
 import { maskPhoneE164 } from '@/lib/masking'
+import { useLocale } from '@/i18n/LocaleProvider'
 
 /**
  * Shell de la app — la columna única del prototipo.
@@ -41,11 +45,14 @@ export function useShell(): ShellValue {
 }
 
 export function AppShell({ children }: { children: React.ReactNode }) {
+  const { t } = useLocale()
   const [connected, setConnected] = useState(false)
   const [maskedPhone, setMaskedPhone] = useState<string | null>(null)
   const [menuOpen, setMenuOpen] = useState(false)
   const [authOpen, setAuthOpen] = useState(false)
   const [bioAuthOpen, setBioAuthOpen] = useState(false)
+  const [notifOpen, setNotifOpen] = useState(false)
+  const [unread, setUnread] = useState(0)
 
   // Restaurar sesión existente al montar y seguir sus cambios.
   // El teléfono se deriva de la sesión, no sólo de la autenticación en curso:
@@ -65,6 +72,29 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     })
     return () => sub.subscription.unsubscribe()
   }, [])
+
+  /**
+   * Sondeo del contador del header. Sin sesión no se pregunta: el feed es
+   * personal y la RLS devolvería cero de todas formas.
+   *
+   * Cada 60s en vez de en tiempo real: es un punto de color, no un chat, y una
+   * suscripción abierta por el solo hecho de tener la app abierta cuesta más de
+   * lo que ese punto vale.
+   */
+  useEffect(() => {
+    if (!connected) {
+      setUnread(0)
+      return
+    }
+    let alive = true
+    const read = () => fetchUnreadCount().then((n) => alive && setUnread(n))
+    read()
+    const id = setInterval(read, 60_000)
+    return () => {
+      alive = false
+      clearInterval(id)
+    }
+  }, [connected, notifOpen])
 
   /**
    * El toggle del header maneja la autenticación (Master Handoff §7):
@@ -90,7 +120,13 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     <ShellContext.Provider
       value={{ connected, maskedPhone, openAuth: () => setAuthOpen(true), openMenu: () => setMenuOpen(true) }}
     >
-      <Header connected={connected} onToggle={handleToggle} onMenu={() => setMenuOpen(true)} />
+      <Header
+        connected={connected}
+        onToggle={handleToggle}
+        onMenu={() => setMenuOpen(true)}
+        unread={unread}
+        onNotifications={() => (connected ? setNotifOpen(true) : setAuthOpen(true))}
+      />
 
       {/* pb-[90px] libera el pie fijo de 30px con aire por debajo */}
       <main className="flex-1 pb-[90px]">{children}</main>
@@ -98,6 +134,12 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       <Footer />
 
       <SlideMenu open={menuOpen} onClose={() => setMenuOpen(false)} />
+
+      {/* El panel cuelga del icono del header, que es su sitio en el
+          prototipo. /help sigue existiendo y monta el mismo componente. */}
+      <StandingSheet open={notifOpen} onClose={() => setNotifOpen(false)} head={t.help.title}>
+        <SupportPanel compact />
+      </StandingSheet>
 
       <AuthSheet
         open={authOpen}

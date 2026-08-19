@@ -2,11 +2,15 @@
 
 import { useState } from 'react'
 import { useLocale } from '@/i18n/LocaleProvider'
-import { MenuIcon, HeartIcon, ConnectToggle, TbtLogo } from '@/components/Brand'
+import { MenuIcon, HeartIcon, ConnectToggle, TbtLogo, NotificationIcon } from '@/components/Brand'
 
 /**
  * Header del shell (Build Spec 01, ÍTEM 1):
- *   Menu · logo TBT · Heart · toggle de conexión
+ *   Menu · logo TBT · Notificaciones · Heart · toggle de conexión
+ *
+ * El icono de notificaciones abre el panel de soporte (Spec 04 §5.1) y lleva
+ * tres estados: apagado sin sesión, sólido y en calma con sesión, y a color
+ * con parpadeo y punto magenta cuando hay algo sin leer.
  *
  * El toggle maneja la autenticación (Master Handoff §7):
  *   desconectado + tap → abre el modal de auth
@@ -19,10 +23,14 @@ export function Header({
   connected = false,
   onToggle,
   onMenu,
+  unread = 0,
+  onNotifications,
 }: {
   connected?: boolean
   onToggle?: () => void
   onMenu?: () => void
+  unread?: number
+  onNotifications?: () => void
 }) {
   const [favorited, setFavorited] = useState(false)
   const { t } = useLocale()
@@ -41,6 +49,20 @@ export function Header({
       <a href="/" aria-label="tbt.cafe" className="flex items-center mr-auto">
         <TbtLogo className="block h-[34px] w-auto" />
       </a>
+
+      <button
+        type="button"
+        onClick={onNotifications}
+        aria-label={t.feed.tab}
+        className={`relative w-9 h-9 shrink-0 flex items-center justify-center rounded-lg hover:bg-paper-warm transition-colors ${
+          !connected ? '' : unread > 0 ? 'notif-active' : 'notif-authed'
+        }`}
+      >
+        <NotificationIcon />
+        {connected && unread > 0 && (
+          <span className="absolute top-[5px] right-[5px] w-2 h-2 rounded-full bg-t-magenta border-2 border-paper" />
+        )}
+      </button>
 
       <button
         type="button"
