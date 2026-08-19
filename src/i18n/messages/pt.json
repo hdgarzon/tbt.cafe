@@ -70,7 +70,12 @@
     "footNote1": "tbt.cafe — Transbit × BROCHA",
     "footNote2": "Tokens Transferíveis Faturáveis",
     "help": "Ajuda",
-    "payouts": "Repasses"
+    "payouts": "Repasses",
+    "offersMade": "Feitas",
+    "offersReceived": "Recebidas",
+    "transfersIn": "Recebidas",
+    "transfersOut": "Enviadas",
+    "purchased": "Compradas"
   },
   "auth": {
     "termsPrefix": "Concordo com os",
