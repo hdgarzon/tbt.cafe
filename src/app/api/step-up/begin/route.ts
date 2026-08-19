@@ -5,7 +5,14 @@ import { createClient } from '@supabase/supabase-js'
 import { rpFromRequest, storeChallenge } from '@/lib/webauthn'
 
 /**
- * Reto biométrico para el step-up de administración — Backend Spec 07 §1.4.
+ * Reto biométrico para el step-up — Backend Spec 07 §1.4.
+ *
+ * Vive fuera de `/api/admin/` a propósito: lo único que exige es sesión, y la
+ * prueba que acaba emitiendo no es de administración — la usan tanto la consola
+ * como el cobro de pagos. Bajo aquel prefijo, ponerle una comprobación de
+ * `admin_members` habría parecido lo correcto y habría roto el cobro en
+ * silencio. El step-up de administración —el que sí es privilegiado— sigue en
+ * `/api/admin/step-up`.
  *
  * Existe aparte de `/api/webauthn/auth/begin` porque son cosas distintas y
  * confundirlas ya costó un 500 en producción:
@@ -59,7 +66,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ options })
   } catch (error) {
-    console.error('[admin/step-up/begin] failed:', error)
+    console.error('[step-up/begin] failed:', error)
     return NextResponse.json({ error: 'step_up_begin_failed' }, { status: 500 })
   }
 }
