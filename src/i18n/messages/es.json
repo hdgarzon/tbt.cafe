@@ -1051,5 +1051,13 @@
     "willBelongTo": "pasará a",
     "registration": "Registro",
     "thisWork": "Esta obra"
+  },
+  "roast": {
+    "questions": "Preguntas",
+    "noQuestions": "Aún no hay preguntas — haz la primera.",
+    "ask": "Preguntar",
+    "askPlaceholder": "Haz una pregunta sobre este artículo",
+    "postFailed": "No se pudo publicar.",
+    "someone": "Alguien"
   }
 }
