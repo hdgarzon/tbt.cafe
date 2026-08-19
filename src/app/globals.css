@@ -283,6 +283,54 @@ textarea::placeholder {
   .animate-bio-ring { animation: none; }
 }
 
+/* Puntos de "pensando" del asistente — espdot del prototipo, VERBATIM.
+   Tres puntos de 5px con retardo escalonado. */
+@keyframes esp-dot {
+  0%, 80%, 100% { opacity: .25; transform: translateY(0); }
+  40% { opacity: 1; transform: translateY(-3px); }
+}
+.esp-dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--placeholder);
+  display: inline-block;
+  animation: esp-dot 1.2s infinite;
+}
+
+/* Pulso de "escuchando" — esppulse. Navy, 7px, respirando. */
+@keyframes esp-pulse {
+  0%, 100% { opacity: .35; transform: scale(.8); }
+  50% { opacity: 1; transform: scale(1.15); }
+}
+.esp-pulse {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--t-navy);
+  display: inline-block;
+  animation: esp-pulse 1.1s ease-in-out infinite;
+  flex-shrink: 0;
+}
+
+/* Entrada de cada tarjeta del wizard — cbfade. */
+@keyframes cb-fade {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: none; }
+}
+.animate-cb-fade { animation: cb-fade 0.3s ease; }
+
+/* Anillo del registro en cadena — cbspin. 1,1s, no el 1s de Tailwind. */
+@keyframes cb-spin {
+  to { transform: rotate(360deg); }
+}
+.animate-cb-spin { animation: cb-spin 1.1s linear infinite; }
+
+@media (prefers-reduced-motion: reduce) {
+  .esp-dot, .esp-pulse, .animate-cb-fade, .animate-cb-spin { animation: none; }
+  .esp-dot, .esp-pulse { opacity: .6; }
+}
+
 /* Barras del escaneo de originalidad (cbBars del prototipo, en CSS puro) */
 @keyframes cb-bar {
   0%, 100% { height: 20%; }
