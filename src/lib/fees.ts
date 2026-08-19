@@ -122,11 +122,31 @@ export function royaltyPayout(royaltyAmount: number): number {
 export type PayoutQuote = { gross: number; payoutFee: number; methodFee: number; net: number }
 
 /**
+ * Las tres comisiones que un método trae del registro (Área 2 §3.2). Vienen de
+ * la fila, no de constantes: son política y se editan sin desplegar (§5.2).
+ */
+export type MethodFees = { platformPct: number; methodPct: number; methodFlat: number }
+
+/** Comisión propia del rail — §5: `gross × method_pct + method_flat`. */
+export function methodFeeOf(m: MethodFees, gross: number): number {
+  return gross * m.methodPct + m.methodFlat
+}
+
+/**
  * Cobro de un bloque de payout — §1.4. `methodFee` sale del registro de métodos
  * de pago (Área 2 §3), que depende del país y del método.
+ *
+ * `platformPct` también viene del registro. El 2.3% de FEE.payoutRate es solo
+ * el valor por defecto: el spec lo declara configurable por administración
+ * (§5.2), así que una llamada que ya tiene la fila del método debe pasar el
+ * suyo en vez de asumir la constante.
  */
-export function payoutQuote(gross: number, methodFee: number): PayoutQuote {
-  const payoutFee = gross * FEE.payoutRate
+export function payoutQuote(
+  gross: number,
+  methodFee: number,
+  platformPct: number = FEE.payoutRate
+): PayoutQuote {
+  const payoutFee = gross * platformPct
   return { gross, payoutFee, methodFee, net: gross - payoutFee - methodFee }
 }
 

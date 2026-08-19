@@ -69,7 +69,8 @@
     "lockedNoteBold": "Toca cualquiera para conectarte.",
     "footNote1": "tbt.cafe — Transbit × BROCHA",
     "footNote2": "Tokens Transferibles Facturables",
-    "help": "Ayuda"
+    "help": "Ayuda",
+    "payouts": "Cobros"
   },
   "auth": {
     "termsPrefix": "Acepto los",
@@ -951,5 +952,82 @@
       "payout_failed": "No pudimos completar un cobro.",
       "payout_destination": "Cambió el destino de tus cobros."
     }
+  },
+  "payouts": {
+    "title": "Cobros",
+    "sub": "A dónde va tu dinero, y qué sigue liquidándose",
+    "collect": "Cobrar",
+    "receipts": "Recibos de cobro",
+    "empty": "Aún no hay cobros. Las regalías y el producto de tus ventas aparecerán aquí cuando se dispongan.",
+    "available": "Disponible",
+    "pending": "Liquidándose",
+    "collected": "Cobrado",
+    "availableCount": "{n} disponible",
+    "selectedCount": "{n} seleccionado",
+    "holdSettlement": "Se libera el {date}",
+    "holdCounterparty": "Se libera cuando la otra parte acepte",
+    "noMethods": "Todavía no hay ningún método de cobro disponible en tu país. Escríbenos a soporte y lo resolvemos contigo.",
+    "noCountry": "Añade tu país en los ajustes de cobro para que podamos mostrarte los métodos disponibles.",
+    "gross": "Bruto",
+    "platformFee": "Comisión de la plataforma",
+    "methodFee": "Comisión del método",
+    "net": "Recibes",
+    "defaultMethod": "Método por defecto",
+    "destination": "Destino",
+    "notSet": "Sin definir",
+    "change": "Cambiar",
+    "methodHint": "Los métodos disponibles dependen de tu país.",
+    "destHint": "Cambiar dónde te pagamos exige tu biométrico y tu código privado.",
+    "stillSettling": "Todavía liquidándose",
+    "settleHint": "Un cobro se vuelve disponible cuando cierra su ventana de liquidación.",
+    "confirm": "Confirmar el cobro",
+    "blockCreated": "Bloque de cobro {id} creado",
+    "method": {
+      "usdc": "USDC",
+      "bank": "Cuenta bancaria"
+    },
+    "dest": {
+      "walletAddress": "Dirección de wallet",
+      "bankAccount": "Cuenta bancaria"
+    },
+    "eta": {
+      "minutes": "Llega en minutos",
+      "days": "Llega en 2–3 días"
+    },
+    "source": {
+      "sale": "Venta",
+      "royalty": "Regalía",
+      "transfer": "Transferencia",
+      "offer": "Oferta"
+    },
+    "valuedAt": "por un valor de",
+    "pendingUntil": "Pendiente hasta el {date}",
+    "settlingLine": "{amount} USD liquidándose · {n} cobro",
+    "settlingLinePlural": "{amount} USD liquidándose · {n} cobros",
+    "verifyCollection": "Verificar el cobro",
+    "total": "Total",
+    "touchToConfirm": "Toca para confirmar tu identidad",
+    "identityConfirmed": "Identidad confirmada",
+    "agreeTerms": "Acepto los términos de pago",
+    "continue": "Continuar",
+    "collectionMethod": "Método de cobro",
+    "confirmAddress": "Confirma la dirección",
+    "addressMismatch": "Las direcciones no coinciden",
+    "collectAmount": "Cobrar {amount} USD",
+    "grossPayout": "Cobro bruto",
+    "netPayout": "Cobro neto",
+    "payoutFee": "Comisión de cobro",
+    "enterCode": "Escribe tu código privado",
+    "codeHint": "Cobrar siempre pide tu biométrico y tu código privado.",
+    "wrongCode": "Ese código no es correcto.",
+    "lockedOut": "Demasiados intentos. Inténtalo más tarde.",
+    "bankOnFile": "Cuenta bancaria registrada",
+    "heldByConnect": "en custodia de Stripe Connect",
+    "changeInSettings": "Cambiar dónde te pagamos exige tu biométrico y tu código privado. Puedes cambiarlo en Ajustes › Cobros.",
+    "biometricFailed": "La comprobación biométrica no salió.",
+    "noBiometric": "No hay biométrico registrado en este dispositivo. Regístralo en Ajustes › Autenticación.",
+    "collectFailed": "No se pudo completar el cobro.",
+    "collectedToast": "Cobrado — {id}",
+    "processingNote": "Tu bloque de cobro está creado. El envío a tu destino va después."
   }
 }

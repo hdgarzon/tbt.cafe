@@ -194,7 +194,7 @@ export default function AdminPage() {
 
       // Rutas propias del step-up, no las de login: aquí ya hay sesión, la
       // identidad se conoce y no debe emitirse ninguna sesión nueva.
-      const begin = await fetch('/api/admin/step-up/begin', { method: 'POST', headers: bearer })
+      const begin = await fetch('/api/step-up/begin', { method: 'POST', headers: bearer })
       const beginBody = await begin.json().catch(() => ({}))
       if (!begin.ok) {
         setStepMsg(
@@ -205,7 +205,7 @@ export default function AdminPage() {
         return
       }
       const credential = await startAuthentication({ optionsJSON: beginBody.options })
-      const verify = await fetch('/api/admin/step-up/verify', {
+      const verify = await fetch('/api/step-up/verify', {
         method: 'POST',
         headers: bearer,
         body: JSON.stringify({ credential }),

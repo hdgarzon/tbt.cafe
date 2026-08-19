@@ -69,7 +69,8 @@
     "lockedNoteBold": "Tap any of them to connect.",
     "footNote1": "tbt.cafe — Transbit × BROCHA",
     "footNote2": "Transferable Billable Tokens",
-    "help": "Help"
+    "help": "Help",
+    "payouts": "Payouts"
   },
   "auth": {
     "termsPrefix": "I agree to the",
@@ -951,5 +952,82 @@
       "payout_failed": "A payout could not be completed.",
       "payout_destination": "Your payout destination was changed."
     }
+  },
+  "payouts": {
+    "title": "Payouts",
+    "sub": "Where your money goes, and what's still settling",
+    "collect": "Collect",
+    "receipts": "Payout receipts",
+    "empty": "No payouts yet. Royalties and sales proceeds will appear here when they are disbursed.",
+    "available": "Available",
+    "pending": "Still settling",
+    "collected": "Collected",
+    "availableCount": "{n} available",
+    "selectedCount": "{n} selected",
+    "holdSettlement": "Releases {date}",
+    "holdCounterparty": "Releases when the other side accepts",
+    "noMethods": "No payout method is available in your country yet. Contact support and we'll sort it out with you.",
+    "noCountry": "Add your country in Payout settings so we can show the methods available to you.",
+    "gross": "Gross",
+    "platformFee": "Platform fee",
+    "methodFee": "Method fee",
+    "net": "You receive",
+    "defaultMethod": "Default method",
+    "destination": "Destination",
+    "notSet": "Not set",
+    "change": "Change",
+    "methodHint": "Available methods depend on your country.",
+    "destHint": "Changing where you get paid requires your biometric and your private code.",
+    "stillSettling": "Still settling",
+    "settleHint": "Payouts become collectable once their settlement window closes.",
+    "confirm": "Confirm collection",
+    "blockCreated": "Payout block {id} created",
+    "method": {
+      "usdc": "USDC",
+      "bank": "Bank account"
+    },
+    "dest": {
+      "walletAddress": "Wallet address",
+      "bankAccount": "Bank account"
+    },
+    "eta": {
+      "minutes": "Arrives in minutes",
+      "days": "Arrives in 2–3 days"
+    },
+    "source": {
+      "sale": "Sale",
+      "royalty": "Royalty",
+      "transfer": "Transfer",
+      "offer": "Offer"
+    },
+    "valuedAt": "valued at",
+    "pendingUntil": "Pending until {date}",
+    "settlingLine": "{amount} USD still settling · {n} payout",
+    "settlingLinePlural": "{amount} USD still settling · {n} payouts",
+    "verifyCollection": "Verify collection",
+    "total": "Total",
+    "touchToConfirm": "Touch to confirm your identity",
+    "identityConfirmed": "Identity confirmed",
+    "agreeTerms": "I agree with the payment terms",
+    "continue": "Continue",
+    "collectionMethod": "Collection method",
+    "confirmAddress": "Confirm address",
+    "addressMismatch": "Addresses do not match",
+    "collectAmount": "Collect {amount} USD",
+    "grossPayout": "Gross payout",
+    "netPayout": "Net payout",
+    "payoutFee": "Payout fee",
+    "enterCode": "Enter your private code",
+    "codeHint": "Collecting a payout always asks for your biometric and your private code.",
+    "wrongCode": "That code is not right.",
+    "lockedOut": "Too many attempts. Try again later.",
+    "bankOnFile": "Bank account on file",
+    "heldByConnect": "held by Stripe Connect",
+    "changeInSettings": "Changing where you get paid requires your biometric and your private code. You can change it in Settings › Payouts.",
+    "biometricFailed": "The biometric check did not go through.",
+    "noBiometric": "No biometric is enrolled on this device. Enrol one in Settings › Authentication.",
+    "collectFailed": "The collection could not be completed.",
+    "collectedToast": "Collected — {id}",
+    "processingNote": "Your payout block is created. The transfer to your destination follows."
   }
 }

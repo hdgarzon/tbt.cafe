@@ -4,11 +4,34 @@ import { useEffect, useState, type ReactNode } from 'react'
 import { CloseIcon } from '@/components/Brand'
 
 /**
- * Sheet inferior compartido — portado VERBATIM del prototipo (.auth-scrim /
- * .auth-sheet). Los cinco modales del sistema (auth, recovery email, private
- * code, biometric enroll, biometric sign-in) son instancias de este mismo
- * patrón visual: velo con fade, panel que sube desde abajo con esquinas
- * redondeadas arriba, agarradera, kicker + título display, botón de cierre.
+ * Los DOS patrones de modal del prototipo. No son intercambiables.
+ *
+ *   `Sheet`         — compacto, se ajusta a su contenido (.auth-sheet).
+ *                     EXCLUSIVO de autenticación y sus hermanos de identidad:
+ *                     auth, recovery email, private code, biometric enroll,
+ *                     biometric sign-in. Cinco usos, y no debería haber un sexto.
+ *
+ *   `StandingSheet` — altura de pie fija (.collect-sheet / .share-card).
+ *                     TODO lo demás: cobro de payouts, panel de notificaciones,
+ *                     comprar, ofertar, curar, compartir en escritorio.
+ *
+ * El prototipo lo deja escrito sobre .share-card, y vale la pena repetirlo
+ * porque la implementación había tomado el camino contrario:
+ *
+ *   "Una sola altura de pie para todo sheet — un modal que se redimensiona a su
+ *    contenido hace que el producto se sienta inestable. El contenido scrollea
+ *    dentro; la tarjeta sube hasta justo debajo del header, la misma altura de
+ *    pie que todo otro modal. buy-card y crit-card la heredan. Autenticación es
+ *    la única excepción y conserva su sheet compacto."
+ *
+ * Si dudas cuál usar: si el modal pide identidad, es `Sheet`; si no, es
+ * `StandingSheet`.
+ */
+
+/**
+ * Sheet compacto — portado VERBATIM del prototipo (.auth-scrim / .auth-sheet).
+ * Velo con fade, panel que sube desde abajo con esquinas redondeadas arriba,
+ * agarradera, kicker + título display, botón de cierre.
  *
  * `open` monta el sheet CERRADO y lo anima al estado abierto en el siguiente
  * frame — si se monta ya abierto, la transición de transform nunca se ve.
@@ -44,7 +67,12 @@ export function Sheet({
 
   return (
     <div
-      className={`absolute inset-0 z-[70] transition-opacity duration-[260ms] ease-out ${
+      // `fixed`, no `absolute`: el prototipo ancla el velo al viewport
+      // (.auth-scrim{position:fixed}). Con `absolute` quedaba anclado a
+      // .col-locked, que mide 390px y crece con el contenido — en escritorio
+      // el velo oscurecía solo la columna, y en una página larga con scroll el
+      // sheet aterrizaba al final del documento en vez de al pie de la pantalla.
+      className={`fixed inset-0 z-[70] transition-opacity duration-[260ms] ease-out ${
         entered ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
       }`}
       style={{ backgroundColor: 'rgba(20,20,20,0.32)' }}
@@ -82,6 +110,106 @@ export function Sheet({
         </div>
 
         <div className="mt-[22px]">{children}</div>
+      </div>
+    </div>
+  )
+}
+
+/**
+ * Sheet de altura de pie — portado del prototipo (.collect-scrim /
+ * .collect-sheet). Sube hasta justo debajo del header y se queda ahí,
+ * mida lo que mida su contenido.
+ *
+ * Tres franjas, como el prototipo:
+ *
+ *   top     .collect-sheet-top     agarradera, cabecera, pestañas — no scrollea
+ *   scroll  .collect-sheet-scroll  el contenido — la única parte que scrollea
+ *   bottom  .collect-sheet-bottom  acciones — no scrollea, con hairline arriba
+ *
+ * La franja inferior solo aparece si le pasas `footer`. Un sheet sin acciones
+ * (el panel de notificaciones, por ejemplo) no la lleva.
+ */
+export function StandingSheet({
+  open,
+  onClose,
+  head,
+  chrome,
+  footer,
+  children,
+  labelledBy,
+}: {
+  open: boolean
+  onClose: () => void
+  /** Cabecera en versalitas (.collect-head). Omitir si `chrome` ya la trae. */
+  head?: string
+  /** Cabecera libre — pestañas, por ejemplo. Va debajo de la agarradera. */
+  chrome?: ReactNode
+  /** Acciones fijas al pie. Si no hay, la franja no se renderiza. */
+  footer?: ReactNode
+  children: ReactNode
+  labelledBy?: string
+}) {
+  useEffect(() => {
+    if (!open) return
+    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose()
+    document.addEventListener('keydown', onKey)
+    return () => document.removeEventListener('keydown', onKey)
+  }, [open, onClose])
+
+  // El sheet cubre la pantalla entera menos el header: sin esto el fondo
+  // scrollea por debajo cuando el dedo sale del área scrolleable.
+  useEffect(() => {
+    if (!open) return
+    const previous = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    return () => {
+      document.body.style.overflow = previous
+    }
+  }, [open])
+
+  if (!open) return null
+
+  return (
+    <div
+      className="fixed inset-0 z-[80] flex items-end justify-center"
+      style={{ backgroundColor: 'rgba(20,20,20,0.32)' }}
+      onClick={(e) => {
+        if (e.target === e.currentTarget) onClose()
+      }}
+    >
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={labelledBy}
+        className="standing-sheet animate-slide-up relative w-full max-w-col bg-paper rounded-t-2xl flex flex-col"
+      >
+        <button
+          type="button"
+          onClick={onClose}
+          aria-label="Close"
+          className="absolute top-3 right-3 z-[2] w-[30px] h-[30px] rounded-full border border-hairline bg-paper text-ink flex items-center justify-center hover:bg-paper-warm transition-colors"
+        >
+          <CloseIcon size={12} />
+        </button>
+
+        <div className="shrink-0 px-5 pt-5">
+          <div className="w-9 h-1 rounded-full bg-hairline mx-auto mb-4" />
+          {head && (
+            <div
+              id={labelledBy}
+              className="mb-[14px] text-[10px] tracking-[0.16em] uppercase text-ink-soft"
+            >
+              {head}
+            </div>
+          )}
+          {chrome}
+        </div>
+
+        <div className="flex-1 overflow-y-auto px-5">{children}</div>
+
+        {footer && (
+          <div className="shrink-0 border-t border-hairline bg-paper px-5 pt-3 pb-8">{footer}</div>
+        )}
       </div>
     </div>
   )

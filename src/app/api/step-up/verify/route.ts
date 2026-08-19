@@ -15,6 +15,11 @@ import { rpFromRequest } from '@/lib/webauthn'
  *
  * Esta es la única ruta que puede afirmar que el biométrico ocurrió para un
  * step-up, así que es la única que emite la prueba (Spec 07 §1.4).
+ *
+ * La prueba es de propósito general: la consumen tanto el step-up de
+ * administración como el cobro de pagos. Por eso esta ruta no vive bajo
+ * `/api/admin/` ni debe gatearse con `admin_members`: hacerlo dejaría al
+ * vendedor sin poder cobrar.
  */
 export async function POST(request: NextRequest) {
   try {
@@ -102,7 +107,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ verified: true, biometricProof: proof })
   } catch (error) {
-    console.error('[admin/step-up/verify] failed:', error)
+    console.error('[step-up/verify] failed:', error)
     return NextResponse.json({ error: 'step_up_verify_failed' }, { status: 500 })
   }
 }

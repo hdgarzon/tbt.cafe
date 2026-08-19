@@ -28,6 +28,8 @@ const config: Config = {
           red: "var(--t-red)",
           green: "var(--t-green)",
           navy: "var(--t-navy)",
+          // Dinero liquidado — cobrado, no adeudado (pantallas de Payouts)
+          copper: "var(--t-copper)",
         },
       },
       fontFamily: {

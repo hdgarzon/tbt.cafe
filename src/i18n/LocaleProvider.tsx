@@ -72,3 +72,29 @@ export function useLocale(): LocaleContextValue {
   if (!ctx) throw new Error('useLocale must be used within LocaleProvider')
   return ctx
 }
+
+/**
+ * Resuelve una clave con puntos contra el diccionario — 'payouts.method.usdc'.
+ *
+ * Casi toda la app indexa el diccionario directamente (`t.payouts.title`), que
+ * es mejor porque TypeScript lo verifica. Esto es para el caso en que la clave
+ * viene de la BASE DE DATOS y no del código: el registro de métodos de payout
+ * guarda claves i18n en sus filas (Spec 02 §3.2), justamente para que añadir
+ * Pix sea una fila y no un despliegue. Ahí el compilador no puede ayudar.
+ *
+ * Devuelve el `fallback` si la clave no existe. Una clave rota tiene que
+ * degradar a algo legible, no pintar 'payouts.method.pix' en la pantalla de
+ * cobro de alguien.
+ */
+export function translateKey(t: Dictionary, path: string, fallback = ''): string {
+  const value = path
+    .split('.')
+    .reduce<unknown>((node, part) => {
+      if (node && typeof node === 'object' && part in node) {
+        return (node as Record<string, unknown>)[part]
+      }
+      return undefined
+    }, t)
+
+  return typeof value === 'string' ? value : fallback
+}

@@ -69,7 +69,8 @@
     "lockedNoteBold": "Touchez l'une d'elles pour vous connecter.",
     "footNote1": "tbt.cafe — Transbit × BROCHA",
     "footNote2": "Jetons Transférables Facturables",
-    "help": "Aide"
+    "help": "Aide",
+    "payouts": "Versements"
   },
   "auth": {
     "termsPrefix": "J'accepte les",
@@ -951,5 +952,82 @@
       "payout_failed": "Un versement n'a pas pu être effectué.",
       "payout_destination": "La destination de vos versements a changé."
     }
+  },
+  "payouts": {
+    "title": "Versements",
+    "sub": "Où va votre argent, et ce qui est encore en cours de règlement",
+    "collect": "Encaisser",
+    "receipts": "Reçus de versement",
+    "empty": "Aucun versement pour l'instant. Les redevances et le produit de vos ventes apparaîtront ici une fois versés.",
+    "available": "Disponible",
+    "pending": "En cours de règlement",
+    "collected": "Encaissé",
+    "availableCount": "{n} disponible",
+    "selectedCount": "{n} sélectionné",
+    "holdSettlement": "Libéré le {date}",
+    "holdCounterparty": "Libéré dès que l'autre partie accepte",
+    "noMethods": "Aucun mode de versement n'est encore disponible dans votre pays. Contactez le support et nous verrons cela avec vous.",
+    "noCountry": "Ajoutez votre pays dans les réglages de versement pour voir les modes disponibles.",
+    "gross": "Brut",
+    "platformFee": "Frais de la plateforme",
+    "methodFee": "Frais du mode",
+    "net": "Vous recevez",
+    "defaultMethod": "Mode par défaut",
+    "destination": "Destination",
+    "notSet": "Non défini",
+    "change": "Modifier",
+    "methodHint": "Les modes disponibles dépendent de votre pays.",
+    "destHint": "Modifier votre destination de paiement exige votre biométrie et votre code privé.",
+    "stillSettling": "Encore en règlement",
+    "settleHint": "Un versement devient encaissable à la fermeture de sa fenêtre de règlement.",
+    "confirm": "Confirmer l'encaissement",
+    "blockCreated": "Bloc de versement {id} créé",
+    "method": {
+      "usdc": "USDC",
+      "bank": "Compte bancaire"
+    },
+    "dest": {
+      "walletAddress": "Adresse du portefeuille",
+      "bankAccount": "Compte bancaire"
+    },
+    "eta": {
+      "minutes": "Arrive en quelques minutes",
+      "days": "Arrive sous 2–3 jours"
+    },
+    "source": {
+      "sale": "Vente",
+      "royalty": "Redevance",
+      "transfer": "Transfert",
+      "offer": "Offre"
+    },
+    "valuedAt": "d'une valeur de",
+    "pendingUntil": "En attente jusqu'au {date}",
+    "settlingLine": "{amount} USD en règlement · {n} versement",
+    "settlingLinePlural": "{amount} USD en règlement · {n} versements",
+    "verifyCollection": "Vérifier l'encaissement",
+    "total": "Total",
+    "touchToConfirm": "Touchez pour confirmer votre identité",
+    "identityConfirmed": "Identité confirmée",
+    "agreeTerms": "J'accepte les conditions de paiement",
+    "continue": "Continuer",
+    "collectionMethod": "Mode d'encaissement",
+    "confirmAddress": "Confirmez l'adresse",
+    "addressMismatch": "Les adresses ne correspondent pas",
+    "collectAmount": "Encaisser {amount} USD",
+    "grossPayout": "Versement brut",
+    "netPayout": "Versement net",
+    "payoutFee": "Frais de versement",
+    "enterCode": "Saisissez votre code privé",
+    "codeHint": "Un encaissement demande toujours votre biométrie et votre code privé.",
+    "wrongCode": "Ce code n'est pas le bon.",
+    "lockedOut": "Trop de tentatives. Réessayez plus tard.",
+    "bankOnFile": "Compte bancaire enregistré",
+    "heldByConnect": "détenu par Stripe Connect",
+    "changeInSettings": "Modifier votre destination de paiement exige votre biométrie et votre code privé. Vous pouvez la modifier dans Réglages › Versements.",
+    "biometricFailed": "La vérification biométrique n'a pas abouti.",
+    "noBiometric": "Aucune biométrie n'est enregistrée sur cet appareil. Enregistrez-en une dans Réglages › Authentification.",
+    "collectFailed": "L'encaissement n'a pas pu être finalisé.",
+    "collectedToast": "Encaissé — {id}",
+    "processingNote": "Votre bloc de versement est créé. Le virement vers votre destination suit."
   }
 }

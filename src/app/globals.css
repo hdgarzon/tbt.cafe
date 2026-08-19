@@ -22,6 +22,9 @@
   --t-red: #ED2D0C;
   --t-green: #3EA32C;
   --t-navy: #220E82;
+  /* Dinero liquidado — cobrado, no adeudado. Distingue en Payouts lo que ya
+     salió de lo que todavía se debe. */
+  --t-copper: #A8703A;
   /* Chevron de los <select> del wizard Cold Brew (select.cb-in del prototipo) */
   --cb-caret: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%236B6B6B' stroke-width='1.5' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
 
@@ -157,6 +160,78 @@ textarea::placeholder {
   .back-link:hover {
     color: var(--ink);
   }
+}
+
+/* Entrada de los sheets de pie — slideUp del prototipo, VERBATIM.
+   El sheet de autenticación NO la usa: sube con transform desde translateY(100%),
+   que es su propia transición. Esta es la de los modales de altura fija. */
+@keyframes slide-up {
+  from {
+    transform: translateY(40px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+.animate-slide-up {
+  animation: slide-up 0.26s ease;
+}
+
+/* La altura de pie: todo modal que no sea autenticación sube hasta justo debajo
+   del header y se queda ahí. El prototipo lo deja escrito sobre .share-card —
+   "un modal que se redimensiona a su contenido hace que el producto se sienta
+   inestable" — y hace que buy-card y crit-card la hereden.
+   Las dos declaraciones son del prototipo: vh primero como respaldo, dvh encima
+   para los navegadores móviles que descuentan la barra de direcciones. */
+.standing-sheet {
+  height: calc(100vh - var(--header-h));
+  height: calc(100dvh - var(--header-h));
+  max-height: calc(100vh - var(--header-h));
+  max-height: calc(100dvh - var(--header-h));
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-slide-up {
+    animation: none;
+  }
+}
+
+/* Destello de la barra de estadísticas al recalcularse — statsFlash del
+   prototipo, VERBATIM. Un magenta muy tenue que se disuelve: confirma que el
+   número cambió sin pedir que lo mires. */
+@keyframes stats-flash {
+  0% {
+    background: rgba(239, 19, 133, 0.12);
+  }
+  100% {
+    background: transparent;
+  }
+}
+.animate-stats-flash {
+  animation: stats-flash 0.6s ease-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-stats-flash {
+    animation: none;
+  }
+}
+
+/* Pulso del anillo biométrico al reconocer la huella — bioRingPulse del
+   prototipo, VERBATIM. Medio segundo, una sola vez: acusa recibo del dedo. */
+@keyframes bio-ring-pulse {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.06); }
+  100% { transform: scale(1); }
+}
+.animate-bio-ring {
+  animation: bio-ring-pulse 0.5s ease;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-bio-ring { animation: none; }
 }
 
 /* Barras del escaneo de originalidad (cbBars del prototipo, en CSS puro) */

@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { useLocale } from '@/i18n/LocaleProvider'
-import { Sheet } from '@/components/Sheet'
+import { StandingSheet } from '@/components/Sheet'
 import { supabase } from '@/lib/supabase'
 import {
   fetchCurations,
@@ -24,9 +24,16 @@ type Axis = (typeof AXES)[number]
  * Modal de curación (Build Spec 02, ÍTEM 5) — el "critique" renombrado.
  * Reachable desde el ícono de ojo en creador, serie, featured y obra. Tres
  * ejes de 1 a 5 mostrados como número plano ("3 of 5"), texto libre
- * obligatorio, pública o privada. Reutiliza el Sheet compartido del sistema
- * en vez del overlay centrado del prototipo — mismo contenido y
- * comportamiento, contenedor consistente con el resto de la app.
+ * obligatorio, pública o privada.
+ *
+ * Va en `StandingSheet`, no en `Sheet`: .crit-card del prototipo lleva la
+ * altura de pie —`calc(100dvh - header)` con el cuerpo scrolleando dentro—,
+ * igual que .share-card, de la que hereda. Estaba en el sheet compacto de
+ * autenticación, así que crecía y encogía según cuántas curaciones hubiera.
+ *
+ * El kicker y el título van DENTRO de la franja scrolleable, no fijos: en
+ * .crit-card la tarjeta entera scrollea y solo el botón de cierre queda
+ * anclado, por ser `position:absolute`.
  */
 export function CurationModal({
   open,
@@ -100,8 +107,18 @@ export function CurationModal({
   }
 
   return (
-    <Sheet open={open} onClose={onClose} kicker={t.curation.kicker.replace('{what}', whatLabel)} title={target.label}>
-      <div>
+    <StandingSheet open={open} onClose={onClose} labelledBy="curation-title">
+      <div className="pb-8">
+        <div className="text-[10px] font-semibold tracking-[0.22em] uppercase text-ink-soft pr-10">
+          {t.curation.kicker.replace('{what}', whatLabel)}
+        </div>
+        <h2
+          id="curation-title"
+          className="font-display font-medium text-[30px] leading-[1.08] text-ink mt-1.5 mb-[22px] pr-10"
+        >
+          {target.label}
+        </h2>
+
         {list.length > 0 && (
           <div className="flex items-baseline gap-2 pb-4 mb-1 border-b border-hairline">
             <span className="font-display text-[26px] leading-none text-ink">{avg.toFixed(1)}</span>
@@ -225,6 +242,6 @@ export function CurationModal({
           </div>
         )}
       </div>
-    </Sheet>
+    </StandingSheet>
   )
 }
