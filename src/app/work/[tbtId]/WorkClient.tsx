@@ -6,6 +6,7 @@ import { useLocale } from '@/i18n/LocaleProvider'
 import { useShell } from '@/components/AppShell'
 import { TBT_BACKEND_URL } from '@/lib/backend'
 import { LadderGate } from '@/components/LadderGate'
+import { EmbeddedCheckoutSheet } from '@/components/EmbeddedCheckoutSheet'
 import { fetchWorkFull, ownerRole, royaltyOf, type WorkFull } from '@/lib/work-data'
 import { makeOffer } from '@/lib/offers-data'
 import { quote, money, minPriceFor } from '@/lib/fees'
@@ -48,6 +49,7 @@ export default function WorkPage({ params }: { params: { tbtId: string } }) {
   const [offerAmount, setOfferAmount] = useState('')
   const [msg, setMsg] = useState('')
   const [ladderOpen, setLadderOpen] = useState(false)
+  const [clientSecret, setClientSecret] = useState<string | null>(null)
 
   const load = useCallback(async () => {
     const {
@@ -109,10 +111,19 @@ export default function WorkPage({ params }: { params: { tbtId: string } }) {
       const res = await fetch(`${TBT_BACKEND_URL}/api/stripe/create-purchase`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
-        body: JSON.stringify({ workId: work!.id, biometricProof }),
+        // Checkout embebido (Spec 01 §3.1): el comprador no sale de tbt.cafe.
+        body: JSON.stringify({ workId: work!.id, biometricProof, embedded: true }),
       })
       const body = await res.json()
       if (!res.ok) throw new Error(body.error ?? t.work.errors.buyFailed)
+      // El client_secret monta el formulario aquí mismo. Si el backend no lo
+      // mandó, se cae al redirect de siempre en vez de dejar al comprador sin
+      // ninguna forma de pagar.
+      if (body.clientSecret) {
+        setClientSecret(body.clientSecret)
+        setBuying(false)
+        return
+      }
       window.location.href = body.checkoutUrl
     } catch (e) {
       setMsg(e instanceof Error ? e.message : t.work.errors.buyFailed)
@@ -300,6 +311,10 @@ export default function WorkPage({ params }: { params: { tbtId: string } }) {
         <p className="fixed left-1/2 bottom-6 -translate-x-1/2 z-50 px-4 py-2.5 bg-ink text-paper text-[12px] rounded-full shadow-lg">
           {msg}
         </p>
+      )}
+
+      {clientSecret && (
+        <EmbeddedCheckoutSheet clientSecret={clientSecret} onClose={() => setClientSecret(null)} />
       )}
 
       <LadderGate

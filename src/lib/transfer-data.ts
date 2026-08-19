@@ -66,7 +66,9 @@ async function authHeader(): Promise<{ Authorization: string } | null> {
  * backend que redirija de vuelta a ESTE origen (tbt.cafe) — el backend valida
  * que successUrl/cancelUrl estén en su propia allowlist de CORS.
  */
-export async function createTransfer(input: CreateTransferInput): Promise<{ checkoutUrl?: string; error?: string }> {
+export async function createTransfer(
+  input: CreateTransferInput
+): Promise<{ clientSecret?: string; checkoutUrl?: string; error?: string }> {
   const auth = await authHeader()
   if (!auth) return { error: 'needSignIn' }
 
@@ -81,13 +83,15 @@ export async function createTransfer(input: CreateTransferInput): Promise<{ chec
         recipientName: input.recipientName,
         value: input.value,
         biometricProof: input.biometricProof ?? null,
+        // Checkout embebido (Spec 01 §3.1): el emisor no sale de tbt.cafe.
+        embedded: true,
         successUrl: `${origin}/work/${input.workId}?transfer=sent`,
         cancelUrl: `${origin}/work/${input.workId}?transfer=cancelled`,
       }),
     })
     const body = await res.json()
     if (!res.ok) return { error: body.error ?? 'transferFailed' }
-    return { checkoutUrl: body.checkoutUrl }
+    return { clientSecret: body.clientSecret, checkoutUrl: body.checkoutUrl }
   } catch {
     return { error: 'transferFailed' }
   }

@@ -6,6 +6,7 @@ import { PhonePicker } from '@/components/PhonePicker'
 import { transferQuote, money } from '@/lib/fees'
 import { createTransfer } from '@/lib/transfer-data'
 import { LadderGate } from '@/components/LadderGate'
+import { EmbeddedCheckoutSheet } from '@/components/EmbeddedCheckoutSheet'
 import { royaltyOf, type WorkFull } from '@/lib/work-data'
 
 /**
@@ -36,6 +37,7 @@ export function TransferPanel({
   const [err, setErr] = useState('')
   const [busy, setBusy] = useState(false)
   const [ladderOpen, setLadderOpen] = useState(false)
+  const [clientSecret, setClientSecret] = useState<string | null>(null)
 
   const numValue = parseFloat(value.replace(/[^0-9.]/g, '')) || 0
   const q = transferQuote(numValue, royalty, senderIsCreator)
@@ -59,7 +61,7 @@ export function TransferPanel({
   async function submitAuthorized(biometricProof: string | null) {
     setLadderOpen(false)
     setBusy(true)
-    const { checkoutUrl, error } = await createTransfer({
+    const { clientSecret: secret, checkoutUrl, error } = await createTransfer({
       workId: work.id,
       recipientPhone: phone1,
       recipientName: name.trim(),
@@ -68,6 +70,13 @@ export function TransferPanel({
     })
     if (error) {
       setErr(t.transfer.errors?.[error as keyof typeof t.transfer.errors] ?? t.transfer.errors.transferFailed)
+      setBusy(false)
+      return
+    }
+    // El formulario se monta aquí mismo. El redirect queda de respaldo por si
+    // el backend no devolvió client_secret.
+    if (secret) {
+      setClientSecret(secret)
       setBusy(false)
       return
     }
@@ -162,6 +171,10 @@ export function TransferPanel({
         {busy ? t.transfer.authorizing : t.transfer.payAmountAndSend.replace('{amount}', `${money(q.total)} USD`)}
       </button>
       <p className="text-center text-[10px] text-placeholder mt-2">{t.transfer.securedByStripe}</p>
+      {clientSecret && (
+        <EmbeddedCheckoutSheet clientSecret={clientSecret} onClose={() => setClientSecret(null)} />
+      )}
+
       <LadderGate
         open={ladderOpen}
         action="transfer_initiate"
