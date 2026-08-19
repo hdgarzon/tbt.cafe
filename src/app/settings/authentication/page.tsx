@@ -6,6 +6,7 @@ import { useLocale } from '@/i18n/LocaleProvider'
 import { useShell } from '@/components/AppShell'
 import { maskEmail, maskPhoneE164 } from '@/lib/masking'
 import { PrivateCodeSheet } from '@/components/PrivateCodeSheet'
+import { SecBlock } from '@/components/FormBits'
 import { RecoveryEmailSheet } from '@/components/RecoveryEmailSheet'
 import { BiometricSheet } from '@/components/BiometricSheet'
 
@@ -186,49 +187,6 @@ export default function AuthHubPage() {
           load()
         }}
       />
-    </div>
-  )
-}
-
-/** Fila sec-block del prototipo — label versalitas, valor grande, tag pill, acción a la derecha. */
-function SecBlock({
-  label,
-  value,
-  tag,
-  action,
-  onAction,
-  hint,
-}: {
-  label: string
-  value: string
-  tag: { label: string; verified: boolean }
-  action: string
-  onAction: () => void
-  hint?: string
-}) {
-  return (
-    <div className="py-[18px] border-b border-hairline first:pt-1">
-      <div className="flex items-start justify-between gap-3.5">
-        <div className="min-w-0">
-          <div className="text-[10px] font-medium tracking-[0.16em] uppercase text-ink-soft">{label}</div>
-          <div className="text-[16px] text-ink mt-[7px] tracking-[0.04em] truncate">{value}</div>
-          <span
-            className={`inline-block mt-[9px] text-[9px] font-semibold tracking-[0.12em] uppercase px-2 py-[3px] rounded-full border ${
-              tag.verified ? 'text-t-green border-t-green' : 'text-ink-soft border-hairline'
-            }`}
-          >
-            {tag.label}
-          </span>
-        </div>
-        <button
-          type="button"
-          onClick={onAction}
-          className="shrink-0 mt-0.5 rounded-[9px] border border-ink px-4 py-[9px] text-[10px] font-semibold tracking-[0.12em] uppercase text-ink transition-colors hover:bg-ink hover:text-paper"
-        >
-          {action}
-        </button>
-      </div>
-      {hint && <p className="text-[11.5px] leading-[1.55] text-ink-soft mt-3">{hint}</p>}
     </div>
   )
 }

@@ -231,3 +231,30 @@ export function CaretIcon({ size = 10 }: { size?: number }) {
     </svg>
   )
 }
+
+/**
+ * Recibo — icono de los recibos de cobro (.payout-receipts-icon del
+ * prototipo). Trazo de 32 sobre un lienzo de 512, con el borde inferior
+ * dentado que hace que se lea como un recibo y no como un documento.
+ */
+export function ReceiptIcon() {
+  return (
+    <svg
+      width="22"
+      height="22"
+      viewBox="0 0 512 512"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="32"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <path d="M48 74a32 32 0 0 1 32-32h332a10 10 0 0 1 8 16 40 40 0 0 0-8 24v378a8 8 0 0 1-12 7l-58-36-58 36a8 8 0 0 1-8 0l-58-36-58 36a8 8 0 0 1-12-7z" />
+      <path d="M412 42a40 40 0 0 1 40 40v68a10 10 0 0 1-10 10h-30" />
+      <line x1="112" y1="150" x2="300" y2="150" />
+      <line x1="112" y1="236" x2="300" y2="236" />
+      <line x1="112" y1="322" x2="300" y2="322" />
+    </svg>
+  )
+}
