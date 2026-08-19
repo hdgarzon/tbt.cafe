@@ -69,7 +69,8 @@
     "lockedNoteBold": "Toque em qualquer uma para conectar.",
     "footNote1": "tbt.cafe — Transbit × BROCHA",
     "footNote2": "Tokens Transferíveis Faturáveis",
-    "help": "Ajuda"
+    "help": "Ajuda",
+    "payouts": "Repasses"
   },
   "auth": {
     "termsPrefix": "Concordo com os",
@@ -951,5 +952,82 @@
       "payout_failed": "Não conseguimos concluir um recebimento.",
       "payout_destination": "O destino dos seus recebimentos mudou."
     }
+  },
+  "payouts": {
+    "title": "Repasses",
+    "sub": "Para onde vai o seu dinheiro, e o que ainda está liquidando",
+    "collect": "Receber",
+    "receipts": "Recibos de repasse",
+    "empty": "Ainda não há repasses. Royalties e o resultado das suas vendas aparecerão aqui quando forem pagos.",
+    "available": "Disponível",
+    "pending": "Liquidando",
+    "collected": "Recebido",
+    "availableCount": "{n} disponível",
+    "selectedCount": "{n} selecionado",
+    "holdSettlement": "Libera em {date}",
+    "holdCounterparty": "Libera quando a outra parte aceitar",
+    "noMethods": "Ainda não há método de repasse disponível no seu país. Fale com o suporte e resolvemos com você.",
+    "noCountry": "Adicione o seu país nas configurações de repasse para mostrarmos os métodos disponíveis.",
+    "gross": "Bruto",
+    "platformFee": "Taxa da plataforma",
+    "methodFee": "Taxa do método",
+    "net": "Você recebe",
+    "defaultMethod": "Método padrão",
+    "destination": "Destino",
+    "notSet": "Não definido",
+    "change": "Alterar",
+    "methodHint": "Os métodos disponíveis dependem do seu país.",
+    "destHint": "Alterar para onde você recebe exige a sua biometria e o seu código privado.",
+    "stillSettling": "Ainda liquidando",
+    "settleHint": "Um repasse fica disponível quando a sua janela de liquidação fecha.",
+    "confirm": "Confirmar o recebimento",
+    "blockCreated": "Bloco de repasse {id} criado",
+    "method": {
+      "usdc": "USDC",
+      "bank": "Conta bancária"
+    },
+    "dest": {
+      "walletAddress": "Endereço da carteira",
+      "bankAccount": "Conta bancária"
+    },
+    "eta": {
+      "minutes": "Chega em minutos",
+      "days": "Chega em 2–3 dias"
+    },
+    "source": {
+      "sale": "Venda",
+      "royalty": "Royalty",
+      "transfer": "Transferência",
+      "offer": "Oferta"
+    },
+    "valuedAt": "no valor de",
+    "pendingUntil": "Pendente até {date}",
+    "settlingLine": "{amount} USD liquidando · {n} repasse",
+    "settlingLinePlural": "{amount} USD liquidando · {n} repasses",
+    "verifyCollection": "Verificar o recebimento",
+    "total": "Total",
+    "touchToConfirm": "Toque para confirmar a sua identidade",
+    "identityConfirmed": "Identidade confirmada",
+    "agreeTerms": "Aceito os termos de pagamento",
+    "continue": "Continuar",
+    "collectionMethod": "Método de recebimento",
+    "confirmAddress": "Confirme o endereço",
+    "addressMismatch": "Os endereços não coincidem",
+    "collectAmount": "Receber {amount} USD",
+    "grossPayout": "Repasse bruto",
+    "netPayout": "Repasse líquido",
+    "payoutFee": "Taxa de repasse",
+    "enterCode": "Digite o seu código privado",
+    "codeHint": "Receber sempre pede a sua biometria e o seu código privado.",
+    "wrongCode": "Esse código não está certo.",
+    "lockedOut": "Tentativas demais. Tente mais tarde.",
+    "bankOnFile": "Conta bancária cadastrada",
+    "heldByConnect": "sob custódia da Stripe Connect",
+    "changeInSettings": "Alterar para onde você recebe exige a sua biometria e o seu código privado. Você pode alterar em Configurações › Repasses.",
+    "biometricFailed": "A verificação biométrica não foi concluída.",
+    "noBiometric": "Não há biometria cadastrada neste aparelho. Cadastre em Configurações › Autenticação.",
+    "collectFailed": "Não foi possível concluir o recebimento.",
+    "collectedToast": "Recebido — {id}",
+    "processingNote": "O seu bloco de repasse foi criado. O envio ao seu destino vem em seguida."
   }
 }

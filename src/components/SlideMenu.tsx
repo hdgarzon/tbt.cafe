@@ -94,6 +94,9 @@ export function SlideMenu({ open, onClose }: { open: boolean; onClose: () => voi
       hasLanguage: true,
       children: [
         { label: t.menu.authentication, href: '/settings/authentication' },
+        // Payouts en Settings, como el prototipo: aquí se cambia dónde te
+        // pagan; en Transactions se mira lo que se debe.
+        { label: t.menu.payouts, href: '/settings/payouts' },
         { label: t.menu.notifications, href: '/settings/notifications' },
         { label: t.menu.profile, href: '/profile' },
         { label: t.menu.help, href: '/help' },
@@ -103,6 +106,9 @@ export function SlideMenu({ open, onClose }: { open: boolean; onClose: () => voi
       key: 'transactions',
       label: t.menu.transactions,
       children: [
+        // Payouts va PRIMERO, como en el prototipo: es lo que un vendedor
+        // viene a buscar aquí, y el resto son consultas.
+        { label: t.menu.payouts, href: '/history/payouts' },
         { label: t.menu.brews, href: '/history/brews' },
         { label: t.menu.offers, href: '/history/offers' },
         { label: t.menu.royalties, href: '/history/royalties' },
@@ -174,7 +180,13 @@ export function SlideMenu({ open, onClose }: { open: boolean; onClose: () => voi
 
                 <div
                   className={`overflow-hidden bg-paper-warm transition-[max-height] duration-300 ease-in-out ${
-                    isOpen ? 'max-h-[320px] border-b border-hairline' : 'max-h-0'
+                    // El prototipo topa en 320px, que le bastaba para cinco
+                    // filas. Settings ya lleva seis —Payouts entró y Help
+                    // sigue ahí, aunque el prototipo no la tenga en el menú— y
+                    // medía 311px: nueve de margen, que una traducción más
+                    // larga se come. El tope solo recorta, así que subirlo no
+                    // cambia nada en los submenús cortos.
+                    isOpen ? 'max-h-[400px] border-b border-hairline' : 'max-h-0'
                   }`}
                 >
                   {group.children.map((child, i) => (
