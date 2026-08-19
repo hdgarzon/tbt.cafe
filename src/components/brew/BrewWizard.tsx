@@ -10,7 +10,7 @@ import { EspressoFlow, type EspressoResult } from '@/components/brew/EspressoFlo
 import { ContextEditor } from '@/components/brew/ContextEditor'
 import { fetchCoveredStatus, type CoveredStatus } from '@/lib/covered-data'
 import { EmbeddedCheckoutSheet } from '@/components/EmbeddedCheckoutSheet'
-import { money } from '@/lib/fees'
+import { money, FEE } from '@/lib/fees'
 import type { SeriesWithCount } from '@/lib/series-data'
 import {
   fetchDraftForResume,
@@ -539,10 +539,15 @@ export function BrewWizard() {
       setPromoDiscount(null)
       return
     }
+    // El mensaje sale del cupón, no de una constante. Estaba fijo en "50% off"
+    // para cualquier descuento parcial, así que un cupón del 20% también
+    // anunciaba un 50%.
     if (result.type === 'percentage' && (result.value ?? 0) >= 100) {
       setPromoMsg(t.brew.promoFullCoverage)
+    } else if (result.type === 'fixed') {
+      setPromoMsg(t.brew.promoAppliedFixed.replace('{value}', money(result.value ?? 0)))
     } else {
-      setPromoMsg(t.brew.promoHalfOff)
+      setPromoMsg(t.brew.promoApplied.replace('{value}', `${result.value ?? 0}%`))
     }
     setPromoDiscount({ type: result.type!, value: result.value ?? 0 })
   }
@@ -565,6 +570,13 @@ export function BrewWizard() {
       if (result.error === 'payment_window_expired') {
         setPayLeft(0)
         setPayDeadline(Date.now())
+        return
+      }
+      // Un código que Stripe no acepta se dice, en vez de cobrar el importe
+      // completo en silencio después de haberlo anunciado.
+      if (result.error === 'invalid_coupon') {
+        setPromoMsg(t.brew.promoNotAccepted)
+        setPromoDiscount(null)
         return
       }
       setMsg(t.brew.errors.checkoutFailed)
@@ -1387,7 +1399,12 @@ export function BrewWizard() {
     return (
       <>
       {clientSecret && (
-        <EmbeddedCheckoutSheet clientSecret={clientSecret} onClose={() => setClientSecret(null)} />
+        <EmbeddedCheckoutSheet
+          clientSecret={clientSecret}
+          onClose={() => setClientSecret(null)}
+          // Un registro no cambia de manos: no hay "para quién".
+          recap={{ what: t.recap.registration, amount: `${money(FEE.service)} USD` }}
+        />
       )}
       <BrewChrome
         onBack={backTo('ctx3')}

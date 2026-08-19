@@ -18,6 +18,17 @@
  *    callback nuestro.
  *
  * El sello "Secured by Stripe" se mantiene, como pide el spec.
+ *
+ * La LÍNEA DE RECAP (§1A, paso 1) va encima del formulario: qué, para quién y
+ * cuánto, en un renglón. Es la única parte del patrón de pago que nos toca —
+ * el selector de Apple Pay / Google Pay / tarjeta lo dibuja Stripe dentro del
+ * iframe, y lo hace consciente del dispositivo, que es justo lo que pide la
+ * nota de producción del spec: nunca un Apple Pay gris en Android.
+ *
+ * El importe que se muestra aquí tiene que ser el MISMO que se cobra (§1A.1).
+ * Por eso llega ya resuelto desde quien crea la sesión, en vez de recalcularse
+ * en la pantalla: derivarlo dos veces es exactamente cómo nació el bug que el
+ * spec deja registrado.
  */
 import { useMemo } from 'react'
 import { loadStripe } from '@stripe/stripe-js'
@@ -29,12 +40,23 @@ const publishableKey = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY
 /** Una sola instancia por carga de página: loadStripe no debe llamarse en cada render. */
 const stripePromise = publishableKey ? loadStripe(publishableKey) : null
 
+export type PaymentRecap = {
+  /** Qué se está pagando: el título de la obra, o el concepto. */
+  what: string
+  /** Para quién queda. Se omite cuando no aplica, como en un registro. */
+  forWhom?: string
+  /** Cuánto, ya formateado y ya resuelto — no se recalcula aquí. */
+  amount: string
+}
+
 export function EmbeddedCheckoutSheet({
   clientSecret,
   onClose,
+  recap,
 }: {
   clientSecret: string
   onClose: () => void
+  recap?: PaymentRecap
 }) {
   const { t } = useLocale()
   const options = useMemo(() => ({ clientSecret }), [clientSecret])
@@ -51,6 +73,24 @@ export function EmbeddedCheckoutSheet({
         </button>
         <span className="text-[10px] text-placeholder">{t.brew.securedByStripe}</span>
       </div>
+
+      {recap && (
+        <div className="shrink-0 px-4 pt-3">
+          <div className="rounded-[10px] border border-hairline bg-paper-warm px-[13px] py-[11px] text-[11.5px] leading-[1.55] text-ink-soft">
+            <span className="font-medium text-ink">{recap.what}</span>
+            {recap.forWhom && (
+              <>
+                <span className="mx-1.5 text-placeholder">·</span>
+                <span>
+                  {t.recap.willBelongTo} {recap.forWhom}
+                </span>
+              </>
+            )}
+            <span className="mx-1.5 text-placeholder">·</span>
+            <span className="font-medium text-ink whitespace-nowrap">{recap.amount}</span>
+          </div>
+        </div>
+      )}
 
       <div className="flex-1 overflow-y-auto">
         {stripePromise ? (

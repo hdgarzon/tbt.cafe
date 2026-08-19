@@ -873,7 +873,10 @@
     "coveredNote": "Esta é por nossa conta — restam {n} registros gratuitos.",
     "coveredNoteOne": "Esta é por nossa conta — resta 1 registro gratuito.",
     "registerCovered": "Registrar",
-    "coveredNoteLast": "Esta é por nossa conta — é o seu último registro gratuito."
+    "coveredNoteLast": "Esta é por nossa conta — é o seu último registro gratuito.",
+    "promoApplied": "{value} de desconto aplicado.",
+    "promoAppliedFixed": "{value} USD de desconto aplicado.",
+    "promoNotAccepted": "Esse código não é válido para este pagamento."
   },
   "help": {
     "title": "Ajuda",
@@ -1038,5 +1041,10 @@
     "cancel": "Cancelar",
     "failed": "A verificação não passou, então nada foi cobrado.",
     "noBiometric": "Não há biometria cadastrada neste aparelho. Cadastre em Configurações › Autenticação."
+  },
+  "recap": {
+    "willBelongTo": "passará a",
+    "registration": "Registro",
+    "thisWork": "Esta obra"
   }
 }

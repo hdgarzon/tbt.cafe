@@ -354,6 +354,11 @@ export async function startRegistration(
         type: 'tbt_creation',
         workId,
         embedded: true,
+        // El código VIAJA. Antes se quedaba aquí: solo se usaba para el atajo
+        // del 100% y los parciales nunca llegaban a la sesión, así que la
+        // pantalla anunciaba el descuento y Stripe cobraba el importe entero
+        // (§1A.1, el bug que el spec deja registrado).
+        couponCode,
         returnUrl: successUrl,
         successUrl,
         cancelUrl,

@@ -873,7 +873,10 @@
     "coveredNote": "This one is on us — {n} free registrations remaining.",
     "coveredNoteOne": "This one is on us — 1 free registration remaining.",
     "registerCovered": "Register",
-    "coveredNoteLast": "This one is on us — it's your last free registration."
+    "coveredNoteLast": "This one is on us — it's your last free registration.",
+    "promoApplied": "{value} off applied.",
+    "promoAppliedFixed": "{value} USD off applied.",
+    "promoNotAccepted": "That code is not valid for this payment."
   },
   "help": {
     "title": "Help",
@@ -1038,5 +1041,10 @@
     "cancel": "Cancel",
     "failed": "The check did not go through, so nothing was charged.",
     "noBiometric": "No biometric is enrolled on this device. Enrol one in Settings › Authentication."
+  },
+  "recap": {
+    "willBelongTo": "will belong to",
+    "registration": "Registration",
+    "thisWork": "This work"
   }
 }
