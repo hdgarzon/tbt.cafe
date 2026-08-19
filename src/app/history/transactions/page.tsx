@@ -1,6 +1,7 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useMemo, Suspense } from 'react'
+import { useSearchParams } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import { useLocale, type Dictionary } from '@/i18n/LocaleProvider'
 
@@ -27,7 +28,7 @@ const STATUS_KEY: Partial<Record<Transfer['status'], keyof Dictionary['myCollect
   cancelled: 'transferStatusCancelled',
 }
 
-export default function TransactionsPage() {
+function TransfersLedger() {
   const { t } = useLocale()
   const [loading, setLoading] = useState(true)
   const [signedIn, setSignedIn] = useState(true)
@@ -74,8 +75,26 @@ export default function TransactionsPage() {
     })()
   }, [])
 
+  /**
+   * In y Out son la misma lista mirada desde los dos lados: la consulta ya
+   * trae ambas direcciones con un `or`, así que separarlas es un filtro en la
+   * URL y no una segunda ruta.
+   */
+  const direction = useSearchParams().get('d')
+  const shown = useMemo(
+    () =>
+      direction === 'in'
+        ? transfers.filter((x) => x.to_owner_id === userId)
+        : direction === 'out'
+          ? transfers.filter((x) => x.from_owner_id === userId)
+          : transfers,
+    [transfers, direction, userId]
+  )
+
   if (loading) return <div className="px-4 pt-6 text-[13px] text-ink-soft">{t.authHub.loading}</div>
   if (!signedIn) {
+
+
     return (
       <div className="px-4 pt-6">
         <a href="/" className="back-link">← {t.purchase.home}</a>
@@ -90,11 +109,11 @@ export default function TransactionsPage() {
       <h1 className="page-title">{t.menu.transactions}</h1>
       <div className="page-sub">{t.myCollections.transactionsSub}</div>
 
-      {transfers.length === 0 ? (
+      {shown.length === 0 ? (
         <p className="page-note">{t.myCollections.transactionsEmpty}</p>
       ) : (
         <div className="mt-2">
-          {transfers.map((x) => {
+          {shown.map((x) => {
             const outgoing = x.from_owner_id === userId
             return (
               <a
@@ -121,5 +140,18 @@ export default function TransactionsPage() {
         </div>
       )}
     </div>
+  )
+}
+
+/**
+ * `useSearchParams` obliga a un límite de Suspense: sin él Next no puede
+ * prerenderizar la ruta y el build falla al generarla. El filtro de dirección
+ * es lo único que lo necesita, así que el límite envuelve solo esta vista.
+ */
+export default function TransactionsPage() {
+  return (
+    <Suspense fallback={null}>
+      <TransfersLedger />
+    </Suspense>
   )
 }

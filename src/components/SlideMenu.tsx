@@ -1,31 +1,65 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { supabase } from '@/lib/supabase'
+import { fetchMenuCounts, sectionTotal, EMPTY_COUNTS, type MenuCounts } from '@/lib/menu-counts'
 import { locales, localeMeta, type Locale } from '@/i18n/config'
 import { useLocale } from '@/i18n/LocaleProvider'
 import { useShell } from '@/components/AppShell'
 import { CloseIcon, CaretIcon } from '@/components/Brand'
 
 /**
- * Menú deslizable en acordeón (Build Spec 02, ÍTEM 6 — reemplaza la
- * estructura de Build Spec 01). Tres secciones, cada una auth-gated: tocar
- * el encabezado de una sección sin sesión abre autenticación en vez de
- * expandir. "Acquisitions" pasa a llamarse "Collections" en la UI (la ruta
- * /collections/acquisitions no cambia); "History"/"Activity" desaparecen —
- * Transactions cubre el mismo terreno.
+ * Menú deslizable en acordeón — las CINCO secciones del prototipo.
  *
- * TRANSACTIONS: cinco vistas reales — Brews/Offers/Royalties/Sales leen de
- * history-data.ts (derivadas de works/offers/ownership_history/transfers,
- * ninguna simulada); Transfers sigue en su propia página ya existente
- * (/history/transactions), construida en una fase anterior.
+ * Ofertas y Transferencias son secciones propias, no hijas de Transactions:
+ * en el prototipo cada una tiene su encabezado y su contador, porque son
+ * cosas que le pasan a uno y no consultas que uno va a hacer.
+ *
+ * Cada sección va auth-gated: tocar su encabezado sin sesión abre
+ * autenticación en vez de expandir.
+ *
+ * "Acquisitions" se llama "Collections" en la UI; la ruta
+ * /collections/acquisitions no cambia.
+ *
+ * Made/Received y In/Out comparten página con un filtro en la URL: son la
+ * misma lista mirada desde los dos lados, y partirla en dos rutas habría
+ * duplicado la consulta para cambiar un `where`.
  *
  * Language sigue siendo un selector INLINE dentro de Settings, con
  * confirmación antes de aplicar (Master Handoff §6). locale/setLocale vienen
  * del LocaleProvider compartido, no de props.
  */
 
-type Child = { label: string; href: string }
-type Group = { key: string; label: string; children: Child[]; hasLanguage?: boolean }
+type Child = { label: string; href: string; count?: number; accent?: boolean }
+type Group = { key: string; label: string; children: Child[]; hasLanguage?: boolean; count?: number }
+
+/**
+ * Píldora de conteo. En cero no se pinta: una píldora permanente con un número
+ * que nunca cambia deja de mirarse.
+ *
+ * La de sección va en tinta; la de subítem en hairline, más callada. La de
+ * Payouts va en verde, como en el prototipo — es la única que significa dinero
+ * cobrable, y merece leerse distinto del resto.
+ */
+function CountPill({ n, tone }: { n: number; tone: 'section' | 'sub' | 'payout' }) {
+  if (!n) return null
+  if (tone === 'section') {
+    return (
+      <span className="ml-auto mr-2.5 min-w-5 h-5 px-1.5 rounded-[10px] bg-ink text-white text-[10px] font-semibold leading-5 text-center tabular-nums">
+        {n}
+      </span>
+    )
+  }
+  return (
+    <span
+      className={`shrink-0 mr-3 min-w-[18px] h-[18px] px-[5px] rounded-[9px] text-[10px] font-medium leading-[18px] text-center tabular-nums ${
+        tone === 'payout' ? 'bg-t-green text-white' : 'bg-hairline text-ink-soft'
+      }`}
+    >
+      {n}
+    </span>
+  )
+}
 
 /** Candado — junto a la etiqueta de sección cuando no hay sesión (prototipo: .m-lock). */
 const LockIcon = () => (
@@ -50,6 +84,21 @@ export function SlideMenu({ open, onClose }: { open: boolean; onClose: () => voi
   const { locale, t, setLocale } = useLocale()
   const { connected, openAuth } = useShell()
   const [expanded, setExpanded] = useState<string | null>(null)
+  const [counts, setCounts] = useState<MenuCounts>(EMPTY_COUNTS)
+
+  // Los conteos se leen al abrir el cajón, no al montar: sin abrirlo nadie los
+  // ve, y son nueve consultas.
+  useEffect(() => {
+    if (!open || !connected) return
+    let alive = true
+    supabase.auth.getUser().then(({ data }) => {
+      if (!data.user) return
+      fetchMenuCounts(data.user.id).then((c) => alive && setCounts(c))
+    })
+    return () => {
+      alive = false
+    }
+  }, [open, connected])
 
   useEffect(() => {
     if (!open) return
@@ -89,31 +138,55 @@ export function SlideMenu({ open, onClose }: { open: boolean; onClose: () => voi
       ],
     },
     {
-      key: 'settings',
-      label: t.menu.settings,
-      hasLanguage: true,
+      key: 'offers',
+      label: t.menu.offers,
+      count: sectionTotal(counts.offersMade, counts.offersReceived),
       children: [
-        { label: t.menu.authentication, href: '/settings/authentication' },
-        // Payouts en Settings, como el prototipo: aquí se cambia dónde te
-        // pagan; en Transactions se mira lo que se debe.
-        { label: t.menu.payouts, href: '/settings/payouts' },
-        { label: t.menu.notifications, href: '/settings/notifications' },
-        { label: t.menu.profile, href: '/profile' },
-        { label: t.menu.help, href: '/help' },
+        { label: t.menu.offersMade, href: '/history/offers?d=made', count: counts.offersMade },
+        { label: t.menu.offersReceived, href: '/history/offers?d=received', count: counts.offersReceived },
+      ],
+    },
+    {
+      key: 'transfers',
+      label: t.menu.transfers,
+      count: sectionTotal(counts.transfersIn, counts.transfersOut),
+      children: [
+        { label: t.menu.transfersIn, href: '/history/transactions?d=in', count: counts.transfersIn },
+        { label: t.menu.transfersOut, href: '/history/transactions?d=out', count: counts.transfersOut },
       ],
     },
     {
       key: 'transactions',
       label: t.menu.transactions,
+      count: sectionTotal(
+        counts.payouts,
+        counts.brews,
+        counts.royalties,
+        counts.purchased,
+        counts.sales
+      ),
       children: [
-        // Payouts va PRIMERO, como en el prototipo: es lo que un vendedor
-        // viene a buscar aquí, y el resto son consultas.
-        { label: t.menu.payouts, href: '/history/payouts' },
-        { label: t.menu.brews, href: '/history/brews' },
-        { label: t.menu.offers, href: '/history/offers' },
-        { label: t.menu.royalties, href: '/history/royalties' },
-        { label: t.menu.transfers, href: '/history/transactions' },
-        { label: t.menu.sales, href: '/history/sales' },
+        // Payouts primero y en verde: es lo que un vendedor viene a buscar,
+        // y lo único de esta lista que significa dinero cobrable.
+        { label: t.menu.payouts, href: '/history/payouts', count: counts.payouts, accent: true },
+        { label: t.menu.brews, href: '/history/brews', count: counts.brews },
+        { label: t.menu.royalties, href: '/history/royalties', count: counts.royalties },
+        { label: t.menu.purchased, href: '/history/purchased', count: counts.purchased },
+        { label: t.menu.sales, href: '/history/sales', count: counts.sales },
+      ],
+    },
+    {
+      key: 'settings',
+      label: t.menu.settings,
+      hasLanguage: true,
+      // Orden del prototipo. Help no está en su menú —cuelga del icono de
+      // notificaciones— pero se conserva: es la única puerta con URL propia.
+      children: [
+        { label: t.menu.profile, href: '/profile' },
+        { label: t.menu.authentication, href: '/settings/authentication' },
+        { label: t.menu.payouts, href: '/settings/payouts' },
+        { label: t.menu.notifications, href: '/settings/notifications' },
+        { label: t.menu.help, href: '/help' },
       ],
     },
   ]
@@ -123,7 +196,7 @@ export function SlideMenu({ open, onClose }: { open: boolean; onClose: () => voi
   const labelClass = 'text-[13px] font-medium tracking-[0.18em] uppercase text-ink'
   const signClass = 'text-[18px] font-normal leading-none text-ink-soft w-4 text-center'
   const subItemClass =
-    'block w-full text-left px-[22px] pl-[34px] py-[15px] text-[13px] tracking-[0.05em] text-ink-soft hover:text-ink transition-colors'
+    'flex items-center w-full text-left px-[22px] pl-[34px] py-[15px] text-[13px] tracking-[0.05em] text-ink-soft hover:text-ink transition-colors'
 
   return (
     <>
@@ -156,7 +229,7 @@ export function SlideMenu({ open, onClose }: { open: boolean; onClose: () => voi
 
         <div className="flex-1 py-2">
           {!connected && (
-            <p className="mx-[22px] mt-1 mb-3.5 px-3.5 py-2.5 bg-paper-warm border border-hairline rounded-[10px] text-[11px] leading-[1.6] text-ink-soft">
+            <p className="mt-1 mb-3.5 px-[13px] py-[11px] bg-paper-warm border border-hairline rounded-[10px] text-[11px] leading-[1.6] text-ink-soft">
               {t.menu.lockedNote} <b className="font-medium text-ink">{t.menu.lockedNoteBold}</b>
             </p>
           )}
@@ -175,6 +248,7 @@ export function SlideMenu({ open, onClose }: { open: boolean; onClose: () => voi
                     {group.label}
                     {!connected && <LockIcon />}
                   </span>
+                  {connected && <CountPill n={group.count ?? 0} tone="section" />}
                   <span className={connected ? signClass : `${signClass} opacity-35`}>{connected && isOpen ? '–' : '+'}</span>
                 </button>
 
@@ -191,7 +265,14 @@ export function SlideMenu({ open, onClose }: { open: boolean; onClose: () => voi
                 >
                   {group.children.map((child, i) => (
                     <a key={child.label} href={child.href} className={`${subItemClass} ${i > 0 ? 'border-t border-hairline' : ''}`}>
-                      {child.label}
+                      {/* La píldora va escrita ANTES que la etiqueta, no
+                          reordenada por flex. El prototipo lo comenta: `order`
+                          deja de hacer nada en cuanto una regla posterior
+                          devuelva el subítem a `display:block`. */}
+                      <CountPill n={child.count ?? 0} tone={child.accent ? 'payout' : 'sub'} />
+                      <span className={`flex-1 ${child.accent && child.count ? 'text-t-green font-medium' : ''}`}>
+                        {child.label}
+                      </span>
                     </a>
                   ))}
 
@@ -225,11 +306,6 @@ export function SlideMenu({ open, onClose }: { open: boolean; onClose: () => voi
               </div>
             )
           })}
-        </div>
-
-        <div className="shrink-0 bg-paper-warm border-t border-hairline p-[22px] flex flex-col gap-0.5">
-          <span className="text-[11px] tracking-[0.05em] text-ink-soft">{t.menu.footNote1}</span>
-          <span className="text-[11px] tracking-[0.05em] text-ink-soft">{t.menu.footNote2}</span>
         </div>
       </nav>
     </>

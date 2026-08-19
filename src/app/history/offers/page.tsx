@@ -1,6 +1,7 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState, Suspense } from 'react'
+import { useSearchParams } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import { useLocale } from '@/i18n/LocaleProvider'
 import { fetchOffersLedger, type OfferRow } from '@/lib/history-data'
@@ -18,11 +19,23 @@ const STATUS_KEY = {
 } as const
 
 /** /history/offers — ofertas hechas y recibidas (Build Spec 02, ÍTEM 6). */
-export default function OffersPage() {
+function OffersLedger() {
   const { t } = useLocale()
   const [loading, setLoading] = useState(true)
   const [signedIn, setSignedIn] = useState(true)
   const [rows, setRows] = useState<OfferRow[]>([])
+  /**
+   * Made y Received son la misma lista mirada desde los dos lados, así que
+   * comparten página y se separan con un filtro en la URL. Partirlas en dos
+   * rutas habría duplicado la consulta para cambiar un `where`.
+   */
+  const direction = useSearchParams().get('d')
+  const shown = useMemo(
+    () => (direction === 'made' || direction === 'received'
+      ? rows.filter((r) => r.direction === direction)
+      : rows),
+    [rows, direction]
+  )
 
   useEffect(() => {
     ;(async () => {
@@ -59,15 +72,15 @@ export default function OffersPage() {
       <h1 className="page-title">{t.menu.offers}</h1>
       <div className="page-sub">{t.myCollections.offersSub}</div>
 
-      {rows.length === 0 ? (
+      {shown.length === 0 ? (
         <p className="page-note">{t.myCollections.offersEmpty}</p>
       ) : (
         <>
           <p className="text-[12px] text-ink-soft mt-4">
-            {plural(rows.length, t.myCollections.entryCount, t.myCollections.entryCountPlural)}
+            {plural(shown.length, t.myCollections.entryCount, t.myCollections.entryCountPlural)}
           </p>
           <div className="mt-1">
-            {rows.map((r) => (
+            {shown.map((r) => (
               <LedgerRow
                 key={r.id}
                 href={r.tbtId ? `/work/${r.tbtId}` : undefined}
@@ -85,5 +98,18 @@ export default function OffersPage() {
         </>
       )}
     </div>
+  )
+}
+
+/**
+ * `useSearchParams` obliga a un límite de Suspense: sin él Next no puede
+ * prerenderizar la ruta y el build falla al generarla. El filtro de dirección
+ * es lo único que lo necesita, así que el límite envuelve solo esta vista.
+ */
+export default function OffersPage() {
+  return (
+    <Suspense fallback={null}>
+      <OffersLedger />
+    </Suspense>
   )
 }

@@ -258,3 +258,24 @@ export function ReceiptIcon() {
     </svg>
   )
 }
+
+/**
+ * Icono de notificaciones — el PNG del prototipo, extraído tal cual.
+ *
+ * Los tres estados los pinta el CSS (`notif-img`, `.notif-authed`,
+ * `.notif-active`), no props de color: es una imagen, no un trazo, así que se
+ * modula con opacidad y `grayscale`.
+ */
+export function NotificationIcon() {
+  return (
+    // eslint-disable-next-line @next/next/no-img-element
+    <img
+      className="notif-img block"
+      src="/notifications.png"
+      width={22}
+      height={22}
+      alt=""
+      aria-hidden="true"
+    />
+  )
+}

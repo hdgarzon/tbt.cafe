@@ -70,7 +70,12 @@
     "footNote1": "tbt.cafe — Transbit × BROCHA",
     "footNote2": "Jetons Transférables Facturables",
     "help": "Aide",
-    "payouts": "Versements"
+    "payouts": "Versements",
+    "offersMade": "Émises",
+    "offersReceived": "Reçues",
+    "transfersIn": "Entrants",
+    "transfersOut": "Sortants",
+    "purchased": "Achetées"
   },
   "auth": {
     "termsPrefix": "J'accepte les",

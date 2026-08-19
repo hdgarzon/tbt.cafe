@@ -171,3 +171,42 @@ export async function fetchSales(userId: string): Promise<SaleRow[]> {
     })
     .filter((r) => r.amount > 0)
 }
+
+export type PurchaseRow = {
+  id: string
+  tbtId: string
+  title: string
+  when: string
+  sellerName: string | null
+  amount: number
+}
+
+/**
+ * Obras que el usuario COMPRÓ — el espejo de `fetchSales`.
+ *
+ * Existe como vista propia porque Transactions es la mirada de dinero: qué
+ * salió y qué entró. `/collections/acquisitions` enseña lo mismo como
+ * colección —qué tengo— que es otra pregunta.
+ */
+export async function fetchPurchased(userId: string): Promise<PurchaseRow[]> {
+  const { data } = await supabase
+    .from('transfers')
+    .select('id, sale_price, payment_amount, from_owner_name, payment_status, outcome, completed_at, initiated_at, work:works(tbt_id, title)')
+    .eq('to_owner_id', userId)
+    .order('initiated_at', { ascending: false })
+
+  return (data ?? [])
+    .filter((t) => t.payment_status === 'completed' || t.outcome === 'accepted')
+    .map((t) => {
+      const work = Array.isArray(t.work) ? t.work[0] : t.work
+      return {
+        id: t.id,
+        tbtId: work?.tbt_id ?? '',
+        title: work?.title ?? '',
+        when: t.completed_at ?? t.initiated_at,
+        sellerName: t.from_owner_name ?? null,
+        amount: Number(t.sale_price ?? t.payment_amount ?? 0),
+      }
+    })
+    .filter((r) => r.amount > 0)
+}

@@ -96,15 +96,31 @@ export default function HomePage() {
           </div>
         )}
 
-        {/* Roast · Grind · Brew — tres cajas iguales, lado a lado */}
+        {/* Roast · Grind · Brew. NO son tres cajas iguales: Brew va en tinta
+            con vapor animado, y es lo único de color pleno de la pantalla. Es
+            lo que marca cuál es la acción principal — las otras dos son
+            destinos, esta es lo que la persona vino a hacer. */}
         <div className="flex gap-[10px]">
           {boxes.map((b) => (
             <a
               key={b.key}
               href={b.href}
-              className="flex-1 h-24 rounded-xl border border-hairline bg-paper flex flex-col items-center justify-center gap-[5px] px-1.5 py-2.5 text-center transition-[border-color,transform] duration-[180ms] hover:border-ink hover:-translate-y-0.5"
+              className={`relative flex-1 h-24 rounded-xl border flex flex-col items-center justify-center gap-[5px] px-1.5 py-2.5 text-center transition-[border-color,transform,background] duration-[180ms] hover:-translate-y-0.5 ${
+                b.key === 'brew'
+                  ? 'overflow-hidden border-[#1a1a1a] bg-[#1a1a1a] hover:border-black hover:bg-black'
+                  : 'border-hairline bg-paper hover:border-ink'
+              }`}
             >
-              <span className="font-display font-medium text-[20px] leading-none text-ink">
+              {b.key === 'brew' && (
+                <span className="brew-steam absolute inset-0 z-[1] overflow-hidden pointer-events-none" aria-hidden="true">
+                  <i /><i /><i /><i /><i />
+                </span>
+              )}
+              <span
+                className={`font-display font-medium text-[20px] leading-none ${
+                  b.key === 'brew' ? 'relative z-[2] text-white' : 'text-ink'
+                }`}
+              >
                 {b.label}
               </span>
             </a>
