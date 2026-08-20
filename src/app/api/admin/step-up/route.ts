@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
+import { createAdminClient } from '@/lib/supabase-admin'
 import { randomBytes, createHash } from 'crypto'
 import { verifyCode } from '@/lib/private-code'
 
@@ -36,10 +37,6 @@ function userClient(token: string) {
   )
 }
 
-function serviceClient() {
-  return createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
-}
-
 export async function POST(request: NextRequest) {
   try {
     const token = request.headers.get('authorization')?.replace(/^Bearer\s+/i, '')
@@ -58,7 +55,7 @@ export async function POST(request: NextRequest) {
     } = await userClient(token).auth.getUser()
     if (!user) return NextResponse.json({ error: 'Not authenticated' }, { status: 401 })
 
-    const admin = serviceClient()
+    const admin = createAdminClient()
 
     // Solo el equipo. Alguien de fuera ni siquiera debe poder gastar intentos
     // contra esta puerta.
