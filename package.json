@@ -10,6 +10,7 @@
     "check:fees": "npx --yes tsx scripts/fees-check.ts"
   },
   "dependencies": {
+    "@aws-sdk/client-sns": "^3.1115.0",
     "@metaplex-foundation/js": "^0.20.1",
     "@simplewebauthn/browser": "^13.3.0",
     "@simplewebauthn/server": "^13.3.2",
