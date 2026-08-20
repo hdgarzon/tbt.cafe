@@ -1,4 +1,5 @@
 import { createClient, type SupabaseClient } from '@supabase/supabase-js'
+import { createAdminClient } from '@/lib/supabase-admin'
 import { createHash } from 'crypto'
 import { verifyCode } from '@/lib/private-code'
 
@@ -32,10 +33,6 @@ export type TwoFactorSuccess = {
   admin: SupabaseClient
 }
 
-export function serviceClient(): SupabaseClient {
-  return createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
-}
-
 export async function verifyTwoFactors(
   token: string | undefined,
   input: { code?: string; biometricProof?: string }
@@ -59,7 +56,7 @@ export async function verifyTwoFactors(
     return { ok: false, status: 401, body: { error: 'not_authenticated' } }
   }
 
-  const admin = serviceClient()
+  const admin = createAdminClient()
 
   const { data: attempts } = await admin
     .from('private_code_attempts')
