@@ -53,7 +53,10 @@ export function ActionTab({
   const [availability, setAvailability] = useState<Availability>(c.availability)
   const [takingOffers, setTakingOffers] = useState(c.taking_offers)
   const [price, setPrice] = useState(c.initial_price ? money(c.initial_price) : '')
-  const [royalty, setRoyalty] = useState(String(c.royalty_pct))
+  // Una regalía fija es un monto, no un porcentaje: el control rotulado `%`
+  // no puede editarla sin convertirla en otra cosa.
+  const royaltyIsFixed = c.royalty_type === 'fixed'
+  const [royalty, setRoyalty] = useState(String(c.royalty_value))
   const [featured, setFeatured] = useState(work.is_featured)
   const [remaining, setRemaining] = useState('')
   const [toast, setToast] = useState('')
@@ -212,7 +215,7 @@ export function ActionTab({
           <div className="flex-1 flex items-center gap-1.5">
             <input
               value={royalty}
-              disabled={royaltyLocked}
+              disabled={royaltyLocked || royaltyIsFixed}
               onChange={(e) => setRoyalty(e.target.value)}
               onBlur={async () => {
                 const n = parseFloat(royalty)
@@ -225,12 +228,16 @@ export function ActionTab({
               inputMode="decimal"
               className="flex-1 min-w-0 px-3 py-2.5 border border-hairline rounded-lg text-[13px] outline-none focus:border-ink transition-colors disabled:opacity-50"
             />
-            <span className="text-[10px] tracking-[0.1em] text-placeholder">%</span>
+            <span className="text-[10px] tracking-[0.1em] text-placeholder">
+              {royaltyIsFixed ? 'USD' : '%'}
+            </span>
           </div>
         </div>
         <p className="text-[10.5px] text-placeholder mt-1.5 leading-[1.6] flex items-center gap-1">
           {royaltyLocked && <LockIcon />}
-          {royaltyLocked
+          {royaltyIsFixed
+            ? t.action.royaltyIsFixed.replace('{amount}', money(c.royalty_value))
+            : royaltyLocked
             ? hasSold
               ? t.action.royaltyLockedAtFirstSale
               : t.action.royaltyLockedBy.replace('{name}', work.creator?.public_alias || work.creator?.display_name || '')

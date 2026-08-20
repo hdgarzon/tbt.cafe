@@ -101,12 +101,12 @@ export type RoyaltyRow = { id: string; tbtId: string; title: string; when: strin
  * Regalías pagadas al usuario como creador — derivadas de ownership_history
  * (no hay una tabla de regalías dedicada). Un evento 'transfer' en una obra
  * que el usuario creó, donde el nuevo dueño no es el propio usuario, implica
- * una reventa; la regalía se calcula sobre el royalty_pct vigente de la obra.
+ * una reventa; la regalía se resuelve por los términos canónicos de la obra.
  */
 export async function fetchRoyalties(userId: string): Promise<RoyaltyRow[]> {
   const { data: myWorks } = await supabase
     .from('works')
-    .select('id, tbt_id, title, commerce:work_commerce(royalty_pct, royalty_type, royalty_value)')
+    .select('id, tbt_id, title, commerce:work_commerce(royalty_type, royalty_value)')
     .eq('creator_id', userId)
   const works = myWorks ?? []
   if (!works.length) return []

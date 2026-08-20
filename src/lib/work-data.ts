@@ -19,7 +19,6 @@ export type WorkCommerce = {
   currency: string
   availability: Availability
   taking_offers: boolean
-  royalty_pct: number
   /** 'none' | 'percentage' | 'fixed' — una regalía fija es absoluta (Spec 01 §2.1). */
   royalty_type: RoyaltyType
   /** El porcentaje o el monto fijo, según `royalty_type`. */
@@ -59,7 +58,6 @@ const COMMERCE_DEFAULT: WorkCommerce = {
   currency: 'USD',
   availability: 'not_for_sale',
   taking_offers: false,
-  royalty_pct: 10,
   royalty_type: 'percentage',
   royalty_value: 10,
   royalty_locked: false,
@@ -74,7 +72,7 @@ export async function fetchWorkFull(tbtId: string): Promise<WorkFull | null> {
        certified_at, mint_address, is_featured, current_owner_id, creator_id,
        series:work_series(id, name, slug),
        creator:profiles!works_creator_id_fkey(id, public_alias, display_name),
-       commerce:work_commerce(initial_price, currency, availability, taking_offers, royalty_pct, royalty_type, royalty_value, royalty_locked),
+       commerce:work_commerce(initial_price, currency, availability, taking_offers, royalty_type, royalty_value, royalty_locked),
        context:context_snapshots(ai_summary, user_edited_summary)`
     )
     .eq('tbt_id', tbtId)
@@ -151,13 +149,25 @@ export const saveTakingOffers = (workId: string, takingOffers: boolean) =>
 export const savePrice = (workId: string, price: number | null) =>
   updateCommerce(workId, { initial_price: price })
 
+/**
+ * Guarda la regalía en los términos canónicos — `royalty_type` + `royalty_value`.
+ *
+ * Antes escribía la columna porcentual de la migración 008, que ninguna ruta de
+ * dinero lee: `royaltyTermsOf` resuelve por los canónicos y de ahí salen
+ * `fees.ts` y el libro de ganancias. Editar la regalía aquí no cambiaba nada de
+ * lo que se cobra ni de lo que se abona.
+ *
+ * El editor es porcentual. Una regalía fija no se toca desde aquí —se fija al
+ * crear la obra, y `ActionTab` deshabilita el control— porque un monto escrito
+ * en una caja rotulada `%` se guardaría como porcentaje.
+ */
 export async function saveRoyalty(
   workId: string,
   royaltyPct: number,
   currentlyLocked: boolean
 ): Promise<{ error?: string }> {
   if (currentlyLocked) return { error: 'royaltyLocked' }
-  return updateCommerce(workId, { royalty_pct: royaltyPct })
+  return updateCommerce(workId, { royalty_type: 'percentage', royalty_value: royaltyPct })
 }
 
 export async function saveFeatured(workId: string, featured: boolean): Promise<{ error?: string }> {

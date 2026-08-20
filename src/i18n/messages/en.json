@@ -434,7 +434,8 @@
       "saveFailed": "We couldn't save the change",
       "royaltyLocked": "The royalty is locked and can no longer be changed.",
       "cancelFailed": "We couldn't cancel the transfer"
-    }
+    },
+    "royaltyIsFixed": "Royalty is a fixed {amount} USD, set when the work was created."
   },
   "transfer": {
     "title": "Transfer ownership",
