@@ -3,14 +3,18 @@ import { createClient } from '@supabase/supabase-js'
 /**
  * Cliente Supabase con service-role — SOLO SERVIDOR.
  *
- * Usado exclusivamente por el sign-in biométrico (auth/begin, auth/finish):
- * necesita leer credenciales WebAuthn de un usuario que TODAVÍA no tiene
- * sesión (está intentando entrar) y, tras verificar la aserción, acuñar una
- * sesión real de Supabase — algo que solo el service-role puede hacer.
+ * Nació para el sign-in biométrico (auth/begin, auth/finish), que necesita
+ * leer credenciales WebAuthn de alguien que TODAVÍA no tiene sesión y, tras
+ * verificar la aserción, acuñar una de verdad — algo que solo el service-role
+ * puede hacer. Hoy lo usan también el step-up y la telemetría de proveedores,
+ * que escribe una tabla que el usuario no debe poder tocar.
  *
- * Todo lo demás en tbt.cafe (perfiles, notificaciones, código privado,
- * enrolamiento biométrico) opera con la sesión del propio usuario y RLS de
- * fila propia. Este es el único punto del front nuevo que usa service-role.
+ * Sigue siendo la excepción, no el atajo: perfiles, notificaciones, código
+ * privado y enrolamiento operan con la sesión propia y RLS de fila propia. Si
+ * una ruta nueva llega aquí, es porque cruza fuera del alcance de su usuario.
+ *
+ * `two-factor.ts` expone un `serviceClient()` equivalente, con aserciones `!`
+ * en vez de comprobar. Sobra uno de los dos.
  */
 export function createAdminClient() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL
