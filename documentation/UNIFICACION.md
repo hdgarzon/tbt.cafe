@@ -38,12 +38,22 @@ Esto es la mitad del valor de hacerlo:
 
 Cada fase verificable sola, sin dejar `tbt.cafe` roto en medio.
 
-1. **Dependencias y libs sin estado** — `money.ts`/`fees.ts` reconciliados,
-   `pricing`, `transfer-code`, `solana/`. Nada las llama todavía.
+1. **Libs sin estado** — las hojas que no cargan nada: `transfer-code`,
+   `email-templates`, `covered-registrations`. Nada las llama todavía.
+
+   `money.ts` y `pricing.ts` **no cruzan**: `fees.ts` ya es el superconjunto y
+   se quedó con los centavos de Stripe, así que el $8 mantiene una sola casa.
+
+   `solana/` tampoco, aunque esta lista decía que sí. `wallet.ts` lanza al
+   **importar** si falta `WALLET_ENCRYPTION_KEY`, y eso envenena el grafo de
+   build entero en vez de la única llamada que necesita la clave. Cruza con sus
+   rutas, en la fase donde esas claves tienen que estar aquí de todos modos —
+   que es también cuando toca rotarlas.
 2. **Rutas por familias**, empezando por las que menos dependen de sesión:
    `tbt-image/*`, `generate-context`, `espresso/extract`, `assistant`
-3. **Stripe y transferencias** — `stripe/*`, `transfer/*`, `complete-*`.
-   Aquí vive el dinero; una familia por PR
+3. **Stripe y transferencias** — `stripe/*`, `transfer/*`, `complete-*`, y
+   `solana/` con ellas. Aquí vive el dinero; una familia por PR. Requiere
+   `WALLET_ENCRYPTION_KEY`, `SOLANA_*` y `STRIPE_*` en este proyecto
 4. **Admin** — 8 rutas, todas detrás de permiso y step-up
 5. **Notificaciones** — `send-email`, `send-sms`, `twilio/status`
 6. **Corte de dominio** — `www` deja de servir la app y `brocha` se borra

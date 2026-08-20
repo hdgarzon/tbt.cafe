@@ -25,6 +25,19 @@ export const FEE = {
   payoutRate: 0.023,
 } as const
 
+/**
+ * La tarifa en centavos, que es como cobra Stripe.
+ *
+ * Deriva de `FEE.service` en vez de repetir el numero. El backend llevaba su
+ * propio `pricing.ts` con 800 escrito aparte, y un mismo $8 con dos casas es
+ * exactamente como una mitad del producto acaba cobrando lo que la otra no
+ * muestra. Cuando las rutas de Stripe crucen, resuelven por aqui.
+ */
+export const SERVICE_FEE_CENTS = Math.round(FEE.service * 100)
+
+/** Moneda de las tarifas de plataforma. */
+export const PLATFORM_CURRENCY = 'usd' as const
+
 export type RoyaltyType = 'none' | 'percentage' | 'fixed'
 
 /** Los términos de regalía de una obra. `value` es el porcentaje o el monto. */
