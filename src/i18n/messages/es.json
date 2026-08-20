@@ -434,7 +434,8 @@
       "saveFailed": "No pudimos guardar el cambio",
       "royaltyLocked": "La regalía está bloqueada y ya no puede cambiarse.",
       "cancelFailed": "No pudimos cancelar la transferencia"
-    }
+    },
+    "royaltyIsFixed": "La regalía es un monto fijo de {amount} USD, definido al crear la obra."
   },
   "transfer": {
     "title": "Transferir propiedad",

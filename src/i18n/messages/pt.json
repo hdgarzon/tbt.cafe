@@ -434,7 +434,8 @@
       "saveFailed": "Não conseguimos salvar a alteração",
       "royaltyLocked": "Os direitos autorais estão bloqueados e não podem mais ser alterados.",
       "cancelFailed": "Não conseguimos cancelar a transferência"
-    }
+    },
+    "royaltyIsFixed": "Os direitos autorais são um valor fixo de {amount} USD, definido na criação da obra."
   },
   "transfer": {
     "title": "Transferir propriedade",

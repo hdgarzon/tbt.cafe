@@ -434,7 +434,8 @@
       "saveFailed": "Nous n'avons pas pu enregistrer la modification",
       "royaltyLocked": "La redevance est verrouillée et ne peut plus être modifiée.",
       "cancelFailed": "Nous n'avons pas pu annuler le transfert"
-    }
+    },
+    "royaltyIsFixed": "La redevance est un montant fixe de {amount} USD, définie à la création de l'œuvre."
   },
   "transfer": {
     "title": "Transférer la propriété",
