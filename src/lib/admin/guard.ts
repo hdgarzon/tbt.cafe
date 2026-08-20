@@ -1,0 +1,210 @@
+/**
+ * Puerta de la herramienta de administración — Backend Spec 07 §1 y §5.
+ *
+ * Tres cosas que la interfaz no puede garantizar y por eso viven aquí:
+ *
+ *  - Los permisos son casillas, y ver y actuar son casillas distintas.
+ *    Diagnosticar un problema de cobro y forzar un cobro son privilegios
+ *    diferentes.
+ *  - Lo de alto riesgo exige dos personas distintas, y quien aprueba nunca es
+ *    quien inició.
+ *  - Toda acción queda en la bitácora, con antes y después. Sin excepciones.
+ */
+import { createHash } from 'crypto'
+import type { SupabaseClient } from '@supabase/supabase-js'
+import type { NextRequest } from 'next/server'
+import { createAdminClient } from '@/lib/supabase-admin'
+
+/** Capacidades de alto riesgo: irreversibles, y justo para lo que serviría una cuenta comprometida. */
+export const HIGH_RISK = new Set([
+  'transactions.refund',
+  'transactions.reverse',
+  'payouts.force',
+  'payouts.cancel',
+  'config.business_rules',
+  'config.team',
+])
+
+export type AdminMember = { userId: string; displayName: string; permissions: Record<string, boolean> }
+
+export async function loadAdmin(
+  supabase: SupabaseClient,
+  userId: string
+): Promise<AdminMember | null> {
+  const { data } = await supabase
+    .from('admin_members')
+    .select('user_id, display_name, permissions, active')
+    .eq('user_id', userId)
+    .single()
+
+  if (!data || !data.active) return null
+  return {
+    userId: data.user_id,
+    displayName: data.display_name,
+    permissions: (data.permissions ?? {}) as Record<string, boolean>,
+  }
+}
+
+export function can(admin: AdminMember | null, capability: string): boolean {
+  return !!admin?.permissions[capability]
+}
+
+/**
+ * Escribe en la bitácora.
+ *
+ * La tabla es append-only por trigger y por permisos revocados, así que esto
+ * solo puede añadir. Nunca lanza: perder una acción por no poder registrarla
+ * sería peor que la propia acción, pero el fallo se grita en el log del
+ * servidor porque una bitácora con huecos deja de servir como evidencia.
+ */
+export async function writeAudit(
+  supabase: SupabaseClient,
+  request: NextRequest,
+  entry: {
+    actor: AdminMember
+    approverId?: string | null
+    action: string
+    entityType?: string
+    entityId?: string
+    before?: unknown
+    after?: unknown
+    reason?: string
+  }
+): Promise<void> {
+  try {
+    // La bitácora es append-only y sin política de inserción para el cliente:
+    // la escribe la plataforma, después de que la ruta ya comprobó permisos.
+    const { error } = await createAdminClient().from('admin_audit_log').insert({
+      actor_id: entry.actor.userId,
+      actor_name: entry.actor.displayName,
+      approver_id: entry.approverId ?? null,
+      action: entry.action,
+      entity_type: entry.entityType ?? null,
+      entity_id: entry.entityId ?? null,
+      before: entry.before ? JSON.parse(JSON.stringify(entry.before)) : null,
+      after: entry.after ? JSON.parse(JSON.stringify(entry.after)) : null,
+      reason: entry.reason ?? null,
+      ip: request.headers.get('x-forwarded-for') ?? null,
+      user_agent: request.headers.get('user-agent') ?? null,
+    })
+    if (error) console.error('[admin-audit] WRITE FAILED', entry.action, error)
+  } catch (err) {
+    console.error('[admin-audit] WRITE THREW', entry.action, err)
+  }
+}
+
+export type HighRiskOutcome =
+  | { proceed: true; approverId: string | null }
+  | { proceed: false; pendingId: string; message: string }
+
+/**
+ * Puerta de alto riesgo.
+ *
+ * Sin aprobación previa, la acción NO se ejecuta: se registra como pendiente y
+ * espera a una segunda persona. Con una aprobación válida, se ejecuta y ambas
+ * identidades quedan en la bitácora.
+ *
+ * La razón es obligatoria y de texto libre, no un desplegable: el valor está en
+ * lo que alguien elige escribir.
+ */
+export async function gateHighRisk(
+  supabase: SupabaseClient,
+  params: {
+    actor: AdminMember
+    action: string
+    entityType?: string
+    entityId?: string
+    payload?: unknown
+    reason: string
+    /** Aprobación ya resuelta que autoriza esta ejecución. */
+    approvalId?: string
+  }
+): Promise<HighRiskOutcome> {
+  const service = createAdminClient()
+
+  if (params.approvalId) {
+    const { data } = await service
+      .from('admin_pending_approvals')
+      .select('id, status, action, initiator_id, approver_id')
+      .eq('id', params.approvalId)
+      .single()
+
+    if (
+      data &&
+      data.status === 'approved' &&
+      data.action === params.action &&
+      // Quien ejecuta debe ser quien inició, y quien aprobó otra persona. La
+      // base ya lo impide, pero no se ejecuta sobre una suposición.
+      data.initiator_id === params.actor.userId &&
+      data.approver_id &&
+      data.approver_id !== params.actor.userId
+    ) {
+      return { proceed: true, approverId: data.approver_id }
+    }
+    return {
+      proceed: false,
+      pendingId: params.approvalId,
+      message: 'That approval is not valid for this action.',
+    }
+  }
+
+  const { data, error } = await service
+    .from('admin_pending_approvals')
+    .insert({
+      action: params.action,
+      entity_type: params.entityType ?? null,
+      entity_id: params.entityId ?? null,
+      payload: params.payload ? JSON.parse(JSON.stringify(params.payload)) : {},
+      reason: params.reason,
+      initiator_id: params.actor.userId,
+    })
+    .select('id')
+    .single()
+
+  if (error || !data) {
+    throw new Error(`could not record approval request: ${error?.message}`)
+  }
+
+  return {
+    proceed: false,
+    pendingId: data.id,
+    message: 'Recorded. A second person holding approve_high_risk must approve it.',
+  }
+}
+
+
+/**
+ * Step-up de administración — Backend Spec 07 §1.4.
+ *
+ * El acceso exige biométrico + código privado, sea cual sea el valor de la
+ * acción, y la sesión es corta. El token lo emite tbt.cafe —que es donde se
+ * verifica el WebAuthn— y aquí solo se valida.
+ *
+ * Se busca por el hash: la tabla nunca guarda el token en claro, así que leerla
+ * no sirve para entrar.
+ */
+export async function hasValidStepUp(userId: string, token: string | null): Promise<boolean> {
+  if (!token) return false
+  try {
+    const admin = createAdminClient()
+    const tokenHash = createHash('sha256').update(token).digest('hex')
+    const { data } = await admin
+      .from('admin_step_up')
+      .select('user_id, used_biometric, used_private_code, expires_at')
+      .eq('token_hash', tokenHash)
+      .single()
+
+    if (!data) return false
+    // El token pertenece a quien lo presenta, no vale uno ajeno.
+    if (data.user_id !== userId) return false
+    if (new Date(data.expires_at) < new Date()) return false
+    // Los dos factores, como pide el spec. Un step-up a medias no cuenta.
+    return data.used_biometric === true && data.used_private_code === true
+  } catch (err) {
+    console.error('[admin] step-up check failed:', err)
+    return false
+  }
+}
+
+/** Cabecera donde viaja el step-up. */
+export const STEP_UP_HEADER = 'x-admin-step-up'
