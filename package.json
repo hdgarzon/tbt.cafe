@@ -10,11 +10,14 @@
     "check:fees": "npx --yes tsx scripts/fees-check.ts"
   },
   "dependencies": {
+    "@metaplex-foundation/js": "^0.20.1",
     "@simplewebauthn/browser": "^13.3.0",
     "@simplewebauthn/server": "^13.3.2",
+    "@solana/web3.js": "^1.98.4",
     "@stripe/react-stripe-js": "^6.8.0",
     "@stripe/stripe-js": "^9.13.0",
     "@supabase/supabase-js": "^2.110.8",
+    "googleapis": "^171.4.0",
     "next": "14.2.5",
     "react": "^18",
     "react-dom": "^18",
