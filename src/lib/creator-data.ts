@@ -137,7 +137,10 @@ export async function searchCatalog(query: string): Promise<SearchHit[]> {
       )
       .eq('is_published', true)
       .eq('status', 'certified')
-      .ilike('title', `%${q}%`)
+      // Por título O por id de TBT. Lo segundo es lo que hacía la página
+      // `verificar` del front anterior: alguien con un certificado en la mano
+      // tiene el id, no el título, y sin esto la búsqueda no le devolvía nada.
+      .or(`title.ilike.%${q}%,tbt_id.ilike.%${q}%`)
       .limit(8),
   ])
 
