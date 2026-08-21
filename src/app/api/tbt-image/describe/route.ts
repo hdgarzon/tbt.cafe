@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { authenticate } from '@/lib/route-auth'
 
 /**
  * Descripción de una imagen — proxy al servicio tbt_image_processor.
@@ -9,11 +10,20 @@ import { NextRequest, NextResponse } from 'next/server'
  * mitad del motivo de unificar.
  *
  * Sin autenticación, igual que en el backend. Ver la nota en `similarity`.
+ *
+ * PIDE SESION. Era un proxy abierto delante de un servicio con GPU y clave
+ * propia: cualquiera podia usarlo como API gratuita, y en el caso de `register`
+ * envenenar el indice contra el que se compara todo lo demas. El wizard de Brew
+ * ya exige sesion antes de llegar aqui, y `complete-tbt` reenvia el token de
+ * quien llamo igual que hace con sus otras llamadas internas.
  */
 const PROCESSOR_URL = process.env.TBT_IMAGE_PROCESSOR_URL
 const PROCESSOR_KEY = process.env.TBT_IMAGE_PROCESSOR_API_KEY
 
 export async function POST(req: NextRequest) {
+  const auth = await authenticate(req)
+  if (!auth.ok) return NextResponse.json(auth.body, { status: auth.status })
+
   if (!PROCESSOR_URL) {
     return NextResponse.json({ error: 'Image processor not configured' }, { status: 503 })
   }
