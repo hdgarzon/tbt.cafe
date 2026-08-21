@@ -34,32 +34,52 @@ Esto es la mitad del valor de hacerlo:
 - La duplicación de `money.ts` (Forms) y `fees.ts` (tbt-cafe), que hoy tienen
   que restar lo mismo o el creador ve una cifra y cobra otra
 
-## Orden sugerido
+## Estado: el codigo ya cruzo
 
-Cada fase verificable sola, sin dejar `tbt.cafe` roto en medio.
+**Las 27 rutas del backend estan en este repo**, desplegadas y verificadas en
+produccion. Lo que queda no es codigo.
 
-1. **Libs sin estado** — las hojas que no cargan nada: `transfer-code`,
-   `email-templates`, `covered-registrations`. Nada las llama todavía.
+| Fase | | |
+|---|---|---|
+| 1 | Libs sin estado | hecha |
+| 2 | Rutas sin sesion: `tbt-image/*`, `generate-context`, `espresso/extract`, `assistant` | hecha |
+| 3 | Stripe, transferencias, `complete-*`, `validate-coupon`, notificaciones | hecha |
+| 4 | Admin: 8 rutas, el guard y la cadena de notificacion | hecha |
+| 5 | **Variables de entorno** y repunte del front | pendiente |
+| 6 | Borrar `brocha` y resolver `www.tbt.cafe` | pendiente |
 
-   `money.ts` y `pricing.ts` **no cruzan**: `fees.ts` ya es el superconjunto y
-   se quedó con los centavos de Stripe, así que el $8 mantiene una sola casa.
+### Lo que se quedo en el backend, y por que
 
-   `solana/` tampoco, aunque esta lista decía que sí. `wallet.ts` lanza al
-   **importar** si falta `WALLET_ENCRYPTION_KEY`, y eso envenena el grafo de
-   build entero en vez de la única llamada que necesita la clave. Cruza con sus
-   rutas, en la fase donde esas claves tienen que estar aquí de todos modos —
-   que es también cuando toca rotarlas.
-2. **Rutas por familias**, empezando por las que menos dependen de sesión:
-   `tbt-image/*`, `generate-context`, `espresso/extract`, `assistant`
-3. **Stripe y transferencias** — `stripe/*`, `transfer/*`, `complete-*`, y
-   `solana/` con ellas. Aquí vive el dinero; una familia por PR. Requiere
-   `WALLET_ENCRYPTION_KEY`, `SOLANA_*` y `STRIPE_*` en este proyecto
-4. **Admin** — 8 rutas, todas detrás de permiso y step-up
-5. **Notificaciones** — `send-email`, `send-sms`, `twilio/status`
-6. **Corte de dominio** — `www` deja de servir la app y `brocha` se borra
+Seis libs, todas reemplazadas y no descartadas:
 
-Las rutas viejas pueden quedar vivas mientras tanto: mover no es borrar.
-Borrar `brocha` es el último paso, no el primero.
+| | |
+|---|---|
+| `cross-origin-auth.ts` | un solo origen: `route-auth.ts` |
+| `supabase-service.ts`, `supabase-route.ts` | `supabase-admin.ts`, que comprueba su entorno y desactiva la persistencia de sesion. El de cookies ademas nunca hizo nada: las dos rutas que lo usaban llamaban a `getUser(token)` con un Bearer explicito |
+| `money.ts`, `pricing.ts` | `fees.ts` es el superconjunto y se quedo con los centavos de Stripe |
+| `solana/wallet.ts` | sin un solo importador, tambien en el backend |
+
+### Fase 5: lo que hace falta para que algo de esto se use
+
+Hoy hay 27 rutas correctas a las que nadie llama: el front sigue apuntando a
+`NEXT_PUBLIC_TBT_BACKEND_URL`. Faltan estas variables en este proyecto:
+
+```
+NEXT_PUBLIC_APP_URL              STRIPE_SECRET_KEY          STRIPE_WEBHOOK_SECRET
+TBT_IMAGE_PROCESSOR_URL          TBT_IMAGE_PROCESSOR_API_KEY
+GEMINI_API_KEY                   OPENWEATHER_API_KEY
+RESEND_API_KEY                   RESEND_FROM_EMAIL
+TWILIO_ACCOUNT_SID               TWILIO_AUTH_TOKEN          TWILIO_PHONE_NUMBER
+AWS_ACCESS_KEY_ID                AWS_SECRET_ACCESS_KEY      AWS_REGION
+GOOGLE_SHEETS_*                  SOLANA_*                   WALLET_ENCRYPTION_KEY
+```
+
+`SOLANA_PAYER_PRIVATE_KEY` y `WALLET_ENCRYPTION_KEY` **hay que rotarlas antes**:
+estuvieron 140 dias en un proyecto de Vercel que se borro, y borrarlo no las
+invalido.
+
+Con eso puesto, el repunte son unas pocas lineas en `brew-data.ts`,
+`admin/page.tsx` y `backend.ts`.
 
 ## Trampas que ya nos costaron tiempo
 
@@ -88,6 +108,17 @@ Eso implica que en preview fallan las rutas que la usan.
 `complete-transfer` llama a `POST /api/transfer-nft`. No es cierto — usa
 `processTransferOnChain` de `@/lib/solana/transfer` directamente. Lo mismo con
 el minteo. Esas dos rutas ya se borraron.
+
+**Un `throw` en el cuerpo de un modulo rompe el build, no la ruta.** Lo tenian
+`stripe.ts` y `app-env.ts`. Sin la clave, el `import` falla, y con el falla
+cualquier ruta que lo importe y por transitividad el build entero. Los dos
+construyen o comprueban ahora en el primer uso.
+
+**`app-env` asumia localhost.** Si `NEXT_PUBLIC_APP_URL` no estaba, la
+inferencia caia a `http://localhost:3000` y de ahi `isProduction` salia false —
+que es lo unico que separa el cupon `TBT`, el que salta el pago entero, de estar
+vivo. Aqui esa variable no existe, asi que copiar el archivo tal cual habria
+puesto un bypass de pago en produccion. Ahora falla hacia produccion.
 
 **zsh y los backticks.** Un mensaje de commit con `` `algo` `` se rompe por
 sustitución de comandos. Escribirlos con `-F` desde archivo.
