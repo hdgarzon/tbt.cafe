@@ -219,7 +219,22 @@ export function AssistantChat() {
         <div ref={endRef} />
       </div>
 
-      <div className="flex items-end gap-2 mt-4">
+      {/* Sugerencias: el prototipo las muestra siempre, no solo al abrir. */}
+      <div className="flex flex-wrap gap-2 mt-3.5 mb-1">
+        {t.assistant.suggestions.map((q) => (
+          <button
+            key={q}
+            type="button"
+            onClick={() => send(q, false)}
+            className="px-[13px] py-2 rounded-full border border-hairline bg-paper text-[11px] text-ink-soft hover:border-ink-soft hover:text-ink transition-colors"
+          >
+            {q}
+          </button>
+        ))}
+      </div>
+
+      {/* Barra pegada al pie, separada por un hairline — como el prototipo. */}
+      <div className="flex items-center gap-2 mt-3.5 pt-3.5 border-t border-hairline sticky bottom-0 bg-paper">
         <textarea
           value={input}
           onChange={(e) => setInput(e.target.value)}
@@ -231,13 +246,13 @@ export function AssistantChat() {
           }}
           placeholder={t.assistant.placeholder}
           rows={1}
-          className="flex-1 px-3.5 py-3 border border-hairline rounded-xl text-[16px] resize-none outline-none focus:border-ink transition-colors"
+          className="flex-1 px-4 py-[11px] border border-hairline rounded-full bg-paper text-[16px] resize-none outline-none focus:border-ink-soft transition-colors"
         />
         <button
           type="button"
           onClick={toggleVoice}
           aria-label={t.assistant.speak}
-          className={`w-11 h-11 shrink-0 rounded-xl border flex items-center justify-center transition-colors ${
+          className={`w-[38px] h-[38px] shrink-0 rounded-full border flex items-center justify-center transition-colors ${
             listening ? 'border-t-magenta text-t-magenta' : 'border-hairline text-ink-soft'
           }`}
         >
@@ -250,13 +265,16 @@ export function AssistantChat() {
           type="button"
           onClick={submit}
           disabled={busy}
-          className="px-4 h-11 shrink-0 rounded-xl bg-ink text-paper text-[11.5px] font-semibold tracking-[0.14em] uppercase disabled:opacity-50"
+          aria-label={t.assistant.send}
+          className="w-[38px] h-[38px] shrink-0 rounded-full bg-ink text-paper flex items-center justify-center disabled:opacity-50"
         >
-          {t.assistant.send}
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <line x1="22" y1="2" x2="11" y2="13" />
+            <polygon points="22 2 15 22 11 13 2 9 22 2" />
+          </svg>
         </button>
       </div>
 
-      <p className="text-[10.5px] leading-[1.5] text-placeholder mt-2.5">{t.assistant.boundary}</p>
     </div>
   )
 }

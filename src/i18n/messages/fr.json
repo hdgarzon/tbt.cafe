@@ -923,13 +923,17 @@
     "greeting": "Je peux expliquer le fonctionnement des frais, des redevances, des transferts, des versements et de l'enregistrement — et consulter vos propres registres. Demandez-moi ce que vous voulez.",
     "proactive": "Avant tout : je vois une demande ouverte de votre part, « {subject} » ({ref}). Voulez-vous qu'on la regarde ?",
     "openingProbe": "Ai-je quelque chose en cours ?",
-    "placeholder": "Posez une question sur les frais, les redevances, un versement…",
+    "placeholder": "Demande à l'assistant…",
     "send": "Envoyer",
     "speak": "Parler",
     "failed": "Quelque chose a échoué de mon côté. Réessayez dans un instant.",
     "escalated": "J'ai transmis cela à une personne. C'est la demande {ref} — vous n'aurez pas à l'expliquer à nouveau.",
     "needSignIn": "Authentifiez-vous pour poser des questions sur vos propres registres.",
-    "boundary": "J'explique et j'oriente. Tout ce qui déplace de l'argent reste dans le produit, derrière sa propre confirmation."
+    "suggestions": [
+      "Comment enregistrer un TBT ?",
+      "Comment fonctionnent les redevances ?",
+      "Comment encaisser ?"
+    ]
   },
   "feed": {
     "tab": "Alertes",

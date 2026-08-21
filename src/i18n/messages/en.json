@@ -923,13 +923,17 @@
     "greeting": "I can explain how fees, royalties, transfers, payouts and registration work — and look at your own records. Ask me anything.",
     "proactive": "Before anything else — I see an open request of yours: “{subject}” ({ref}). Want me to walk you through it?",
     "openingProbe": "Do I have anything open?",
-    "placeholder": "Ask about fees, royalties, a payout…",
+    "placeholder": "Ask the assistant…",
     "send": "Send",
     "speak": "Speak",
     "failed": "Something went wrong on my side. Try again in a moment.",
     "escalated": "I have passed this to a person. It is request {ref} — you will not have to explain it again.",
     "needSignIn": "Authenticate to ask about your own records.",
-    "boundary": "I explain and guide. Anything that moves money stays in the product, behind its own confirmation."
+    "suggestions": [
+      "How do I brew a TBT?",
+      "How do royalties work?",
+      "How do I collect payouts?"
+    ]
   },
   "feed": {
     "tab": "Alerts",

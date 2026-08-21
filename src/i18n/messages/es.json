@@ -923,13 +923,17 @@
     "greeting": "Puedo explicarte cómo funcionan las tarifas, las regalías, las transferencias, los cobros y el registro — y mirar tus propios registros. Pregúntame lo que quieras.",
     "proactive": "Antes que nada: veo una solicitud tuya abierta, «{subject}» ({ref}). ¿Quieres que la repasemos?",
     "openingProbe": "¿Tengo algo abierto?",
-    "placeholder": "Pregunta por tarifas, regalías, un cobro…",
+    "placeholder": "Pregunta al asistente…",
     "send": "Enviar",
     "speak": "Hablar",
     "failed": "Algo falló de mi lado. Inténtalo de nuevo en un momento.",
     "escalated": "Se lo pasé a una persona. Es la solicitud {ref} — no tendrás que explicarlo otra vez.",
     "needSignIn": "Autentícate para preguntar por tus propios registros.",
-    "boundary": "Explico y guío. Todo lo que mueve dinero se queda en el producto, detrás de su propia confirmación."
+    "suggestions": [
+      "¿Cómo registro un TBT?",
+      "¿Cómo funcionan las regalías?",
+      "¿Cómo cobro?"
+    ]
   },
   "feed": {
     "tab": "Avisos",
