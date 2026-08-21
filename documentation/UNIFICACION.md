@@ -46,7 +46,19 @@ produccion. Lo que queda no es codigo.
 | 3 | Stripe, transferencias, `complete-*`, `validate-coupon`, notificaciones | hecha |
 | 4 | Admin: 8 rutas, el guard y la cadena de notificacion | hecha |
 | 5 | **Variables de entorno** y repunte del front | pendiente |
-| 6 | Borrar `brocha` y resolver `www.tbt.cafe` | pendiente |
+| 6 | `www.tbt.cafe` resuelto; borrar `brocha` | **NO todavia** — ver abajo |
+
+### Por que `brocha` sigue en pie
+
+Ya era el ultimo paso. Ahora hay dos razones y no una:
+
+- es el unico rollback del repunte mientras el front apunte aqui;
+- **sus funciones son la unica copia viva de los secretos reales.** Los valores
+  Sensitive no se leen de vuelta ni por CLI ni por panel.
+
+`WALLET_ENCRYPTION_KEY` descifra tres wallets custodiadas. Si solo vivio en ese
+proyecto, borrarlo las deja indescifrables para siempre. Guardan SOL de devnet,
+asi que no hay dinero en juego — pero que sea una decision y no un hallazgo.
 
 ### Lo que se quedo en el backend, y por que
 
@@ -119,6 +131,15 @@ inferencia caia a `http://localhost:3000` y de ahi `isProduction` salia false �
 que es lo unico que separa el cupon `TBT`, el que salta el pago entero, de estar
 vivo. Aqui esa variable no existe, asi que copiar el archivo tal cual habria
 puesto un bypass de pago en produccion. Ahora falla hacia produccion.
+
+**`vercel env pull` NO devuelve los valores marcados Sensitive.** Devuelve el
+literal `"[SENSITIVE]"`, doce caracteres, para cada uno. Un `env pull` seguido de
+un `env add` en otro proyecto no copia diecisiete secretos: copia diecisiete
+veces esa palabra. Todo falla despues con errores que apuntan a otra cosa
+—`invalid_v2_key` en Stripe, un Account SID que no empieza por `AC`— porque el
+valor existe y es basura, que es peor que ausente: ausente falla al arrancar y a
+gritos; basura falla en el proveedor, horas mas tarde, con pinta de problema
+suyo. Un secreto solo se recupera de su origen.
 
 **zsh y los backticks.** Un mensaje de commit con `` `algo` `` se rompe por
 sustitución de comandos. Escribirlos con `-F` desde archivo.
