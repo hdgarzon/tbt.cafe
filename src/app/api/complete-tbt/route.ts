@@ -499,6 +499,10 @@ export async function POST(request: NextRequest) {
           const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
           fetch(`${appUrl}/api/tbt-image/register`, {
             method: 'POST',
+            // El token de quien llamo, como en las otras dos llamadas internas
+            // de esta ruta. Sin el, register es un endpoint abierto que
+            // cualquiera puede usar para envenenar el indice de similitud.
+            headers: { Authorization: `Bearer ${token}` },
             body: imageForm,
           }).catch((err) => console.warn('[tbt-image/register] background error:', err))
         }

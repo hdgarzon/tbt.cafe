@@ -113,11 +113,31 @@ export type SimilarityResult =
   | { status: 'skipped' | 'clear'; score?: number }
   | { status: 'warning' | 'blocked'; score: number; matches: unknown[] }
 
-/** Escaneo de originalidad (fase Protección) — real, contra el processor de Forms. */
+/**
+ * Escaneo de originalidad (fase Protección).
+ *
+ * Va firmado. La ruta era un proxy abierto delante de un servicio con GPU y
+ * clave propia —servía de API gratuita de descripción de imágenes a quien la
+ * encontrara— y el wizard ya garantiza sesión: sin usuario abre la
+ * autenticación y no continúa.
+ *
+ * `skipped` significa "el procesador no contestó", y con eso la certificación
+ * sigue adelante. Un 401 NO es eso: es que no nos autenticamos, y silenciarlo
+ * apagaría la detección de plagio sin que nadie se entere. Se distingue.
+ */
 export async function runSimilarityScan(file: File): Promise<SimilarityResult> {
   const form = new FormData()
   form.append('file', file)
-  const res = await fetch(`${TBT_BACKEND_URL}/api/tbt-image/similarity`, { method: 'POST', body: form })
+  const auth = await authHeader()
+  const res = await fetch(`${TBT_BACKEND_URL}/api/tbt-image/similarity`, {
+    method: 'POST',
+    headers: { ...(auth ?? {}) },
+    body: form,
+  })
+  if (res.status === 401) {
+    console.error('[similarity] sin sesión: no se comprobó plagio')
+    return { status: 'skipped' }
+  }
   if (!res.ok) return { status: 'skipped' }
   return res.json()
 }
@@ -444,7 +464,12 @@ export async function describeImage(file: File): Promise<ImageDescription | null
   const form = new FormData()
   form.append('file', file)
   try {
-    const res = await fetch(`${TBT_BACKEND_URL}/api/tbt-image/describe`, { method: 'POST', body: form })
+    const auth = await authHeader()
+    const res = await fetch(`${TBT_BACKEND_URL}/api/tbt-image/describe`, {
+      method: 'POST',
+      headers: { ...(auth ?? {}) },
+      body: form,
+    })
     if (!res.ok) return null
     return await res.json()
   } catch {

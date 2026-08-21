@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { authenticate } from '@/lib/route-auth'
 
 /**
  * Registro de la imagen tras certificar, para que futuras subidas se comparen
@@ -10,11 +11,20 @@ import { NextRequest, NextResponse } from 'next/server'
  * NO BLOQUEANTE por diseño: un fallo aquí se registra y devuelve 200. Para
  * cuando esto corre la obra ya está certificada, y no dejarla certificada por
  * un problema de indexación nuestro sería cobrar dos veces el mismo error.
+ *
+ * PIDE SESION. Era un proxy abierto delante de un servicio con GPU y clave
+ * propia: cualquiera podia usarlo como API gratuita, y en el caso de `register`
+ * envenenar el indice contra el que se compara todo lo demas. El wizard de Brew
+ * ya exige sesion antes de llegar aqui, y `complete-tbt` reenvia el token de
+ * quien llamo igual que hace con sus otras llamadas internas.
  */
 const PROCESSOR_URL = process.env.TBT_IMAGE_PROCESSOR_URL
 const PROCESSOR_KEY = process.env.TBT_IMAGE_PROCESSOR_API_KEY
 
 export async function POST(req: NextRequest) {
+  const auth = await authenticate(req)
+  if (!auth.ok) return NextResponse.json(auth.body, { status: auth.status })
+
   if (!PROCESSOR_URL) {
     console.warn('[tbt-image/register] TBT_IMAGE_PROCESSOR_URL sin definir: la imagen no se indexó')
     return NextResponse.json({ status: 'skipped' })
