@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { verifyTwoFactors } from '@/lib/two-factor'
+import { disburseBlock } from '@/lib/payout-disburse'
 
 /**
  * Cobro de un bloque de payout — Backend Spec 02 §4, y Spec 01 §5.1.
@@ -101,23 +102,23 @@ export async function POST(request: NextRequest) {
     }
 
     /**
-     * SEAM — la disposición real todavía no existe.
+     * La disposición, ahora sí.
      *
-     * El bloque queda en `processing`. Quien lo mueva a `paid` es la
-     * integración con Connect (stablecoin o banco), que depende de la
-     * cobertura por país: el punto abierto de mayor prioridad del handoff
-     * (Spec 02 §6) y todavía sin verificar contra la documentación viva de
-     * Stripe.
-     *
-     * El registro de liquidación es correcto y completo desde ya. Lo que falta
-     * es el envío del dinero, y por eso el estado no miente diciendo `paid`.
+     * Se espera en vez de dispararse y olvidarse: quien pulsa cobrar merece
+     * saber si salió. Y si falla, `fail_payout_block` devuelve las ganancias a
+     * `available` en la misma pasada, así que puede reintentar en vez de ver su
+     * dinero atrapado en un estado del que no se sale.
      */
+    const outcome = await disburseBlock(admin, userId, block.block_id, Number(block.net))
+
     return NextResponse.json({
       blockId: block.block_id,
       gross: Number(block.gross),
       platformFee: Number(block.platform_fee),
       methodFee: Number(block.method_fee),
       net: Number(block.net),
+      status: outcome.status,
+      ...(outcome.status === 'failed' ? { reason: outcome.reason } : {}),
     })
   } catch (error) {
     console.error('[payouts/collect] failed:', error)
