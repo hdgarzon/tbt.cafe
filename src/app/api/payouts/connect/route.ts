@@ -54,16 +54,25 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: 'country_required' }, { status: 400 })
       }
 
-      const { data: method } = await admin
+      /**
+       * El pais vale si CUALQUIER metodo habilitado lo cubre, no solo el
+       * bancario. Una cuenta de Connect es el requisito previo de todos los
+       * rails: validar solo contra `bank` dejaba fuera a un vendedor
+       * colombiano, cuyo rail es USDC —el unico que llega alli— y que sin
+       * cuenta no podria cobrar nunca.
+       */
+      const { data: methods } = await admin
         .from('payout_methods')
-        .select('countries')
-        .eq('id', 'bank')
-        .single()
+        .select('id, countries')
+        .eq('enabled', true)
 
-      const supported: string[] = method?.countries ?? []
-      if (!supported.includes(country)) {
-        // Se dice cual es el problema, no un "no se pudo". Que Connect no
-        // llegue a un pais es un hecho del rail, no un fallo de la persona.
+      const reaches = (methods ?? []).some((m) => {
+        const cs: string[] = m.countries ?? []
+        return cs.includes('*') || cs.includes(country)
+      })
+      if (!reaches) {
+        // Se dice cual es el problema, no un "no se pudo". Que ningun rail
+        // llegue a un pais es un hecho del proveedor, no un fallo de la persona.
         return NextResponse.json({ error: 'country_unsupported' }, { status: 409 })
       }
 
