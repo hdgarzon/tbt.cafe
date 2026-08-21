@@ -5,19 +5,51 @@ import { isProduction } from '@/lib/app-env'
 import { authenticate } from '@/lib/route-auth'
 import twilio from 'twilio'
 
-// Initialize SNS Client (fallback for simple SMS)
-const snsClient = new SNSClient({
-  region: process.env.AWS_REGION || 'us-east-2',
-  credentials: {
-    accessKeyId: process.env.AWS_ACCESS_KEY_ID || '',
-    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY || '',
-  },
-})
+/**
+ * Los dos clientes, construidos en el primer uso y no al importar.
+ *
+ * `twilio(sid, token)` VALIDA el formato del SID al construir. Mientras la
+ * variable no existia la condicion era falsa y esto devolvia null, asi que
+ * nadie lo noto; en cuanto se definio, un SID mal formado dejo de romper la
+ * ruta de SMS y paso a romper el build entero:
+ *
+ *   Error: accountSid must start with AC
+ *   > Failed to collect page data for /api/send-sms
+ *
+ * Es el mismo patron que ya obligo a hacer perezosos `stripe.ts` y
+ * `app-env.ts`. Un throw en el cuerpo de un modulo no rompe la llamada que
+ * necesita la credencial: rompe el grafo, y con el el despliegue completo.
+ *
+ * El de SNS no valida al construir, asi que no habia dado guerra — pero es la
+ * misma bomba con otra mecha, y va igual.
+ */
+let sns: SNSClient | null = null
+function snsClient(): SNSClient {
+  return (sns ??= new SNSClient({
+    region: process.env.AWS_REGION || 'us-east-2',
+    credentials: {
+      accessKeyId: process.env.AWS_ACCESS_KEY_ID || '',
+      secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY || '',
+    },
+  }))
+}
 
-// Initialize Twilio client for MMS
-const twilioClient = process.env.TWILIO_ACCOUNT_SID && process.env.TWILIO_AUTH_TOKEN
-  ? twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN)
-  : null
+let twilioCached: ReturnType<typeof twilio> | null = null
+function twilioClient(): ReturnType<typeof twilio> | null {
+  if (twilioCached) return twilioCached
+  const sid = process.env.TWILIO_ACCOUNT_SID
+  const token = process.env.TWILIO_AUTH_TOKEN
+  if (!sid || !token) return null
+  try {
+    twilioCached = twilio(sid, token)
+    return twilioCached
+  } catch (error) {
+    // Un SID mal formado es configuracion equivocada, no una peticion mala.
+    // Se registra y el MMS no sale; el SMS por SNS sigue su camino.
+    console.error('[send-sms] no se pudo construir el cliente de Twilio:', error)
+    return null
+  }
+}
 
 interface SendSMSRequest {
   phoneNumber: string
@@ -130,9 +162,10 @@ export async function POST(request: NextRequest) {
     let twilioFailure: { code: number | string | null; message: string | null } | null = null
 
     // Try to send MMS via Twilio if configured
-    if (sendMMS && twilioClient && process.env.TWILIO_PHONE_NUMBER) {
+    const tw = twilioClient()
+    if (sendMMS && tw && process.env.TWILIO_PHONE_NUMBER) {
       try {
-        const twilioMessage = await twilioClient.messages.create({
+        const twilioMessage = await tw.messages.create({
           body: mmsMessage,
           from: toE164(process.env.TWILIO_PHONE_NUMBER),
           to: toE164(phoneNumber),
@@ -270,7 +303,7 @@ export async function POST(request: NextRequest) {
       },
     })
 
-    const snsResponse = await snsClient.send(command)
+    const snsResponse = await snsClient().send(command)
 
     // Save delivery record to database
     await supabase.from('mms_deliveries').insert({
