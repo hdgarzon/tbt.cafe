@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { useLocale } from '@/i18n/LocaleProvider'
 import { MenuIcon, HeartIcon, ConnectToggle, TbtLogo, NotificationIcon } from '@/components/Brand'
 
@@ -11,6 +11,11 @@ import { MenuIcon, HeartIcon, ConnectToggle, TbtLogo, NotificationIcon } from '@
  * El icono de notificaciones abre el panel de soporte (Spec 04 §5.1) y lleva
  * tres estados: apagado sin sesión, sólido y en calma con sesión, y a color
  * con parpadeo y punto magenta cuando hay algo sin leer.
+ *
+ * El corazon lleva a los favoritos, y exige sesion para hacerlo: sin ella
+ * abre la autenticacion en vez de navegar a una lista que no puede existir.
+ * Antes solo alternaba un booleano local — se pintaba de magenta y no pasaba
+ * nada mas, que es la peor version de un control: parece que hizo algo.
  *
  * El toggle maneja la autenticación (Master Handoff §7):
  *   desconectado + tap → abre el modal de auth
@@ -32,7 +37,7 @@ export function Header({
   unread?: number
   onNotifications?: () => void
 }) {
-  const [favorited, setFavorited] = useState(false)
+  const router = useRouter()
   const { t } = useLocale()
 
   return (
@@ -66,12 +71,9 @@ export function Header({
 
       <button
         type="button"
-        onClick={() => setFavorited((v) => !v)}
+        onClick={() => (connected ? router.push('/collections/favorites') : onToggle?.())}
         aria-label={t.header.favorites}
-        aria-pressed={favorited}
-        className={`w-9 h-9 shrink-0 flex items-center justify-center rounded-lg hover:bg-paper-warm transition-colors ${
-          favorited ? 'text-t-magenta' : 'text-ink'
-        }`}
+        className="w-9 h-9 shrink-0 flex items-center justify-center rounded-lg text-ink hover:bg-paper-warm hover:text-t-magenta transition-colors"
       >
         <HeartIcon />
       </button>

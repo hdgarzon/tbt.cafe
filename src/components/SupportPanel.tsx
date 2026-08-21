@@ -117,13 +117,15 @@ export function SupportPanel({ compact = false }: { compact?: boolean }) {
         <h1 className="font-display font-medium text-[27px] leading-[1.08] text-ink">{t.help.title}</h1>
       )}
 
-      <div className="flex gap-5 mt-4 mb-1 border-b border-hairline">
+      {/* Las pestañas se reparten el ancho y solo cada una lleva su subrayado:
+          el prototipo no pone hairline bajo la fila entera. */}
+      <div className="flex gap-1 mt-4 mb-1">
         {(['alerts', 'ask', 'requests'] as const).map((k) => (
           <button
             key={k}
             type="button"
             onClick={() => setTab(k)}
-            className={`pb-2.5 text-[11px] font-medium tracking-[0.16em] uppercase transition-colors border-b-2 -mb-px ${
+            className={`flex-1 pt-2.5 pb-3 text-[12px] font-medium tracking-[0.04em] transition-colors border-b-2 ${
               tab === k ? 'border-ink text-ink' : 'border-transparent text-ink-soft'
             }`}
           >
@@ -146,8 +148,8 @@ export function SupportPanel({ compact = false }: { compact?: boolean }) {
 
       {tab === 'requests' && (
       <>
-      <div className="border border-hairline rounded-2xl p-4 mt-5">
-        <div className="text-[13px] font-medium text-ink">{t.help.openRequest}</div>
+      <div className="pt-1 pb-2 mt-4">
+        <div className="text-[12px] font-semibold tracking-[0.04em] text-ink">{t.help.openRequest}</div>
 
         <div className="flex flex-wrap gap-1.5 mt-3">
           {TICKET_CATEGORIES.map((c) => (
@@ -155,7 +157,7 @@ export function SupportPanel({ compact = false }: { compact?: boolean }) {
               key={c}
               type="button"
               onClick={() => setCategory(c)}
-              className={`px-3 py-1.5 rounded-full border text-[11px] transition-colors ${
+              className={`px-[12px] py-[6px] rounded-[16px] border text-[10.5px] tracking-[0.02em] transition-colors ${
                 category === c ? 'border-ink bg-paper-warm text-ink' : 'border-hairline text-ink-soft'
               }`}
             >
@@ -187,7 +189,7 @@ export function SupportPanel({ compact = false }: { compact?: boolean }) {
         {msg && <p className="text-[11.5px] text-ink-soft mt-2.5 text-center">{msg}</p>}
       </div>
 
-      <div className="text-[11px] font-medium tracking-[0.16em] uppercase text-ink-soft mt-7 mb-3">
+      <div className="text-[10px] tracking-[0.14em] uppercase text-placeholder mt-5 mb-2.5">
         {t.help.yourRequests}
       </div>
 
@@ -196,7 +198,7 @@ export function SupportPanel({ compact = false }: { compact?: boolean }) {
       ) : (
         <div className="flex flex-col gap-3">
           {tickets.map((tk) => (
-            <div key={tk.id} className="border border-hairline rounded-2xl p-3.5">
+            <div key={tk.id} className="border border-hairline rounded-xl p-3.5">
               <div className="flex items-center justify-between gap-2">
                 <span className="text-[10.5px] tracking-[0.12em] uppercase text-ink-soft">
                   {t.help.categories[tk.category]}
@@ -206,12 +208,14 @@ export function SupportPanel({ compact = false }: { compact?: boolean }) {
                       no son fallos silenciosos. */}
                   {tk.severity === 'financial' && <span className="w-1.5 h-1.5 rounded-full bg-t-red" />}
                   <span
-                    className={`text-[10px] px-2 py-0.5 rounded-full border ${
-                      tk.status === 'open'
-                        ? 'border-t-yellow text-t-yellow'
-                        : tk.status === 'answered'
-                          ? 'border-t-green text-t-green'
-                          : 'border-hairline text-ink-soft'
+                    /* Rellena y sin borde, como el prototipo: el estado se lee de un
+                       vistazo por el fondo, no por el contorno. */
+                    className={`text-[9.5px] font-semibold tracking-[0.1em] uppercase px-[9px] py-[3px] rounded-[20px] ${
+                      tk.status === 'answered'
+                        ? 'bg-[rgba(62,163,44,0.12)] text-t-green'
+                        : tk.status === 'open'
+                          ? 'bg-paper-warm text-ink-soft'
+                          : 'bg-paper-warm text-placeholder'
                     }`}
                   >
                     {t.help.status[tk.status]}

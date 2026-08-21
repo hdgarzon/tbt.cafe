@@ -137,7 +137,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
       {/* El panel cuelga del icono del header, que es su sitio en el
           prototipo. /help sigue existiendo y monta el mismo componente. */}
-      <StandingSheet open={notifOpen} onClose={() => setNotifOpen(false)} head={t.help.title}>
+      {/* Sin cabecera: el prototipo abre con el grip, la X y las pestañas. */}
+      <StandingSheet open={notifOpen} onClose={() => setNotifOpen(false)}>
         <SupportPanel compact />
       </StandingSheet>
 

@@ -923,13 +923,17 @@
     "greeting": "Posso explicar como funcionam taxas, royalties, transferências, recebimentos e registro — e olhar os seus próprios registros. Pergunte o que quiser.",
     "proactive": "Antes de mais nada: vejo uma solicitação sua em aberto, “{subject}” ({ref}). Quer que a gente veja isso?",
     "openingProbe": "Tenho algo em aberto?",
-    "placeholder": "Pergunte sobre taxas, royalties, um recebimento…",
+    "placeholder": "Pergunte ao assistente…",
     "send": "Enviar",
     "speak": "Falar",
     "failed": "Algo falhou do meu lado. Tente de novo em um instante.",
     "escalated": "Passei isso para uma pessoa. É a solicitação {ref} — você não vai precisar explicar de novo.",
     "needSignIn": "Autentique-se para perguntar sobre os seus registros.",
-    "boundary": "Eu explico e oriento. Tudo que movimenta dinheiro fica no produto, atrás da sua própria confirmação."
+    "suggestions": [
+      "Como registro um TBT?",
+      "Como funcionam os direitos autorais?",
+      "Como recebo?"
+    ]
   },
   "feed": {
     "tab": "Avisos",
