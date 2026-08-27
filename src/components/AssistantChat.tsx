@@ -15,7 +15,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useLocale } from '@/i18n/LocaleProvider'
-import { TBT_BACKEND_URL } from '@/lib/backend'
 
 type Turn = { role: 'user' | 'assistant'; text: string }
 type Cta = { label: string; href: string }
@@ -77,7 +76,7 @@ export function AssistantChat() {
       setTurns((prev) => [...prev, { role: 'user', text: question }])
 
       try {
-        const res = await fetch(`${TBT_BACKEND_URL}/api/assistant`, {
+        const res = await fetch('/api/assistant', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -116,7 +115,7 @@ export function AssistantChat() {
       openedRef.current = true
 
       try {
-        const res = await fetch(`${TBT_BACKEND_URL}/api/assistant`, {
+        const res = await fetch('/api/assistant', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
           body: JSON.stringify({ question: t.assistant.openingProbe, locale, viaVoice: false, history: [] }),

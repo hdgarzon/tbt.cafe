@@ -1,6 +1,5 @@
 import { supabase } from '@/lib/supabase'
 import { normalizeImage } from '@/lib/normalize-image'
-import { TBT_BACKEND_URL } from '@/lib/backend'
 import type { SeriesWithCount } from '@/lib/series-data'
 
 /**
@@ -129,7 +128,7 @@ export async function runSimilarityScan(file: File): Promise<SimilarityResult> {
   const form = new FormData()
   form.append('file', file)
   const auth = await authHeader()
-  const res = await fetch(`${TBT_BACKEND_URL}/api/tbt-image/similarity`, {
+  const res = await fetch('/api/tbt-image/similarity', {
     method: 'POST',
     headers: { ...(auth ?? {}) },
     body: form,
@@ -160,7 +159,7 @@ export async function generateContext(input: {
   const auth = await authHeader()
   if (!auth) return { error: 'needSignIn' }
   try {
-    const res = await fetch(`${TBT_BACKEND_URL}/api/generate-context`, {
+    const res = await fetch('/api/generate-context', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', ...auth },
       body: JSON.stringify({
@@ -182,7 +181,7 @@ export type CouponResult = { valid: boolean; type?: 'percentage' | 'fixed'; valu
 
 export async function validateCoupon(code: string): Promise<CouponResult> {
   try {
-    const res = await fetch(`${TBT_BACKEND_URL}/api/validate-coupon`, {
+    const res = await fetch('/api/validate-coupon', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ code }),
@@ -364,7 +363,7 @@ export async function startRegistration(
   }
 
   try {
-    const res = await fetch(`${TBT_BACKEND_URL}/api/stripe/create-checkout`, {
+    const res = await fetch('/api/stripe/create-checkout', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', ...auth },
       // Checkout embebido (Spec 01 §3.1): el creador no sale de tbt.cafe.
@@ -409,7 +408,7 @@ export async function completeTbt(
   const auth = await authHeader()
   if (!auth) return { error: 'needSignIn' }
   try {
-    const res = await fetch(`${TBT_BACKEND_URL}/api/complete-tbt`, {
+    const res = await fetch('/api/complete-tbt', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', ...auth },
       body: JSON.stringify({ workId, couponCode, sessionId }),
@@ -444,7 +443,7 @@ export async function extractFields(field: 'work' | 'value', text: string): Prom
   const auth = await authHeader()
   if (!auth) return null
   try {
-    const res = await fetch(`${TBT_BACKEND_URL}/api/espresso/extract`, {
+    const res = await fetch('/api/espresso/extract', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', ...auth },
       body: JSON.stringify({ field, text }),
@@ -465,7 +464,7 @@ export async function describeImage(file: File): Promise<ImageDescription | null
   form.append('file', file)
   try {
     const auth = await authHeader()
-    const res = await fetch(`${TBT_BACKEND_URL}/api/tbt-image/describe`, {
+    const res = await fetch('/api/tbt-image/describe', {
       method: 'POST',
       headers: { ...(auth ?? {}) },
       body: form,

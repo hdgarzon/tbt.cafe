@@ -1,5 +1,4 @@
 import { supabase } from '@/lib/supabase'
-import { TBT_BACKEND_URL } from '@/lib/backend'
 
 /**
  * Capa de datos de transferencia de dos fases (Build Spec 02 / Transfer &
@@ -74,7 +73,7 @@ export async function createTransfer(
 
   const origin = window.location.origin
   try {
-    const res = await fetch(`${TBT_BACKEND_URL}/api/transfer/create`, {
+    const res = await fetch('/api/transfer/create', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', ...auth },
       body: JSON.stringify({
@@ -122,7 +121,7 @@ export async function cancelTransfer(transferId: string): Promise<{ error?: stri
   if (!auth) return { error: 'needSignIn' }
 
   try {
-    const res = await fetch(`${TBT_BACKEND_URL}/api/transfer/cancel`, {
+    const res = await fetch('/api/transfer/cancel', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', ...auth },
       body: JSON.stringify({ transferId }),
@@ -156,7 +155,7 @@ export type TransferForAccept = {
  */
 export async function fetchTransferForAccept(transferId: string): Promise<TransferForAccept | null> {
   try {
-    const res = await fetch(`${TBT_BACKEND_URL}/api/transfer/${transferId}`)
+    const res = await fetch(`/api/transfer/${transferId}`)
     if (!res.ok) return null
     return await res.json()
   } catch {
@@ -178,7 +177,7 @@ export async function respondTransfer(
   if (!auth) return { error: 'needSignIn' }
 
   try {
-    const res = await fetch(`${TBT_BACKEND_URL}/api/transfer/respond`, {
+    const res = await fetch('/api/transfer/respond', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', ...auth },
       body: JSON.stringify({ transferId, action }),

@@ -7,6 +7,7 @@ import { TransferHistoryEntry } from '@/lib/solana/nft'
 import { generateTransferCode } from '@/lib/transfer-code'
 import { isProduction, assertServerEnv } from '@/lib/app-env'
 import { authenticate } from '@/lib/route-auth'
+import { createHash } from 'crypto'
 
 
 export async function POST(request: NextRequest) {
@@ -186,7 +187,9 @@ export async function POST(request: NextRequest) {
     const { error: codeUpdateError } = await serviceClient
       .from('works')
       .update({
-        transfer_code: newTransferCode,
+        // Solo el hash. El codigo en si viaja por MMS y no vuelve a existir en
+        // ningun sitio nuestro: ni en la base, ni en pantalla, ni en cadena.
+        transfer_code_hash: createHash('sha256').update(newTransferCode).digest('hex'),
         transfer_status: 'active',
       })
       .eq('id', transfer.work_id)
@@ -300,7 +303,6 @@ export async function POST(request: NextRequest) {
             creatorName,
             mediaUrl: workWithCreator.media_url,
             certifiedAt: new Date(workWithCreator.certified_at || workWithCreator.created_at).toISOString().split('T')[0],
-            transferCode: newTransferCode,
             creationLocation: ctxData?.location_name,
             creationWeather: weatherInfo?.conditions,
             elaborationType: ctxData?.elaboration_type,

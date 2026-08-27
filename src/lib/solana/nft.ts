@@ -23,7 +23,6 @@ export interface WorkNftData {
   creatorName: string
   mediaUrl?: string
   certifiedAt: string
-  transferCode: string
   // New fields for complete history
   creationLocation?: string
   creationWeather?: string
@@ -39,6 +38,18 @@ export interface WorkNftData {
  * Generate NFT metadata from work data (Metaplex compatible)
  * Includes complete history and provenance tracking
  */
+/**
+ * NUNCA anadir aqui el codigo de transferencia.
+ *
+ * Es la clave privada que autoriza una transferencia, y la regla de la
+ * plataforma es que solo viaja por MMS y no se pinta en pantalla, porque una
+ * captura basta para perderla. Estos atributos se suben por Irys y su URI se
+ * acuna en cadena: escribirlo aqui lo publica en un almacen permanente y
+ * publico, enlazado desde el activo. No hay forma de retirarlo.
+ *
+ * Por eso el campo ya no existe en `WorkNftData`: reintroducirlo desde un
+ * llamador rompe la compilacion en vez de filtrar en silencio.
+ */
 export function generateNftMetadata(work: WorkNftData) {
   const externalUrl = `${process.env.NEXT_PUBLIC_APP_URL || 'https://tbt.cafe'}/work/${work.tbtId}`
   
@@ -47,7 +58,6 @@ export function generateNftMetadata(work: WorkNftData) {
     { trait_type: 'TBT ID', value: work.tbtId },
     { trait_type: 'Creator', value: work.creatorName },
     { trait_type: 'Certified Date', value: work.certifiedAt },
-    { trait_type: 'Transfer Code', value: work.transferCode },
   ]
 
   // Category and technique

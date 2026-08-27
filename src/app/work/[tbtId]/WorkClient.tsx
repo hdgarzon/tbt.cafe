@@ -4,7 +4,6 @@ import { useCallback, useEffect, useState, type ReactNode } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useLocale } from '@/i18n/LocaleProvider'
 import { useShell } from '@/components/AppShell'
-import { TBT_BACKEND_URL } from '@/lib/backend'
 import { LadderGate } from '@/components/LadderGate'
 import { EmbeddedCheckoutSheet } from '@/components/EmbeddedCheckoutSheet'
 import { fetchWorkFull, ownerRole, royaltyOf, type WorkFull } from '@/lib/work-data'
@@ -108,7 +107,7 @@ export default function WorkPage({ params }: { params: { tbtId: string } }) {
         setBuying(false)
         return
       }
-      const res = await fetch(`${TBT_BACKEND_URL}/api/stripe/create-purchase`, {
+      const res = await fetch('/api/stripe/create-purchase', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
         // Checkout embebido (Spec 01 §3.1): el comprador no sale de tbt.cafe.

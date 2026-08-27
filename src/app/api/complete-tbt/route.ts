@@ -8,6 +8,7 @@ import { fileSystemTicket } from '@/lib/system-tickets'
 import { notify } from '@/lib/notify'
 import { recordProviderEvent } from '@/lib/provider-events'
 import { authenticate } from '@/lib/route-auth'
+import { createHash } from 'crypto'
 
 
 export async function POST(request: NextRequest) {
@@ -166,7 +167,9 @@ export async function POST(request: NextRequest) {
       .update({
         status: 'certified',
         certified_at: new Date().toISOString(),
-        transfer_code: transferCode,
+        // Solo el hash. El codigo en si viaja por MMS y no vuelve a existir en
+        // ningun sitio nuestro: ni en la base, ni en pantalla, ni en cadena.
+        transfer_code_hash: createHash('sha256').update(transferCode).digest('hex'),
         transfer_status: 'active',
         context_summary: contextData.userEditedSummary || contextData.aiSummary || null,
         context_signed_at: contextData.isSigned ? new Date().toISOString() : null,
@@ -278,7 +281,6 @@ export async function POST(request: NextRequest) {
           creatorName,
           mediaUrl: workWithCreator.media_url,
           certifiedAt: certDate,
-          transferCode: workWithCreator.transfer_code || transferCode,
           creationLocation: ctxData?.location_name,
           creationWeather: weatherInfo?.conditions,
           elaborationType: ctxData?.elaboration_type,

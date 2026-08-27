@@ -20,7 +20,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import { startAuthentication } from '@simplewebauthn/browser'
 import { supabase } from '@/lib/supabase'
-import { TBT_BACKEND_URL } from '@/lib/backend'
 import { PRIVATE_CODE_MIN, PRIVATE_CODE_MAX } from '@/lib/private-code-rules'
 
 type Reply = {
@@ -130,8 +129,8 @@ export default function AdminPage() {
     if (!auth) return setState('denied')
 
     const [tRes, aRes] = await Promise.all([
-      fetch(`${TBT_BACKEND_URL}/api/admin/tickets?status=${filter}`, { headers: auth }),
-      fetch(`${TBT_BACKEND_URL}/api/admin/approvals`, { headers: auth }),
+      fetch(`/api/admin/tickets?status=${filter}`, { headers: auth }),
+      fetch('/api/admin/approvals', { headers: auth }),
     ])
     if (tRes.status === 401) return setState('signedout')
     if (tRes.status === 403) return setState('denied')
@@ -145,10 +144,10 @@ export default function AdminPage() {
       setCanApprove(aBody.canApprove === true)
       setMe(aBody.me ?? null)
     }
-    const cRes = await fetch(`${TBT_BACKEND_URL}/api/admin/config`, { headers: auth })
+    const cRes = await fetch('/api/admin/config', { headers: auth })
     if (cRes.ok) setConfig(await cRes.json())
 
-    const bRes = await fetch(`${TBT_BACKEND_URL}/api/admin/dashboard`, { headers: auth })
+    const bRes = await fetch('/api/admin/dashboard', { headers: auth })
     if (bRes.ok) setBoard(await bRes.json())
 
     setState('ready')
@@ -280,7 +279,7 @@ export default function AdminPage() {
     if (!auth) return
     setBusy(true)
     setNote('')
-    const res = await fetch(`${TBT_BACKEND_URL}/api/admin/tickets`, {
+    const res = await fetch('/api/admin/tickets', {
       method: 'POST',
       headers: { ...auth, 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),
@@ -300,7 +299,7 @@ export default function AdminPage() {
     if (!auth || !workQuery.trim()) return
     setBusy(true)
     setWork(null)
-    const res = await fetch(`${TBT_BACKEND_URL}/api/admin/works?q=${encodeURIComponent(workQuery.trim())}`, { headers: auth })
+    const res = await fetch(`/api/admin/works?q=${encodeURIComponent(workQuery.trim())}`, { headers: auth })
     const body = await res.json().catch(() => ({}))
     setBusy(false)
     setWorkHits(body.works ?? [])
@@ -310,7 +309,7 @@ export default function AdminPage() {
     const auth = await authHeader(stepUp)
     if (!auth) return
     setBusy(true)
-    const res = await fetch(`${TBT_BACKEND_URL}/api/admin/works?tbtId=${encodeURIComponent(tbtId)}`, { headers: auth })
+    const res = await fetch(`/api/admin/works?tbtId=${encodeURIComponent(tbtId)}`, { headers: auth })
     const body = await res.json().catch(() => ({}))
     setBusy(false)
     setWork(body.work ?? null)
@@ -321,7 +320,7 @@ export default function AdminPage() {
     const auth = await authHeader(stepUp)
     if (!auth || !annotation.trim()) return
     setBusy(true)
-    await fetch(`${TBT_BACKEND_URL}/api/admin/works`, {
+    await fetch('/api/admin/works', {
       method: 'POST',
       headers: { ...auth, 'Content-Type': 'application/json' },
       body: JSON.stringify({ tbtId, kind, body: annotation.trim() }),
@@ -335,7 +334,7 @@ export default function AdminPage() {
     const auth = await authHeader(stepUp)
     if (!auth) return
     setBusy(true)
-    const res = await fetch(`${TBT_BACKEND_URL}/api/admin/observability`, { headers: auth })
+    const res = await fetch('/api/admin/observability', { headers: auth })
     const body = await res.json().catch(() => ({}))
     setBusy(false)
     setObs(body)
@@ -345,7 +344,7 @@ export default function AdminPage() {
     const auth = await authHeader(stepUp)
     if (!auth) return
     setBusy(true)
-    const res = await fetch(`${TBT_BACKEND_URL}/api/admin/transactions`, { headers: auth })
+    const res = await fetch('/api/admin/transactions', { headers: auth })
     const body = await res.json().catch(() => ({}))
     setBusy(false)
     setTxns(body)
@@ -356,7 +355,7 @@ export default function AdminPage() {
     if (!auth || !query.trim()) return
     setBusy(true)
     setPerson(null)
-    const res = await fetch(`${TBT_BACKEND_URL}/api/admin/people?q=${encodeURIComponent(query.trim())}`, {
+    const res = await fetch(`/api/admin/people?q=${encodeURIComponent(query.trim())}`, {
       headers: auth,
     })
     const body = await res.json().catch(() => ({}))
@@ -369,7 +368,7 @@ export default function AdminPage() {
     if (!auth) return
     setBusy(true)
     setRevealed({})
-    const res = await fetch(`${TBT_BACKEND_URL}/api/admin/people?id=${id}`, { headers: auth })
+    const res = await fetch(`/api/admin/people?id=${id}`, { headers: auth })
     const body = await res.json().catch(() => ({}))
     setBusy(false)
     setPerson(body.person ?? null)
@@ -383,7 +382,7 @@ export default function AdminPage() {
     const auth = await authHeader(stepUp)
     if (!auth) return
     setBusy(true)
-    const res = await fetch(`${TBT_BACKEND_URL}/api/admin/people`, {
+    const res = await fetch('/api/admin/people', {
       method: 'POST',
       headers: { ...auth, 'Content-Type': 'application/json' },
       body: JSON.stringify({ personId, field }),
@@ -402,7 +401,7 @@ export default function AdminPage() {
     }
     setBusy(true)
     setNote('')
-    const res = await fetch(`${TBT_BACKEND_URL}/api/admin/config`, {
+    const res = await fetch('/api/admin/config', {
       method: 'POST',
       headers: { ...auth, 'Content-Type': 'application/json' },
       body: JSON.stringify({ action, value, reason: ruleReason.trim() }),
@@ -420,7 +419,7 @@ export default function AdminPage() {
     const auth = await authHeader(stepUp)
     if (!auth) return
     setBusy(true)
-    const res = await fetch(`${TBT_BACKEND_URL}/api/admin/approvals`, {
+    const res = await fetch('/api/admin/approvals', {
       method: 'POST',
       headers: { ...auth, 'Content-Type': 'application/json' },
       body: JSON.stringify({ approvalId, decision }),
