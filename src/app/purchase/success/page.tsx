@@ -4,7 +4,6 @@ import { Suspense, useEffect, useState } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import { useLocale } from '@/i18n/LocaleProvider'
-import { TBT_BACKEND_URL } from '@/lib/backend'
 
 /**
  * /purchase/success — a donde Stripe redirige tras el pago de una compra
@@ -43,7 +42,7 @@ function PurchaseSuccessContent() {
         const { data: { session } } = await supabase.auth.getSession()
         if (!session) throw new Error(t.purchase.errors.sessionExpired)
 
-        const res = await fetch(`${TBT_BACKEND_URL}/api/complete-transfer`, {
+        const res = await fetch('/api/complete-transfer', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
