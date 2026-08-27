@@ -8,7 +8,8 @@
     "start": "next start",
     "lint": "next lint",
     "check:fees": "npx --yes tsx scripts/fees-check.ts",
-    "check:canonical": "npx --yes tsx scripts/canonical-check.ts"
+    "check:canonical": "npx --yes tsx scripts/canonical-check.ts",
+    "check:records": "npx --yes tsx scripts/records-check.ts"
   },
   "dependencies": {
     "@aws-sdk/client-sns": "^3.1115.0",
