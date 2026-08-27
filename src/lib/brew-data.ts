@@ -1,5 +1,6 @@
 import { supabase } from '@/lib/supabase'
 import { normalizeImage } from '@/lib/normalize-image'
+import { contentHash } from '@/lib/chain/content-hash'
 import type { SeriesWithCount } from '@/lib/series-data'
 
 /**
@@ -90,13 +91,26 @@ export async function fetchSeriesOptions(creatorId: string): Promise<SeriesWithC
   return fetchCreatorSeries(creatorId)
 }
 
-/** Sube un archivo a works-media (mismo bucket y convención de ruta que Forms) y devuelve su URL pública. */
-async function uploadWorksMedia(userId: string, file: File, prefix = ''): Promise<string | null> {
+/**
+ * Sube un archivo a works-media y devuelve su URL pública y el hash de origen.
+ *
+ * El hash se toma del archivo tal como llegó, ANTES de `normalizeImage`. Esa es
+ * la única ventana en que existen los bytes originales: a partir de ahí la
+ * imagen ya está reescrita y hashearla mediría otra cosa (Chain Spec 01 §2).
+ */
+async function uploadWorksMedia(
+  userId: string,
+  file: File,
+  prefix = ''
+): Promise<{ url: string; hash: string } | null> {
   /*
    * Las imágenes se normalizan a PNG o JPEG antes de guardarse. El audio y el
    * vídeo pasan sin tocar: normalizeImage solo actúa sobre imágenes y devuelve
    * el archivo intacto cuando no lo es.
    */
+  // Antes de tocar nada.
+  const hash = await contentHash(file)
+
   const upload = file.type.startsWith('image/') ? await normalizeImage(file) : file
   const ext = upload.name.split('.').pop() || 'bin'
   const fileName = `${userId}/${prefix}${Date.now()}.${ext}`
@@ -105,7 +119,7 @@ async function uploadWorksMedia(userId: string, file: File, prefix = ''): Promis
   const {
     data: { publicUrl },
   } = supabase.storage.from('works-media').getPublicUrl(fileName)
-  return publicUrl
+  return { url: publicUrl, hash }
 }
 
 export type SimilarityResult =
@@ -240,12 +254,13 @@ export async function createDraftWork(
   profile: CreatorProfileRow,
   input: DraftInput
 ): Promise<{ workId?: string; error?: string }> {
-  const mediaUrl = await uploadWorksMedia(userId, input.imageFile)
-  if (!mediaUrl) return { error: 'uploadFailed' }
+  const media = await uploadWorksMedia(userId, input.imageFile)
+  if (!media) return { error: 'uploadFailed' }
+  const mediaUrl = media.url
 
   let audioVideoUrl: string | null = null
   if (input.audioVideoFile) {
-    audioVideoUrl = await uploadWorksMedia(userId, input.audioVideoFile, 'av_')
+    audioVideoUrl = (await uploadWorksMedia(userId, input.audioVideoFile, 'av_'))?.url ?? null
   }
 
   let seriesId = input.seriesId
@@ -308,6 +323,10 @@ export async function createDraftWork(
       category: input.category,
       technique: input.material,
       media_url: mediaUrl,
+      // El hash del original, tomado antes de normalizar. `complete-tbt` lo
+      // lee para el certificado; nunca lo recalcula, porque para entonces los
+      // bytes de origen ya no existen (Chain Spec 01 §2).
+      content_hash: media.hash,
       media_type: 'image',
       status: 'draft',
       primary_material: input.material,
