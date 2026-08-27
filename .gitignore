@@ -41,3 +41,6 @@ supabase/.temp/
 
 # local reference docs (not part of the app)
 Documentos/
+
+# Volcado de esquema generado con `supabase db dump` — se regenera, no se versiona
+schema.sql
