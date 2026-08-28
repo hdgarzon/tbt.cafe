@@ -280,7 +280,15 @@ Powered by BROCHA & Transbit
 
 export async function POST(request: NextRequest) {
   try {
-    // Check if SendGrid is configured
+    /*
+     * La sesion primero. La rama de abajo respondia antes de mirar quien
+     * llamaba, asi que cualquiera podia preguntarle a esta ruta si hay
+     * proveedor de correo configurado.
+     */
+    const auth = await authenticate(request)
+    if (!auth.ok) return NextResponse.json(auth.body, { status: auth.status })
+    const { supabase, user } = auth
+
     if (!process.env.RESEND_API_KEY) {
       /*
        * Simular no es enviar. Esta rama devolvía éxito, y complete-tbt registra
@@ -302,10 +310,6 @@ export async function POST(request: NextRequest) {
         message: 'Email simulado (Resend no configurado)',
       })
     }
-
-    const auth = await authenticate(request)
-    if (!auth.ok) return NextResponse.json(auth.body, { status: auth.status })
-    const { supabase, user } = auth
 
     // Parse request body
     const body: SendEmailRequest = await request.json()
@@ -423,11 +427,9 @@ export async function POST(request: NextRequest) {
         messageId: data?.id,
       })
     } catch (sendError: any) {
-      console.error('SendGrid error:', sendError)
-      
-      if (sendError.response) {
-        console.error('SendGrid response body:', sendError.response.body)
-      }
+      // Resend rechaza devolviendo `error`, no lanzando; llegar aqui es que
+      // fallo la llamada misma.
+      console.error('[send-email] la llamada a Resend fallo:', sendError)
 
       return NextResponse.json(
         { error: 'Error al enviar email' },

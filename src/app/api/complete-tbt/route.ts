@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase-admin'
 import { generateTransferCode } from '@/lib/transfer-code'
 import { isProduction, assertServerEnv } from '@/lib/app-env'
+import { wasDelivered } from '@/lib/notification-outcome'
 import { stripe } from '@/lib/stripe'
 import { resolveCoveredRegistration, REGISTRATION_FEE } from '@/lib/covered-registrations'
 import { fileSystemTicket } from '@/lib/system-tickets'
@@ -384,17 +385,19 @@ export async function POST(request: NextRequest) {
             userId: user.id,
           }),
         })
-        smsSent = smsResponse.ok
         // El código de Twilio agrupa mucho mejor que el HTTP: 21211 y 21606 son
         // problemas distintos y un http_502 los mezclaría en un solo grupo.
         const smsBody = await smsResponse.clone().json().catch(() => null)
+        smsSent = wasDelivered(smsResponse, smsBody)
         void recordProviderEvent({
           provider: 'twilio',
           operation: 'send_mms',
           ok: smsSent,
           error: smsSent
             ? undefined
-            : { code: smsBody?.twilioErrorCode ? String(smsBody.twilioErrorCode) : undefined, status: smsResponse.status, message: smsBody?.twilioStatus },
+            : smsBody?.simulated
+              ? { code: 'simulated' }
+              : { code: smsBody?.twilioErrorCode ? String(smsBody.twilioErrorCode) : undefined, status: smsResponse.status, message: smsBody?.twilioStatus },
           entityType: 'work',
           entityId: workId,
         })
@@ -448,12 +451,17 @@ export async function POST(request: NextRequest) {
             solscanUrl,
           }),
         })
-        emailSent = emailResponse.ok
+        const emailBody = await emailResponse.clone().json().catch(() => null)
+        emailSent = wasDelivered(emailResponse, emailBody)
         void recordProviderEvent({
           provider: 'resend',
           operation: 'send_certification',
           ok: emailSent,
-          error: emailSent ? undefined : { status: emailResponse.status },
+          error: emailSent
+            ? undefined
+            : emailBody?.simulated
+              ? { code: 'simulated' }
+              : { status: emailResponse.status },
           entityType: 'work',
           entityId: workId,
         })
