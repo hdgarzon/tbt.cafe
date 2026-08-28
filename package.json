@@ -9,7 +9,8 @@
     "lint": "next lint",
     "check:fees": "npx --yes tsx scripts/fees-check.ts",
     "check:canonical": "npx --yes tsx scripts/canonical-check.ts",
-    "check:records": "npx --yes tsx scripts/records-check.ts"
+    "check:records": "npx --yes tsx scripts/records-check.ts",
+    "check:coupon": "npx --yes tsx scripts/coupon-check.ts"
   },
   "dependencies": {
     "@aws-sdk/client-sns": "^3.1115.0",
@@ -20,7 +21,6 @@
     "@stripe/react-stripe-js": "^6.8.0",
     "@stripe/stripe-js": "^9.13.0",
     "@supabase/supabase-js": "^2.110.8",
-    "googleapis": "^171.4.0",
     "next": "14.2.5",
     "react": "^18",
     "react-dom": "^18",
