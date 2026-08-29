@@ -53,22 +53,35 @@ async function getLocationName(lat: number, lng: number): Promise<string> {
 // Get weather from OpenWeatherMap (free tier)
 async function getWeather(lat: number, lng: number): Promise<string> {
   const apiKey = process.env.OPENWEATHER_API_KEY
-  if (!apiKey) {
-    // Return mock weather if no API key
-    return '20°C, Parcialmente nublado'
-  }
+
+  /*
+   * Sin proveedor no hay clima, y eso se dice callando.
+   *
+   * Aqui se devolvia '20 C, Parcialmente nublado' como sustituto. No es un
+   * placeholder inocente: el valor viaja a `context_snapshots.weather_data`,
+   * de ahi a `creationWeather` y de ahi a un atributo del NFT, que se acuna en
+   * Solana y no se corrige nunca. Sin la clave en produccion TODAS las obras
+   * quedarian selladas con el mismo clima inventado — el mismo para Medellin
+   * en abril que para Bogota en diciembre.
+   *
+   * Una cadena vacia hace que `complete-tbt` guarde `weather_data: null` y que
+   * `nft.ts` no anada el atributo. Un dato ausente es honesto; uno fabricado
+   * en un registro inmutable, no.
+   */
+  if (!apiKey) return ''
+
   
   try {
     const response = await fetch(
       `https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lng}&appid=${apiKey}&units=metric&lang=es`
     )
-    if (!response.ok) return 'Clima no disponible'
+    if (!response.ok) return ''
     const data = await response.json()
     const temp = Math.round(data.main?.temp || 20)
     const desc = data.weather?.[0]?.description || 'parcialmente nublado'
     return `${temp}°C, ${desc.charAt(0).toUpperCase() + desc.slice(1)}`
   } catch {
-    return 'Clima no disponible'
+    return ''
   }
 }
 
@@ -99,8 +112,7 @@ Categoría: ${work.category}
 Técnica: ${work.material || 'no especificada'}
 Artista: ${creatorDescription}
 ${creator.bio ? `Bio: ${creator.bio}` : ''}
-Lugar: ${location}
-Clima: ${weather}
+Lugar: ${location}${weather ? `\nClima: ${weather}` : ''}
 Fecha: ${fecha}${adjust ? `
 
 El creador pide este ajuste de redacción: "${adjust}"
@@ -160,7 +172,8 @@ afirmar hechos que no están arriba: el texto se sella en un certificado.` : ''}
   // Fallback: generate local summary if Gemini fails
   console.warn('All Gemini attempts failed, using local fallback')
   const now = new Date()
-  const fallback = `"${work.title}", ${work.category} por ${creatorDescription} en ${location}, ${now.toLocaleDateString('es-ES', { year: 'numeric', month: 'long', day: 'numeric' })}. ${weather}.`
+  const fechaLarga = now.toLocaleDateString('es-ES', { year: 'numeric', month: 'long', day: 'numeric' })
+  const fallback = `"${work.title}", ${work.category} por ${creatorDescription} en ${location}, ${fechaLarga}.${weather ? ` ${weather}.` : ''}`
   return fallback.length > 300 ? fallback.slice(0, 297) + '...' : fallback
 }
 
@@ -182,7 +195,7 @@ export async function POST(request: NextRequest) {
 
     // Get location data
     let locationName = 'Ubicación no especificada'
-    let weather = 'Clima no disponible'
+    let weather = ''
     
     if (body.location?.lat && body.location?.lng) {
       [locationName, weather] = await Promise.all([
