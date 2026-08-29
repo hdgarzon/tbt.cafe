@@ -103,6 +103,11 @@ const dispute = (over: Record<string, unknown> = {}): StripeEventLike => ({
   ok('el webhook atiende la apertura', hook.includes("'charge.dispute.created'"))
   ok('el webhook atiende el cierre', hook.includes("'charge.dispute.closed'"))
   ok('el webhook atiende el reembolso', hook.includes("'charge.refunded'"))
+
+  // 19 de 23 pagos de registro no tienen el intent guardado, asi que sin este
+  // respaldo la mayoria de las disputas quedaria sin resolver.
+  ok('el webhook cae en la sesión cuando el intent no lleva a nada', hook.includes('checkout.sessions.list'))
+  ok('y lee los metadatos de la sesión', hook.includes('session.metadata'))
 }
 
 console.log(bad === 0 ? '\ntodo en orden' : `\n${bad} fallo(s)`)

@@ -281,6 +281,62 @@ async function resolvePayment(paymentIntentId: string | null): Promise<{
 
   if (work) return { workId: work.id, transferId: null, userId: work.creator_id ?? null }
 
+  /*
+   * La sesion, que es lo unico que si esta siempre.
+   *
+   * De 23 pagos de registro solo 4 tienen el intent guardado: la ruta que los
+   * reconcilia sin webhook escribe `payment_status` y nada mas. Y
+   * `works.payment_intent_id` guarda un `cs_…` en 17 filas de 58, asi que la
+   * comparacion de arriba tampoco las alcanza. Sin este paso, la mayoria de
+   * las disputas de registro quedarian sin resolver.
+   *
+   * La sesion ademas trae los metadatos que el webhook ya usa para todo lo
+   * demas, de modo que una sola llamada da obra, persona y transferencia.
+   */
+  try {
+    const sessions = await stripe.checkout.sessions.list({
+      payment_intent: paymentIntentId,
+      limit: 1,
+    })
+
+    const session = sessions.data[0]
+    if (session) {
+      const meta = session.metadata ?? {}
+      if (meta.workId || meta.transferId) {
+        return {
+          workId: meta.workId ?? null,
+          transferId: meta.transferId ?? null,
+          userId: meta.userId ?? null,
+        }
+      }
+
+      // Sin metadatos, todavia queda el propio id de la sesion: es lo que
+      // `tbt_payments` guarda siempre, y lo que `works` guarda a veces.
+      const { data: bySession } = await supabase
+        .from('tbt_payments')
+        .select('work_id, user_id')
+        .eq('stripe_checkout_session_id', session.id)
+        .maybeSingle()
+
+      if (bySession?.work_id) {
+        return { workId: bySession.work_id, transferId: null, userId: bySession.user_id ?? null }
+      }
+
+      const { data: workBySession } = await supabase
+        .from('works')
+        .select('id, creator_id')
+        .eq('payment_intent_id', session.id)
+        .maybeSingle()
+
+      if (workBySession) {
+        return { workId: workBySession.id, transferId: null, userId: workBySession.creator_id ?? null }
+      }
+    }
+  } catch (err) {
+    // Que Stripe no conteste no puede impedir guardar la disputa.
+    console.error('[webhook] no se pudo buscar la sesion del pago:', err)
+  }
+
   return unresolved
 }
 
