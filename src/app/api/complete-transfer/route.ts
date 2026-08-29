@@ -9,6 +9,14 @@ import { isProduction, assertServerEnv } from '@/lib/app-env'
 import { authenticate } from '@/lib/route-auth'
 import { createHash } from 'crypto'
 
+/**
+ * Esta ruta mueve el NFT en cadena: inicializa Irys, consulta precio, transfiere fondos en
+ * cadena, sube metadatos con 60 s de espera propia y duerme 2 s a proposito.
+ * Sin limite declarado corre con el de la plataforma, que puede cambiar sin
+ * avisar; y un corte a mitad deja el cobro hecho y el trabajo sin terminar.
+ */
+export const maxDuration = 300
+
 
 export async function POST(request: NextRequest) {
 
