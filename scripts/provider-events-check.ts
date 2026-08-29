@@ -65,7 +65,13 @@ const ok = (label: string, cond: boolean, detail = '') => {
   const complete = read('src/app/api/complete-tbt/route.ts')
 
   ok('send-sms no devuelve un 500 mudo', !sms.includes("{ error: 'Error al enviar mensaje' }"))
-  ok('y el catch exterior ve el fallo de Twilio', /catch[\s\S]{0,900}twilioFailure\?\.code/.test(sms))
+  // Sobre la CONSTRUCCION, no sobre la distancia: medir cuantos caracteres
+  // separan el catch de la variable se rompe en cuanto crece el bloque.
+  ok(
+    'la respuesta del catch lleva el fallo de Twilio',
+    sms.includes('twilioErrorCode: twilioFailure?.code'),
+    'sin esto la causa se pierde y vuelve el "[object Object]"'
+  )
   ok('complete-tbt reenvía el cuerpo entero', complete.includes('...smsBody'))
 }
 
