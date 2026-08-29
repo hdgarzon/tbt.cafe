@@ -242,13 +242,16 @@ export function SecBlock({
   action,
   onAction,
   hint,
+  busy,
 }: {
   label: string
   value: string
   tag: { label: string; verified: boolean }
-  action: string
-  onAction: () => void
+  /** Sin accion no se pinta boton: hay estados que no piden nada de nadie. */
+  action?: string
+  onAction?: () => void
   hint?: string
+  busy?: boolean
 }) {
   return (
     <div className="py-[18px] border-b border-hairline first:pt-1">
@@ -264,13 +267,16 @@ export function SecBlock({
             {tag.label}
           </span>
         </div>
-        <button
-          type="button"
-          onClick={onAction}
-          className="shrink-0 mt-0.5 rounded-[9px] border border-ink px-4 py-[9px] text-[10px] font-semibold tracking-[0.12em] uppercase text-ink transition-colors hover:bg-ink hover:text-paper"
-        >
-          {action}
-        </button>
+        {action && onAction && (
+          <button
+            type="button"
+            onClick={onAction}
+            disabled={busy}
+            className="shrink-0 mt-0.5 rounded-[9px] border border-ink px-4 py-[9px] text-[10px] font-semibold tracking-[0.12em] uppercase text-ink transition-colors hover:bg-ink hover:text-paper disabled:opacity-40"
+          >
+            {action}
+          </button>
+        )}
       </div>
       {hint && <p className="text-[11.5px] leading-[1.55] text-ink-soft mt-3">{hint}</p>}
     </div>

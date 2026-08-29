@@ -96,6 +96,71 @@ export async function fetchPayoutCountry(userId: string): Promise<string | null>
   return data?.payout_country ?? null
 }
 
+/* ── La cuenta de Connect ────────────────────────────────────────────────── */
+
+export type ConnectStatus = 'onboarding' | 'active' | 'restricted' | 'rejected'
+
+export type ConnectAccount = {
+  accountId: string
+  status: ConnectStatus
+  country: string
+  transfersEnabled: boolean
+}
+
+/**
+ * La cuenta de cobro de esta persona, si ya existe.
+ *
+ * La RLS de 024 solo deja leer la propia, que es exactamente lo que la
+ * pantalla necesita saber: si ya puede cobrar. El estado lo escribe el webhook
+ * con el service role; aquí no se deduce de nada.
+ */
+export async function fetchConnectAccount(userId: string): Promise<ConnectAccount | null> {
+  const { data } = await supabase
+    .from('payout_connect_accounts')
+    .select('account_id, status, country, transfers_enabled')
+    .eq('user_id', userId)
+    .maybeSingle()
+
+  if (!data) return null
+
+  return {
+    accountId: data.account_id,
+    status: data.status as ConnectStatus,
+    country: data.country,
+    transfersEnabled: data.transfers_enabled,
+  }
+}
+
+/**
+ * Pide el enlace de alta y devuelve a dónde hay que ir.
+ *
+ * Stripe los emite de un solo uso y con caducidad, así que se pide en el
+ * momento de usarlo y no se guarda nunca. `country` solo cuenta la primera
+ * vez: la ruta lo exige al crear la cuenta y lo ignora después, porque Stripe
+ * lo congela al activarla.
+ */
+export async function startConnectOnboarding(
+  country: string | null
+): Promise<{ url?: string; error?: string }> {
+  const {
+    data: { session },
+  } = await supabase.auth.getSession()
+  if (!session) return { error: 'needSignIn' }
+
+  const res = await fetch('/api/payouts/connect', {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${session.access_token}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(country ? { country: country.toUpperCase() } : {}),
+  })
+
+  const body = await res.json().catch(() => ({}))
+  if (!res.ok || !body.url) return { error: body.error ?? 'connectFailed' }
+  return { url: body.url }
+}
+
 /* ── El libro de ganancias ──────────────────────────────────────────────── */
 
 export type EarningState = 'pending' | 'available' | 'collected'

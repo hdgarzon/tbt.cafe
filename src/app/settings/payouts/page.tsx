@@ -11,11 +11,14 @@ import {
   fetchPayoutMethods,
   fetchPayoutCountry,
   fetchDefaultDestination,
+  fetchConnectAccount,
+  startConnectOnboarding,
   pendingOf,
   sumOf,
   type Earning,
   type PayoutMethod,
   type PayoutDestination,
+  type ConnectAccount,
 } from '@/lib/payout-data'
 
 /**
@@ -37,6 +40,10 @@ export default function PayoutSettingsPage() {
   const [destination, setDestination] = useState<PayoutDestination | null>(null)
   const [pending, setPending] = useState<Earning[]>([])
   const [editing, setEditing] = useState(false)
+  const [connect, setConnect] = useState<ConnectAccount | null>(null)
+  const [country, setCountry] = useState<string | null>(null)
+  const [connectBusy, setConnectBusy] = useState(false)
+  const [connectMsg, setConnectMsg] = useState('')
 
   async function load() {
     const {
@@ -47,21 +54,49 @@ export default function PayoutSettingsPage() {
       setLoading(false)
       return
     }
-    const country = await fetchPayoutCountry(user.id)
-    const [list, saved, earnings] = await Promise.all([
-      fetchPayoutMethods(country),
+    const payoutCountry = await fetchPayoutCountry(user.id)
+    const [list, saved, earnings, account] = await Promise.all([
+      fetchPayoutMethods(payoutCountry),
       fetchDefaultDestination(user.id),
       fetchEarnings(user.id),
+      fetchConnectAccount(user.id),
     ])
+    setCountry(payoutCountry)
     setMethods(list)
     setDestination(saved)
     setPending(pendingOf(earnings))
+    setConnect(account)
     setLoading(false)
   }
 
+  /**
+   * Vuelta desde Stripe. El enlace es de un solo uso, asi que el parametro se
+   * limpia: recargar la pagina con el puesto no repetiria nada util.
+   *
+   * El estado NO se adivina aqui. Quien lo escribe es el webhook, y puede
+   * tardar: decir "lista" porque la persona volvio seria inventarselo.
+   */
   useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    if (params.has('connect')) {
+      params.delete('connect')
+      const rest = params.toString()
+      window.history.replaceState({}, '', window.location.pathname + (rest ? `?${rest}` : ''))
+    }
     load()
   }, [])
+
+  async function openConnect() {
+    setConnectBusy(true)
+    setConnectMsg('')
+    const result = await startConnectOnboarding(connect ? null : country)
+    if (result.url) {
+      window.location.href = result.url
+      return
+    }
+    setConnectBusy(false)
+    setConnectMsg(result.error === 'country_required' ? t.payouts.noCountry : t.payouts.connectFailed)
+  }
 
   if (loading) return <div className="px-4 pt-6 text-[13px] text-ink-soft">{t.authHub.loading}</div>
 
@@ -94,6 +129,31 @@ export default function PayoutSettingsPage() {
         <div className="page-sub">{t.payouts.sub}</div>
 
         <div className="mt-[26px]">
+          {/*
+            La cuenta de cobro va primero porque es el requisito de todo lo
+            demas: sin ella no hay a donde mandar el dinero, por muy elegido
+            que este el metodo. Una cuenta activa no ofrece boton — no hay nada
+            que la persona tenga que hacer.
+          */}
+          <SecBlock
+            label={t.payouts.connectAccount}
+            value={connect ? t.payouts.connectStatus[connect.status] : t.payouts.connectNone}
+            tag={{
+              label: connect?.transfersEnabled ? t.payouts.collected : t.payouts.notSet,
+              verified: Boolean(connect?.transfersEnabled),
+            }}
+            action={
+              !connect
+                ? t.payouts.connectSetUp
+                : connect.status === 'active'
+                  ? undefined
+                  : t.payouts.connectContinue
+            }
+            onAction={connect?.status === 'active' ? undefined : openConnect}
+            busy={connectBusy}
+            hint={connectMsg || t.payouts.connectHint}
+          />
+
           {noMethods ? (
             <p className="py-6 text-[13px] leading-[1.7] text-ink-soft">{t.payouts.noMethods}</p>
           ) : (
