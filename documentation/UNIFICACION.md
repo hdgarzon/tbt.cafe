@@ -83,8 +83,12 @@ GEMINI_API_KEY                   OPENWEATHER_API_KEY
 RESEND_API_KEY                   RESEND_FROM_EMAIL
 TWILIO_ACCOUNT_SID               TWILIO_AUTH_TOKEN          TWILIO_PHONE_NUMBER
 AWS_ACCESS_KEY_ID                AWS_SECRET_ACCESS_KEY      AWS_REGION
-GOOGLE_SHEETS_*                  SOLANA_*                   WALLET_ENCRYPTION_KEY
+SOLANA_*                         WALLET_ENCRYPTION_KEY
 ```
+
+`GOOGLE_SHEETS_*` ya no esta en la lista. Los cupones se resuelven contra
+Stripe (#33), que es donde vive el descuento; la hoja era una segunda lista
+para el mismo dato y nunca llego a configurarse.
 
 `SOLANA_PAYER_PRIVATE_KEY` y `WALLET_ENCRYPTION_KEY` **hay que rotarlas antes**:
 estuvieron 140 dias en un proyecto de Vercel que se borro, y borrarlo no las

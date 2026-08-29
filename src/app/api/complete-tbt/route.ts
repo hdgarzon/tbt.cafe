@@ -92,7 +92,12 @@ export async function POST(request: NextRequest) {
       if (stripeSessionId) {
         try {
           const session = await stripe.checkout.sessions.retrieve(stripeSessionId)
-          if (session.payment_status === 'paid') {
+          // Un cupon del 100% cierra la sesion sin cobro, y Stripe la marca
+          // `no_payment_required`: pagada de cero sigue siendo pagada. El
+          // webhook nunca miro este campo, asi que solo esta reconciliacion
+          // —la que corre cuando el webhook se pierde— rechazaba las sesiones
+          // sin importe.
+          if (session.payment_status === 'paid' || session.payment_status === 'no_payment_required') {
             verified = true
             await supabase
               .from('works')

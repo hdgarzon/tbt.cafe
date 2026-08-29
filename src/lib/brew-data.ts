@@ -191,18 +191,29 @@ export async function generateContext(input: {
   }
 }
 
-export type CouponResult = { valid: boolean; type?: 'percentage' | 'fixed'; value?: number; error?: string }
+export type CouponResult = {
+  valid: boolean
+  type?: 'percentage' | 'fixed'
+  value?: number
+  /** Certifica sin pasar por Stripe. Solo el cupón de desarrollo, y lo decide el servidor. */
+  bypass?: boolean
+  error?: string
+}
 
 export async function validateCoupon(code: string): Promise<CouponResult> {
   try {
+    // Con sesión: la ruta consulta promociones reales y no se deja enumerar.
+    const auth = await authHeader()
+    if (!auth) return { valid: false, error: 'needSignIn' }
+
     const res = await fetch('/api/validate-coupon', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', ...auth },
       body: JSON.stringify({ code }),
     })
     const body = await res.json()
     if (!res.ok || !body.valid) return { valid: false, error: body.error }
-    return { valid: true, type: body.type, value: body.value }
+    return { valid: true, type: body.type, value: body.value, bypass: body.bypass === true }
   } catch {
     return { valid: false, error: 'couponFailed' }
   }
@@ -373,9 +384,14 @@ export async function startRegistration(
     if (!('error' in result)) return { free: true }
   }
 
+  // Un descuento del 100% NO es un atajo: Stripe cobra $0, cierra la sesión y
+  // el webhook marca el pago igual que cualquier otra. El único código que se
+  // salta el cobro es el de desarrollo, y quien lo declara es el servidor
+  // —`bypass`—, nunca el porcentaje que venga en la respuesta. Fiarse del
+  // porcentaje dejaba pedir la certificación gratis afirmando un 100%.
   if (couponCode) {
     const coupon = await validateCoupon(couponCode)
-    if (coupon.valid && coupon.type === 'percentage' && (coupon.value ?? 0) >= 100) {
+    if (coupon.valid && coupon.bypass) {
       const result = await completeTbt(workId, couponCode)
       return 'error' in result ? { error: result.error } : { free: true }
     }
