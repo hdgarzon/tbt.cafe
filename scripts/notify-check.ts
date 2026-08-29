@@ -32,5 +32,28 @@ ok('simulated con cualquier valor cierto', wasDelivered({ ok: true }, { simulate
   ok('ambos pasan por la misma regla', (complete.match(/wasDelivered\(/g) ?? []).length === 2)
 }
 
+// ---- LA GUARDA: el libro de entregas tiene que saber decir que NO
+{
+  const sms = readFileSync(join(__dirname, '..', 'src/app/api/send-sms/route.ts'), 'utf8')
+  const writes = sms.match(/from\('mms_deliveries'\)/g) ?? []
+
+  ok('hay al menos cuatro escrituras al libro', writes.length >= 4)
+  ok(
+    'ninguna usa el cliente del usuario',
+    !sms.includes("supabase.from('mms_deliveries')"),
+    'con el token del usuario la RLS la deniega y el registro queda vacío'
+  )
+  ok(
+    'todas leen su error',
+    (sms.match(/\{ error: \w+LedgerError \}/g) ?? []).length === writes.length,
+    'una denegación muda es como el registro quedó a cero'
+  )
+  ok(
+    'el catch exterior registra el fallo',
+    /catch \(error: any\)[\s\S]{0,900}status: 'failed'/.test(sms),
+    'con inserts solo en los caminos de éxito, la tabla no puede responder que no'
+  )
+}
+
 console.log(bad === 0 ? '\ntodo en orden' : `\n${bad} fallo(s)`)
 process.exit(bad === 0 ? 0 : 1)
