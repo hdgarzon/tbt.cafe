@@ -91,6 +91,11 @@ alter table public.payment_disputes enable row level security;
 create index if not exists tbt_payments_payment_intent_idx
   on public.tbt_payments (stripe_payment_intent_id) where stripe_payment_intent_id is not null;
 
+-- La sesion es la que si esta siempre: 19 de 23 pagos de registro no guardaron
+-- el intent, y el respaldo del webhook busca por aqui.
+create index if not exists tbt_payments_checkout_session_idx
+  on public.tbt_payments (stripe_checkout_session_id) where stripe_checkout_session_id is not null;
+
 create index if not exists transfers_payment_intent_idx
   on public.transfers (stripe_payment_intent_id) where stripe_payment_intent_id is not null;
 
