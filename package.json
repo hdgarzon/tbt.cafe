@@ -12,7 +12,8 @@
     "check:records": "npx --yes tsx scripts/records-check.ts",
     "check:coupon": "npx --yes tsx scripts/coupon-check.ts",
     "check:notify": "npx --yes tsx scripts/notify-check.ts",
-    "check:dispute": "npx --yes tsx scripts/dispute-check.ts"
+    "check:dispute": "npx --yes tsx scripts/dispute-check.ts",
+    "check:checkout": "npx --yes tsx scripts/checkout-return-check.ts"
   },
   "dependencies": {
     "@aws-sdk/client-sns": "^3.1115.0",

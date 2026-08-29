@@ -122,25 +122,57 @@ export async function POST(request: NextRequest) {
     // only honoured when it's the same already-CORS-allowlisted origin this
     // request came from, so a caller can't redirect Stripe anywhere else.
     const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
+
+    /*
+     * El origen propio, no un global que no existe.
+     *
+     * Esto comparaba contra `origin` a secas. En un navegador eso es
+     * `location.origin`; en Node no existe, asi que la expresion lanzaba
+     * ReferenceError, el `catch` de al lado lo volvia `false`, y NINGUNA url
+     * del llamante se honraba jamas. Compilaba porque el tsconfig incluye la
+     * libreria "dom", que declara el global sin que el runtime lo tenga.
+     *
+     * No era cosmetico. El retorno del checkout embebido caia siempre al
+     * respaldo, que apuntaba a `/payment/success` — una ruta que no existe y
+     * responde 404. Como es el front quien llama a `complete-tbt` al volver,
+     * la obra quedaba cobrada y sin certificar.
+     *
+     * Se compara contra el origen de la propia app y NO contra la cabecera
+     * `Origin` de la peticion: esa la elige quien llama, y aceptarla dejaria
+     * redirigir Stripe a donde quisiera.
+     */
+    const appOrigin = (() => {
+      try {
+        return new URL(baseUrl).origin
+      } catch {
+        return null
+      }
+    })()
+
     const sameOrigin = (u: string) => {
       try {
-        return !!origin && new URL(u).origin === origin
+        return !!appOrigin && new URL(u).origin === appOrigin
       } catch {
         return false
       }
     }
-    const successUrl =
-      successUrlIn && sameOrigin(successUrlIn)
-        ? successUrlIn
-        : `${baseUrl}/payment/success?session_id={CHECKOUT_SESSION_ID}&type=${type}&workId=${workId}${transferId ? `&transferId=${transferId}` : ''}`
-    const cancelUrl =
-      cancelUrlIn && sameOrigin(cancelUrlIn) ? cancelUrlIn : `${baseUrl}/payment/cancel?type=${type}&workId=${workId}`
+
+    // Y el respaldo tiene que existir. Una registracion vuelve a /brew, que es
+    // de donde salio y lo unico que sabe reanudarla.
+    const fallbackSuccess =
+      type === 'tbt_creation'
+        ? `${baseUrl}/brew?workId=${workId}&status=success&session_id={CHECKOUT_SESSION_ID}`
+        : `${baseUrl}/purchase/success?session_id={CHECKOUT_SESSION_ID}&type=${type}&workId=${workId}${transferId ? `&transferId=${transferId}` : ''}`
+
+    const fallbackCancel =
+      type === 'tbt_creation'
+        ? `${baseUrl}/brew?workId=${workId}&status=cancel`
+        : `${baseUrl}/purchase/cancel?type=${type}&workId=${workId}`
+    const successUrl = successUrlIn && sameOrigin(successUrlIn) ? successUrlIn : fallbackSuccess
+    const cancelUrl = cancelUrlIn && sameOrigin(cancelUrlIn) ? cancelUrlIn : fallbackCancel
     // Misma regla que arriba: solo se honra si es el origen ya permitido por
     // CORS del que vino la petición, para que nadie redirija Stripe a otro sitio.
-    const returnUrl =
-      returnUrlIn && sameOrigin(returnUrlIn)
-        ? returnUrlIn
-        : `${baseUrl}/payment/success?session_id={CHECKOUT_SESSION_ID}&type=${type}&workId=${workId}`
+    const returnUrl = returnUrlIn && sameOrigin(returnUrlIn) ? returnUrlIn : fallbackSuccess
 
     /**
      * Descuento — §1A.1: "un descuento cambia el importe, no la etiqueta".
