@@ -16,8 +16,6 @@ Guidance for Claude when working in this repository.
 
 Treat this repo as if it were public.
 
-> **`.gitignore` gap — fix this first.** It currently only ignores `.env*.local`. A file named `.env` or `.env.production` would be committed. Widen it to `.env*` with `!.env.example` before adding any new env file.
-
 **Never stage:**
 - `.env` and every variant except `.env.example`.
 - Stripe secret keys or webhook signing secrets, Supabase service-role keys, JWT secrets.
@@ -45,8 +43,26 @@ npm run dev          # Next dev server
 npm run build        # production build
 npm run start        # serve the build
 npm run lint         # next lint
-npm run check:fees   # scripts/fees-check.ts — validates fee math
+npm run check:fees        # fee arithmetic
+npm run check:canonical   # canonical serialisation for the chain records
+npm run check:records     # the three Arweave records, and what must stay out of them
+npm run check:coupon      # promo codes resolve against Stripe, one list only
+npm run check:notify      # a simulated send is not a send
+npm run check:dispute     # a chargeback leaves a trace
+npm run check:checkout    # the checkout return URL points at a page that exists
+npm run check:context     # no fabricated weather is sealed
+npm run check:events      # a failure records what it died of
 ```
+
+Each guard is a plain script under `scripts/`, written BEFORE the module it
+protects. There is no test framework: a guard is a list of assertions that
+exits non-zero. Two habits matter when writing one:
+
+- Assert on the **code construct**, never on a bare word. A guard that checks
+  `!source.includes('someName')` fails against the comment that explains why
+  `someName` is not used. Assert on `someName(` or on the exact interpolation.
+- A helper ending in `})` followed by a bare `{` block parses as an arrow
+  function. Terminate it with a semicolon.
 
 ## Architecture
 
@@ -62,13 +78,22 @@ src/app/
   creator/  collections/  profile/
   purchase/  transfer/  history/     # commerce + ledger
   admin/                             # admin console (step-up protected)
+  legal/                             # terms and privacy
   settings/  help/  og/  api/
 src/components/brew/  work/
 src/lib/                             # supabase client, stripe, auth helpers
 src/i18n/messages/                   # translation catalogues
-supabase/migrations/                 # 000 → 015, ordered
-scripts/fees-check.ts                # fee arithmetic guard
+supabase/migrations/                 # 001 → 030, ordered
+scripts/*-check.ts                   # one guard per invariant
 ```
+
+> **The migrations do not describe the whole database.** They start at `001`
+> and assume a base schema that exists nowhere in this repository: `works`,
+> `profiles`, `certificates`, `context_snapshots`, `work_commerce`,
+> `tbt_payments`, `ownership_history`, `transfers` and `wallets` have no
+> `create table` anywhere, and `schema.sql` is empty. 28 of the 44 live tables
+> can be rebuilt from here; the other 16 cannot. Assume nothing about a column
+> from the migrations alone — check the database.
 
 ### Domains to be careful with
 
@@ -76,6 +101,23 @@ scripts/fees-check.ts                # fee arithmetic guard
 - **Fees** — run `npm run check:fees` after touching any pricing, transfer, or purchase path. Fee drift is silent and expensive.
 - **Covered registrations** (`011_covered_registrations`) and **tickets** (`012_tickets`) carry real user obligations.
 - **Notifications** (`015_notifications`) feed the in-app feed; writes must be idempotent.
+
+### Columns that lie
+
+`works` carries 55 columns and several are dead twins of the live one. Writing
+to the wrong half is silent — the row saves, and the value is simply never read
+again. Verified against the live database:
+
+| live | dead | why it matters |
+|---|---|---|
+| `works.mint_address` (32/59) | `works.nft_mint_address` (0/59) | the mint address of every NFT |
+| `works.transfer_code_hash` (41/59) | `works.transfer_code` (40/59) | the plaintext column predates the hash and nothing reads it |
+
+`works.ipfs_hash` and `works.blockchain_hash` are empty in every row and unused.
+
+The transfer code is a bearer secret: whoever holds it can claim the work. It is
+stored hashed for that reason, and the plaintext column is a leftover — never
+write to it.
 
 ### Conventions
 
