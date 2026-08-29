@@ -11,7 +11,8 @@
     "check:canonical": "npx --yes tsx scripts/canonical-check.ts",
     "check:records": "npx --yes tsx scripts/records-check.ts",
     "check:coupon": "npx --yes tsx scripts/coupon-check.ts",
-    "check:notify": "npx --yes tsx scripts/notify-check.ts"
+    "check:notify": "npx --yes tsx scripts/notify-check.ts",
+    "check:dispute": "npx --yes tsx scripts/dispute-check.ts"
   },
   "dependencies": {
     "@aws-sdk/client-sns": "^3.1115.0",
