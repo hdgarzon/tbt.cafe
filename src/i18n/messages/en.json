@@ -1041,7 +1041,19 @@
     "noBiometric": "No biometric is enrolled on this device. Enrol one in Settings › Authentication.",
     "collectFailed": "The collection could not be completed.",
     "collectedToast": "Collected — {id}",
-    "processingNote": "Your payout block is created. The transfer to your destination follows."
+    "processingNote": "Your payout block is created. The transfer to your destination follows.",
+    "connectAccount": "Payout account",
+    "connectNone": "Not set up",
+    "connectSetUp": "Set up",
+    "connectContinue": "Continue",
+    "connectHint": "Stripe holds your funds and verifies your identity. Setting this up opens a page hosted by Stripe and brings you back here.",
+    "connectFailed": "Could not open the setup page. Try again in a moment.",
+    "connectStatus": {
+      "onboarding": "Details still missing",
+      "active": "Ready to receive",
+      "restricted": "Stripe needs something else",
+      "rejected": "Stripe declined this account"
+    }
   },
   "ladder": {
     "title": "Confirm it's you",

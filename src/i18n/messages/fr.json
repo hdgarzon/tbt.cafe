@@ -1041,7 +1041,19 @@
     "noBiometric": "Aucune biométrie n'est enregistrée sur cet appareil. Enregistrez-en une dans Réglages › Authentification.",
     "collectFailed": "L'encaissement n'a pas pu être finalisé.",
     "collectedToast": "Encaissé — {id}",
-    "processingNote": "Votre bloc de versement est créé. Le virement vers votre destination suit."
+    "processingNote": "Votre bloc de versement est créé. Le virement vers votre destination suit.",
+    "connectAccount": "Compte de versement",
+    "connectNone": "Non configuré",
+    "connectSetUp": "Configurer",
+    "connectContinue": "Continuer",
+    "connectHint": "Stripe conserve vos fonds et vérifie votre identité. La configuration ouvre une page hébergée par Stripe puis vous ramène ici.",
+    "connectFailed": "Impossible d'ouvrir la page de configuration. Réessayez dans un instant.",
+    "connectStatus": {
+      "onboarding": "Informations encore manquantes",
+      "active": "Prêt à recevoir",
+      "restricted": "Stripe demande autre chose",
+      "rejected": "Stripe a refusé ce compte"
+    }
   },
   "ladder": {
     "title": "Confirmez que c'est vous",

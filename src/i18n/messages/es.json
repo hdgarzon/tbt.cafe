@@ -1041,7 +1041,19 @@
     "noBiometric": "No hay biométrico registrado en este dispositivo. Regístralo en Ajustes › Autenticación.",
     "collectFailed": "No se pudo completar el cobro.",
     "collectedToast": "Cobrado — {id}",
-    "processingNote": "Tu bloque de cobro está creado. El envío a tu destino va después."
+    "processingNote": "Tu bloque de cobro está creado. El envío a tu destino va después.",
+    "connectAccount": "Cuenta de cobro",
+    "connectNone": "Sin configurar",
+    "connectSetUp": "Configurar",
+    "connectContinue": "Continuar",
+    "connectHint": "Stripe custodia tu dinero y verifica tu identidad. Configurarla abre una página alojada por Stripe y te devuelve aquí.",
+    "connectFailed": "No se pudo abrir la página de configuración. Inténtalo en un momento.",
+    "connectStatus": {
+      "onboarding": "Faltan datos por completar",
+      "active": "Lista para recibir",
+      "restricted": "Stripe pidió algo más",
+      "rejected": "Stripe rechazó esta cuenta"
+    }
   },
   "ladder": {
     "title": "Confirma que eres tú",

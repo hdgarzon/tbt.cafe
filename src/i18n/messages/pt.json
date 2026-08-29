@@ -1041,7 +1041,19 @@
     "noBiometric": "Não há biometria cadastrada neste aparelho. Cadastre em Configurações › Autenticação.",
     "collectFailed": "Não foi possível concluir o recebimento.",
     "collectedToast": "Recebido — {id}",
-    "processingNote": "O seu bloco de repasse foi criado. O envio ao seu destino vem em seguida."
+    "processingNote": "O seu bloco de repasse foi criado. O envio ao seu destino vem em seguida.",
+    "connectAccount": "Conta de recebimento",
+    "connectNone": "Não configurada",
+    "connectSetUp": "Configurar",
+    "connectContinue": "Continuar",
+    "connectHint": "A Stripe custodia o seu dinheiro e verifica a sua identidade. Configurar abre uma página hospedada pela Stripe e traz você de volta aqui.",
+    "connectFailed": "Não foi possível abrir a página de configuração. Tente novamente em instantes.",
+    "connectStatus": {
+      "onboarding": "Ainda faltam dados",
+      "active": "Pronta para receber",
+      "restricted": "A Stripe pediu mais alguma coisa",
+      "rejected": "A Stripe recusou esta conta"
+    }
   },
   "ladder": {
     "title": "Confirme que é você",
