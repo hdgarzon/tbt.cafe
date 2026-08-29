@@ -83,7 +83,7 @@ export async function POST(request: NextRequest) {
     // registraciones. El libro se escribe más abajo, solo si la certificación
     // sale bien: un intento abandonado o bloqueado no descuenta la asignación.
     let coveredReason: 'first_n_allowance' | 'admin_grant' | null = null
-    if (!paymentBypassed && work.payment_status !== 'completed') {
+    if (!paymentBypassed && work.payment_status !== 'completed' && work.payment_status !== 'covered') {
       coveredReason = await resolveCoveredRegistration(supabase, work.creator_id)
       if (coveredReason) {
         paymentBypassed = true
@@ -93,8 +93,18 @@ export async function POST(request: NextRequest) {
 
     console.log('Work payment status:', work.payment_status)
 
+    /*
+     * 'covered' cuenta como saldado.
+     *
+     * La guarda de idempotencia vive mas abajo, asi que un reintento sobre una
+     * obra ya cubierta pasa PRIMERO por aqui. Sin esto rebotaria con "Payment
+     * not completed. Current status: covered" en cuanto la asignacion quedara
+     * consumida por su propia fila del libro.
+     */
+    const settled = work.payment_status === 'completed' || work.payment_status === 'covered'
+
     // If payment not yet confirmed by webhook, verify directly with Stripe
-    if (!paymentBypassed && work.payment_status !== 'completed') {
+    if (!paymentBypassed && !settled) {
       const stripeSessionId = sessionId || work.payment_intent_id
       let verified = false
 
@@ -181,6 +191,18 @@ export async function POST(request: NextRequest) {
       .update({
         status: 'certified',
         certified_at: new Date().toISOString(),
+        /*
+         * Una registracion cubierta queda saldada, y se dice.
+         *
+         * Sin esto la obra quedaba `certified` con `payment_status: 'pending'`,
+         * que en el panel de admin se lee como impagada. El libro de
+         * `covered_registrations` guarda el motivo y el importe; esta columna
+         * solo evita que la misma fila se contradiga a si misma.
+         *
+         * Solo se toca cuando de verdad hubo cubierta: un pago normal ya lo
+         * dejo en 'completed' y no hay que pisarlo.
+         */
+        ...(coveredReason ? { payment_status: 'covered' } : {}),
         // Solo el hash. El codigo en si viaja por MMS y no vuelve a existir en
         // ningun sitio nuestro: ni en la base, ni en pantalla, ni en cadena.
         transfer_code_hash: createHash('sha256').update(transferCode).digest('hex'),
@@ -405,7 +427,16 @@ export async function POST(request: NextRequest) {
             ? undefined
             : smsBody?.simulated
               ? { code: 'simulated' }
-              : { code: smsBody?.twilioErrorCode ? String(smsBody.twilioErrorCode) : undefined, status: smsResponse.status, message: smsBody?.twilioStatus },
+              : {
+                // El cuerpo ENTERO: `detailFor` lo guarda tal cual en jsonb, y
+                // ahi es donde viven las dos causas que el log tuvo que
+                // revelar la primera vez.
+                ...smsBody,
+                code: smsBody?.twilioErrorCode
+                  ? String(smsBody.twilioErrorCode)
+                  : (smsBody?.failureCode ?? undefined),
+                status: smsResponse.status,
+              },
           entityType: 'work',
           entityId: workId,
         })
