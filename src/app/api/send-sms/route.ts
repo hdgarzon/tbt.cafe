@@ -73,6 +73,14 @@ function toE164(raw: string): string {
 }
 
 export async function POST(request: NextRequest) {
+  /*
+   * Declarado FUERA del try a proposito: si el respaldo tambien falla, la
+   * excepcion sube hasta el catch de abajo, y alli este era el unico rastro
+   * de por que Twilio no pudo entregar. Dentro del bloque no estaba en
+   * alcance y se perdia.
+   */
+  let twilioFailure: { code: number | string | null; message: string | null } | null = null
+
   try {
     const auth = await authenticate(request)
     if (!auth.ok) return NextResponse.json(auth.body, { status: auth.status })
@@ -159,7 +167,6 @@ export async function POST(request: NextRequest) {
     // Determine media URL for MMS (use work image or a default certificate image)
     const mediaUrl = work.media_url || `${process.env.NEXT_PUBLIC_APP_URL}/logos/transbit.png`
 
-    let twilioFailure: { code: number | string | null; message: string | null } | null = null
 
     // Try to send MMS via Twilio if configured
     const tw = twilioClient()
@@ -325,8 +332,24 @@ export async function POST(request: NextRequest) {
   } catch (error: any) {
     console.error('Error sending message:', error)
 
+    /*
+     * La causa viaja. Esto devolvia solo 'Error al enviar mensaje', y como
+     * `provider_events` se construye a partir de esta respuesta, el primer MMS
+     * fallido quedo registrado como "[object Object]": hicieron falta los logs
+     * del servidor para saber que eran DOS fallos, Twilio 21606 y unas
+     * credenciales de AWS invalidas.
+     *
+     * Van el codigo y el nombre del error, nunca su cuerpo: un mensaje de un
+     * proveedor puede llevar dentro parte de la peticion.
+     */
     return NextResponse.json(
-      { error: 'Error al enviar mensaje' },
+      {
+        error: 'delivery_failed',
+        provider: twilioFailure ? 'fallback' : 'twilio',
+        failureCode: error?.Code ?? error?.code ?? error?.name ?? null,
+        twilioErrorCode: twilioFailure?.code ?? null,
+        twilioStatus: twilioFailure?.message ?? null,
+      },
       { status: 500 }
     )
   }
