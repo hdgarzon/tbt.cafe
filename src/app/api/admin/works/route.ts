@@ -17,6 +17,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { authenticate } from '@/lib/route-auth'
 import { createAdminClient } from '@/lib/supabase-admin'
 import { loadAdmin, can, writeAudit, hasValidStepUp, STEP_UP_HEADER } from '@/lib/admin/guard'
+import { getExplorerUrl } from '@/lib/solana/config'
 
 
 export async function GET(request: NextRequest) {
@@ -54,8 +55,8 @@ export async function GET(request: NextRequest) {
       .from('works')
       .select(
         `id, tbt_id, title, category, status, payment_status, mms_delivery_status,
-         mint_address, nft_status, nft_mint_address, nft_explorer_url, nft_token_uri,
-         blockchain, blockchain_hash, created_at, certified_at, creator_id, current_owner_id,
+         mint_address, nft_status, token_uri,
+         blockchain, created_at, certified_at, creator_id, current_owner_id,
          commerce:work_commerce(availability, initial_price, currency, royalty_type, royalty_value, royalty_locked, taking_offers)`
       )
       .eq('tbt_id', tbtId)
@@ -102,14 +103,26 @@ export async function GET(request: NextRequest) {
         mmsDelivery: work.data.mms_delivery_status,
         createdAt: work.data.created_at,
         certifiedAt: work.data.certified_at,
-        // Guardadas, no calculadas.
+        /*
+         * Guardadas, no calculadas — salvo el enlace.
+         *
+         * Estos campos leian las gemelas muertas: `nft_token_uri`,
+         * `nft_explorer_url` y `blockchain_hash` estaban vacias en las 59
+         * filas mientras `token_uri` tenia 32. El efecto visible era que
+         * "Open in explorer" no aparecia nunca, porque su fuente era nula
+         * siempre.
+         *
+         * El enlace SI se calcula: no es una afirmacion de procedencia, es una
+         * direccion, y una guardada que nadie escribio no lleva a ninguna
+         * parte. `hash` se cae porque no tiene columna viva que lo sustituya y
+         * el panel no lo renderiza.
+         */
         chain: {
           network: work.data.blockchain,
-          mintAddress: work.data.mint_address ?? work.data.nft_mint_address,
+          mintAddress: work.data.mint_address,
           nftStatus: work.data.nft_status,
-          explorerUrl: work.data.nft_explorer_url,
-          tokenUri: work.data.nft_token_uri,
-          hash: work.data.blockchain_hash,
+          explorerUrl: work.data.mint_address ? getExplorerUrl(work.data.mint_address) : null,
+          tokenUri: work.data.token_uri,
           // Arweave y el ancla de Bitcoin todavía no se escriben.
           arweave: null,
           bitcoinAnchor: null,

@@ -60,10 +60,6 @@ create sequence if not exists public.ticket_ref_seq;
 -- ── Tipos enumerados ────────────────────────────────────────────────────────
 
 do $$ begin
-  create type public.alert_type as enum ('plagiarism', 'view', 'transfer_request', 'payment', 'system');
-exception when duplicate_object then null; end $$;
-
-do $$ begin
   create type public.creator_type as enum ('individual', 'group', 'corporation');
 exception when duplicate_object then null; end $$;
 
@@ -151,19 +147,15 @@ create table if not exists public.works (
   technique text,
   media_url text,
   media_type text,
-  ipfs_hash text,
   status work_status default 'draft'::work_status,
   created_at timestamp with time zone default now(),
   certified_at timestamp with time zone,
-  blockchain_hash text,
   primary_material text,
   creation_date date,
   is_published boolean default false,
   asset_links text[],
   originality_type text default 'original'::text,
   original_work_reference text,
-  plagiarism_scan_result jsonb,
-  plagiarism_scan_date timestamp with time zone,
   context_data jsonb,
   context_summary text,
   context_signed_at timestamp with time zone,
@@ -181,7 +173,6 @@ create table if not exists public.works (
   royalty_type text default 'none'::text,
   royalty_value text,
   signature_phone text,
-  transfer_code text,
   transfer_status text default 'active'::text,
   transferred_at timestamp with time zone,
   cancelled_certificate_url text,
@@ -189,9 +180,6 @@ create table if not exists public.works (
   blockchain text default 'solana'::text,
   token_uri text,
   nft_status text default 'pending'::text,
-  nft_mint_address text,
-  nft_token_uri text,
-  nft_explorer_url text,
   series_id uuid,
   is_featured boolean default false not null,
   transfer_code_hash text,
@@ -199,7 +187,7 @@ create table if not exists public.works (
 );
 
 comment on column public.works.mint_address is
-  'La direccion viva del NFT. `nft_mint_address` es su gemela muerta: vacia en todas las filas y sin lector.';
+  'La direccion del NFT. La migracion 031 quito su gemela muerta nft_mint_address.';
 comment on column public.works.transfer_code is
   'Resto anterior al hash. El codigo es un secreto al portador y se guarda en transfer_code_hash; nada lee esta columna.';
 
@@ -280,7 +268,6 @@ create table if not exists public.transfers (
   completed_at timestamp with time zone,
   new_owner_name text,
   new_owner_phone text,
-  transfer_code text,
   payment_status text default 'pending'::text,
   stripe_checkout_session_id text,
   created_at timestamp with time zone default now(),
@@ -688,90 +675,20 @@ create table if not exists public.roast_questions (
 -- ============================================================================
 -- TABLAS — sin escritor
 -- ============================================================================
--- Ninguna de estas cinco tiene codigo que la lea ni la escriba. Se conservan
--- aqui porque estan en la base viva y este archivo la describe tal como esta,
--- no como deberia estar. Cada una tiene su comentario.
+-- Aqui habia seis. La migracion 031 quito cinco: email_deliveries, work_context,
+-- work_views, plagiarism_checks y alerts, todas restos de disenos que algo mas
+-- reemplazo.
+--
+-- Queda una, y no por descuido: `plagiarism_scans` tampoco tiene escritor, pero
+-- la migracion 003 la designo canonica. Quitarla seria deshacer una decision de
+-- diseno en vez de limpiar un resto.
 -- ============================================================================
-
-create table if not exists public.work_context (
-  id uuid default extensions.uuid_generate_v4() not null,
-  work_id uuid not null,
-  ai_summary text,
-  keywords text[],
-  geographical_location jsonb,
-  creation_timestamp timestamp with time zone default now(),
-  news_headlines text[],
-  weather_conditions jsonb,
-  is_confirmed boolean default false,
-  created_at timestamp with time zone default now(),
-  updated_at timestamp with time zone default now()
-);
-
-comment on table public.work_context is
-  'Sin escritor. Borrador anterior de lo que hoy modela context_snapshots, que es la canonica.';
-
-create table if not exists public.email_deliveries (
-  id uuid default extensions.uuid_generate_v4() not null,
-  work_id uuid,
-  user_id uuid,
-  email_address text not null,
-  sendgrid_message_id text,
-  email_type text default 'confirmation'::text,
-  status text default 'pending'::text,
-  subject text,
-  sent_at timestamp with time zone,
-  delivered_at timestamp with time zone,
-  opened_at timestamp with time zone,
-  error_message text,
-  metadata jsonb,
-  created_at timestamp with time zone default now()
-);
 
 comment on table public.email_deliveries is
   'Sin escritor. Es de la epoca de SendGrid, que nunca se uso; provider_events la reemplazo.';
 
-create table if not exists public.alerts (
-  id uuid default extensions.uuid_generate_v4() not null,
-  user_id uuid not null,
-  work_id uuid,
-  type alert_type not null,
-  title text not null,
-  message text,
-  metadata jsonb,
-  is_read boolean default false,
-  created_at timestamp with time zone default now()
-);
-
 comment on table public.alerts is
   'Sin escritor. La reemplazo notifications; la pestana de la interfaz que se llama "alerts" lee de aquella.';
-
-create table if not exists public.work_views (
-  id uuid default extensions.uuid_generate_v4() not null,
-  work_id uuid not null,
-  viewer_id uuid,
-  viewer_ip text,
-  user_agent text,
-  viewed_at timestamp with time zone default now()
-);
-
-comment on table public.work_views is
-  'Sin escritor. El contador de vistas nunca se construyo.';
-
-create table if not exists public.plagiarism_checks (
-  id uuid default extensions.uuid_generate_v4() not null,
-  work_id uuid,
-  scan_type text,
-  scan_result jsonb,
-  similarity_score numeric(5,2),
-  matches_found integer default 0,
-  flagged_urls text[],
-  user_declaration originality_declaration,
-  declaration_note text,
-  scanned_at timestamp with time zone default now()
-);
-
-comment on table public.plagiarism_checks is
-  'Sin escritor. La migracion 003 la dio por obsoleta en favor de plagiarism_scans y dejo el borrado para despues.';
 
 create table if not exists public.plagiarism_scans (
   id uuid default extensions.uuid_generate_v4() not null,
@@ -954,20 +871,6 @@ alter table public.roast_questions add constraint roast_questions_pkey PRIMARY K
 alter table public.roast_questions add constraint roast_questions_user_id_fkey FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE;
 alter table public.roast_questions add constraint roast_questions_body_check CHECK (((length(TRIM(BOTH FROM body)) >= 1) AND (length(TRIM(BOTH FROM body)) <= 2000)));
 
-alter table public.work_context add constraint work_context_pkey PRIMARY KEY (id);
-alter table public.work_context add constraint work_context_work_id_key UNIQUE (work_id);
-alter table public.work_context add constraint work_context_work_id_fkey FOREIGN KEY (work_id) REFERENCES works(id) ON DELETE CASCADE;
-alter table public.email_deliveries add constraint email_deliveries_pkey PRIMARY KEY (id);
-alter table public.email_deliveries add constraint email_deliveries_work_id_fkey FOREIGN KEY (work_id) REFERENCES works(id) ON DELETE CASCADE;
-alter table public.email_deliveries add constraint email_deliveries_user_id_fkey FOREIGN KEY (user_id) REFERENCES profiles(id) ON DELETE CASCADE;
-alter table public.alerts add constraint alerts_pkey PRIMARY KEY (id);
-alter table public.alerts add constraint alerts_user_id_fkey FOREIGN KEY (user_id) REFERENCES profiles(id) ON DELETE CASCADE;
-alter table public.alerts add constraint alerts_work_id_fkey FOREIGN KEY (work_id) REFERENCES works(id) ON DELETE SET NULL;
-alter table public.work_views add constraint work_views_pkey PRIMARY KEY (id);
-alter table public.work_views add constraint work_views_work_id_fkey FOREIGN KEY (work_id) REFERENCES works(id) ON DELETE CASCADE;
-alter table public.work_views add constraint work_views_viewer_id_fkey FOREIGN KEY (viewer_id) REFERENCES profiles(id) ON DELETE SET NULL;
-alter table public.plagiarism_checks add constraint plagiarism_checks_pkey PRIMARY KEY (id);
-alter table public.plagiarism_checks add constraint plagiarism_checks_work_id_fkey FOREIGN KEY (work_id) REFERENCES works(id) ON DELETE CASCADE;
 alter table public.plagiarism_scans add constraint plagiarism_scans_pkey PRIMARY KEY (id);
 alter table public.plagiarism_scans add constraint plagiarism_scans_work_id_fkey FOREIGN KEY (work_id) REFERENCES works(id) ON DELETE CASCADE;
 
@@ -984,7 +887,6 @@ create index if not exists idx_works_is_published ON public.works USING btree (i
 create index if not exists works_series_id_idx ON public.works USING btree (series_id);
 create index if not exists works_featured_idx ON public.works USING btree (creator_id) WHERE is_featured;
 create index if not exists idx_works_mint_address ON public.works USING btree (mint_address) WHERE (mint_address IS NOT NULL);
-create index if not exists idx_works_nft_mint_address ON public.works USING btree (nft_mint_address);
 create index if not exists works_transfer_code_hash_idx ON public.works USING btree (transfer_code_hash) WHERE (transfer_code_hash IS NOT NULL);
 create index if not exists works_content_hash_idx ON public.works USING btree (content_hash) WHERE (content_hash IS NOT NULL);
 create index if not exists works_payment_intent_idx ON public.works USING btree (payment_intent_id) WHERE (payment_intent_id IS NOT NULL);
@@ -1058,15 +960,6 @@ create index if not exists favorites_user_idx ON public.favorites USING btree (u
 create index if not exists curations_target_idx ON public.curations USING btree (target_type, target_id) WHERE is_public;
 create index if not exists roast_questions_article_idx ON public.roast_questions USING btree (article_id, created_at DESC) WHERE (NOT hidden);
 create index if not exists roast_questions_user_idx ON public.roast_questions USING btree (user_id);
-create index if not exists idx_email_deliveries_work_id ON public.email_deliveries USING btree (work_id);
-create index if not exists idx_email_deliveries_user_id ON public.email_deliveries USING btree (user_id);
-create index if not exists idx_email_deliveries_status ON public.email_deliveries USING btree (status);
-create index if not exists idx_alerts_user_id ON public.alerts USING btree (user_id);
-create index if not exists idx_alerts_is_read ON public.alerts USING btree (is_read);
-create index if not exists idx_alerts_created_at ON public.alerts USING btree (created_at DESC);
-create index if not exists idx_work_views_work_id ON public.work_views USING btree (work_id);
-create index if not exists idx_work_views_viewed_at ON public.work_views USING btree (viewed_at DESC);
-create index if not exists idx_plagiarism_checks_work_id ON public.plagiarism_checks USING btree (work_id);
 create index if not exists idx_plagiarism_scans_work_id ON public.plagiarism_scans USING btree (work_id);
 
 -- ============================================================================
@@ -1116,11 +1009,6 @@ alter table public.favorites enable row level security;
 alter table public.curations enable row level security;
 alter table public.offers enable row level security;
 alter table public.roast_questions enable row level security;
-alter table public.work_context enable row level security;
-alter table public.email_deliveries enable row level security;
-alter table public.alerts enable row level security;
-alter table public.work_views enable row level security;
-alter table public.plagiarism_checks enable row level security;
 alter table public.plagiarism_scans enable row level security;
 
 -- ── Politicas ───────────────────────────────────────────────────────────────
@@ -1193,12 +1081,3 @@ create policy "offerer writes" on public.offers for insert with check ((auth.uid
 create policy "roast questions readable" on public.roast_questions for select using ((NOT hidden));
 create policy "own roast questions insertable" on public.roast_questions for insert with check ((( SELECT auth.uid() AS uid) = user_id));
 
-create policy "Context visible para obras accesibles" on public.work_context for select using ((EXISTS ( SELECT 1 FROM works w WHERE ((w.id = work_context.work_id) AND ((w.status = 'certified'::work_status) OR (w.creator_id = auth.uid()))))));
-create policy "Creadores pueden gestionar context" on public.work_context for all using ((EXISTS ( SELECT 1 FROM works w WHERE ((w.id = work_context.work_id) AND (w.creator_id = auth.uid())))));
-create policy "Users can view their email deliveries" on public.email_deliveries for select using ((user_id = auth.uid()));
-create policy "Users can create email deliveries" on public.email_deliveries for insert with check ((user_id = auth.uid()));
-create policy "Usuarios ven sus propias alertas" on public.alerts for select using ((user_id = auth.uid()));
-create policy "Usuarios pueden marcar alertas como leídas" on public.alerts for update using ((user_id = auth.uid()));
-create policy "Creadores pueden ver stats de vistas" on public.work_views for select using ((EXISTS ( SELECT 1 FROM works w WHERE ((w.id = work_views.work_id) AND (w.creator_id = auth.uid())))));
-create policy "Cualquiera puede registrar vista" on public.work_views for insert with check (true);
-create policy "Users can view plagiarism checks for their works" on public.plagiarism_checks for select using ((EXISTS ( SELECT 1 FROM works w WHERE ((w.id = plagiarism_checks.work_id) AND (w.creator_id = auth.uid())))));
