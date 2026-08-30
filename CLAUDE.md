@@ -52,6 +52,12 @@ npm run check:dispute     # a chargeback leaves a trace
 npm run check:checkout    # the checkout return URL points at a page that exists
 npm run check:context     # no fabricated weather is sealed
 npm run check:events      # a failure records what it died of
+npm run check:solana      # no silent fallback to the public RPC on mainnet
+npm run check:arweave     # the bytes that go up are the bytes that were hashed
+npm run check:image       # no metadata rides along with a published image
+npm run check:writeorder  # a transfer never rewrites the registration record
+npm run check:pseudonym   # nobody identifiable reaches Arweave
+npm run check:ots         # a pending anchor is a normal state, not a failure
 ```
 
 Each guard is a plain script under `scripts/`, written BEFORE the module it
@@ -63,6 +69,9 @@ exits non-zero. Two habits matter when writing one:
   `someName` is not used. Assert on `someName(` or on the exact interpolation.
 - A helper ending in `})` followed by a bare `{` block parses as an arrow
   function. Terminate it with a semicolon.
+- `tsc --noEmit` is **not** the build. `next build` type-checks `scripts/` under
+  its own settings and rejects what the standalone compiler accepts — iterating
+  a `Buffer` with `for…of` was one. Run the build before pushing.
 
 And one about staging, because it has cost three commits:
 
@@ -135,6 +144,21 @@ silent.** The row saves and the value is never read again. Three of these were
 being read by the admin panel, which is why its explorer link never appeared.
 When two columns look interchangeable, check which one has data before trusting
 either.
+
+### Two hashes, and they are not the same thing
+
+`works.content_hash` is the file **as the creator uploaded it**, metadata and
+all. Only they hold those bytes, and it is what makes the certificate
+self-verifying.
+
+`works.chain_image_hash` — and `image_hash` inside the registration record — is
+the copy that was **published**, after `stripMetadata` removed the EXIF. A JPEG
+off a phone carries GPS coordinates, and Item 10 of the chain spec marks those
+`Never`; the moment one byte comes off, it is a different file.
+
+So the two never match, and the code must not let anyone believe they do. If a
+verifier ever hashes the public image and compares it to `content_hash`, it will
+say the certificate is false when nothing is wrong.
 
 ### Conventions
 

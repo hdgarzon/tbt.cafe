@@ -357,6 +357,61 @@ export async function POST(request: NextRequest) {
             const { pseudonymFor } = await import('@/lib/chain/pseudonym')
             const { publishRecord } = await import('@/lib/chain/arweave')
 
+            /*
+             * ── Item 10: la imagen sube ANTES del registro ────────────────
+             *
+             * Por lo mismo que el registro sube antes del mint: el registro la
+             * NOMBRA, y nombrar algo que todavia no existe deja una direccion
+             * permanente hacia un 404.
+             *
+             * Solo se publica lo que el creador eligio en el Sello. La columna
+             * viene por defecto en 'none', asi que una ruta que se olvide del
+             * campo no publica nada — y las 58 obras anteriores a esta decision
+             * tampoco.
+             *
+             * Su fallo NO tumba el registro: lleva su propio catch y la obra se
+             * certifica igual, con el hash del contenido, que es lo que hace
+             * verificable al certificado. La imagen es legibilidad, no prueba.
+             *
+             * Y si el registro sale sin ella, ya no se le anade: queda sellado,
+             * y sumarle algo despues seria una enmienda (Item 5), no un
+             * reintento. Es el precio correcto — el registro no cambia.
+             */
+            let image: { uri: string; hash: string; kind: 'thumbnail' | 'full' } | undefined
+            const choice = workWithCreator.chain_image as string | null
+
+            if (choice === 'thumbnail' || choice === 'full') {
+              if (workWithCreator.chain_image_uri && workWithCreator.chain_image_hash) {
+                // Ya subida en un intento anterior. Se reutiliza, nunca se
+                // republica: dos copias de la misma obra en un almacen
+                // permanente no son un estado que este modelo sepa expresar.
+                image = {
+                  uri: workWithCreator.chain_image_uri,
+                  hash: workWithCreator.chain_image_hash,
+                  kind: choice,
+                }
+              } else if (workWithCreator.chain_image_url) {
+                try {
+                  const { publishWorkImage } = await import('@/lib/chain/publish-image')
+                  const pub = await publishWorkImage({
+                    sourceUrl: workWithCreator.chain_image_url,
+                    kind: choice,
+                    tbtId: workNftData.tbtId,
+                  })
+
+                  await createAdminClient()
+                    .from('works')
+                    .update({ chain_image_uri: pub.uri, chain_image_hash: pub.hash })
+                    .eq('id', workId)
+
+                  image = { uri: pub.uri, hash: pub.hash, kind: choice }
+                  console.log(`Work image published (${choice}): ${pub.uri}`)
+                } catch (imageError) {
+                  console.error('[chain] no se pudo publicar la imagen:', imageError)
+                }
+              }
+            }
+
             const published = await publishRecord(
               registrationRecord({
                 tbtId: workNftData.tbtId,
@@ -378,6 +433,7 @@ export async function POST(request: NextRequest) {
                   statement: workWithCreator.context_summary ?? undefined,
                   city: ctxData?.location_name ?? undefined,
                 },
+                ...(image ? { image } : {}),
                 sealedAt: new Date(workWithCreator.certified_at || workWithCreator.created_at),
               }) as never
             )
@@ -657,6 +713,14 @@ export async function POST(request: NextRequest) {
     // Register image in vector DB for future plagiarism checks (non-blocking)
     if (work.media_url) {
       try {
+        // `media_url` la escribe el navegador al crear el borrador, y aqui la
+        // lee el SERVIDOR. Sin comprobar el origen, una llamada preparada a
+        // mano haria que pidieramos una direccion interna y le pasaramos la
+        // respuesta al procesador de imagenes. La misma guarda que la de
+        // publicar (Item 10), por el mismo motivo.
+        const { assertPublishableSource } = await import('@/lib/chain/publish-image')
+        assertPublishableSource(work.media_url)
+
         const imageRes = await fetch(work.media_url)
         if (imageRes.ok) {
           const blob = await imageRes.blob()

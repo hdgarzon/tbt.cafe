@@ -90,7 +90,7 @@ export function recordFileFor(record: PublishableRecord): MetaplexFile {
  * que apunte a algo que exista. Una direccion permanente hacia un 404 es peor
  * que no tenerla: parece verificable y no lo es.
  */
-function gatewayUri(driverUri: string): string {
+export function gatewayUri(driverUri: string): string {
   const id = driverUri.split('/').filter(Boolean).pop()
   if (!id) return driverUri
   return SOLANA_NETWORK === 'mainnet-beta'
@@ -107,6 +107,17 @@ export type PublishedRecord = {
 }
 
 /**
+ * Sube un archivo y devuelve la URI de pasarela que SI resuelve en esta red.
+ *
+ * Un solo sitio que suba, para que la regla de la pasarela no se duplique: la
+ * usan el registro y la imagen de la obra, y una copia de esta funcion que se
+ * quedara atras es una URI permanente hacia un 404.
+ */
+export async function uploadToArweave(file: MetaplexFile): Promise<string> {
+  return gatewayUri(await getMetaplex().storage().upload(file))
+}
+
+/**
  * Sube el registro y devuelve donde quedo.
  *
  * NO reintenta. Un reintento ciego publicaria un segundo registro del mismo
@@ -117,9 +128,7 @@ export type PublishedRecord = {
  */
 export async function publishRecord(record: PublishableRecord): Promise<PublishedRecord> {
   const file = recordFileFor(record)
-  const driverUri = await getMetaplex().storage().upload(file)
-
-  const uri = gatewayUri(driverUri)
+  const uri = await uploadToArweave(file)
   const hash = recordHash(record)
 
   /*

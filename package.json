@@ -18,6 +18,7 @@
     "check:events": "npx --yes tsx scripts/provider-events-check.ts",
     "check:solana": "npx --yes tsx scripts/solana-config-check.ts",
     "check:arweave": "npx --yes tsx scripts/arweave-check.ts",
+    "check:image": "npx --yes tsx scripts/image-check.ts",
     "check:writeorder": "npx --yes tsx scripts/write-order-check.ts",
     "check:pseudonym": "npx --yes tsx scripts/pseudonym-check.ts",
     "check:ots": "npx --yes tsx scripts/ots-check.ts"

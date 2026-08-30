@@ -1,6 +1,9 @@
 import { supabase } from '@/lib/supabase'
 import { normalizeImage } from '@/lib/normalize-image'
 import { contentHash } from '@/lib/chain/content-hash'
+import { stripMetadata } from '@/lib/chain/strip-metadata'
+import { makeThumbnail } from '@/lib/thumbnail'
+import type { ChainImageChoice } from '@/lib/chain/publish-image'
 import type { SeriesWithCount } from '@/lib/series-data'
 
 /**
@@ -92,6 +95,30 @@ export async function fetchSeriesOptions(creatorId: string): Promise<SeriesWithC
 }
 
 /**
+ * La imagen sin metadatos, o tal cual si no se supo recorrer.
+ *
+ * `normalizeImage` devuelve el archivo INTACTO cuando ya es PNG o JPEG, que es
+ * el caso de casi toda foto de una obra — con su EXIF, y en el EXIF las
+ * coordenadas de donde se tomo. Ese archivo se sirve publico desde
+ * `works-media`, asi que limpiarlo aqui no es solo preparar la publicacion.
+ *
+ * Si el formato no se sabe recorrer, se sube igual: este almacen se puede
+ * borrar y no dejar registrar la obra seria peor. Lo permanente es otra cosa —
+ * alli la misma funcion LANZA y no se publica nada.
+ */
+async function stripped(file: File): Promise<File> {
+  try {
+    const clean = stripMetadata(new Uint8Array(await file.arrayBuffer()))
+    if (clean.removed === 0) return file
+    const buf = new ArrayBuffer(clean.bytes.byteLength)
+    new Uint8Array(buf).set(clean.bytes)
+    return new File([buf], file.name, { type: clean.mediaType })
+  } catch {
+    return file
+  }
+}
+
+/**
  * Sube un archivo a works-media y devuelve su URL pública y el hash de origen.
  *
  * El hash se toma del archivo tal como llegó, ANTES de `normalizeImage`. Esa es
@@ -111,7 +138,7 @@ async function uploadWorksMedia(
   // Antes de tocar nada.
   const hash = await contentHash(file)
 
-  const upload = file.type.startsWith('image/') ? await normalizeImage(file) : file
+  const upload = file.type.startsWith('image/') ? await stripped(await normalizeImage(file)) : file
   const ext = upload.name.split('.').pop() || 'bin'
   const fileName = `${userId}/${prefix}${Date.now()}.${ext}`
   const { error } = await supabase.storage.from('works-media').upload(fileName, upload)
@@ -245,6 +272,8 @@ export type DraftInput = {
   // Protection
   originalityDeclaration: 'original' | 'derivative' | 'authorized_edition'
   derivativeReference: string | null
+  /** Que copia de la obra llega a Arweave, elegida en el Sello (Item 10). */
+  chainImage: ChainImageChoice
   // Context
   location: string | null
   coordinates: { lat: number; lng: number } | null
@@ -268,6 +297,21 @@ export async function createDraftWork(
   const media = await uploadWorksMedia(userId, input.imageFile)
   if (!media) return { error: 'uploadFailed' }
   const mediaUrl = media.url
+
+  /*
+   * Los bytes que se publicaran, elegidos por el creador.
+   *
+   * `full` es el archivo ya normalizado y limpio que acabamos de subir. `thumbnail`
+   * es una reduccion aparte: si el navegador no puede hacerla, no se cae hacia
+   * atras a publicar la obra entera — se publica menos, nunca mas.
+   */
+  let chainImageUrl: string | null = null
+  if (input.chainImage === 'full') {
+    chainImageUrl = mediaUrl
+  } else if (input.chainImage === 'thumbnail') {
+    const thumb = await makeThumbnail(input.imageFile)
+    if (thumb) chainImageUrl = (await uploadWorksMedia(userId, thumb, 'thumb_'))?.url ?? null
+  }
 
   let audioVideoUrl: string | null = null
   if (input.audioVideoFile) {
@@ -338,6 +382,8 @@ export async function createDraftWork(
       // lee para el certificado; nunca lo recalcula, porque para entonces los
       // bytes de origen ya no existen (Chain Spec 01 §2).
       content_hash: media.hash,
+      chain_image: input.chainImage,
+      chain_image_url: chainImageUrl,
       media_type: 'image',
       status: 'draft',
       primary_material: input.material,
