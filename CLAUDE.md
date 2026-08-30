@@ -88,12 +88,21 @@ scripts/*-check.ts                   # one guard per invariant
 ```
 
 > **The migrations do not describe the whole database.** They start at `001`
-> and assume a base schema that exists nowhere in this repository: `works`,
-> `profiles`, `certificates`, `context_snapshots`, `work_commerce`,
-> `tbt_payments`, `ownership_history`, `transfers` and `wallets` have no
-> `create table` anywhere, and `schema.sql` is empty. 28 of the 44 live tables
-> can be rebuilt from here; the other 16 cannot. Assume nothing about a column
-> from the migrations alone — check the database.
+> and assume a base schema that exists nowhere in them: `works`, `profiles`,
+> `certificates`, `context_snapshots`, `work_commerce`, `tbt_payments`,
+> `ownership_history`, `transfers` and `wallets` have no `create table` in any
+> migration. 28 of the 44 live tables can be rebuilt from `supabase/migrations`;
+> the other 16 cannot.
+>
+> `supabase/schema-snapshot.sql` fills that hole. It is a **snapshot of the
+> destination, not a migration**: it describes where an empty database has to
+> arrive, and does not replay how production got there. Regenerate it after any
+> migration that changes the schema. Where the two disagree, the live database
+> wins — the snapshot is a copy, not the source.
+>
+> `schema.sql` is a different thing and is git-ignored on purpose: it is where
+> `supabase db dump` writes, once the project is linked to the CLI. That is the
+> better long-term answer, and it makes the snapshot redundant.
 
 ### Domains to be careful with
 
