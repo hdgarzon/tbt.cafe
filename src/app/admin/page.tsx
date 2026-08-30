@@ -80,6 +80,16 @@ const APPLY: Record<string, (a: Approval) => { url: string; body: Record<string,
       approvalId: a.id,
     },
   }),
+  'work.amend': (a) => ({
+    url: '/api/admin/works/amend',
+    body: {
+      tbtId: (a.payload as { tbtId?: string })?.tbtId,
+      patch: (a.payload as { patch?: unknown })?.patch,
+      seriesId: (a.payload as { seriesId?: string | null })?.seriesId ?? undefined,
+      reason: a.reason,
+      approvalId: a.id,
+    },
+  }),
 }
 
 async function authHeader(stepUp: string | null) {
@@ -112,6 +122,9 @@ export default function AdminPage() {
   const [approvals, setApprovals] = useState<Approval[]>([])
   const [awaiting, setAwaiting] = useState<Approval[]>([])
   const [otherApprovers, setOtherApprovers] = useState(0)
+  /** Item 5: lo que la clase `minor` puede corregir, y el motivo, que se publica. */
+  const [amend, setAmend] = useState<Record<string, string>>({})
+  const [amendReason, setAmendReason] = useState('')
   const [canApprove, setCanApprove] = useState(false)
   const [me, setMe] = useState<string | null>(null)
   const [filter, setFilter] = useState<string>('open')
@@ -357,6 +370,49 @@ export default function AdminPage() {
     setBusy(false)
     setAnnotation('')
     openWork(tbtId)
+  }
+
+  /**
+   * Pide la enmienda. NO la publica.
+   *
+   * Toda enmienda es de alto riesgo: esto deja la solicitud registrada y otra
+   * persona tiene que aprobarla. Publicar ocurre después, desde «Approved ·
+   * your turn», cuando quien la pidió la aplica.
+   */
+  async function requestAmendment(tbtId: string) {
+    const auth = await authHeader(stepUp)
+    if (!auth) return
+    if (!amendReason.trim()) {
+      setNote('A reason is required. It is published inside the record, in your words.')
+      return
+    }
+
+    const patch: Record<string, string | number> = {}
+    for (const [k, v] of Object.entries(amend)) {
+      if (k === 'seriesId' || v === undefined) continue
+      // Vacío BORRA el campo. Se manda tal cual: quitar una técnica equivocada
+      // es una corrección tan válida como escribirla bien.
+      if (v === '' && !(k in patch)) patch[k] = ''
+      else if (v !== '') patch[k] = k === 'year' ? Number(v) : v
+    }
+    if (!Object.keys(patch).length && !amend.seriesId) {
+      setNote('Nothing to correct.')
+      return
+    }
+
+    setBusy(true)
+    setNote('')
+    const res = await fetch('/api/admin/works/amend', {
+      method: 'POST',
+      headers: { ...auth, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ tbtId, patch, seriesId: amend.seriesId || undefined, reason: amendReason.trim() }),
+    })
+    const body = await res.json().catch(() => ({}))
+    setBusy(false)
+    setNote(body.message ?? body.error ?? 'Requested.')
+    setAmend({})
+    setAmendReason('')
+    load()
   }
 
   async function loadObs() {
@@ -837,9 +893,124 @@ export default function AdminPage() {
                     Open in explorer
                   </a>
                 )}
-                <p className="text-[10.5px] text-placeholder mt-2">
-                  Arweave and Bitcoin anchors are not written yet.
-                </p>
+                <Row k="Record" v={work.chain.arweave ? 'published on Arweave' : 'not written'} />
+                <Row
+                  k="Bitcoin anchor"
+                  v={
+                    !work.chain.bitcoinAnchor
+                      ? 'none'
+                      : work.chain.bitcoinAnchor.status === 'confirmed'
+                        ? `block ${work.chain.bitcoinAnchor.block_height}`
+                        : work.chain.bitcoinAnchor.status === 'failed'
+                          ? 'failed'
+                          : 'anchoring'
+                  }
+                />
+                {work.chain.arweave && (
+                  <a
+                    href={work.chain.arweave.uri}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="text-[11px] text-ink-soft underline block mt-1"
+                  >
+                    Open the record
+                  </a>
+                )}
+              </div>
+
+              {/* Item 5 — un registro no se edita: se supersede. */}
+              <div className="border border-hairline rounded-2xl p-4 mt-3">
+                <div className="text-[11px] font-medium tracking-[0.16em] uppercase text-ink-soft mb-2">
+                  Corrections
+                </div>
+
+                {(work.amendments ?? []).length === 0 ? (
+                  <p className="text-[11.5px] text-ink-soft">
+                    None. The record says what it said when it was sealed.
+                  </p>
+                ) : (
+                  <div className="flex flex-col gap-2">
+                    {work.amendments.map((a: any) => (
+                      <div key={a.sequence_number} className="border-t border-hairline pt-2">
+                        <div className="text-[12px] text-ink">
+                          #{a.sequence_number} · {a.amendment_class} ·{' '}
+                          {new Date(a.created_at).toLocaleDateString()}
+                        </div>
+                        <div className="text-[11px] text-ink-soft mt-0.5 font-mono">
+                          {Object.keys(a.changed ?? {}).join(', ') || '—'}
+                        </div>
+                        <p className="text-[11.5px] leading-[1.55] text-ink-soft mt-1">{a.amendment_reason}</p>
+                        {!a.repointed_at && (
+                          <p className="text-[10.5px] text-t-red mt-1">
+                            Published, but the on-chain pointer still names the record before it.
+                          </p>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {!work.chain.arweave ? (
+                  <p className="text-[10.5px] text-placeholder mt-3">
+                    This work predates the record chain. There is nothing to supersede.
+                  </p>
+                ) : (
+                  <div className="mt-3.5 pt-3.5 border-t border-hairline">
+                    <p className="text-[11px] leading-[1.55] text-ink-soft">
+                      Nothing is edited. A correction publishes a new record naming the one it
+                      supersedes, and the original stays readable forever. Leave a field blank to
+                      keep it; clear it to remove it.
+                    </p>
+                    <div className="grid grid-cols-2 gap-2 mt-2.5">
+                      {(['title', 'year', 'category', 'technique', 'city', 'country'] as const).map((k) => (
+                        <input
+                          key={k}
+                          value={amend[k] ?? ''}
+                          onChange={(e) => setAmend((p) => ({ ...p, [k]: e.target.value }))}
+                          placeholder={k}
+                          className="px-3 py-2 border border-hairline rounded-lg text-[13px] outline-none focus:border-ink"
+                        />
+                      ))}
+                    </div>
+                    {(work.series ?? []).length > 0 && (
+                      <select
+                        value={amend.seriesId ?? ''}
+                        onChange={(e) => setAmend((p) => ({ ...p, seriesId: e.target.value }))}
+                        className="w-full mt-2 px-3 py-2 border border-hairline rounded-lg text-[13px] outline-none focus:border-ink bg-white"
+                      >
+                        <option value="">Series — unchanged</option>
+                        {work.series.map((sr: any) => (
+                          <option key={sr.id} value={sr.id}>
+                            Move to {sr.name}
+                          </option>
+                        ))}
+                      </select>
+                    )}
+                    <textarea
+                      value={amend.statement ?? ''}
+                      onChange={(e) => setAmend((p) => ({ ...p, statement: e.target.value }))}
+                      placeholder="Context Core wording — unchanged if left blank"
+                      className="w-full mt-2 px-3 py-2 border border-hairline rounded-lg text-[13px] min-h-16 resize-none outline-none focus:border-ink"
+                    />
+                    <textarea
+                      value={amendReason}
+                      onChange={(e) => setAmendReason(e.target.value)}
+                      placeholder="Why. Required, in your words, and it is published inside the record."
+                      className="w-full mt-2 px-3 py-2 border border-hairline rounded-lg text-[13px] min-h-16 resize-none outline-none focus:border-ink"
+                    />
+                    <button
+                      type="button"
+                      disabled={busy}
+                      onClick={() => requestAmendment(work.tbtId)}
+                      className="mt-2.5 px-3.5 py-2 rounded-lg border border-hairline text-ink-soft text-[11px] font-medium tracking-[0.12em] uppercase disabled:opacity-50"
+                    >
+                      Request correction
+                    </button>
+                    <p className="text-[10.5px] text-placeholder mt-2">
+                      A second person approves it, then you apply it. Nothing is published until then.
+                    </p>
+                  </div>
+                )}
               </div>
 
               {work.commerce && (
