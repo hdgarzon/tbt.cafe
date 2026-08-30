@@ -23,6 +23,8 @@ export const HIGH_RISK = new Set([
   'payouts.cancel',
   'config.business_rules',
   'config.team',
+  // Una enmienda se publica en un almacen que no se borra (Item 5).
+  'works.amend',
 ])
 
 export type AdminMember = { userId: string; displayName: string; permissions: Record<string, boolean> }

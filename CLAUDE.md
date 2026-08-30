@@ -50,6 +50,7 @@ npm run check:coupon      # promo codes resolve against Stripe, one list only
 npm run check:notify      # a simulated send is not a send
 npm run check:dispute     # a chargeback leaves a trace
 npm run check:approvals   # the two-person rule finishes: approved means applied
+npm run check:amend       # a correction supersedes; nothing else moves with it
 npm run check:checkout    # the checkout return URL points at a page that exists
 npm run check:context     # no fabricated weather is sealed
 npm run check:events      # a failure records what it died of
@@ -118,6 +119,12 @@ scripts/*-check.ts                   # one guard per invariant
 - **Fees** — run `npm run check:fees` after touching any pricing, transfer, or purchase path. Fee drift is silent and expensive.
 - **Covered registrations** (`011_covered_registrations`) and **tickets** (`012_tickets`) carry real user obligations.
 - **Notifications** (`015_notifications`) feed the in-app feed; writes must be idempotent.
+- **Amendments** (`038_work_amendments`, `src/lib/chain/amend.ts`) — a record is
+  never edited. `amendRecord` copies the record that is **published** and applies
+  the correction on top, so a field added to the schema later survives an
+  amendment without touching that file. Never rebuild the record from `works`:
+  that would publish, as a "correction", any drift that happened for other
+  reasons. Only the `minor` class exists; `authorship` waits on counsel.
 - **Two-person rule** (`013_admin_core`, `src/lib/admin/guard.ts`) — it has *three*
   steps, not two: request, approve, and then the initiator applies. A new
   high-risk action needs an entry in the `APPLY` map in `src/app/admin/page.tsx`

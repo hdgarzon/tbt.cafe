@@ -14,6 +14,7 @@
     "check:notify": "npx --yes tsx scripts/notify-check.ts",
     "check:dispute": "npx --yes tsx scripts/dispute-check.ts",
     "check:approvals": "npx --yes tsx scripts/approvals-check.ts",
+    "check:amend": "npx --yes tsx scripts/amend-check.ts",
     "check:checkout": "npx --yes tsx scripts/checkout-return-check.ts",
     "check:context": "npx --yes tsx scripts/context-check.ts",
     "check:events": "npx --yes tsx scripts/provider-events-check.ts",
