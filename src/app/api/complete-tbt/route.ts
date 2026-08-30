@@ -354,6 +354,7 @@ export async function POST(request: NextRequest) {
         if (!recordUri && workWithCreator.content_hash) {
           try {
             const { registrationRecord } = await import('@/lib/chain/records')
+            const { pseudonymFor } = await import('@/lib/chain/pseudonym')
             const { publishRecord } = await import('@/lib/chain/arweave')
 
             const published = await publishRecord(
@@ -363,7 +364,7 @@ export async function POST(request: NextRequest) {
                 contentHash: workWithCreator.content_hash,
                 creator: {
                   name: creatorName,
-                  id: workWithCreator.creator_id,
+                  id: pseudonymFor(workWithCreator.creator_id),
                   type: (creatorInfo?.creator_type ?? 'individual') as 'individual' | 'group' | 'corporation',
                 },
                 work: {
@@ -443,6 +444,7 @@ export async function POST(request: NextRequest) {
         if (recordUri && firstOwner?.id) {
           try {
             const { provenanceRecord } = await import('@/lib/chain/records')
+            const { pseudonymFor } = await import('@/lib/chain/pseudonym')
             const { publishRecord } = await import('@/lib/chain/arweave')
 
             const published = await publishRecord(
@@ -450,7 +452,7 @@ export async function POST(request: NextRequest) {
                 tbtId: workNftData.tbtId,
                 sequence: 1,
                 event: 'creation',
-                to: { name: creatorName, id: workWithCreator.creator_id },
+                to: { name: creatorName, id: pseudonymFor(workWithCreator.creator_id) },
                 occurredAt: new Date(workWithCreator.certified_at || workWithCreator.created_at),
                 solanaSignature: mintSignature,
                 registrationRecord: recordUri,

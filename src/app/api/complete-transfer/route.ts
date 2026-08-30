@@ -314,6 +314,7 @@ export async function POST(request: NextRequest) {
 
         if (chainSource?.registration_record_uri && priorLink?.record_hash) {
           const { provenanceRecord } = await import('@/lib/chain/records')
+          const { pseudonymFor } = await import('@/lib/chain/pseudonym')
           const { publishRecord } = await import('@/lib/chain/arweave')
 
           const published = await publishRecord(
@@ -321,8 +322,8 @@ export async function POST(request: NextRequest) {
               tbtId: transfer.work.tbt_id,
               sequence: sequenceNumber,
               event: transfer.transfer_type === 'gift' ? 'gift' : 'sale',
-              from: { name: previousOwnerName, id: transfer.from_owner_id },
-              to: { name: newOwnerName, id: transfer.to_owner_id },
+              from: { name: previousOwnerName, id: pseudonymFor(transfer.from_owner_id) },
+              to: { name: newOwnerName, id: pseudonymFor(transfer.to_owner_id) },
               occurredAt: new Date(),
               priorRecord: priorLink.record_hash,
               registrationRecord: chainSource.registration_record_uri,
