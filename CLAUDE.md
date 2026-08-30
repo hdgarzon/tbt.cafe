@@ -111,22 +111,23 @@ scripts/*-check.ts                   # one guard per invariant
 - **Covered registrations** (`011_covered_registrations`) and **tickets** (`012_tickets`) carry real user obligations.
 - **Notifications** (`015_notifications`) feed the in-app feed; writes must be idempotent.
 
-### Columns that lie
+### Columns that lied
 
-`works` carries 55 columns and several are dead twins of the live one. Writing
-to the wrong half is silent — the row saves, and the value is simply never read
-again. Verified against the live database:
+Migration `031` removed them. `works` went from 55 columns to 47, and the pairs
+where one half was dead are gone: `nft_mint_address` beside the live
+`mint_address`, `nft_token_uri` beside `token_uri`, plus `nft_explorer_url`,
+`blockchain_hash`, `ipfs_hash` and the two `plagiarism_scan_*` columns — every
+one of them empty in all 59 rows.
 
-| live | dead | why it matters |
-|---|---|---|
-| `works.mint_address` (32/59) | `works.nft_mint_address` (0/59) | the mint address of every NFT |
-| `works.transfer_code_hash` (41/59) | `works.transfer_code` (40/59) | the plaintext column predates the hash and nothing reads it |
+The plaintext `transfer_code` went with them, on `works` and on `transfers`. The
+transfer code is a bearer secret: whoever holds it can claim the work, which is
+why only `transfer_code_hash` is kept.
 
-`works.ipfs_hash` and `works.blockchain_hash` are empty in every row and unused.
-
-The transfer code is a bearer secret: whoever holds it can claim the work. It is
-stored hashed for that reason, and the plaintext column is a leftover — never
-write to it.
+Recorded because the lesson outlasts the columns: **writing to a dead twin is
+silent.** The row saves and the value is never read again. Three of these were
+being read by the admin panel, which is why its explorer link never appeared.
+When two columns look interchangeable, check which one has data before trusting
+either.
 
 ### Conventions
 

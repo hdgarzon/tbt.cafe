@@ -38,8 +38,22 @@ export function InfoTab({ work }: { work: WorkFull }) {
   const { t } = useLocale()
   const c = work.commerce!
   const price = c.initial_price != null ? `${money(c.initial_price)} USD` : '—'
+  /*
+   * El cluster por defecto es devnet, no mainnet.
+   *
+   * Esto comparaba `=== 'devnet'` y omitia el parametro en cualquier otro
+   * caso. `NEXT_PUBLIC_SOLANA_NETWORK` no esta definida en ninguna parte —ni
+   * en produccion ni en local— asi que la comparacion era falsa siempre y el
+   * enlace de TODA obra certificada apuntaba a mainnet, donde un mint de
+   * devnet no existe.
+   *
+   * Ahora solo mainnet omite el parametro, y sin variable se asume devnet:
+   * el mismo criterio que `SOLANA_NETWORK` del lado del servidor.
+   */
+  const network = process.env.NEXT_PUBLIC_SOLANA_NETWORK || 'devnet'
   const explorerUrl = work.mint_address
-    ? `https://explorer.solana.com/address/${work.mint_address}${process.env.NEXT_PUBLIC_SOLANA_NETWORK === 'devnet' ? '?cluster=devnet' : ''}`
+    ? `https://explorer.solana.com/address/${work.mint_address}` +
+      (network === 'mainnet-beta' ? '' : `?cluster=${network}`)
     : null
 
   return (
