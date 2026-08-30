@@ -256,7 +256,7 @@ export async function mintTBTNft(
    * Esas siguen por el camino de antes en vez de quedarse sin mintear.
    */
   registrationRecordUri?: string
-): Promise<{ mintAddress: string; tokenUri: string }> {
+): Promise<{ mintAddress: string; tokenUri: string; signature: string }> {
   const payerKeypair = getPayerKeypair()
   const metaplex = getMetaplex(payerKeypair)
   const metadata = generateNftMetadata(work)
@@ -277,7 +277,7 @@ export async function mintTBTNft(
     console.log(`Using published registration record: ${tokenUri}`)
   }
 
-  const { nft } = await withRetry(async () => {
+  const { nft, response } = await withRetry(async () => {
     console.log('Creating NFT on Solana...')
     return await metaplex.nfts().create({
       uri: tokenUri,
@@ -308,7 +308,17 @@ export async function mintTBTNft(
   
   return {
     mintAddress: nft.address.toString(),
-    tokenUri
+    tokenUri,
+    /*
+     * La firma de la transaccion, que no es la direccion del mint.
+     *
+     * El registro de procedencia tiene un campo `solana_signature` y hasta
+     * ahora recibia `mintAddress`: una direccion de cuenta en un campo que
+     * significa firma. En un registro permanente eso no es impreciso, es
+     * falso — quien lo verifique buscara una transaccion que no existe con
+     * ese identificador.
+     */
+    signature: response.signature,
   }
 }
 

@@ -1,4 +1,4 @@
-import { readFileSync } from 'fs'
+import { existsSync, readFileSync } from 'fs'
 import { join } from 'path'
 
 /** El orden de escritura del Item 6. Guarda de las reglas que no se pueden violar. */
@@ -62,6 +62,42 @@ const at = (needle: string) => src.indexOf(needle)
      'un número público que contradice work_commerce')
   ok('ya no se fija en 500', !nft.includes('sellerFeeBasisPoints: 500'))
   ok('el mint acepta la URI del registro', /mintTBTNft\([\s\S]{0,900}registrationRecordUri\?: string/.test(nft))
+}
+
+// ══ Item 7 — el orden de escritura de la transferencia ═══════════════════
+
+const xfer = readFileSync(join(__dirname, '..', 'src/app/api/complete-transfer/route.ts'), 'utf8')
+
+// ---- Change A: la transferencia ya no repunta el activo
+{
+  ok('no se re-sube metadata en una transferencia', !xfer.includes('processTransferOnChain('),
+     'la URI del activo solo la repunta una enmienda')
+  ok('no se reescribe token_uri', !/update\(\{ token_uri/.test(xfer),
+     'cada transferencia borraba el enlace anterior')
+  ok('el envoltorio muerto se fue', !existsSync(join(__dirname, '..', 'src/lib/solana/transfer.ts')))
+}
+
+// ---- la cadena de procedencia se encadena de verdad
+{
+  ok('lleva el eslabón anterior', xfer.includes('priorRecord: priorLink.record_hash'))
+  ok('y el registro sellado', xfer.includes('registrationRecord: chainSource.registration_record_uri'))
+  ok('el anterior se busca por secuencia', xfer.includes('sequenceNumber - 1'))
+}
+
+// ---- una transferencia no firma nada
+{
+  const block = xfer.slice(xfer.indexOf('provenanceRecord({'), xfer.indexOf('publishRecord') + 4000)
+  ok('la procedencia de transferencia no lleva firma', !block.includes('solanaSignature'),
+     'la propiedad se mueve en la base, no en la cadena')
+}
+
+// ---- y la firma que SÍ existe es una firma
+{
+  const nftSrc = readFileSync(join(__dirname, '..', 'src/lib/solana/nft.ts'), 'utf8')
+  ok('el mint devuelve la firma de la transacción', nftSrc.includes('signature: response.signature'))
+  ok('la certificación ya no manda la dirección del mint',
+     !src.includes('solanaSignature: mintAddress'),
+     'una direccion de cuenta en un campo que significa firma')
 }
 
 console.log(bad === 0 ? '\ntodo en orden' : `\n${bad} fallo(s)`)
