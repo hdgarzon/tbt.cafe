@@ -385,7 +385,22 @@
       "offerFailed": "Nous n'avons pas pu envoyer l'offre",
       "saveFailed": "Nous n'avons pas pu enregistrer la modification",
       "belowFloor": "Une redevance fixe s’applique. Le minimum est de {min} USD."
-    }
+    },
+    "ledgerTitle": "Le registre",
+    "ledgerRegistration": "Enregistrement",
+    "ledgerProvenance": "Provenance",
+    "ledgerSealed": "Scellé",
+    "ledgerNoChain": "Cette œuvre est antérieure à la chaîne d'enregistrements.",
+    "linkSolana": "Solana",
+    "linkArweave": "Arweave",
+    "linkOts": "Preuve",
+    "anchorPending": "ancrage en cours",
+    "anchorConfirmed": "bloc {height}",
+    "anchorFailed": "l'ancrage a échoué",
+    "anchorNote": "L'ancrage à Bitcoin prend quelques heures et se termine tout seul.",
+    "verifyNote": "Chaque enregistrement peut être vérifié sans nous : téléchargez la preuve et vérifiez-la contre l'enregistrement.",
+    "eventSale": "Vendue",
+    "eventGift": "Offerte"
   },
   "info": {
     "value": "Valeur",

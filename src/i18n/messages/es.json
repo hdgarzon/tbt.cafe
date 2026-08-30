@@ -385,7 +385,22 @@
       "offerFailed": "No pudimos enviar la oferta",
       "saveFailed": "No pudimos guardar el cambio",
       "belowFloor": "Se aplica una regalía fija. El mínimo es {min} USD."
-    }
+    },
+    "ledgerTitle": "El registro",
+    "ledgerRegistration": "Registración",
+    "ledgerProvenance": "Procedencia",
+    "ledgerSealed": "Sellado",
+    "ledgerNoChain": "Esta obra es anterior a la cadena de registros.",
+    "linkSolana": "Solana",
+    "linkArweave": "Arweave",
+    "linkOts": "Prueba",
+    "anchorPending": "anclando",
+    "anchorConfirmed": "bloque {height}",
+    "anchorFailed": "el ancla falló",
+    "anchorNote": "El anclaje a Bitcoin tarda unas horas y se completa solo.",
+    "verifyNote": "Cada registro se puede comprobar sin nosotros: descarga la prueba y verifícala contra el registro.",
+    "eventSale": "Vendida",
+    "eventGift": "Cedida"
   },
   "info": {
     "value": "Valor",

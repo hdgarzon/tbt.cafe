@@ -14,6 +14,16 @@ import { upgrade } from '@/lib/chain/ots'
  * esta esperando. Por eso no hay tope de intentos que la marque fallida: se
  * cuentan para poder ver una atascada, no para rendirse.
  */
+/*
+ * Dinamica, o no corre.
+ *
+ * Sin esto Next la prerenderiza: el build la EJECUTA una vez, congela su
+ * respuesta, y cada disparo horario devuelve ese resultado vacio sin tocar la
+ * base ni los calendarios. Se vio en la salida del build —«[ots-cron] revisadas
+ * 0» durante el prerenderizado— y en la tabla de rutas, marcada estatica.
+ */
+export const dynamic = 'force-dynamic'
+
 export const maxDuration = 300
 
 /** De golpe, para no agotar el tiempo si un dia hay muchas. */
