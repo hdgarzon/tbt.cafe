@@ -567,6 +567,23 @@ create table if not exists public.payout_earnings (
   collected_at timestamp with time zone
 );
 
+create table if not exists public.chain_anchors (
+  record_hash text not null,
+  record_kind text not null,
+  record_uri text,
+  ots_proof bytea not null,
+  status text default 'pending'::text not null,
+  block_height integer,
+  attested_at timestamp with time zone,
+  upgrade_attempts integer default 0 not null,
+  last_attempt_at timestamp with time zone,
+  created_at timestamp with time zone default now() not null,
+  updated_at timestamp with time zone default now() not null
+);
+
+comment on table public.chain_anchors is
+  'Anclas de OpenTimestamps. La prueba se guarda entera: sin ella el ancla no vale nada.';
+
 create table if not exists public.payment_disputes (
   provider_ref text not null,
   kind text not null,
@@ -825,6 +842,9 @@ alter table public.payout_earnings add constraint payout_earnings_amount_check C
 alter table public.payout_earnings add constraint payout_earnings_source_check CHECK ((source = ANY (ARRAY['sale'::text, 'royalty'::text, 'transfer'::text, 'offer'::text])));
 alter table public.payout_earnings add constraint payout_earnings_state_check CHECK ((state = ANY (ARRAY['pending'::text, 'available'::text, 'collected'::text])));
 alter table public.payout_earnings add constraint payout_earnings_hold_reason_check CHECK ((hold_reason = ANY (ARRAY['settlement_window'::text, 'awaiting_counterparty'::text])));
+alter table public.chain_anchors add constraint chain_anchors_pkey PRIMARY KEY (record_hash);
+alter table public.chain_anchors add constraint chain_anchors_record_kind_check CHECK ((record_kind = ANY (ARRAY['registration'::text, 'provenance'::text, 'amendment'::text])));
+alter table public.chain_anchors add constraint chain_anchors_status_check CHECK ((status = ANY (ARRAY['pending'::text, 'confirmed'::text, 'failed'::text])));
 alter table public.payment_disputes add constraint payment_disputes_pkey PRIMARY KEY (provider_ref);
 alter table public.payment_disputes add constraint payment_disputes_work_id_fkey FOREIGN KEY (work_id) REFERENCES works(id) ON DELETE SET NULL;
 alter table public.payment_disputes add constraint payment_disputes_transfer_id_fkey FOREIGN KEY (transfer_id) REFERENCES transfers(id) ON DELETE SET NULL;
@@ -938,6 +958,7 @@ create index if not exists payout_earnings_work_idx ON public.payout_earnings US
 create index if not exists payout_earnings_block_idx ON public.payout_earnings USING btree (payout_block_id) WHERE (payout_block_id IS NOT NULL);
 create index if not exists payout_earnings_release_idx ON public.payout_earnings USING btree (releases_at) WHERE (state = 'pending'::text);
 create unique index if not exists payout_earnings_source_idx ON public.payout_earnings USING btree (source, source_ref) WHERE (source_ref IS NOT NULL);
+create index if not exists chain_anchors_pending_idx ON public.chain_anchors USING btree (created_at) WHERE (status = 'pending'::text);
 create index if not exists payment_disputes_work_idx ON public.payment_disputes USING btree (work_id) WHERE (work_id IS NOT NULL);
 create index if not exists payment_disputes_user_idx ON public.payment_disputes USING btree (subject_user) WHERE (subject_user IS NOT NULL);
 create index if not exists payment_disputes_unresolved_idx ON public.payment_disputes USING btree (created_at DESC) WHERE (work_id IS NULL);
@@ -988,6 +1009,7 @@ alter table public.payout_destinations enable row level security;
 alter table public.payout_connect_accounts enable row level security;
 alter table public.payout_blocks enable row level security;
 alter table public.payout_earnings enable row level security;
+alter table public.chain_anchors enable row level security;
 alter table public.payment_disputes enable row level security;
 alter table public.mms_deliveries enable row level security;
 alter table public.work_series enable row level security;

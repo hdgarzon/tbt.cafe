@@ -26,6 +26,7 @@
 import { toMetaplexFile, type MetaplexFile } from '@metaplex-foundation/js'
 import { canonicalize, recordHash } from './serialize'
 import { assertNoIdentifiers } from './pseudonym'
+import { anchorRecord } from './ots'
 import { getMetaplex } from '@/lib/solana/nft'
 import { SOLANA_NETWORK } from '@/lib/solana/config'
 
@@ -118,9 +119,22 @@ export async function publishRecord(record: PublishableRecord): Promise<Publishe
   const file = recordFileFor(record)
   const driverUri = await getMetaplex().storage().upload(file)
 
-  return {
-    uri: gatewayUri(driverUri),
-    hash: recordHash(record),
-    bytes: file.buffer.length,
-  }
+  const uri = gatewayUri(driverUri)
+  const hash = recordHash(record)
+
+  /*
+   * El ancla se pide aqui — Item 6 paso 6, Item 8.
+   *
+   * Aqui y no en cada llamante porque asi la regla es una: todo lo que se
+   * publica se ancla, sin que nadie tenga que acordarse. `anchorRecord` no
+   * lanza; un ancla pendiente o ausente es un estado normal, y la
+   * certificacion no puede caerse por un calendario lento.
+   */
+  const kind =
+    record.type === 'registration' ? 'registration'
+    : record.type === 'amendment' ? 'amendment'
+    : 'provenance'
+  await anchorRecord(hash, kind as 'registration' | 'provenance' | 'amendment', uri)
+
+  return { uri, hash, bytes: file.buffer.length }
 }
