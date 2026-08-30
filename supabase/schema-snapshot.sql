@@ -183,7 +183,9 @@ create table if not exists public.works (
   series_id uuid,
   is_featured boolean default false not null,
   transfer_code_hash text,
-  content_hash text
+  content_hash text,
+  registration_record_uri text,
+  registration_record_hash text
 );
 
 comment on column public.works.mint_address is
@@ -248,7 +250,9 @@ create table if not exists public.ownership_history (
   price numeric,
   currency text,
   sequence_number integer default 1 not null,
-  created_at timestamp with time zone default now() not null
+  created_at timestamp with time zone default now() not null,
+  record_uri text,
+  record_hash text
 );
 
 create table if not exists public.transfers (
@@ -873,6 +877,7 @@ create index if not exists works_series_id_idx ON public.works USING btree (seri
 create index if not exists works_featured_idx ON public.works USING btree (creator_id) WHERE is_featured;
 create index if not exists idx_works_mint_address ON public.works USING btree (mint_address) WHERE (mint_address IS NOT NULL);
 create index if not exists works_transfer_code_hash_idx ON public.works USING btree (transfer_code_hash) WHERE (transfer_code_hash IS NOT NULL);
+create index if not exists works_registration_record_idx ON public.works USING btree (registration_record_uri) WHERE (registration_record_uri IS NOT NULL);
 create index if not exists works_content_hash_idx ON public.works USING btree (content_hash) WHERE (content_hash IS NOT NULL);
 create index if not exists works_payment_intent_idx ON public.works USING btree (payment_intent_id) WHERE (payment_intent_id IS NOT NULL);
 create index if not exists idx_profiles_email ON public.profiles USING btree (email);

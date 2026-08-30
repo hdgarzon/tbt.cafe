@@ -291,7 +291,7 @@ export async function POST(request: NextRequest) {
         .from('works')
         .select(`
           *,
-          creator:profiles!works_creator_id_fkey(display_name, public_alias),
+          creator:profiles!works_creator_id_fkey(display_name, public_alias, creator_type),
           context:context_snapshots(location_name, weather_data, elaboration_type),
           commerce:work_commerce(initial_price, currency, royalty_type, royalty_value)
         `)
@@ -330,9 +330,75 @@ export async function POST(request: NextRequest) {
           }]
         }
         
+        /*
+         * ── Item 6, paso 3: el registro sube ANTES del mint ──────────────
+         *
+         * La URI que se escribe en cadena tiene que apuntar a algo que ya
+         * exista, asi que este orden no es preferencia.
+         *
+         * Y se GUARDA antes de mintear. El spec avisa de que si el mint falla
+         * despues de la subida el registro queda sin referencia —recuperable—
+         * pero que jamas hay que reintentar la subida: dos registros de
+         * registracion para un TBT sin enlace `supersedes` entre ellos es la
+         * unica forma que este modelo no sabe expresar. Guardarla es lo que
+         * permite reintentar el MINT contra ella.
+         *
+         * Una obra sin `content_hash` no puede tener registro —
+         * `registrationRecord` lo exige— y son 46 de las 47 certificadas antes
+         * de que el hash existiera. Esas se mintean como siempre en vez de
+         * quedarse sin mintear: la cadena SUMA, no condiciona.
+         */
+        let recordUri: string | undefined = workWithCreator.registration_record_uri ?? undefined
+
+        if (!recordUri && workWithCreator.content_hash) {
+          try {
+            const { registrationRecord } = await import('@/lib/chain/records')
+            const { publishRecord } = await import('@/lib/chain/arweave')
+
+            const published = await publishRecord(
+              registrationRecord({
+                tbtId: workNftData.tbtId,
+                sequence: 1,
+                contentHash: workWithCreator.content_hash,
+                creator: {
+                  name: creatorName,
+                  id: workWithCreator.creator_id,
+                  type: (creatorInfo?.creator_type ?? 'individual') as 'individual' | 'group' | 'corporation',
+                },
+                work: {
+                  title: workWithCreator.title,
+                  year: new Date(workWithCreator.creation_date || workWithCreator.created_at).getUTCFullYear(),
+                  category: workWithCreator.category ?? undefined,
+                  technique: workWithCreator.technique ?? undefined,
+                  originality: (workWithCreator.originality_type ?? 'original') as 'original' | 'derivative' | 'authorized_edition',
+                },
+                context: {
+                  statement: workWithCreator.context_summary ?? undefined,
+                  city: ctxData?.location_name ?? undefined,
+                },
+                sealedAt: new Date(workWithCreator.certified_at || workWithCreator.created_at),
+              }) as never
+            )
+
+            await createAdminClient()
+              .from('works')
+              .update({
+                registration_record_uri: published.uri,
+                registration_record_hash: published.hash,
+              })
+              .eq('id', workId)
+
+            recordUri = published.uri
+            console.log(`Registration record published: ${published.uri}`)
+          } catch (chainError) {
+            // La cadena no puede tumbar una certificacion que ya se cobro.
+            console.error('[chain] no se pudo publicar el registro:', chainError)
+          }
+        }
+
         console.log('Minting NFT for TBT:', workNftData.tbtId)
-        
-        const mintResult = await mintTBTNft(workNftData)
+
+        const mintResult = await mintTBTNft(workNftData, recordUri)
         mintAddress = mintResult.mintAddress
         solscanUrl = getExplorerUrl(mintAddress)
         
@@ -349,14 +415,57 @@ export async function POST(request: NextRequest) {
         // Record first owner in ownership_history (creator = first owner).
         // Service-role write: ownership_history is the immutable provenance
         // chain (RLS: public read, service-role-only writes).
-        await createAdminClient().from('ownership_history').insert({
-          work_id: workId,
-          owner_name: creatorName,
-          owner_user_id: user.id,
-          event_type: 'creation',
-          sequence_number: 1,
-        })
-        
+        const { data: firstOwner } = await createAdminClient()
+          .from('ownership_history')
+          .insert({
+            work_id: workId,
+            owner_name: creatorName,
+            owner_user_id: user.id,
+            event_type: 'creation',
+            sequence_number: 1,
+          })
+          .select('id')
+          .single()
+
+        /*
+         * ── Item 6, paso 5: procedencia, secuencia 1 ────────────────────
+         *
+         * `event: creation` y sin `prior_record`: es el origen de la cadena, y
+         * `provenanceRecord` rechaza que la secuencia 1 lleve uno.
+         *
+         * Va DESPUES del mint porque lleva dentro la firma de Solana, que
+         * antes no existe. Si falla, la obra queda minteada y con su registro
+         * de registracion; le faltara el primer eslabon de procedencia, que se
+         * puede publicar despues contra los mismos datos.
+         */
+        if (recordUri && firstOwner?.id) {
+          try {
+            const { provenanceRecord } = await import('@/lib/chain/records')
+            const { publishRecord } = await import('@/lib/chain/arweave')
+
+            const published = await publishRecord(
+              provenanceRecord({
+                tbtId: workNftData.tbtId,
+                sequence: 1,
+                event: 'creation',
+                to: { name: creatorName, id: workWithCreator.creator_id },
+                occurredAt: new Date(workWithCreator.certified_at || workWithCreator.created_at),
+                solanaSignature: mintAddress,
+                registrationRecord: recordUri,
+              }) as never
+            )
+
+            await createAdminClient()
+              .from('ownership_history')
+              .update({ record_uri: published.uri, record_hash: published.hash })
+              .eq('id', firstOwner.id)
+
+            console.log(`Provenance record published: ${published.uri}`)
+          } catch (chainError) {
+            console.error('[chain] no se pudo publicar la procedencia:', chainError)
+          }
+        }
+
         console.log('NFT minted successfully:', mintAddress)
       } else if (workWithCreator?.mint_address) {
         mintAddress = workWithCreator.mint_address
