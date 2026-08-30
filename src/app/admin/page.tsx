@@ -52,9 +52,34 @@ type Approval = {
   action: string
   entity_type: string | null
   entity_id: string | null
+  payload: Record<string, unknown> | null
   reason: string
   initiator_id: string
   expires_at: string
+  resolved_at: string | null
+}
+
+/**
+ * Como se aplica cada accion ya aprobada — Backend Spec 07 §1.3.
+ *
+ * La regla de dos personas tiene tres tiempos: alguien la pide, otra persona la
+ * aprueba, y quien la pidio la aplica. El tercero no existia: la aprobacion se
+ * concedia y ahi se quedaba, porque ningun cliente volvia a llamar a la ruta de
+ * la accion con el `approvalId`.
+ *
+ * El mapa es explicito a proposito. Una accion sin entrada aqui se enseña sin
+ * boton y lo dice, que es mejor que un boton que no hace nada.
+ */
+const APPLY: Record<string, (a: Approval) => { url: string; body: Record<string, unknown> }> = {
+  'config.business_rules': (a) => ({
+    url: '/api/admin/config',
+    body: {
+      action: (a.payload as { action?: string })?.action,
+      value: (a.payload as { value?: unknown })?.value,
+      reason: a.reason,
+      approvalId: a.id,
+    },
+  }),
 }
 
 async function authHeader(stepUp: string | null) {
@@ -85,6 +110,8 @@ export default function AdminPage() {
   const [bioProof, setBioProof] = useState<string | null>(null)
   const [tickets, setTickets] = useState<Ticket[]>([])
   const [approvals, setApprovals] = useState<Approval[]>([])
+  const [awaiting, setAwaiting] = useState<Approval[]>([])
+  const [otherApprovers, setOtherApprovers] = useState(0)
   const [canApprove, setCanApprove] = useState(false)
   const [me, setMe] = useState<string | null>(null)
   const [filter, setFilter] = useState<string>('open')
@@ -141,6 +168,8 @@ export default function AdminPage() {
     if (aRes.ok) {
       const aBody = await aRes.json()
       setApprovals(aBody.approvals ?? [])
+      setAwaiting(aBody.awaiting ?? [])
+      setOtherApprovers(aBody.otherApprovers ?? 0)
       setCanApprove(aBody.canApprove === true)
       setMe(aBody.me ?? null)
     }
@@ -427,6 +456,31 @@ export default function AdminPage() {
     const body = await res.json().catch(() => ({}))
     setBusy(false)
     if (!res.ok) setNote(body.error ?? 'Failed')
+    else if (decision === 'approved') {
+      // Aprobar no cambia nada todavia. Quien la inicio tiene que aplicarla, y
+      // decirlo aqui evita que alguien se vaya creyendo que ya esta hecho.
+      setNote('Approved. The person who started it has to apply it now.')
+    }
+    load()
+  }
+
+  /** El tercer tiempo: quien la inicio aplica lo ya aprobado. */
+  async function apply(a: Approval) {
+    const build = APPLY[a.action]
+    if (!build) return
+    const auth = await authHeader(stepUp)
+    if (!auth) return
+    setBusy(true)
+    setNote('')
+    const { url, body } = build(a)
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: { ...auth, 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    })
+    const out = await res.json().catch(() => ({}))
+    setBusy(false)
+    setNote(res.ok ? 'Applied.' : (out.message ?? out.error ?? 'Failed'))
     load()
   }
 
@@ -558,8 +612,10 @@ export default function AdminPage() {
                     expires {new Date(a.expires_at).toLocaleString()}
                   </div>
                   {mine ? (
-                    <p className="text-[11px] text-ink-soft mt-2.5">
-                      You started this one, so someone else has to approve it.
+                    <p className={`text-[11px] mt-2.5 ${otherApprovers === 0 ? 'text-t-red' : 'text-ink-soft'}`}>
+                      {otherApprovers === 0
+                        ? 'You started this one and nobody else can approve it. Someone else needs the approval permission.'
+                        : 'You started this one, so someone else has to approve it.'}
                     </p>
                   ) : canApprove ? (
                     <div className="flex gap-2 mt-2.5">
@@ -584,6 +640,42 @@ export default function AdminPage() {
                 </div>
               )
             })}
+          </div>
+        </section>
+      )}
+
+      {/* El tercer tiempo de §1.3. Aprobar no cambia nada: lo aprobado espera a
+          que quien lo inició lo aplique, y hasta ahora eso no se enseñaba en
+          ninguna pantalla. */}
+      {awaiting.length > 0 && (
+        <section className="mt-5">
+          <div className="text-[11px] font-medium tracking-[0.16em] uppercase text-ink-soft mb-2">
+            Approved · your turn
+          </div>
+          <div className="flex flex-col gap-2">
+            {awaiting.map((a) => (
+              <div key={a.id} className="border border-hairline rounded-xl p-3.5">
+                <div className="text-[12.5px] font-medium text-ink">{a.action}</div>
+                <p className="text-[11.5px] leading-[1.55] text-ink-soft mt-1">{a.reason}</p>
+                <div className="text-[10.5px] text-placeholder mt-1.5">
+                  approved {a.resolved_at ? new Date(a.resolved_at).toLocaleString() : '—'} · good for a day
+                </div>
+                {APPLY[a.action] ? (
+                  <button
+                    type="button"
+                    disabled={busy}
+                    onClick={() => apply(a)}
+                    className="mt-2.5 px-3.5 py-2 rounded-lg bg-ink text-paper text-[11px] font-medium tracking-[0.12em] uppercase disabled:opacity-50"
+                  >
+                    Apply
+                  </button>
+                ) : (
+                  <p className="text-[11px] text-ink-soft mt-2.5">
+                    This one has no apply button yet. Nothing has changed.
+                  </p>
+                )}
+              </div>
+            ))}
           </div>
         </section>
       )}

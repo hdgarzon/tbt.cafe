@@ -98,6 +98,62 @@ export type HighRiskOutcome =
   | { proceed: false; pendingId: string; message: string }
 
 /**
+ * Cuanto vale una autorizacion ya concedida.
+ *
+ * La solicitud ya caduca a las 24 horas si nadie la aprueba. Lo aprobado no
+ * caducaba nunca, y una autorizacion de alto riesgo que sigue valiendo dentro
+ * de un mes no autoriza lo mismo que autorizo: quien la concedio miraba otro
+ * estado del sistema. Se le da la misma ventana.
+ */
+export const APPROVAL_TTL_MS = 24 * 60 * 60 * 1000
+
+/** Por que un `approvalId` no sirvio. Solo lee; el intento ya fallo. */
+async function whyNot(
+  service: SupabaseClient,
+  approvalId: string,
+  action: string,
+  actorId: string
+): Promise<string> {
+  const { data } = await service
+    .from('admin_pending_approvals')
+    .select('status, action, initiator_id, approver_id, executed_at, resolved_at')
+    .eq('id', approvalId)
+    .maybeSingle()
+
+  if (!data) return 'That approval does not exist.'
+  if (data.executed_at) return 'That approval was already used. Each high-risk action needs its own.'
+  if (data.status === 'pending') return 'That request is still waiting for a second person.'
+  if (data.status !== 'approved') return `That request was ${data.status}.`
+  if (data.action !== action) return 'That approval authorises a different action.'
+  if (data.initiator_id !== actorId) return 'Only the person who started it can apply it.'
+  if (data.approver_id === actorId) return 'The approver cannot be the initiator.'
+  if (data.resolved_at && Date.parse(data.resolved_at) < Date.now() - APPROVAL_TTL_MS) {
+    return 'That approval is more than a day old. Ask for it again.'
+  }
+  return 'That approval is not valid for this action.'
+}
+
+/**
+ * Marca como caducadas las solicitudes que nadie resolvio a tiempo.
+ *
+ * `admin_resolve_approval` ya hace esta transicion, pero solo sobre la fila que
+ * alguien intenta resolver — y una solicitud que NADIE puede aprobar no la
+ * intenta nadie. Se quedaba «pendiente» para siempre en el panel, con una fecha
+ * de caducidad ya pasada debajo, y contando en el tablero.
+ *
+ * No lanza: barrer es higiene, y no poder barrer no es motivo para no enseñar
+ * la lista.
+ */
+export async function sweepExpiredApprovals(service: SupabaseClient): Promise<void> {
+  const { error } = await service
+    .from('admin_pending_approvals')
+    .update({ status: 'expired', resolved_at: new Date().toISOString() })
+    .eq('status', 'pending')
+    .lt('expires_at', new Date().toISOString())
+  if (error) console.error('[admin-approvals] sweep failed', error)
+}
+
+/**
  * Puerta de alto riesgo.
  *
  * Sin aprobación previa, la acción NO se ejecuta: se registra como pendiente y
@@ -106,6 +162,18 @@ export type HighRiskOutcome =
  *
  * La razón es obligatoria y de texto libre, no un desplegable: el valor está en
  * lo que alguien elige escribir.
+ *
+ * LA AUTORIZACION SE GASTA AL USARSE
+ *
+ * La comprobacion y el consumo son el MISMO escritorio condicional. Leer la
+ * fila, decidir y ejecutar dejaba dos huecos: dos llamadas simultaneas pasaban
+ * las dos, y nada impedia volver a presentar el mismo `approvalId` mañana. El
+ * UPDATE lleva dentro todas las condiciones, asi que o sella la fila o no
+ * devuelve nada — y si no devuelve nada, no se toco.
+ *
+ * Si la accion falla DESPUES de sellarla, la autorizacion se pierde y hay que
+ * pedirla otra vez. Es el lado correcto en el que equivocarse: soltarla al
+ * fallar reabriria la ventana que este escritorio cierra.
  */
 export async function gateHighRisk(
   supabase: SupabaseClient,
@@ -123,28 +191,27 @@ export async function gateHighRisk(
   const service = createAdminClient()
 
   if (params.approvalId) {
-    const { data } = await service
+    const { data: claimed } = await service
       .from('admin_pending_approvals')
-      .select('id, status, action, initiator_id, approver_id')
+      .update({ executed_at: new Date().toISOString() })
       .eq('id', params.approvalId)
-      .single()
+      .eq('status', 'approved')
+      .eq('action', params.action)
+      // Quien ejecuta es quien inició, y quien aprobó es otra persona. La base
+      // ya lo impide al aprobar; aquí tampoco se ejecuta sobre una suposición.
+      .eq('initiator_id', params.actor.userId)
+      .neq('approver_id', params.actor.userId)
+      .is('executed_at', null)
+      .gte('resolved_at', new Date(Date.now() - APPROVAL_TTL_MS).toISOString())
+      .select('id, approver_id')
+      .maybeSingle()
 
-    if (
-      data &&
-      data.status === 'approved' &&
-      data.action === params.action &&
-      // Quien ejecuta debe ser quien inició, y quien aprobó otra persona. La
-      // base ya lo impide, pero no se ejecuta sobre una suposición.
-      data.initiator_id === params.actor.userId &&
-      data.approver_id &&
-      data.approver_id !== params.actor.userId
-    ) {
-      return { proceed: true, approverId: data.approver_id }
-    }
+    if (claimed?.approver_id) return { proceed: true, approverId: claimed.approver_id }
+
     return {
       proceed: false,
       pendingId: params.approvalId,
-      message: 'That approval is not valid for this action.',
+      message: await whyNot(service, params.approvalId, params.action, params.actor.userId),
     }
   }
 

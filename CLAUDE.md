@@ -49,6 +49,7 @@ npm run check:records     # the three Arweave records, and what must stay out of
 npm run check:coupon      # promo codes resolve against Stripe, one list only
 npm run check:notify      # a simulated send is not a send
 npm run check:dispute     # a chargeback leaves a trace
+npm run check:approvals   # the two-person rule finishes: approved means applied
 npm run check:checkout    # the checkout return URL points at a page that exists
 npm run check:context     # no fabricated weather is sealed
 npm run check:events      # a failure records what it died of
@@ -117,6 +118,11 @@ scripts/*-check.ts                   # one guard per invariant
 - **Fees** — run `npm run check:fees` after touching any pricing, transfer, or purchase path. Fee drift is silent and expensive.
 - **Covered registrations** (`011_covered_registrations`) and **tickets** (`012_tickets`) carry real user obligations.
 - **Notifications** (`015_notifications`) feed the in-app feed; writes must be idempotent.
+- **Two-person rule** (`013_admin_core`, `src/lib/admin/guard.ts`) — it has *three*
+  steps, not two: request, approve, and then the initiator applies. A new
+  high-risk action needs an entry in the `APPLY` map in `src/app/admin/page.tsx`
+  or it will be approved and do nothing. `npm run check:approvals` fails if one
+  is missing.
 
 ### Columns that lied
 

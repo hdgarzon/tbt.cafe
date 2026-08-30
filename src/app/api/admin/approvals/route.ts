@@ -8,7 +8,10 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { authenticate } from '@/lib/route-auth'
 import { createAdminClient } from '@/lib/supabase-admin'
-import { loadAdmin, can, writeAudit, hasValidStepUp, STEP_UP_HEADER } from '@/lib/admin/guard'
+import {
+  loadAdmin, can, writeAudit, hasValidStepUp, STEP_UP_HEADER,
+  sweepExpiredApprovals, APPROVAL_TTL_MS,
+} from '@/lib/admin/guard'
 
 
 export async function GET(request: NextRequest) {
@@ -23,17 +26,63 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: 'step_up_required' }, { status: 428 })
   }
 
-  const { data, error } = await createAdminClient()
+  const service = createAdminClient()
+  const FIELDS =
+    'id, action, entity_type, entity_id, payload, reason, initiator_id, approver_id, status, expires_at, resolved_at, created_at'
+
+  // Antes de enseñar la lista: lo que caducó ya no está pendiente. Una
+  // solicitud que nadie puede aprobar no la intenta resolver nadie, asi que
+  // nada la sacaba nunca de aqui.
+  await sweepExpiredApprovals(service)
+
+  const { data, error } = await service
     .from('admin_pending_approvals')
-    .select('id, action, entity_type, entity_id, payload, reason, initiator_id, status, expires_at, created_at')
+    .select(FIELDS)
     .eq('status', 'pending')
     .order('created_at', { ascending: false })
     .limit(50)
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 
+  /*
+   * Aprobado y todavia sin hacer.
+   *
+   * La regla de dos personas se ejecuta en dos tiempos: alguien aprueba, y
+   * despues quien la inicio la aplica. Este segundo tiempo no se enseñaba en
+   * ningun sitio — en cuanto se aprobaba, la solicitud dejaba de ser
+   * `pending` y desaparecia de la pantalla sin haber cambiado nada.
+   */
+  const { data: awaiting } = await service
+    .from('admin_pending_approvals')
+    .select(FIELDS)
+    .eq('status', 'approved')
+    .eq('initiator_id', auth.user.id)
+    .is('executed_at', null)
+    .gte('resolved_at', new Date(Date.now() - APPROVAL_TTL_MS).toISOString())
+    .order('resolved_at', { ascending: false })
+    .limit(50)
+
+  /*
+   * Cuanta gente MAS puede aprobar.
+   *
+   * La regla exige dos personas distintas, asi que una solicitud iniciada por
+   * la unica persona con `approve_high_risk` no la puede aprobar nadie — y el
+   * panel decia «esperando a una segunda persona» hasta que caducaba, sin decir
+   * que esa segunda persona no existe. Es una pared, y merece verse como tal.
+   */
+  const { data: team } = await service
+    .from('admin_members')
+    .select('user_id, permissions')
+    .eq('active', true)
+
+  const otherApprovers = (team ?? []).filter(
+    (m) => m.user_id !== auth.user.id && (m.permissions as Record<string, boolean> | null)?.approve_high_risk
+  ).length
+
   return NextResponse.json({
     approvals: data ?? [],
+    awaiting: awaiting ?? [],
+    otherApprovers,
     // La interfaz necesita saber si esta persona puede aprobar y, sobre todo,
     // que no puede aprobar lo suyo.
     canApprove: can(admin, 'approve_high_risk'),
