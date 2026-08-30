@@ -1,0 +1,37 @@
+-- ============================================================================
+-- 032_drop_wallets.sql — Quitar el modelo custodio que nunca se construyo
+-- ============================================================================
+-- DESTRUCTIVA, y la mas seria de las tres. Borra claves privadas cifradas.
+--
+-- QUE HABIA
+--
+-- `wallets` guardaba una cartera de Solana por persona, con la clave privada
+-- cifrada bajo WALLET_ENCRYPTION_KEY. Tres filas, de enero y febrero.
+--
+-- POR QUE SE VA
+--
+-- Nada en `src/` la toca. Ni la escribe, ni la lee, ni descifra
+-- `encrypted_private_key`. La acuñacion usa `SOLANA_PAYER_PRIVATE_KEY` bajo el
+-- modelo de cartera unica, y `complete-tbt` lo dice en su propio comentario:
+-- "single-wallet model (project wallet owns all NFTs)".
+--
+-- Asi que era el resto de un diseno custodio por usuario que se abandono a
+-- medio camino: la tabla se llenaba, y despues dejo de haber quien la leyera.
+--
+-- LO QUE SE PIERDE, DICHO SIN ADORNOS
+--
+-- Las tres carteras tienen NFTs en devnet —10, 1 y 7 cuentas de token— y su
+-- clave privada no existe en ningun otro sitio. Al borrar la fila, esos activos
+-- quedan inalcanzables para siempre.
+--
+-- Se acepta porque son de devnet y esos mints ya estaban dados por quemados:
+-- llevan el codigo de transferencia dentro y no tienen hash de contenido. Cero
+-- SOL, y cero en mainnet.
+--
+-- SI EL MODELO CUSTODIO VUELVE
+--
+-- Habra que crear la tabla de nuevo, y sera mejor asi: hacerlo a proposito, no
+-- heredar tres filas de un intento anterior cuyas claves nadie sabia usar.
+-- ============================================================================
+
+drop table if exists public.wallets;
