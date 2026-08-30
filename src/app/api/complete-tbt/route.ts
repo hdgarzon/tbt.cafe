@@ -281,6 +281,7 @@ export async function POST(request: NextRequest) {
 
     // Mint NFT on Solana — single-wallet model (project wallet owns all NFTs)
     let mintAddress = ''
+    let mintSignature = ''
     let solscanUrl = ''
     
     try {
@@ -400,6 +401,7 @@ export async function POST(request: NextRequest) {
 
         const mintResult = await mintTBTNft(workNftData, recordUri)
         mintAddress = mintResult.mintAddress
+        mintSignature = mintResult.signature
         solscanUrl = getExplorerUrl(mintAddress)
         
         await supabase
@@ -450,7 +452,7 @@ export async function POST(request: NextRequest) {
                 event: 'creation',
                 to: { name: creatorName, id: workWithCreator.creator_id },
                 occurredAt: new Date(workWithCreator.certified_at || workWithCreator.created_at),
-                solanaSignature: mintAddress,
+                solanaSignature: mintSignature,
                 registrationRecord: recordUri,
               }) as never
             )

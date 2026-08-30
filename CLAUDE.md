@@ -64,6 +64,13 @@ exits non-zero. Two habits matter when writing one:
 - A helper ending in `})` followed by a bare `{` block parses as an arrow
   function. Terminate it with a semicolon.
 
+And one about staging, because it has cost three commits:
+
+- **`git add` aborts the whole command** when any path was already `git rm`'d,
+  so nothing else gets staged. If the deletion is already staged, the commit
+  then contains only that — a file removed while its callers still reference
+  it. Stage the deletion separately, or check `git show --stat` before pushing.
+
 ## Architecture
 
 **tbt.cafe** is a Next.js commerce/community app built on Supabase, with Stripe payments and WebAuthn (passkey) authentication including a step-up gate for privileged actions.
