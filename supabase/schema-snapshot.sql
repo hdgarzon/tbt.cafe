@@ -22,11 +22,14 @@
 -- POR QUE EXISTE
 --
 -- Las migraciones de `supabase/migrations/` empiezan en 001 y dan por supuesto
--- un esquema base que no esta en ninguna parte del repositorio. 28 de las 44
--- tablas se pueden reconstruir desde alli; las otras 16 no, y entre ellas
--- estan las nueve del nucleo del producto: works, profiles, certificates,
--- context_snapshots, work_commerce, tbt_payments, ownership_history, transfers
--- y wallets. Este archivo llevaba 0 bytes.
+-- un esquema base que no esta en ninguna parte del repositorio. De las 44 tablas
+-- que habia entonces, 28 se podian reconstruir desde alli y 16 no — y entre esas
+-- 16 estaba el nucleo entero del producto: works, profiles, certificates,
+-- context_snapshots, work_commerce, tbt_payments, ownership_history y transfers.
+-- Este archivo llevaba 0 bytes.
+--
+-- (Las migraciones 031 y 032 quitaron seis de aquellas tablas por no tener
+-- escritor, wallets entre ellas. Quedan 38.)
 --
 -- Sin el, si esta base se perdiera, el repositorio no podria rehacerla.
 --
@@ -291,19 +294,6 @@ create table if not exists public.tbt_payments (
   metadata jsonb
 );
 
-create table if not exists public.wallets (
-  id uuid default extensions.uuid_generate_v4() not null,
-  user_id uuid,
-  public_key text not null,
-  encrypted_private_key text not null,
-  network text default 'solana'::text,
-  is_primary boolean default true,
-  created_at timestamp with time zone default now(),
-  updated_at timestamp with time zone default now()
-);
-
-comment on table public.wallets is
-  'Carteras custodiadas. `encrypted_private_key` se cifra con WALLET_ENCRYPTION_KEY: perder esa clave es perder las carteras.';
 
 -- ============================================================================
 -- TABLAS — cuenta, admin y soporte
@@ -752,8 +742,6 @@ alter table public.tbt_payments add constraint tbt_payments_pkey PRIMARY KEY (id
 alter table public.tbt_payments add constraint tbt_payments_work_id_fkey FOREIGN KEY (work_id) REFERENCES works(id) ON DELETE CASCADE;
 alter table public.tbt_payments add constraint tbt_payments_user_id_fkey FOREIGN KEY (user_id) REFERENCES profiles(id) ON DELETE CASCADE;
 
-alter table public.wallets add constraint wallets_pkey PRIMARY KEY (id);
-alter table public.wallets add constraint wallets_user_id_fkey FOREIGN KEY (user_id) REFERENCES profiles(id) ON DELETE CASCADE;
 
 alter table public.admin_members add constraint admin_members_pkey PRIMARY KEY (user_id);
 alter table public.admin_members add constraint admin_members_user_id_fkey FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE;
@@ -915,8 +903,6 @@ create index if not exists idx_tbt_payments_user_id ON public.tbt_payments USING
 create index if not exists idx_tbt_payments_status ON public.tbt_payments USING btree (status);
 create index if not exists tbt_payments_payment_intent_idx ON public.tbt_payments USING btree (stripe_payment_intent_id) WHERE (stripe_payment_intent_id IS NOT NULL);
 create index if not exists tbt_payments_checkout_session_idx ON public.tbt_payments USING btree (stripe_checkout_session_id) WHERE (stripe_checkout_session_id IS NOT NULL);
-create index if not exists idx_wallets_user_id ON public.wallets USING btree (user_id);
-create unique index if not exists idx_wallets_user_primary ON public.wallets USING btree (user_id) WHERE (is_primary = true);
 
 create index if not exists admin_audit_actor_idx ON public.admin_audit_log USING btree (actor_id, created_at DESC);
 create index if not exists admin_audit_entity_idx ON public.admin_audit_log USING btree (entity_type, entity_id, created_at DESC);
@@ -979,7 +965,6 @@ alter table public.context_snapshots enable row level security;
 alter table public.ownership_history enable row level security;
 alter table public.transfers enable row level security;
 alter table public.tbt_payments enable row level security;
-alter table public.wallets enable row level security;
 alter table public.admin_members enable row level security;
 alter table public.admin_audit_log enable row level security;
 alter table public.admin_pending_approvals enable row level security;
@@ -1040,8 +1025,6 @@ create policy "Participantes pueden actualizar transferencias" on public.transfe
 create policy "Users can view their own payments" on public.tbt_payments for select using ((user_id = auth.uid()));
 create policy "Users can create their own payments" on public.tbt_payments for insert with check ((user_id = auth.uid()));
 
-create policy "Users can view their own wallets" on public.wallets for select using ((user_id = auth.uid()));
-create policy "Users can create their own wallets" on public.wallets for insert with check ((user_id = auth.uid()));
 
 create policy "admin reads own membership" on public.admin_members for select using ((auth.uid() = user_id));
 create policy "audit readable by viewers" on public.admin_audit_log for select using (admin_has('audit.view'::text));

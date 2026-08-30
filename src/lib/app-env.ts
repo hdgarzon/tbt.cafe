@@ -67,7 +67,18 @@ const REQUIRED_SERVER_VARS = [
   'STRIPE_SECRET_KEY',
   'STRIPE_WEBHOOK_SECRET',
   'SOLANA_PAYER_PRIVATE_KEY',
-  'WALLET_ENCRYPTION_KEY',
+  /*
+   * WALLET_ENCRYPTION_KEY se fue con la migracion 032.
+   *
+   * Cifraba las claves de `wallets`, la tabla del modelo custodio por usuario
+   * que nunca llego a construirse: nada en src/ la leia ni la descifraba. Aqui
+   * dentro bloqueaba CADA ruta que llama a assertServerEnv() para proteger una
+   * funcionalidad inexistente, que es la peor clase de guarda — cuesta
+   * despliegues y no defiende nada.
+   *
+   * Si el modelo custodio vuelve, vuelve tambien a esta lista, y entonces si
+   * significara algo.
+   */
 ] as const
 
 export function missingServerEnv(): string[] {
