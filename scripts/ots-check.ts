@@ -50,6 +50,9 @@ const cron = read('src/app/api/cron/anchor-upgrade/route.ts')
   ok('existe la ruta', existsSync(join(__dirname, '..', 'src/app/api/cron/anchor-upgrade/route.ts')))
   ok('solo mira lo pendiente', cron.includes("eq('status', 'pending')"))
   ok('declara su límite de tiempo', cron.includes('maxDuration'))
+  // Sin esto el build la ejecuta una vez y congela la respuesta: cada disparo
+  // horario devolveria ese resultado vacio.
+  ok('es dinámica y no se prerenderiza', cron.includes("dynamic = 'force-dynamic'"))
   ok('comprueba el secreto si existe', cron.includes('CRON_SECRET'))
   ok('confirma solo con altura de bloque', /result\.upgraded && result\.blockHeight/.test(cron),
      'un cambio sin bloque sigue siendo pendiente')

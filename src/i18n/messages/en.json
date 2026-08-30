@@ -385,7 +385,22 @@
       "offerFailed": "We couldn't send the offer",
       "saveFailed": "We couldn't save the change",
       "belowFloor": "A fixed royalty applies. The minimum is {min} USD."
-    }
+    },
+    "ledgerTitle": "The record",
+    "ledgerRegistration": "Registration",
+    "ledgerProvenance": "Provenance",
+    "ledgerSealed": "Sealed",
+    "ledgerNoChain": "This work predates the record chain.",
+    "linkSolana": "Solana",
+    "linkArweave": "Arweave",
+    "linkOts": "Proof",
+    "anchorPending": "anchoring",
+    "anchorConfirmed": "block {height}",
+    "anchorFailed": "anchor failed",
+    "anchorNote": "Anchoring to Bitcoin takes a few hours and completes on its own.",
+    "verifyNote": "Every record can be checked without us: download the proof and verify it against the record.",
+    "eventSale": "Sold",
+    "eventGift": "Given"
   },
   "info": {
     "value": "Value",

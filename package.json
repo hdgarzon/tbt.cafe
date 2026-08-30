@@ -20,7 +20,8 @@
     "check:arweave": "npx --yes tsx scripts/arweave-check.ts",
     "check:writeorder": "npx --yes tsx scripts/write-order-check.ts",
     "check:pseudonym": "npx --yes tsx scripts/pseudonym-check.ts",
-    "check:ots": "npx --yes tsx scripts/ots-check.ts"
+    "check:ots": "npx --yes tsx scripts/ots-check.ts",
+    "check:ledger": "npx --yes tsx scripts/ledger-check.ts"
   },
   "dependencies": {
     "@aws-sdk/client-sns": "^3.1115.0",
