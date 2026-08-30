@@ -25,6 +25,7 @@
  */
 import { toMetaplexFile, type MetaplexFile } from '@metaplex-foundation/js'
 import { canonicalize, recordHash } from './serialize'
+import { assertNoIdentifiers } from './pseudonym'
 import { getMetaplex } from '@/lib/solana/nft'
 import { SOLANA_NETWORK } from '@/lib/solana/config'
 
@@ -51,6 +52,16 @@ type PublishableRecord = {
  * hacer falta pagar una transaccion para verificarla.
  */
 export function recordFileFor(record: PublishableRecord): MetaplexFile {
+  /*
+   * El ultimo punto antes de lo permanente — Item 10.
+   *
+   * Va aqui y no en `records.ts` porque este es el estrangulamiento: todo lo
+   * que llega a Arweave pasa por esta funcion, venga del registro, de la
+   * procedencia o de una enmienda. Una lista de claves prohibidas no atrapa un
+   * correo dentro de un texto libre; esto mira el valor.
+   */
+  assertNoIdentifiers(record)
+
   const canonical = canonicalize(record)
   const hash = recordHash(record)
 
