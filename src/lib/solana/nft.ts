@@ -244,30 +244,61 @@ async function withRetry<T>(
  * off-chain in Supabase and on-chain via mutable metadata attributes.
  */
 export async function mintTBTNft(
-  work: WorkNftData
+  work: WorkNftData,
+  /**
+   * La URI del registro de registracion, ya publicada en Arweave (Item 6
+   * paso 3). Cuando llega, ES lo que se escribe en cadena y no se sube
+   * metadata aparte: el activo apunta al registro canonico, no a una copia
+   * con otra forma.
+   *
+   * Opcional porque una obra sin `content_hash` no puede tener registro —
+   * `registrationRecord` lo exige— y son 46 de las 47 certificadas hasta hoy.
+   * Esas siguen por el camino de antes en vez de quedarse sin mintear.
+   */
+  registrationRecordUri?: string
 ): Promise<{ mintAddress: string; tokenUri: string }> {
   const payerKeypair = getPayerKeypair()
   const metaplex = getMetaplex(payerKeypair)
   const metadata = generateNftMetadata(work)
-  
+
   console.log(`Minting NFT for TBT ${work.tbtId} to project wallet...`)
-  
-  const { uri: tokenUri } = await withRetry(async () => {
-    console.log('Uploading metadata to Irys...')
-    return await metaplex.nfts().uploadMetadata(metadata as any)
-  }, 3, 3000)
-  
-  console.log(`Metadata uploaded: ${tokenUri}`)
-  
-  await sleep(2000)
-  
+
+  let tokenUri = registrationRecordUri ?? ''
+
+  if (!tokenUri) {
+    const uploaded = await withRetry(async () => {
+      console.log('Uploading metadata to Irys...')
+      return await metaplex.nfts().uploadMetadata(metadata as any)
+    }, 3, 3000)
+    tokenUri = uploaded.uri
+    console.log(`Metadata uploaded: ${tokenUri}`)
+    await sleep(2000)
+  } else {
+    console.log(`Using published registration record: ${tokenUri}`)
+  }
+
   const { nft } = await withRetry(async () => {
     console.log('Creating NFT on Solana...')
     return await metaplex.nfts().create({
       uri: tokenUri,
-      name: metadata.name,
+      /*
+       * El TBT ID, no el titulo — Item 6, Change A.
+       *
+       * `name` topa en 32 BYTES y un acento cuesta dos. "Nocturno en Medellin"
+       * son 21 caracteres y 22 bytes; un titulo español o portugues mas largo
+       * se trunca en silencio o falla. El TBT ID es ASCII de longitud fija y no
+       * puede.
+       */
+      name: work.tbtId,
       symbol: metadata.symbol,
-      sellerFeeBasisPoints: 500,
+      /*
+       * Cero — Item 6, Change A.
+       *
+       * Es decorativo: tbt.cafe cobra las regalias del lado del servidor. Pero
+       * es un numero PUBLICO que contradice a `work_commerce` en cuanto los dos
+       * difieren, y un mercado podria actuar sobre el. Estaba en 500 fijo.
+       */
+      sellerFeeBasisPoints: 0,
       tokenOwner: payerKeypair.publicKey,
       isMutable: true,
     })
