@@ -19,7 +19,8 @@
     "check:solana": "npx --yes tsx scripts/solana-config-check.ts",
     "check:arweave": "npx --yes tsx scripts/arweave-check.ts",
     "check:writeorder": "npx --yes tsx scripts/write-order-check.ts",
-    "check:pseudonym": "npx --yes tsx scripts/pseudonym-check.ts"
+    "check:pseudonym": "npx --yes tsx scripts/pseudonym-check.ts",
+    "check:ots": "npx --yes tsx scripts/ots-check.ts"
   },
   "dependencies": {
     "@aws-sdk/client-sns": "^3.1115.0",
@@ -30,6 +31,7 @@
     "@stripe/react-stripe-js": "^6.8.0",
     "@stripe/stripe-js": "^9.13.0",
     "@supabase/supabase-js": "^2.110.8",
+    "javascript-opentimestamps": "^0.4.5",
     "next": "14.2.5",
     "react": "^18",
     "react-dom": "^18",

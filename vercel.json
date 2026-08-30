@@ -1,0 +1,8 @@
+{
+  "crons": [
+    {
+      "path": "/api/cron/anchor-upgrade",
+      "schedule": "0 * * * *"
+    }
+  ]
+}
