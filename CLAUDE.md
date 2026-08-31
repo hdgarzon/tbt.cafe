@@ -149,6 +149,21 @@ being read by the admin panel, which is why its explorer link never appeared.
 When two columns look interchangeable, check which one has data before trusting
 either.
 
+### The cron is daily because the account is Hobby
+
+`vercel.json` declares one job. **A Hobby account allows one run per day, and
+Vercel does not warn — it rejects the whole deployment.** An hourly expression
+blocked every build, preview and production, for fifteen hours, with the reason
+visible only inside the build detail:
+
+> Hobby accounts are limited to daily cron jobs. This cron expression
+> (0 * * * *) would run more than once per day.
+
+What that costs is confirmation latency, not the proof: the time an anchor
+attests is the time it was **stamped**, not the time it was checked. Restoring
+the hourly schedule the spec asks for needs the Pro plan. `npm run check:ots`
+fails if the expression stops being daily.
+
 ### Conventions
 
 - Migrations are strictly ordered and append-only. Never edit a migration that has run in production — add a new one.

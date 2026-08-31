@@ -62,7 +62,8 @@ const cron = read('src/app/api/cron/anchor-upgrade/route.ts')
   const vercel = JSON.parse(read('vercel.json'))
   const job = (vercel.crons ?? [])[0]
   ok('el cron está declarado', job?.path === '/api/cron/anchor-upgrade')
-  ok('cada hora', job?.schedule === '0 * * * *')
+  ok('una vez al día', /^\d+ \d+ \* \* \*$/.test(job?.schedule ?? ''),
+     `'${job?.schedule}' — una cuenta Hobby RECHAZA EL DESPLIEGUE ENTERO si corre más veces al día`)
 }
 
 console.log(bad === 0 ? '\ntodo en orden' : `\n${bad} fallo(s)`)
