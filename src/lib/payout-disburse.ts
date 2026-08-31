@@ -80,6 +80,11 @@ export async function refreshConnectAccount(
 export type DisburseResult =
   | { status: 'paid'; reference: string }
   | { status: 'failed'; reason: string }
+  /**
+   * No se sabe si el dinero salió. El bloque se queda en `processing` y las
+   * ganancias NO vuelven a `available`: hay que reconciliar a mano.
+   */
+  | { status: 'pending'; reason: string }
 
 export async function disburseBlock(
   admin: SupabaseClient,
@@ -153,10 +158,45 @@ export async function disburseBlock(
 
     return { status: 'paid', reference: transfer.id }
   } catch (error) {
-    const reason =
-      error && typeof error === 'object' && 'code' in error
-        ? String((error as { code: unknown }).code)
-        : 'provider_error'
+    /*
+     * No todo fallo significa que el dinero no salió.
+     *
+     * `StripeConnectionError` y `StripeAPIError` son INDETERMINADOS: la
+     * petición pudo llegar y crear la transferencia antes de que se cortara la
+     * respuesta. Marcarlos como fallidos devolvería a `available` unas
+     * ganancias quizá ya pagadas, y el reintento pide un bloque nuevo con un
+     * `block_id` nuevo — o sea otra clave de idempotencia — así que Stripe
+     * crearía una SEGUNDA transferencia.
+     *
+     * Es el mismo criterio que ya se aplica más arriba cuando
+     * `settle_payout_block` falla: un bloque atascado en `processing` es
+     * molesto; pagar dos veces es dinero perdido.
+     *
+     * Esta rama es nueva en la práctica. El SDK 20 se colgaba en este caso y el
+     * `catch` no llegaba a correr nunca; el 22 lanza (22.6.0, #2815), así que
+     * ahora se alcanza.
+     */
+    const type =
+      error && typeof error === 'object' && typeof (error as { type?: unknown }).type === 'string'
+        ? (error as { type: string }).type
+        : ''
+    // `'code' in error` no vale: las clases de error de Stripe declaran `code`
+    // aunque valga undefined, y se guardaba la cadena literal 'undefined'.
+    const code =
+      error && typeof error === 'object' && typeof (error as { code?: unknown }).code === 'string'
+        ? (error as { code: string }).code
+        : ''
+    const reason = code || type || 'provider_error'
+
+    if (type === 'StripeConnectionError' || type === 'StripeAPIError') {
+      console.error(
+        `[payout-disburse] bloque ${blockId} en estado desconocido tras ${reason}: ` +
+          'la transferencia pudo salir, NO se devuelven las ganancias. Reconciliar a mano.',
+        error
+      )
+      return { status: 'pending', reason }
+    }
+
     console.error(`[payout-disburse] no se pudo disponer el bloque ${blockId}:`, error)
     return fail(reason)
   }

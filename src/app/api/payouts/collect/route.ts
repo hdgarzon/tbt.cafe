@@ -118,7 +118,7 @@ export async function POST(request: NextRequest) {
       methodFee: Number(block.method_fee),
       net: Number(block.net),
       status: outcome.status,
-      ...(outcome.status === 'failed' ? { reason: outcome.reason } : {}),
+      ...(outcome.status !== 'paid' ? { reason: outcome.reason } : {}),
     })
   } catch (error) {
     console.error('[payouts/collect] failed:', error)
