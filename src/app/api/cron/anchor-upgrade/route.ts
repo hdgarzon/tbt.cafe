@@ -14,6 +14,33 @@ import { upgrade } from '@/lib/chain/ots'
  * esta esperando. Por eso no hay tope de intentos que la marque fallida: se
  * cuentan para poder ver una atascada, no para rendirse.
  */
+/*
+ * Dinamica, o no corre.
+ *
+ * Sin esto Next la prerenderiza: el build la EJECUTA una vez, congela su
+ * respuesta, y cada disparo horario devuelve ese resultado vacio sin tocar la
+ * base ni los calendarios. Se vio en la salida del build —«[ots-cron] revisadas
+ * 0» durante el prerenderizado— y en la tabla de rutas, marcada estatica.
+ */
+/*
+ * UNA VEZ AL DIA, Y NO POR GUSTO.
+ *
+ * El spec lo pide cada hora, y `vercel.json` lo tuvo asi. Pero una cuenta Hobby
+ * solo admite un disparo diario, y Vercel no lo avisa: RECHAZA EL DESPLIEGUE
+ * ENTERO. Todo intento fallo durante quince horas —previos y produccion— con un
+ * mensaje que solo aparece en el detalle del build:
+ *
+ *   «Hobby accounts are limited to daily cron jobs. This cron expression
+ *    (0 * * * *) would run more than once per day.»
+ *
+ * Lo que cuesta es la latencia de la confirmacion, no la prueba: la hora que
+ * atestigua el ancla es la del SELLADO, no la de la comprobacion. Un ancla puede
+ * tardar hasta un dia mas en pasar a `confirmed` en la pagina de la obra, y nada
+ * mas. Volver a ponerlo cada hora exige plan Pro; hacerlo sin el vuelve a dejar
+ * el proyecto sin desplegar.
+ */
+export const dynamic = 'force-dynamic'
+
 export const maxDuration = 300
 
 /** De golpe, para no agotar el tiempo si un dia hay muchas. */

@@ -385,7 +385,22 @@
       "offerFailed": "Não conseguimos enviar a oferta",
       "saveFailed": "Não conseguimos salvar a alteração",
       "belowFloor": "Aplica-se uma royalty fixa. O mínimo é {min} USD."
-    }
+    },
+    "ledgerTitle": "O registro",
+    "ledgerRegistration": "Registro",
+    "ledgerProvenance": "Proveniência",
+    "ledgerSealed": "Selado",
+    "ledgerNoChain": "Esta obra é anterior à cadeia de registros.",
+    "linkSolana": "Solana",
+    "linkArweave": "Arweave",
+    "linkOts": "Prova",
+    "anchorPending": "ancorando",
+    "anchorConfirmed": "bloco {height}",
+    "anchorFailed": "a âncora falhou",
+    "anchorNote": "A ancoragem no Bitcoin leva algumas horas e se completa sozinha.",
+    "verifyNote": "Cada registro pode ser conferido sem nós: baixe a prova e verifique-a contra o registro.",
+    "eventSale": "Vendida",
+    "eventGift": "Doada"
   },
   "info": {
     "value": "Valor",

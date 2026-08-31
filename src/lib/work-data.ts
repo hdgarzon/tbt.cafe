@@ -109,6 +109,51 @@ export type OwnershipEvent = {
   occurred_at: string
 }
 
+/* ── El libro de la obra ──────────────────────────────────────────────────── */
+
+export type LedgerAnchor = {
+  status: 'pending' | 'confirmed' | 'failed'
+  blockHeight: number | null
+  attestedAt: string | null
+}
+
+export type LedgerEntry = {
+  id?: string
+  sequence: number
+  event?: string
+  transferType?: string | null
+  actor?: string | null
+  from?: string | null
+  occurredAt: string | null
+  recordUri: string | null
+  recordHash: string | null
+  anchor: LedgerAnchor | null
+}
+
+export type Ledger = {
+  tbtId: string
+  mintAddress: string | null
+  registration: LedgerEntry | null
+  provenance: LedgerEntry[]
+}
+
+/**
+ * El libro: registros publicados y su ancla.
+ *
+ * Pasa por una ruta y no por Supabase directo porque `chain_anchors` es de
+ * service role: sin politicas de lectura, y abrirla entera dejaria enumerar
+ * las anclas de todo el sistema.
+ */
+export async function fetchLedger(tbtId: string): Promise<Ledger | null> {
+  try {
+    const res = await fetch(`/api/work/${encodeURIComponent(tbtId)}/ledger`)
+    if (!res.ok) return null
+    return (await res.json()) as Ledger
+  } catch {
+    return null
+  }
+}
+
 /** Historial de propiedad, más reciente primero — alimenta la pestaña History. */
 export async function fetchOwnershipHistory(workId: string): Promise<OwnershipEvent[]> {
   const { data } = await supabase
