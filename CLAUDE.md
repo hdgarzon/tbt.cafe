@@ -174,6 +174,22 @@ So the two never match, and the code must not let anyone believe they do. If a
 verifier ever hashes the public image and compares it to `content_hash`, it will
 say the certificate is false when nothing is wrong.
 
+### Stripping EXIF also strips which way is up
+
+A phone does not rotate pixels. It stores the sensor as it is — 4032×3024, always
+landscape — and writes `Orientation` into the EXIF saying how to turn it for
+display. Removing the EXIF removes that, and a portrait photo renders on its side.
+
+It happened on the first real registration made with a phone: the work showed
+sideways on its page. The thumbnail came out upright by luck, because the canvas
+generates it from the **original** file, while the tag still exists.
+
+So `stripped()` reads the orientation first and, when it is not 1, redraws the
+pixels through a canvas before removing anything. Same principle as everything
+else here: do not depend on metadata you are about to delete. It recompresses, so
+it only runs when there is something to turn — an already-upright image is not
+touched by a byte.
+
 ### Nothing throws at import for a runtime secret
 
 Next imports every route during the build to collect page data. A module that

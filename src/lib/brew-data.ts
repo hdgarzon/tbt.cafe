@@ -1,7 +1,7 @@
 import { supabase } from '@/lib/supabase'
 import { normalizeImage } from '@/lib/normalize-image'
 import { contentHash } from '@/lib/chain/content-hash'
-import { stripMetadata } from '@/lib/chain/strip-metadata'
+import { stripMetadata, jpegOrientation } from '@/lib/chain/strip-metadata'
 import { makeThumbnail } from '@/lib/thumbnail'
 import type { ChainImageChoice } from '@/lib/chain/publish-image'
 import type { SeriesWithCount } from '@/lib/series-data'
@@ -108,13 +108,54 @@ export async function fetchSeriesOptions(creatorId: string): Promise<SeriesWithC
  */
 async function stripped(file: File): Promise<File> {
   try {
-    const clean = stripMetadata(new Uint8Array(await file.arrayBuffer()))
+    const raw = new Uint8Array(await file.arrayBuffer())
+
+    /*
+     * Si el EXIF pedía girarla, se gira ANTES de quitárselo.
+     *
+     * Un teléfono guarda el sensor tal cual y anota en `Orientation` cómo hay
+     * que girarlo. Quitar el EXIF se lleva la etiqueta, y sin ella la foto se
+     * ve tumbada — le pasó a la primera registración hecha con un móvil.
+     *
+     * Se redibuja para que los píxeles digan por sí solos cómo va la obra, que
+     * es la misma idea que gobierna todo lo demás: no depender de un metadato
+     * que estás a punto de borrar. Recomprime, y por eso solo ocurre cuando de
+     * verdad hace falta: una imagen ya derecha no se toca un byte.
+     */
+    if (jpegOrientation(raw) !== 1) {
+      const upright = await redraw(file)
+      if (upright) return stripped(upright)
+    }
+
+    const clean = stripMetadata(raw)
     if (clean.removed === 0) return file
     const buf = new ArrayBuffer(clean.bytes.byteLength)
     new Uint8Array(buf).set(clean.bytes)
     return new File([buf], file.name, { type: clean.mediaType })
   } catch {
     return file
+  }
+}
+
+/** Los píxeles ya girados, sin metadatos, o `null` si el navegador no pudo. */
+async function redraw(file: File): Promise<File | null> {
+  try {
+    // `from-image` es lo que aplica la orientación del EXIF al mapa de bits.
+    const bitmap = await createImageBitmap(file, { imageOrientation: 'from-image' })
+    const canvas = document.createElement('canvas')
+    canvas.width = bitmap.width
+    canvas.height = bitmap.height
+    const ctx = canvas.getContext('2d')
+    if (!ctx) return null
+    ctx.drawImage(bitmap, 0, 0)
+    bitmap.close()
+
+    const blob = await new Promise<Blob | null>((r) => canvas.toBlob(r, 'image/jpeg', 0.92))
+    if (!blob) return null
+    const base = file.name.replace(/\.[^.]+$/, '') || 'work'
+    return new File([blob], `${base}.jpg`, { type: 'image/jpeg' })
+  } catch {
+    return null
   }
 }
 
