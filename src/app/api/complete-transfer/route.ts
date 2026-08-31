@@ -2,8 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase-admin'
 import { recordRoyaltyEarning } from '@/lib/payout-earnings'
 import { stripe } from '@/lib/stripe'
-import { processTransferOnChain } from '@/lib/solana/transfer'
-import { TransferHistoryEntry } from '@/lib/solana/nft'
+import { getExplorerUrl } from '@/lib/solana/config'
 import { generateTransferCode } from '@/lib/transfer-code'
 import { isProduction, assertServerEnv } from '@/lib/app-env'
 import { authenticate } from '@/lib/route-auth'
@@ -221,17 +220,21 @@ export async function POST(request: NextRequest) {
     // Record in ownership_history.
     // Service-role write: ownership_history is the immutable provenance
     // chain (RLS: public read, service-role-only writes).
-    await serviceClient.from('ownership_history').insert({
-      work_id: transfer.work_id,
-      owner_name: newOwnerName,
-      owner_user_id: transfer.to_owner_id,
-      event_type: 'transfer',
-      previous_owner_name: previousOwnerName,
-      transfer_type: transfer.transfer_type || 'sale',
-      price: transfer.payment_amount || null,
-      currency: transfer.payment_currency || 'USD',
-      sequence_number: sequenceNumber,
-    })
+    const { data: historyRow } = await serviceClient
+      .from('ownership_history')
+      .insert({
+        work_id: transfer.work_id,
+        owner_name: newOwnerName,
+        owner_user_id: transfer.to_owner_id,
+        event_type: 'transfer',
+        previous_owner_name: previousOwnerName,
+        transfer_type: transfer.transfer_type || 'sale',
+        price: transfer.payment_amount || null,
+        currency: transfer.payment_currency || 'USD',
+        sequence_number: sequenceNumber,
+      })
+      .select('id')
+      .single()
 
     /**
      * La regalía que se le debe al creador — §1.3.
@@ -258,92 +261,88 @@ export async function POST(request: NextRequest) {
       transfer.is_two_phase ? 'event' : 'timer'
     )
 
-    // Update NFT metadata on-chain with the new owner and history
-    let solscanUrl = ''
-    let nftUpdated = false
+    /*
+     * ── Item 7 · Change A: la transferencia YA NO repunta el activo ──────
+     *
+     * Aqui se llamaba a `processTransferOnChain`, que pese al nombre no
+     * transfiere nada en cadena: bajo el modelo de cartera unica el NFT no se
+     * mueve, y lo unico que hacia era re-subir la metadata y reemplazar
+     * `works.token_uri`. Cada transferencia borraba asi el enlace anterior.
+     *
+     * El spec lo corta de raiz: la URI del activo solo la repunta una
+     * enmienda, nunca una transferencia. El registro de registracion se sella
+     * una vez y nada comercial vuelve a alcanzarlo.
+     *
+     * Quitarlo deja el bloque sin trabajo de red: la URL del explorador se
+     * calcula de la direccion del mint, sin pedirle nada a nadie.
+     */
+    const solscanUrl = transfer.work.mint_address
+      ? getExplorerUrl(transfer.work.mint_address)
+      : ''
+    const nftUpdated = false
 
-    if (transfer.work.mint_address) {
+    /*
+     * ── Item 7 · pasos 2 y 3: el eslabon de procedencia ──────────────────
+     *
+     * `prior_record` es el hash del eslabon anterior y `registration_record`
+     * la URI del registro sellado al certificar. Los dos son obligatorios a
+     * partir de la secuencia 2: `provenanceRecord` rechaza una cadena rota
+     * antes de publicarla, que es donde tiene que rechazarla.
+     *
+     * NO lleva `solana_signature`. Una transferencia no firma ninguna
+     * transaccion —la propiedad se mueve en la base, no en la cadena— y poner
+     * ahi cualquier otro identificador seria afirmar una transaccion que no
+     * existe.
+     *
+     * Como todo lo de cadena, va en su propio try/catch: el pago ya se
+     * capturo y la propiedad ya cambio de manos.
+     */
+    if (historyRow?.id) {
       try {
-        console.log('Updating on-chain metadata for mint:', transfer.work.mint_address)
-
-        // Build full transfer history from Supabase
-        const { data: fullHistory } = await supabase
-          .from('ownership_history')
-          .select('*')
-          .eq('work_id', transfer.work_id)
-          .order('sequence_number', { ascending: true })
-
-        const transferHistory: TransferHistoryEntry[] = (fullHistory || []).map(entry => ({
-          type: entry.event_type as 'creation' | 'transfer',
-          date: new Date(entry.created_at).toISOString().split('T')[0],
-          fromName: entry.previous_owner_name || undefined,
-          toName: entry.owner_name,
-          transferType: entry.transfer_type as 'sale' | 'gift' | undefined,
-          price: entry.price ? String(entry.price) : undefined,
-          currency: entry.currency || undefined,
-        }))
-
-        // Get creator info for metadata
-        const { data: workWithCreator } = await supabase
+        const { data: chainSource } = await supabase
           .from('works')
-          .select(`
-            *,
-            creator:profiles!works_creator_id_fkey(display_name, public_alias),
-            context:context_snapshots(location_name, weather_data, elaboration_type),
-            commerce:work_commerce(initial_price, currency, royalty_type, royalty_value)
-          `)
+          .select('registration_record_uri')
           .eq('id', transfer.work_id)
           .single()
 
-        if (workWithCreator) {
-          const creatorInfo = workWithCreator.creator as any
-          const creatorName = creatorInfo?.public_alias || creatorInfo?.display_name || 'Unknown Artist'
-          const ctxData = Array.isArray(workWithCreator.context) ? workWithCreator.context[0] : workWithCreator.context
-          const commData = Array.isArray(workWithCreator.commerce) ? workWithCreator.commerce[0] : workWithCreator.commerce
-          const weatherInfo = ctxData?.weather_data as any
+        const { data: priorLink } = await supabase
+          .from('ownership_history')
+          .select('record_hash')
+          .eq('work_id', transfer.work_id)
+          .eq('sequence_number', sequenceNumber - 1)
+          .maybeSingle()
 
-          const updatedWorkData = {
-            tbtId: workWithCreator.tbt_id,
-            title: workWithCreator.title,
-            description: workWithCreator.description,
-            category: workWithCreator.category,
-            technique: workWithCreator.technique,
-            creatorName,
-            mediaUrl: workWithCreator.media_url,
-            certifiedAt: new Date(workWithCreator.certified_at || workWithCreator.created_at).toISOString().split('T')[0],
-            creationLocation: ctxData?.location_name,
-            creationWeather: weatherInfo?.conditions,
-            elaborationType: ctxData?.elaboration_type,
-            marketPrice: commData?.initial_price,
-            currency: commData?.currency || 'USD',
-            royaltyPercentage: commData?.royalty_type === 'percentage' ? commData?.royalty_value : undefined,
-            transferHistory,
-          }
+        if (chainSource?.registration_record_uri && priorLink?.record_hash) {
+          const { provenanceRecord } = await import('@/lib/chain/records')
+          const { pseudonymFor } = await import('@/lib/chain/pseudonym')
+          const { publishRecord } = await import('@/lib/chain/arweave')
 
-          const result = await processTransferOnChain(
-            transfer.work.mint_address,
-            updatedWorkData
+          const published = await publishRecord(
+            provenanceRecord({
+              tbtId: transfer.work.tbt_id,
+              sequence: sequenceNumber,
+              event: transfer.transfer_type === 'gift' ? 'gift' : 'sale',
+              from: { name: previousOwnerName, id: pseudonymFor(transfer.from_owner_id) },
+              to: { name: newOwnerName, id: pseudonymFor(transfer.to_owner_id) },
+              occurredAt: new Date(),
+              priorRecord: priorLink.record_hash,
+              registrationRecord: chainSource.registration_record_uri,
+            }) as never
           )
 
-          if (result.success) {
-            solscanUrl = result.explorerUrl || ''
-            nftUpdated = true
+          await serviceClient
+            .from('ownership_history')
+            .update({ record_uri: published.uri, record_hash: published.hash })
+            .eq('id', historyRow.id)
 
-            if (result.newTokenUri) {
-              const { error: uriError } = await serviceClient
-                .from('works')
-                .update({ token_uri: result.newTokenUri })
-                .eq('id', transfer.work_id)
-              if (uriError) console.error('Error saving new token_uri:', uriError)
-            }
-
-            console.log('NFT metadata updated successfully')
-          } else {
-            console.error('NFT metadata update failed:', result.error)
-          }
+          console.log(`Provenance record published: ${published.uri}`)
+        } else {
+          // Una obra sin registro sellado o sin eslabon previo no puede tener
+          // cadena. Se dice y se sigue; el traspaso ya es valido sin ella.
+          console.log('[chain] sin registro de registración o sin eslabón previo: no se publica procedencia')
         }
-      } catch (nftError) {
-        console.error('Error during NFT metadata update:', nftError)
+      } catch (chainError) {
+        console.error('[chain] no se pudo publicar la procedencia:', chainError)
       }
     }
 

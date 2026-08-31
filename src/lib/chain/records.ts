@@ -15,6 +15,7 @@ import { RECORD_SCHEMA } from '@/lib/chain/serialize'
  */
 
 export type CreatorType = 'individual' | 'group' | 'corporation'
+export type ImageKind = 'thumbnail' | 'full'
 export type Originality = 'original' | 'derivative' | 'authorized_edition'
 export type ProvenanceEvent = 'creation' | 'sale' | 'transfer' | 'gift'
 export type AmendmentClass = 'minor' | 'authorship'
@@ -48,6 +49,32 @@ function assertSequence(n: number): void {
   }
 }
 
+const KINDS: ImageKind[] = ['thumbnail', 'full']
+
+/**
+ * La imagen publicada — Item 10.
+ *
+ * Los tres campos van juntos o no va ninguno. Una URI sin hash es una copia que
+ * nadie puede comprobar, y un hash sin clase deja creer que se esta mirando la
+ * obra entera cuando quiza es una reduccion.
+ *
+ * `image` se llama asi a proposito: es la unica clave que el estandar de
+ * metadatos de Metaplex lee para mostrar una imagen, y este registro es lo que
+ * apunta la URI en cadena. El resto del estandar sigue ausente por decision del
+ * Item 6 — nombre, atributos y comision no describen la obra, la comentan.
+ */
+function assertImage(img: { uri: string; hash: string; kind: ImageKind }): void {
+  if (!/^https:\/\/\S+$/.test(img.uri)) {
+    throw new Error('records: la URI de la imagen debe ser una direccion https absoluta.')
+  }
+  if (!/^sha256:[0-9a-f]{64}$/.test(img.hash)) {
+    throw new Error('records: el hash de la imagen debe ser sha256: seguido de 64 hex en minuscula.')
+  }
+  if (!KINDS.includes(img.kind)) {
+    throw new Error(`records: clase de imagen desconocida '${img.kind}'. Solo ${KINDS.join(' | ')}.`)
+  }
+}
+
 function assertContentHash(h: string): void {
   if (!/^sha256:[0-9a-f]{64}$/.test(h)) {
     throw new Error('records: content_hash debe ser sha256: seguido de 64 hex en minuscula.')
@@ -68,6 +95,11 @@ export type RegistrationInput = {
   context?: { statement?: string; city?: string; country?: string }
   series?: string
   sealedAt: Date
+  /**
+   * La copia publicada de la obra, si el creador eligio publicar alguna.
+   * `hash` es de los BYTES PUBLICADOS — nunca el `contentHash` (Item 10).
+   */
+  image?: { uri: string; hash: string; kind: ImageKind }
 }
 
 export type RegistrationRecord = {
@@ -80,6 +112,9 @@ export type RegistrationRecord = {
   work: { title: string; year: number; category?: string; technique?: string; originality: Originality }
   context?: { statement?: string; city?: string; country?: string }
   series?: string
+  image?: string
+  image_hash?: string
+  image_kind?: ImageKind
   sealed_at: string
   issuer: 'tbt.cafe'
 }
@@ -96,6 +131,7 @@ export function registrationRecord(input: RegistrationInput): RegistrationRecord
   assertContentHash(input.contentHash)
   if (!input.tbtId) throw new Error('records: falta tbt_id.')
   if (!input.work?.title) throw new Error('records: falta el titulo de la obra.')
+  if (input.image) assertImage(input.image)
 
   const context =
     input.context && (input.context.statement || input.context.city || input.context.country)
@@ -122,6 +158,9 @@ export function registrationRecord(input: RegistrationInput): RegistrationRecord
     },
     ...(context ? { context } : {}),
     ...(input.series ? { series: input.series } : {}),
+    ...(input.image
+      ? { image: input.image.uri, image_hash: input.image.hash, image_kind: input.image.kind }
+      : {}),
     sealed_at: iso(input.sealedAt),
     issuer: 'tbt.cafe',
   }

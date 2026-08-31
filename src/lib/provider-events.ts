@@ -34,6 +34,43 @@ function codeFor(error: unknown): string {
 }
 
 /**
+ * El detalle de un fallo, sin aplastarlo.
+ *
+ * Esto hacia `error.message ?? String(error)`. Cuando quien llama pasa un
+ * objeto plano —y `complete-tbt` pasa `{ code, status, message }`— ese objeto
+ * no tiene `.message` propio si el campo viene indefinido, asi que caia a
+ * `String(objeto)` y guardaba literalmente "[object Object]", tirando el
+ * codigo y el estado que si traia.
+ *
+ * No es teorico: es lo unico que quedo registrado del primer MMS fallido, y
+ * la causa real —Twilio 21606, un numero remitente que no es de la cuenta—
+ * solo aparecia en los logs del servidor, que caducan.
+ *
+ * `error_detail` es jsonb: un objeto cabe entero y se puede consultar.
+ */
+export function detailFor(error: unknown): Record<string, unknown> {
+  if (error === null || error === undefined) return { message: 'unknown' }
+  if (typeof error === 'string') return { message: error }
+
+  if (error instanceof Error) {
+    return { name: error.name, message: error.message }
+  }
+
+  if (typeof error === 'object') {
+    try {
+      // Un `undefined` se vuelve nulo en vez de desaparecer: que la clave
+      // exista y este vacia dice mas que su ausencia.
+      return JSON.parse(JSON.stringify(error, (_k, v) => (v === undefined ? null : v)))
+    } catch {
+      // Circular, o algo que no serializa. Se degrada, no se pierde.
+      return { message: 'unserializable', keys: Object.keys(error as object) }
+    }
+  }
+
+  return { message: String(error) }
+}
+
+/**
  * Deja constancia de una llamada a un proveedor.
  *
  * Nunca lanza y nunca espera a nadie: si el registro fallara y tumbara la
@@ -56,9 +93,7 @@ export async function recordProviderEvent(params: {
       operation: params.operation,
       ok: params.ok,
       error_code: params.ok ? null : codeFor(params.error),
-      error_detail: params.ok
-        ? null
-        : { message: (params.error as { message?: string })?.message ?? String(params.error) },
+      error_detail: params.ok ? null : detailFor(params.error),
       latency_ms: params.latencyMs ?? null,
       entity_type: params.entityType ?? null,
       entity_id: params.entityId ?? null,

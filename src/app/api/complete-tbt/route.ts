@@ -83,7 +83,7 @@ export async function POST(request: NextRequest) {
     // registraciones. El libro se escribe más abajo, solo si la certificación
     // sale bien: un intento abandonado o bloqueado no descuenta la asignación.
     let coveredReason: 'first_n_allowance' | 'admin_grant' | null = null
-    if (!paymentBypassed && work.payment_status !== 'completed') {
+    if (!paymentBypassed && work.payment_status !== 'completed' && work.payment_status !== 'covered') {
       coveredReason = await resolveCoveredRegistration(supabase, work.creator_id)
       if (coveredReason) {
         paymentBypassed = true
@@ -93,8 +93,18 @@ export async function POST(request: NextRequest) {
 
     console.log('Work payment status:', work.payment_status)
 
+    /*
+     * 'covered' cuenta como saldado.
+     *
+     * La guarda de idempotencia vive mas abajo, asi que un reintento sobre una
+     * obra ya cubierta pasa PRIMERO por aqui. Sin esto rebotaria con "Payment
+     * not completed. Current status: covered" en cuanto la asignacion quedara
+     * consumida por su propia fila del libro.
+     */
+    const settled = work.payment_status === 'completed' || work.payment_status === 'covered'
+
     // If payment not yet confirmed by webhook, verify directly with Stripe
-    if (!paymentBypassed && work.payment_status !== 'completed') {
+    if (!paymentBypassed && !settled) {
       const stripeSessionId = sessionId || work.payment_intent_id
       let verified = false
 
@@ -181,6 +191,18 @@ export async function POST(request: NextRequest) {
       .update({
         status: 'certified',
         certified_at: new Date().toISOString(),
+        /*
+         * Una registracion cubierta queda saldada, y se dice.
+         *
+         * Sin esto la obra quedaba `certified` con `payment_status: 'pending'`,
+         * que en el panel de admin se lee como impagada. El libro de
+         * `covered_registrations` guarda el motivo y el importe; esta columna
+         * solo evita que la misma fila se contradiga a si misma.
+         *
+         * Solo se toca cuando de verdad hubo cubierta: un pago normal ya lo
+         * dejo en 'completed' y no hay que pisarlo.
+         */
+        ...(coveredReason ? { payment_status: 'covered' } : {}),
         // Solo el hash. El codigo en si viaja por MMS y no vuelve a existir en
         // ningun sitio nuestro: ni en la base, ni en pantalla, ni en cadena.
         transfer_code_hash: createHash('sha256').update(transferCode).digest('hex'),
@@ -259,6 +281,7 @@ export async function POST(request: NextRequest) {
 
     // Mint NFT on Solana — single-wallet model (project wallet owns all NFTs)
     let mintAddress = ''
+    let mintSignature = ''
     let solscanUrl = ''
     
     try {
@@ -269,7 +292,7 @@ export async function POST(request: NextRequest) {
         .from('works')
         .select(`
           *,
-          creator:profiles!works_creator_id_fkey(display_name, public_alias),
+          creator:profiles!works_creator_id_fkey(display_name, public_alias, creator_type),
           context:context_snapshots(location_name, weather_data, elaboration_type),
           commerce:work_commerce(initial_price, currency, royalty_type, royalty_value)
         `)
@@ -308,10 +331,134 @@ export async function POST(request: NextRequest) {
           }]
         }
         
+        /*
+         * ── Item 6, paso 3: el registro sube ANTES del mint ──────────────
+         *
+         * La URI que se escribe en cadena tiene que apuntar a algo que ya
+         * exista, asi que este orden no es preferencia.
+         *
+         * Y se GUARDA antes de mintear. El spec avisa de que si el mint falla
+         * despues de la subida el registro queda sin referencia —recuperable—
+         * pero que jamas hay que reintentar la subida: dos registros de
+         * registracion para un TBT sin enlace `supersedes` entre ellos es la
+         * unica forma que este modelo no sabe expresar. Guardarla es lo que
+         * permite reintentar el MINT contra ella.
+         *
+         * Una obra sin `content_hash` no puede tener registro —
+         * `registrationRecord` lo exige— y son 46 de las 47 certificadas antes
+         * de que el hash existiera. Esas se mintean como siempre en vez de
+         * quedarse sin mintear: la cadena SUMA, no condiciona.
+         */
+        let recordUri: string | undefined = workWithCreator.registration_record_uri ?? undefined
+
+        if (!recordUri && workWithCreator.content_hash) {
+          try {
+            const { registrationRecord } = await import('@/lib/chain/records')
+            const { pseudonymFor } = await import('@/lib/chain/pseudonym')
+            const { publishRecord } = await import('@/lib/chain/arweave')
+
+            /*
+             * ── Item 10: la imagen sube ANTES del registro ────────────────
+             *
+             * Por lo mismo que el registro sube antes del mint: el registro la
+             * NOMBRA, y nombrar algo que todavia no existe deja una direccion
+             * permanente hacia un 404.
+             *
+             * Solo se publica lo que el creador eligio en el Sello. La columna
+             * viene por defecto en 'none', asi que una ruta que se olvide del
+             * campo no publica nada — y las 58 obras anteriores a esta decision
+             * tampoco.
+             *
+             * Su fallo NO tumba el registro: lleva su propio catch y la obra se
+             * certifica igual, con el hash del contenido, que es lo que hace
+             * verificable al certificado. La imagen es legibilidad, no prueba.
+             *
+             * Y si el registro sale sin ella, ya no se le anade: queda sellado,
+             * y sumarle algo despues seria una enmienda (Item 5), no un
+             * reintento. Es el precio correcto — el registro no cambia.
+             */
+            let image: { uri: string; hash: string; kind: 'thumbnail' | 'full' } | undefined
+            const choice = workWithCreator.chain_image as string | null
+
+            if (choice === 'thumbnail' || choice === 'full') {
+              if (workWithCreator.chain_image_uri && workWithCreator.chain_image_hash) {
+                // Ya subida en un intento anterior. Se reutiliza, nunca se
+                // republica: dos copias de la misma obra en un almacen
+                // permanente no son un estado que este modelo sepa expresar.
+                image = {
+                  uri: workWithCreator.chain_image_uri,
+                  hash: workWithCreator.chain_image_hash,
+                  kind: choice,
+                }
+              } else if (workWithCreator.chain_image_url) {
+                try {
+                  const { publishWorkImage } = await import('@/lib/chain/publish-image')
+                  const pub = await publishWorkImage({
+                    sourceUrl: workWithCreator.chain_image_url,
+                    kind: choice,
+                    tbtId: workNftData.tbtId,
+                  })
+
+                  await createAdminClient()
+                    .from('works')
+                    .update({ chain_image_uri: pub.uri, chain_image_hash: pub.hash })
+                    .eq('id', workId)
+
+                  image = { uri: pub.uri, hash: pub.hash, kind: choice }
+                  console.log(`Work image published (${choice}): ${pub.uri}`)
+                } catch (imageError) {
+                  console.error('[chain] no se pudo publicar la imagen:', imageError)
+                }
+              }
+            }
+
+            const published = await publishRecord(
+              registrationRecord({
+                tbtId: workNftData.tbtId,
+                sequence: 1,
+                contentHash: workWithCreator.content_hash,
+                creator: {
+                  name: creatorName,
+                  id: pseudonymFor(workWithCreator.creator_id),
+                  type: (creatorInfo?.creator_type ?? 'individual') as 'individual' | 'group' | 'corporation',
+                },
+                work: {
+                  title: workWithCreator.title,
+                  year: new Date(workWithCreator.creation_date || workWithCreator.created_at).getUTCFullYear(),
+                  category: workWithCreator.category ?? undefined,
+                  technique: workWithCreator.technique ?? undefined,
+                  originality: (workWithCreator.originality_type ?? 'original') as 'original' | 'derivative' | 'authorized_edition',
+                },
+                context: {
+                  statement: workWithCreator.context_summary ?? undefined,
+                  city: ctxData?.location_name ?? undefined,
+                },
+                ...(image ? { image } : {}),
+                sealedAt: new Date(workWithCreator.certified_at || workWithCreator.created_at),
+              }) as never
+            )
+
+            await createAdminClient()
+              .from('works')
+              .update({
+                registration_record_uri: published.uri,
+                registration_record_hash: published.hash,
+              })
+              .eq('id', workId)
+
+            recordUri = published.uri
+            console.log(`Registration record published: ${published.uri}`)
+          } catch (chainError) {
+            // La cadena no puede tumbar una certificacion que ya se cobro.
+            console.error('[chain] no se pudo publicar el registro:', chainError)
+          }
+        }
+
         console.log('Minting NFT for TBT:', workNftData.tbtId)
-        
-        const mintResult = await mintTBTNft(workNftData)
+
+        const mintResult = await mintTBTNft(workNftData, recordUri)
         mintAddress = mintResult.mintAddress
+        mintSignature = mintResult.signature
         solscanUrl = getExplorerUrl(mintAddress)
         
         await supabase
@@ -327,14 +474,58 @@ export async function POST(request: NextRequest) {
         // Record first owner in ownership_history (creator = first owner).
         // Service-role write: ownership_history is the immutable provenance
         // chain (RLS: public read, service-role-only writes).
-        await createAdminClient().from('ownership_history').insert({
-          work_id: workId,
-          owner_name: creatorName,
-          owner_user_id: user.id,
-          event_type: 'creation',
-          sequence_number: 1,
-        })
-        
+        const { data: firstOwner } = await createAdminClient()
+          .from('ownership_history')
+          .insert({
+            work_id: workId,
+            owner_name: creatorName,
+            owner_user_id: user.id,
+            event_type: 'creation',
+            sequence_number: 1,
+          })
+          .select('id')
+          .single()
+
+        /*
+         * ── Item 6, paso 5: procedencia, secuencia 1 ────────────────────
+         *
+         * `event: creation` y sin `prior_record`: es el origen de la cadena, y
+         * `provenanceRecord` rechaza que la secuencia 1 lleve uno.
+         *
+         * Va DESPUES del mint porque lleva dentro la firma de Solana, que
+         * antes no existe. Si falla, la obra queda minteada y con su registro
+         * de registracion; le faltara el primer eslabon de procedencia, que se
+         * puede publicar despues contra los mismos datos.
+         */
+        if (recordUri && firstOwner?.id) {
+          try {
+            const { provenanceRecord } = await import('@/lib/chain/records')
+            const { pseudonymFor } = await import('@/lib/chain/pseudonym')
+            const { publishRecord } = await import('@/lib/chain/arweave')
+
+            const published = await publishRecord(
+              provenanceRecord({
+                tbtId: workNftData.tbtId,
+                sequence: 1,
+                event: 'creation',
+                to: { name: creatorName, id: pseudonymFor(workWithCreator.creator_id) },
+                occurredAt: new Date(workWithCreator.certified_at || workWithCreator.created_at),
+                solanaSignature: mintSignature,
+                registrationRecord: recordUri,
+              }) as never
+            )
+
+            await createAdminClient()
+              .from('ownership_history')
+              .update({ record_uri: published.uri, record_hash: published.hash })
+              .eq('id', firstOwner.id)
+
+            console.log(`Provenance record published: ${published.uri}`)
+          } catch (chainError) {
+            console.error('[chain] no se pudo publicar la procedencia:', chainError)
+          }
+        }
+
         console.log('NFT minted successfully:', mintAddress)
       } else if (workWithCreator?.mint_address) {
         mintAddress = workWithCreator.mint_address
@@ -405,7 +596,16 @@ export async function POST(request: NextRequest) {
             ? undefined
             : smsBody?.simulated
               ? { code: 'simulated' }
-              : { code: smsBody?.twilioErrorCode ? String(smsBody.twilioErrorCode) : undefined, status: smsResponse.status, message: smsBody?.twilioStatus },
+              : {
+                // El cuerpo ENTERO: `detailFor` lo guarda tal cual en jsonb, y
+                // ahi es donde viven las dos causas que el log tuvo que
+                // revelar la primera vez.
+                ...smsBody,
+                code: smsBody?.twilioErrorCode
+                  ? String(smsBody.twilioErrorCode)
+                  : (smsBody?.failureCode ?? undefined),
+                status: smsResponse.status,
+              },
           entityType: 'work',
           entityId: workId,
         })
@@ -513,6 +713,14 @@ export async function POST(request: NextRequest) {
     // Register image in vector DB for future plagiarism checks (non-blocking)
     if (work.media_url) {
       try {
+        // `media_url` la escribe el navegador al crear el borrador, y aqui la
+        // lee el SERVIDOR. Sin comprobar el origen, una llamada preparada a
+        // mano haria que pidieramos una direccion interna y le pasaramos la
+        // respuesta al procesador de imagenes. La misma guarda que la de
+        // publicar (Item 10), por el mismo motivo.
+        const { assertPublishableSource } = await import('@/lib/chain/publish-image')
+        assertPublishableSource(work.media_url)
+
         const imageRes = await fetch(work.media_url)
         if (imageRes.ok) {
           const blob = await imageRes.blob()

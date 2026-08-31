@@ -1,18 +1,36 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { stripe } from '@/lib/stripe'
-import { createClient } from '@supabase/supabase-js'
+import { createAdminClient } from '@/lib/supabase-admin'
 import Stripe from 'stripe'
 import { describeDisputeEvent } from '@/lib/disputes'
 
-if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
-  throw new Error('SUPABASE_SERVICE_ROLE_KEY is required for the Stripe webhook')
-}
-
-// Use service role client for webhook (no user auth context)
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY
-)
+/**
+ * El cliente de service-role, construido en el primer uso y no al importar.
+ *
+ * Este modulo lanzaba en su cuerpo si faltaba `SUPABASE_SERVICE_ROLE_KEY`, y
+ * construia el cliente ahi mismo. Ninguna de las dos cosas espera a que llegue
+ * una peticion: pasan al IMPORTAR, y Next importa cada ruta al construir para
+ * recoger los datos de pagina. Sin la variable, el build entero se cae:
+ *
+ *   Error: SUPABASE_SERVICE_ROLE_KEY is required for the Stripe webhook
+ *   Failed to collect page data for /api/stripe/webhook
+ *
+ * Es lo que tuvo los previews de este repo en rojo — el entorno Preview no
+ * lleva claves de servidor, y no deberia llevarlas: un preview con la clave que
+ * se salta la RLS es una superficie que no se quiere. `lib/stripe.ts` ya se
+ * arreglo por esto mismo; esta ruta se quedo atras.
+ *
+ * Perezoso, una ruta sin clave devuelve un 500 legible cuando alguien la llama,
+ * y el resto del despliegue sigue en pie.
+ *
+ * La excepcion legitima es `lib/supabase.ts`: sus variables son `NEXT_PUBLIC_*`
+ * y se incrustan AL CONSTRUIR, asi que si faltan la aplicacion no puede
+ * funcionar en el navegador y caerse en el build es exactamente lo correcto.
+ * La regla no es «nunca lances al importar», es «no lances por un secreto de
+ * tiempo de ejecucion».
+ */
+let client: ReturnType<typeof createAdminClient> | null = null
+const db = () => (client ??= createAdminClient())
 
 export async function POST(request: NextRequest) {
   const body = await request.text()
@@ -87,7 +105,7 @@ async function handleCheckoutComplete(session: Stripe.Checkout.Session) {
 
   if (type === 'tbt_creation' && workId) {
     // Update tbt_payments
-    const { error: paymentError } = await supabase
+    const { error: paymentError } = await db()
       .from('tbt_payments')
       .update({
         status: 'completed',
@@ -101,7 +119,7 @@ async function handleCheckoutComplete(session: Stripe.Checkout.Session) {
     }
 
     // Update work payment status
-    const { error: workError } = await supabase
+    const { error: workError } = await db()
       .from('works')
       .update({
         payment_status: 'completed',
@@ -123,7 +141,7 @@ async function handleCheckoutComplete(session: Stripe.Checkout.Session) {
     // charged before the recipient ever agrees. payment_status stays
     // 'pending' (meaning "held, not captured") until /api/transfer/respond
     // captures it on accept. Record the hold and notify the recipient.
-    const { error: transferError } = await supabase
+    const { error: transferError } = await db()
       .from('transfers')
       .update({
         stripe_payment_intent_id: session.payment_intent as string,
@@ -140,7 +158,7 @@ async function handleCheckoutComplete(session: Stripe.Checkout.Session) {
     await notifyRecipientOfPendingTransfer(transferId)
   } else if (type === 'transfer' && transferId) {
     // Legacy single-phase transfer (/transferir): payment IS the completion.
-    const { error: transferError } = await supabase
+    const { error: transferError } = await db()
       .from('transfers')
       .update({
         payment_status: 'completed',
@@ -165,7 +183,7 @@ async function handleCheckoutComplete(session: Stripe.Checkout.Session) {
  */
 async function notifyRecipientOfPendingTransfer(transferId: string) {
   try {
-    const { data: transfer } = await supabase
+    const { data: transfer } = await db()
       .from('transfers')
       .select('new_owner_phone, new_owner_name, from_owner_name, work:works(title)')
       .eq('id', transferId)
@@ -198,24 +216,24 @@ async function handleCheckoutExpired(session: Stripe.Checkout.Session) {
   const { type, workId, transferId, flow } = session.metadata || {}
 
   if (type === 'tbt_creation' && workId) {
-    await supabase
+    await db()
       .from('tbt_payments')
       .update({ status: 'expired' })
       .eq('stripe_checkout_session_id', session.id)
 
-    await supabase
+    await db()
       .from('works')
       .update({ payment_status: 'expired' })
       .eq('id', workId)
   } else if (type === 'transfer' && transferId && flow === 'two_phase') {
     // Sender never completed the card step — no hold was ever placed.
     // Free the work up for a new transfer attempt.
-    await supabase
+    await db()
       .from('transfers')
       .update({ payment_status: 'expired', outcome: 'cancelled' })
       .eq('id', transferId)
   } else if (type === 'transfer' && transferId) {
-    await supabase
+    await db()
       .from('transfers')
       .update({ payment_status: 'expired' })
       .eq('id', transferId)
@@ -245,7 +263,7 @@ async function resolvePayment(paymentIntentId: string | null): Promise<{
   const unresolved = { workId: null, transferId: null, userId: null }
   if (!paymentIntentId) return unresolved
 
-  const { data: payment } = await supabase
+  const { data: payment } = await db()
     .from('tbt_payments')
     .select('work_id, user_id')
     .eq('stripe_payment_intent_id', paymentIntentId)
@@ -258,7 +276,7 @@ async function resolvePayment(paymentIntentId: string | null): Promise<{
   // Quien paga una transferencia es quien la envia: `transfer/create` abre la
   // sesion con el usuario autenticado y lo guarda como `from_owner_id`.
   for (const column of ['stripe_payment_intent_id', 'payment_reference'] as const) {
-    const { data: transfer } = await supabase
+    const { data: transfer } = await db()
       .from('transfers')
       .select('id, work_id, from_owner_id')
       .eq(column, paymentIntentId)
@@ -273,7 +291,7 @@ async function resolvePayment(paymentIntentId: string | null): Promise<{
     }
   }
 
-  const { data: work } = await supabase
+  const { data: work } = await db()
     .from('works')
     .select('id, creator_id')
     .eq('payment_intent_id', paymentIntentId)
@@ -312,7 +330,7 @@ async function resolvePayment(paymentIntentId: string | null): Promise<{
 
       // Sin metadatos, todavia queda el propio id de la sesion: es lo que
       // `tbt_payments` guarda siempre, y lo que `works` guarda a veces.
-      const { data: bySession } = await supabase
+      const { data: bySession } = await db()
         .from('tbt_payments')
         .select('work_id, user_id')
         .eq('stripe_checkout_session_id', session.id)
@@ -322,7 +340,7 @@ async function resolvePayment(paymentIntentId: string | null): Promise<{
         return { workId: bySession.work_id, transferId: null, userId: bySession.user_id ?? null }
       }
 
-      const { data: workBySession } = await supabase
+      const { data: workBySession } = await db()
         .from('works')
         .select('id, creator_id')
         .eq('payment_intent_id', session.id)
@@ -378,7 +396,7 @@ async function recordDispute(event: Stripe.Event): Promise<boolean> {
   if (resolved.transferId) row.transfer_id = resolved.transferId
   if (resolved.userId) row.subject_user = resolved.userId
 
-  const { error } = await supabase
+  const { error } = await db()
     .from('payment_disputes')
     .upsert(row, { onConflict: 'provider_ref' })
 

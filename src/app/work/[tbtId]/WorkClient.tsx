@@ -246,7 +246,7 @@ export default function WorkPage({ params }: { params: { tbtId: string } }) {
       <div className="mt-5 pb-8">
         {tab === 'profile' && <ProfileTab work={work} canEdit={!!role} heroControl={heroControl} onSaved={load} />}
         {tab === 'info' && <InfoTab work={work} />}
-        {tab === 'history' && <HistoryTab workId={work.id} />}
+        {tab === 'history' && <HistoryTab workId={work.id} tbtId={work.tbt_id} />}
         {tab === 'action' && role && userId && <ActionTab work={work} role={role} userId={userId} onChanged={load} />}
       </div>
 

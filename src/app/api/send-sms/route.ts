@@ -73,6 +73,20 @@ function toE164(raw: string): string {
 }
 
 export async function POST(request: NextRequest) {
+  /*
+   * Declarado FUERA del try a proposito: si el respaldo tambien falla, la
+   * excepcion sube hasta el catch de abajo, y alli este era el unico rastro
+   * de por que Twilio no pudo entregar. Dentro del bloque no estaba en
+   * alcance y se perdia.
+   */
+  let twilioFailure: { code: number | string | null; message: string | null } | null = null
+
+  /*
+   * Y lo mismo con a quien iba dirigido: sin esto el catch no puede escribir
+   * la fila del fallo, porque no sabe de quien era el certificado.
+   */
+  let delivery: { workId: string; userId: string; phoneNumber: string } | null = null
+
   try {
     const auth = await authenticate(request)
     if (!auth.ok) return NextResponse.json(auth.body, { status: auth.status })
@@ -81,6 +95,7 @@ export async function POST(request: NextRequest) {
     // Parse request body
     const body: SendSMSRequest = await request.json()
     const { phoneNumber, workId, userId, message, sendMMS = true } = body
+    delivery = { workId, userId, phoneNumber }
 
     if (!phoneNumber || !workId || !userId) {
       return NextResponse.json(
@@ -159,7 +174,6 @@ export async function POST(request: NextRequest) {
     // Determine media URL for MMS (use work image or a default certificate image)
     const mediaUrl = work.media_url || `${process.env.NEXT_PUBLIC_APP_URL}/logos/transbit.png`
 
-    let twilioFailure: { code: number | string | null; message: string | null } | null = null
 
     // Try to send MMS via Twilio if configured
     const tw = twilioClient()
@@ -193,7 +207,7 @@ export async function POST(request: NextRequest) {
         // Como en #18: esta fila la escribe la plataforma. Con el token del
         // usuario la RLS la deniega y el registro de entregas queda vacío —
         // que es justamente como estaba.
-        await createAdminClient().from('mms_deliveries').insert({
+        const { error: twilioLedgerError } = await createAdminClient().from('mms_deliveries').insert({
           work_id: workId,
           user_id: userId,
           phone_number: phoneNumber,
@@ -203,6 +217,7 @@ export async function POST(request: NextRequest) {
           gif_url: mediaUrl,
           sent_at: new Date().toISOString(),
         })
+        if (twilioLedgerError) console.error('[send-sms] no se pudo registrar la entrega:', twilioLedgerError)
 
         if (failed) {
           console.error('Twilio rejected the message:', twilioMessage.status, twilioMessage.errorCode)
@@ -239,7 +254,7 @@ export async function POST(request: NextRequest) {
       console.log('Media URL:', mediaUrl)
       
       // Save to mms_deliveries with simulated status
-      await createAdminClient().from('mms_deliveries').insert({
+      const { error: simLedgerError } = await createAdminClient().from('mms_deliveries').insert({
         work_id: workId,
         user_id: userId,
         phone_number: phoneNumber,
@@ -247,6 +262,7 @@ export async function POST(request: NextRequest) {
         certificate_url: certificateUrl,
         gif_url: mediaUrl,
       })
+      if (simLedgerError) console.error('[send-sms] no se pudo registrar la entrega:', simLedgerError)
 
       /*
        * Simular NO es entregar.
@@ -305,8 +321,15 @@ export async function POST(request: NextRequest) {
 
     const snsResponse = await snsClient().send(command)
 
-    // Save delivery record to database
-    await supabase.from('mms_deliveries').insert({
+    /*
+     * Con el service role, como los otros dos sitios.
+     *
+     * Este se quedo con el cliente del usuario cuando se corrigieron los
+     * demas, y el comentario de mas arriba describe con exactitud lo que le
+     * pasaba: la RLS lo denegaba y el registro de entregas quedaba vacio. El
+     * `error` se lee, ademas, para que una denegacion no vuelva a ser muda.
+     */
+    const { error: snsLedgerError } = await createAdminClient().from('mms_deliveries').insert({
       work_id: workId,
       user_id: userId,
       phone_number: phoneNumber,
@@ -314,6 +337,7 @@ export async function POST(request: NextRequest) {
       certificate_url: certificateUrl,
       sent_at: new Date().toISOString(),
     })
+    if (snsLedgerError) console.error('[send-sms] no se pudo registrar la entrega:', snsLedgerError)
 
     return NextResponse.json({
       success: true,
@@ -325,8 +349,54 @@ export async function POST(request: NextRequest) {
   } catch (error: any) {
     console.error('Error sending message:', error)
 
+    /*
+     * El libro de entregas tiene que saber decir que NO.
+     *
+     * Habia tres inserts y los tres colgaban de un camino de exito, asi que la
+     * tabla que alguien abre para preguntar "¿salio el certificado?" era
+     * incapaz de responder que no. Por eso quedo a cero despues de un intento
+     * real que fallo dos veces.
+     *
+     * Se escribe aqui y no en el fallo de Twilio: ahi todavia queda el
+     * respaldo por intentar, y una fila por intento contaria dos veces la
+     * misma entrega.
+     */
+    if (delivery) {
+      const { error: failedLedgerError } = await createAdminClient().from('mms_deliveries').insert({
+        work_id: delivery.workId,
+        user_id: delivery.userId,
+        phone_number: delivery.phoneNumber,
+        status: 'failed',
+        // La columna que la tabla tiene de verdad. `status: 'failed'` ya lo
+        // usa la rama de "sin proveedor", asi que no es un valor nuevo.
+        error_message: [
+          twilioFailure?.code ? `twilio ${twilioFailure.code}: ${twilioFailure.message ?? ''}`.trim() : null,
+          error?.Code ?? error?.code ?? error?.name ?? null,
+        ]
+          .filter(Boolean)
+          .join(' | ') || null,
+      })
+      if (failedLedgerError) console.error('[send-sms] no se pudo registrar el fallo:', failedLedgerError)
+    }
+
+    /*
+     * La causa viaja. Esto devolvia solo 'Error al enviar mensaje', y como
+     * `provider_events` se construye a partir de esta respuesta, el primer MMS
+     * fallido quedo registrado como "[object Object]": hicieron falta los logs
+     * del servidor para saber que eran DOS fallos, Twilio 21606 y unas
+     * credenciales de AWS invalidas.
+     *
+     * Van el codigo y el nombre del error, nunca su cuerpo: un mensaje de un
+     * proveedor puede llevar dentro parte de la peticion.
+     */
     return NextResponse.json(
-      { error: 'Error al enviar mensaje' },
+      {
+        error: 'delivery_failed',
+        provider: twilioFailure ? 'fallback' : 'twilio',
+        failureCode: error?.Code ?? error?.code ?? error?.name ?? null,
+        twilioErrorCode: twilioFailure?.code ?? null,
+        twilioStatus: twilioFailure?.message ?? null,
+      },
       { status: 500 }
     )
   }

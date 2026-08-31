@@ -244,30 +244,61 @@ async function withRetry<T>(
  * off-chain in Supabase and on-chain via mutable metadata attributes.
  */
 export async function mintTBTNft(
-  work: WorkNftData
-): Promise<{ mintAddress: string; tokenUri: string }> {
+  work: WorkNftData,
+  /**
+   * La URI del registro de registracion, ya publicada en Arweave (Item 6
+   * paso 3). Cuando llega, ES lo que se escribe en cadena y no se sube
+   * metadata aparte: el activo apunta al registro canonico, no a una copia
+   * con otra forma.
+   *
+   * Opcional porque una obra sin `content_hash` no puede tener registro —
+   * `registrationRecord` lo exige— y son 46 de las 47 certificadas hasta hoy.
+   * Esas siguen por el camino de antes en vez de quedarse sin mintear.
+   */
+  registrationRecordUri?: string
+): Promise<{ mintAddress: string; tokenUri: string; signature: string }> {
   const payerKeypair = getPayerKeypair()
   const metaplex = getMetaplex(payerKeypair)
   const metadata = generateNftMetadata(work)
-  
+
   console.log(`Minting NFT for TBT ${work.tbtId} to project wallet...`)
-  
-  const { uri: tokenUri } = await withRetry(async () => {
-    console.log('Uploading metadata to Irys...')
-    return await metaplex.nfts().uploadMetadata(metadata as any)
-  }, 3, 3000)
-  
-  console.log(`Metadata uploaded: ${tokenUri}`)
-  
-  await sleep(2000)
-  
-  const { nft } = await withRetry(async () => {
+
+  let tokenUri = registrationRecordUri ?? ''
+
+  if (!tokenUri) {
+    const uploaded = await withRetry(async () => {
+      console.log('Uploading metadata to Irys...')
+      return await metaplex.nfts().uploadMetadata(metadata as any)
+    }, 3, 3000)
+    tokenUri = uploaded.uri
+    console.log(`Metadata uploaded: ${tokenUri}`)
+    await sleep(2000)
+  } else {
+    console.log(`Using published registration record: ${tokenUri}`)
+  }
+
+  const { nft, response } = await withRetry(async () => {
     console.log('Creating NFT on Solana...')
     return await metaplex.nfts().create({
       uri: tokenUri,
-      name: metadata.name,
+      /*
+       * El TBT ID, no el titulo — Item 6, Change A.
+       *
+       * `name` topa en 32 BYTES y un acento cuesta dos. "Nocturno en Medellin"
+       * son 21 caracteres y 22 bytes; un titulo español o portugues mas largo
+       * se trunca en silencio o falla. El TBT ID es ASCII de longitud fija y no
+       * puede.
+       */
+      name: work.tbtId,
       symbol: metadata.symbol,
-      sellerFeeBasisPoints: 500,
+      /*
+       * Cero — Item 6, Change A.
+       *
+       * Es decorativo: tbt.cafe cobra las regalias del lado del servidor. Pero
+       * es un numero PUBLICO que contradice a `work_commerce` en cuanto los dos
+       * difieren, y un mercado podria actuar sobre el. Estaba en 500 fijo.
+       */
+      sellerFeeBasisPoints: 0,
       tokenOwner: payerKeypair.publicKey,
       isMutable: true,
     })
@@ -277,52 +308,58 @@ export async function mintTBTNft(
   
   return {
     mintAddress: nft.address.toString(),
-    tokenUri
+    tokenUri,
+    /*
+     * La firma de la transaccion, que no es la direccion del mint.
+     *
+     * El registro de procedencia tiene un campo `solana_signature` y hasta
+     * ahora recibia `mintAddress`: una direccion de cuenta en un campo que
+     * significa firma. En un registro permanente eso no es impreciso, es
+     * falso — quien lo verifique buscara una transaccion que no existe con
+     * ese identificador.
+     */
+    signature: response.signature,
   }
 }
 
 /**
- * Update NFT metadata with new transfer history
- * This updates the on-chain metadata to reflect the new ownership
+ * Mueve la URI del activo al registro que la supersede — Item 5.
+ *
+ * «Safe because Solana is a pointer — moving it does not destroy what it pointed
+ * at, and the new record links backwards.» El registro anterior sigue en Arweave
+ * y el nuevo lo nombra en `supersedes`, asi que la cadena se camina hacia atras
+ * desde donde apunte la cadena.
+ *
+ * Solo mueve la URI. `name` es el TBT ID desde el Item 6 Change A —ASCII de
+ * longitud fija, por debajo del tope de 32 bytes— y no tiene por que cambiar
+ * nunca; reescribirlo aqui seria arriesgar un truncamiento silencioso a cambio
+ * de nada.
+ *
+ * Esto reemplaza a `updateNftMetadata`, que subia metadata NUEVA y repuntaba a
+ * ella. Su unico llamante era la transferencia, que dejo de reescribir la
+ * registracion en el Item 7; quedaba muerto, y su forma —«sube algo y apunta
+ * ahi»— es justo la que una enmienda no debe tener: lo que se publica ya se
+ * publico, con su hash y su ancla.
  */
-export async function updateNftMetadata(
-  mintAddress: string,
-  updatedWork: WorkNftData
-): Promise<{ tokenUri: string }> {
-  const metaplex = getMetaplex()
-  
-  // Find the existing NFT
+export async function repointNft(mintAddress: string, uri: string): Promise<void> {
+  if (!uri) throw new Error('repointNft: falta la URI del registro nuevo.')
+
+  const metaplex = getMetaplex(getPayerKeypair())
   const nft = await metaplex.nfts().findByMint({ mintAddress: new PublicKey(mintAddress) })
-  
+
   if (!nft.isMutable) {
-    console.warn('NFT is not mutable, cannot update metadata')
-    return { tokenUri: nft.uri }
+    // No es recuperable reintentando: el activo se acuño inmutable y su puntero
+    // se queda donde esta. Quien llame lo anota y sigue — la enmienda ya esta
+    // publicada, que es la parte permanente.
+    throw new Error('repointNft: el activo es inmutable; su URI no se puede mover.')
   }
-  
-  // Generate updated metadata with new history
-  const updatedMetadata = generateNftMetadata(updatedWork)
-  
-  console.log(`Updating NFT metadata for ${mintAddress}...`)
-  
-  // Upload new metadata
-  const { uri: newTokenUri } = await withRetry(async () => {
-    return await metaplex.nfts().uploadMetadata(updatedMetadata as any)
-  }, 3, 3000)
-  
-  console.log(`New metadata uploaded: ${newTokenUri}`)
-  
-  // Update the NFT to point to new metadata
+  if (nft.uri === uri) return
+
   await withRetry(async () => {
-    await metaplex.nfts().update({
-      nftOrSft: nft,
-      uri: newTokenUri,
-      name: updatedMetadata.name,
-    })
+    await metaplex.nfts().update({ nftOrSft: nft, uri })
   }, 3, 3000)
-  
-  console.log(`NFT metadata updated successfully`)
-  
-  return { tokenUri: newTokenUri }
+
+  console.log(`NFT ${mintAddress} repointed to ${uri}`)
 }
 
 /**

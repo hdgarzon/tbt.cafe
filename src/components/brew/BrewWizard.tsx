@@ -12,6 +12,7 @@ import { fetchCoveredStatus, type CoveredStatus } from '@/lib/covered-data'
 import { EmbeddedCheckoutSheet } from '@/components/EmbeddedCheckoutSheet'
 import { money, FEE } from '@/lib/fees'
 import type { SeriesWithCount } from '@/lib/series-data'
+import type { ChainImageChoice } from '@/lib/chain/publish-image'
 import {
   fetchDraftForResume,
   fetchCreatorProfile,
@@ -108,6 +109,17 @@ export function BrewWizard() {
   const [dimensions, setDimensions] = useState('')
   const [createdDate, setCreatedDate] = useState('')
   const [isPublished, setIsPublished] = useState(true)
+  /*
+   * Que copia de la obra llega a Arweave — Chain Spec 01, Item 10.
+   *
+   * `null` significa «todavia sin tocar», y entonces manda la visibilidad: una
+   * obra publica propone la miniatura que pide el spec por legibilidad, y una
+   * privada no propone nada. Publicar la miniatura de una obra que su creador
+   * marco privada seria deshacer esa decision en un sitio que no se puede
+   * borrar. En cuanto la persona elige, su eleccion manda.
+   */
+  const [chainImage, setChainImage] = useState<ChainImageChoice | null>(null)
+  const chainImageChoice: ChainImageChoice = chainImage ?? (isPublished ? 'thumbnail' : 'none')
   const [seriesChoice, setSeriesChoice] = useState('__new')
   const [newSeriesName, setNewSeriesName] = useState('')
 
@@ -497,6 +509,7 @@ export function BrewWizard() {
       dimensions,
       createdDate,
       isPublished,
+      chainImage: chainImageChoice,
       seriesId: seriesChoice === '__new' ? null : seriesChoice,
       newSeriesName: seriesChoice === '__new' ? newSeriesName || 'Series 1' : null,
       imageFile,
@@ -1328,6 +1341,25 @@ export function BrewWizard() {
               <span className="text-ink text-right">{v}</span>
             </div>
           ))}
+        </div>
+
+        <div className="mt-5">
+          <BrewLabel info={t.brew.chainImageTip}>{t.brew.chainImageLabel}</BrewLabel>
+          <BrewSelect
+            value={chainImageChoice}
+            onChange={(e) => setChainImage(e.target.value as ChainImageChoice)}
+          >
+            <option value="none">{t.brew.chainImageNone}</option>
+            <option value="thumbnail">{t.brew.chainImageThumbnail}</option>
+            <option value="full">{t.brew.chainImageFull}</option>
+          </BrewSelect>
+          <p className="text-[11.5px] leading-[1.55] text-ink-soft mt-2">
+            {chainImageChoice === 'none'
+              ? t.brew.chainImageNoteNone
+              : chainImageChoice === 'thumbnail'
+                ? t.brew.chainImageNoteThumbnail
+                : t.brew.chainImageNoteFull}
+          </p>
         </div>
 
         <div className="text-center mt-8">

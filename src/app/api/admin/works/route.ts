@@ -17,6 +17,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { authenticate } from '@/lib/route-auth'
 import { createAdminClient } from '@/lib/supabase-admin'
 import { loadAdmin, can, writeAudit, hasValidStepUp, STEP_UP_HEADER } from '@/lib/admin/guard'
+import { getExplorerUrl } from '@/lib/solana/config'
 
 
 export async function GET(request: NextRequest) {
@@ -54,8 +55,9 @@ export async function GET(request: NextRequest) {
       .from('works')
       .select(
         `id, tbt_id, title, category, status, payment_status, mms_delivery_status,
-         mint_address, nft_status, nft_mint_address, nft_explorer_url, nft_token_uri,
-         blockchain, blockchain_hash, created_at, certified_at, creator_id, current_owner_id,
+         mint_address, nft_status, token_uri,
+         registration_record_uri, registration_record_hash,
+         blockchain, created_at, certified_at, creator_id, current_owner_id,
          commerce:work_commerce(availability, initial_price, currency, royalty_type, royalty_value, royalty_locked, taking_offers)`
       )
       .eq('tbt_id', tbtId)
@@ -65,7 +67,7 @@ export async function GET(request: NextRequest) {
     // Las dependientes necesitan el id, que solo se conoce tras resolver el
     // TBT-ID, así que van en una segunda vuelta y en paralelo entre ellas.
     const workId = work.data.id
-    const [ctx, hist, notes, cert] = await Promise.all([
+    const [ctx, hist, notes, cert, anchor, amendments, series] = await Promise.all([
       supabase
         .from('context_snapshots')
         .select('location_name, country, city, ai_summary, user_edited_summary, ai_model, signed_at')
@@ -86,7 +88,28 @@ export async function GET(request: NextRequest) {
         .select('version, generated_at')
         .eq('work_id', workId)
         .order('generated_at', { ascending: false })
-        .limit(1)
+        .limit(1),
+      // El ancla de la cabeza de la cadena. Se busca por hash porque es la
+      // clave de `chain_anchors`, no por obra.
+      work.data.registration_record_hash
+        ? supabase
+            .from('chain_anchors')
+            .select('status, block_height, attested_at, upgrade_attempts')
+            .eq('record_hash', work.data.registration_record_hash)
+            .maybeSingle()
+        : Promise.resolve({ data: null }),
+      supabase
+        .from('work_amendments')
+        .select('sequence_number, record_uri, amendment_class, amendment_reason, changed, repointed_at, created_at')
+        .eq('work_id', workId)
+        .order('sequence_number', { ascending: false }),
+      // Las series del creador: cambiar de serie es MOVER la obra, y el destino
+      // se elige de una lista, nunca se escribe a mano (Item 5).
+      supabase
+        .from('work_series')
+        .select('id, name')
+        .eq('creator_id', work.data.creator_id)
+        .order('name')
         .maybeSingle(),
     ])
 
@@ -102,18 +125,42 @@ export async function GET(request: NextRequest) {
         mmsDelivery: work.data.mms_delivery_status,
         createdAt: work.data.created_at,
         certifiedAt: work.data.certified_at,
-        // Guardadas, no calculadas.
+        /*
+         * Guardadas, no calculadas — salvo el enlace.
+         *
+         * Estos campos leian las gemelas muertas: `nft_token_uri`,
+         * `nft_explorer_url` y `blockchain_hash` estaban vacias en las 59
+         * filas mientras `token_uri` tenia 32. El efecto visible era que
+         * "Open in explorer" no aparecia nunca, porque su fuente era nula
+         * siempre.
+         *
+         * El enlace SI se calcula: no es una afirmacion de procedencia, es una
+         * direccion, y una guardada que nadie escribio no lleva a ninguna
+         * parte. `hash` se cae porque no tiene columna viva que lo sustituya y
+         * el panel no lo renderiza.
+         */
         chain: {
           network: work.data.blockchain,
-          mintAddress: work.data.mint_address ?? work.data.nft_mint_address,
+          mintAddress: work.data.mint_address,
           nftStatus: work.data.nft_status,
-          explorerUrl: work.data.nft_explorer_url,
-          tokenUri: work.data.nft_token_uri,
-          hash: work.data.blockchain_hash,
-          // Arweave y el ancla de Bitcoin todavía no se escriben.
-          arweave: null,
-          bitcoinAnchor: null,
+          explorerUrl: work.data.mint_address ? getExplorerUrl(work.data.mint_address) : null,
+          tokenUri: work.data.token_uri,
+          /*
+           * Esto decía «Arweave y el ancla de Bitcoin todavía no se escriben» y
+           * devolvía null en las dos. Se escriben desde que la cadena entró
+           * (Items 4, 6 y 8): la registración vive en `works` y el ancla en
+           * `chain_anchors`. Una pantalla de administración que niega lo que la
+           * base ya guarda es peor que una vacía.
+           */
+          arweave: work.data.registration_record_uri
+            ? { uri: work.data.registration_record_uri, hash: work.data.registration_record_hash }
+            : null,
+          bitcoinAnchor: anchor?.data ?? null,
         },
+        // La cadena de correcciones. Vacía es lo normal: un registro que nadie
+        // ha tenido que corregir (Item 5).
+        amendments: amendments.data ?? [],
+        series: series.data ?? [],
         context: ctx.data ?? null,
         commerce: c
           ? {
