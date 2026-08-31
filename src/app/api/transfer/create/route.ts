@@ -216,7 +216,7 @@ export async function POST(request: NextRequest) {
       session = embedded
         ? await stripe.checkout.sessions.create({
             ...commonParams,
-            ui_mode: 'embedded',
+            ui_mode: 'embedded_page',
             return_url: successUrl,
           })
         : await stripe.checkout.sessions.create({
