@@ -1,7 +1,7 @@
 import { readFileSync } from 'fs'
 import { join } from 'path'
 import { deflateSync } from 'zlib'
-import { stripMetadata, sniffImageType } from '../src/lib/chain/strip-metadata'
+import { stripMetadata, sniffImageType, jpegOrientation } from '../src/lib/chain/strip-metadata'
 import { registrationRecord } from '../src/lib/chain/records'
 import { canonicalize } from '../src/lib/chain/serialize'
 import { assertNoIdentifiers } from '../src/lib/chain/pseudonym'
@@ -102,6 +102,46 @@ const cleanJpeg = bytes([0xff, 0xd8], JFIF, ICC, DQT, SOS, ENTROPY, EOI)
   ok('un relleno 0xFF antes del marcador no lo rompe', stripMetadata(withFill).bytes.length > 0)
   throws('un JPEG sin marca de fin lanza', () =>
     stripMetadata(bytes([0xff, 0xd8], JFIF, DQT, SOS, ENTROPY)))
+}
+
+// ---- la orientación se lee ANTES de quitarla
+//
+// Un teléfono no gira los píxeles: guarda el sensor tal cual y anota cómo hay
+// que mostrarlo. Quitar el EXIF se lleva esa etiqueta, y la obra queda tumbada.
+
+const exifOrientation = (value: number, little: boolean): Uint8Array => {
+  const tiff = Buffer.alloc(18)
+  if (little) {
+    tiff.write('II', 0, 'latin1'); tiff.writeUInt16LE(0x2a, 2); tiff.writeUInt32LE(8, 4)
+    tiff.writeUInt16LE(1, 8)
+    tiff.writeUInt16LE(0x0112, 10); tiff.writeUInt16LE(3, 12); tiff.writeUInt32LE(1, 14)
+  } else {
+    tiff.write('MM', 0, 'latin1'); tiff.writeUInt16BE(0x2a, 2); tiff.writeUInt32BE(8, 4)
+    tiff.writeUInt16BE(1, 8)
+    tiff.writeUInt16BE(0x0112, 10); tiff.writeUInt16BE(3, 12); tiff.writeUInt32BE(1, 14)
+  }
+  const val = Buffer.alloc(4)
+  if (little) val.writeUInt16LE(value, 0)
+  else val.writeUInt16BE(value, 0)
+  const payload = Buffer.concat([Buffer.from('Exif\0\0', 'latin1'), tiff, val])
+  const len = payload.length + 2
+  return bytes([0xff, 0xe1, len >> 8, len & 0xff], payload)
+}
+
+const jpegWith = (app1: Uint8Array) => bytes([0xff, 0xd8], JFIF, app1, DQT, SOS, ENTROPY, EOI)
+
+{
+  ok('lee una orientación little-endian', jpegOrientation(jpegWith(exifOrientation(6, true))) === 6)
+  ok('y big-endian', jpegOrientation(jpegWith(exifOrientation(8, false))) === 8)
+  ok('sin EXIF devuelve 1', jpegOrientation(cleanJpeg) === 1)
+  ok('un EXIF sin la etiqueta devuelve 1', jpegOrientation(jpegWith(EXIF_GPS)) === 1)
+  ok('un valor fuera de rango devuelve 1', jpegOrientation(jpegWith(exifOrientation(99, true))) === 1)
+  ok('un PNG devuelve 1', jpegOrientation(bytes([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a])) === 1)
+
+  // Y la razón de leerla: quitarla es lo que rompe la foto.
+  const rotada = jpegWith(exifOrientation(6, true))
+  ok('la etiqueta NO sobrevive al limpiado', jpegOrientation(stripMetadata(rotada).bytes) === 1,
+     'por eso hay que girar los píxeles antes')
 }
 
 // ---------------------------------------------------------------- PNG
@@ -316,6 +356,11 @@ const read = (p: string) => readFileSync(join(process.cwd(), p), 'utf8')
   ok('lo que se guarda en works-media también sale limpio',
      brew.includes('await stripped(await normalizeImage(file))'),
      'ese archivo se sirve público: el EXIF llegaría a cualquiera que lo descargue')
+  ok('se gira antes de limpiar, no después',
+     brew.indexOf('jpegOrientation(raw) !== 1') < brew.indexOf('stripMetadata(raw)'),
+     'después de limpiar la etiqueta ya no está')
+  ok('y el giro lo aplica el mapa de bits', brew.includes("imageOrientation: 'from-image'"))
+  ok('una imagen ya derecha no se recomprime', brew.includes('if (jpegOrientation(raw) !== 1)'))
   ok('la miniatura solo se publica si de verdad se pudo hacer',
      brew.includes('if (thumb) chainImageUrl ='),
      'sin ella se publica menos, nunca la obra entera')

@@ -187,6 +187,64 @@ function concat(parts: Uint8Array[]): Uint8Array {
 }
 
 /**
+ * La orientación que el EXIF pedía, antes de que se le quite.
+ *
+ * Un teléfono no rota los píxeles: guarda el sensor tal cual —4032x3024 siempre—
+ * y anota en `Orientation` cómo hay que girarlo al mostrarlo. Quitar el EXIF se
+ * lleva esa etiqueta por delante, y una foto vertical pasa a verse tumbada.
+ *
+ * Pasó de verdad: la primera registración con una foto de telefono quedo con la
+ * obra de lado en la pagina. La miniatura salio derecha de casualidad, porque el
+ * lienzo la genera desde el archivo ORIGINAL, cuando la etiqueta todavia existe.
+ *
+ * Devuelve 1 —«tal cual»— cuando no hay etiqueta o no se puede leer. Quien llame
+ * decide qué hacer; esto solo lee.
+ */
+export function jpegOrientation(b: Uint8Array): number {
+  if (sniffImageType(b) !== 'image/jpeg') return 1
+
+  let i = 2
+  while (i < b.length - 1 && b[i] === 0xff) {
+    const m = b[i + 1]
+    if (m === 0xda || m === 0xd9) break
+    if (i + 4 > b.length) break
+    const len = (b[i + 2] << 8) | b[i + 3]
+    const payload = b.subarray(i + 4, i + 2 + len)
+
+    if (m === 0xe1 && ascii(payload, 0, 'Exif\0\0')) {
+      const tiff = payload.subarray(6)
+      if (tiff.length < 8) return 1
+
+      // 'II' little-endian, 'MM' big-endian. Lo dice el propio bloque.
+      const le = tiff[0] === 0x49 && tiff[1] === 0x49
+      const u16 = (at: number) => (le ? tiff[at] | (tiff[at + 1] << 8) : (tiff[at] << 8) | tiff[at + 1])
+      const u32 = (at: number) =>
+        le
+          ? (tiff[at] | (tiff[at + 1] << 8) | (tiff[at + 2] << 16) | (tiff[at + 3] << 24)) >>> 0
+          : ((tiff[at] << 24) | (tiff[at + 1] << 16) | (tiff[at + 2] << 8) | tiff[at + 3]) >>> 0
+
+      if (u16(2) !== 0x2a) return 1
+      const ifd = u32(4)
+      if (ifd + 2 > tiff.length) return 1
+
+      const count = u16(ifd)
+      for (let e = 0; e < count; e++) {
+        const at = ifd + 2 + e * 12
+        if (at + 12 > tiff.length) break
+        if (u16(at) === 0x0112) {
+          const value = u16(at + 8)
+          return value >= 1 && value <= 8 ? value : 1
+        }
+      }
+      return 1
+    }
+
+    i += 2 + len
+  }
+  return 1
+}
+
+/**
  * Devuelve la imagen sin un solo metadato, o lanza.
  *
  * Es idempotente: pasar dos veces da el mismo resultado, asi que se puede
