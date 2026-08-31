@@ -43,6 +43,7 @@ npm run dev          # Next dev server
 npm run build        # production build
 npm run start        # serve the build
 npm run lint         # next lint
+npm run check:boot        # no module dies on import for a runtime secret
 npm run check:fees        # fee arithmetic
 npm run check:canonical   # canonical serialisation for the chain records
 npm run check:records     # the three Arweave records, and what must stay out of them
@@ -54,6 +55,12 @@ npm run check:amend       # a correction supersedes; nothing else moves with it
 npm run check:checkout    # the checkout return URL points at a page that exists
 npm run check:context     # no fabricated weather is sealed
 npm run check:events      # a failure records what it died of
+npm run check:solana      # no silent fallback to the public RPC on mainnet
+npm run check:arweave     # the bytes that go up are the bytes that were hashed
+npm run check:image       # no metadata rides along with a published image
+npm run check:writeorder  # a transfer never rewrites the registration record
+npm run check:pseudonym   # nobody identifiable reaches Arweave
+npm run check:ots         # a pending anchor is a normal state, not a failure
 ```
 
 Each guard is a plain script under `scripts/`, written BEFORE the module it
@@ -65,6 +72,9 @@ exits non-zero. Two habits matter when writing one:
   `someName` is not used. Assert on `someName(` or on the exact interpolation.
 - A helper ending in `})` followed by a bare `{` block parses as an arrow
   function. Terminate it with a semicolon.
+- `tsc --noEmit` is **not** the build. `next build` type-checks `scripts/` under
+  its own settings and rejects what the standalone compiler accepts — iterating
+  a `Buffer` with `for…of` was one. Run the build before pushing.
 
 And one about staging, because it has cost three commits:
 
@@ -148,6 +158,72 @@ silent.** The row saves and the value is never read again. Three of these were
 being read by the admin panel, which is why its explorer link never appeared.
 When two columns look interchangeable, check which one has data before trusting
 either.
+
+### Two hashes, and they are not the same thing
+
+`works.content_hash` is the file **as the creator uploaded it**, metadata and
+all. Only they hold those bytes, and it is what makes the certificate
+self-verifying.
+
+`works.chain_image_hash` — and `image_hash` inside the registration record — is
+the copy that was **published**, after `stripMetadata` removed the EXIF. A JPEG
+off a phone carries GPS coordinates, and Item 10 of the chain spec marks those
+`Never`; the moment one byte comes off, it is a different file.
+
+So the two never match, and the code must not let anyone believe they do. If a
+verifier ever hashes the public image and compares it to `content_hash`, it will
+say the certificate is false when nothing is wrong.
+
+### Stripping EXIF also strips which way is up
+
+A phone does not rotate pixels. It stores the sensor as it is — 4032×3024, always
+landscape — and writes `Orientation` into the EXIF saying how to turn it for
+display. Removing the EXIF removes that, and a portrait photo renders on its side.
+
+It happened on the first real registration made with a phone: the work showed
+sideways on its page. The thumbnail came out upright by luck, because the canvas
+generates it from the **original** file, while the tag still exists.
+
+So `stripped()` reads the orientation first and, when it is not 1, redraws the
+pixels through a canvas before removing anything. Same principle as everything
+else here: do not depend on metadata you are about to delete. It recompresses, so
+it only runs when there is something to turn — an already-upright image is not
+touched by a byte.
+
+### Nothing throws at import for a runtime secret
+
+Next imports every route during the build to collect page data. A module that
+throws in its body, or builds a client there, does not fail when someone calls
+it — **it fails the build**, and takes the whole deployment with it even if that
+route is never used. It cost this repo red previews twice: `lib/stripe.ts`, and
+then `api/stripe/webhook`, which kept its own `throw` and its own `createClient`.
+
+The rule is not "never throw at import". It is: never throw for a **runtime
+secret**. `NEXT_PUBLIC_*` values are inlined at build time, so a missing one
+means the app cannot work in a browser and failing the build is the right
+answer — which is why `lib/supabase.ts` passes, and passes by the rule rather
+than by an exception list.
+
+Preview does not carry server keys and should not: a preview holding the key
+that bypasses RLS is a surface nobody wants. `npm run check:boot` walks every
+module with the TypeScript AST and fails on a top-level throw or client
+construction in any file that reads a non-`NEXT_PUBLIC_` env var at the top
+level.
+
+### The cron is daily because the account is Hobby
+
+`vercel.json` declares one job. **A Hobby account allows one run per day, and
+Vercel does not warn — it rejects the whole deployment.** An hourly expression
+blocked every build, preview and production, for fifteen hours, with the reason
+visible only inside the build detail:
+
+> Hobby accounts are limited to daily cron jobs. This cron expression
+> (0 * * * *) would run more than once per day.
+
+What that costs is confirmation latency, not the proof: the time an anchor
+attests is the time it was **stamped**, not the time it was checked. Restoring
+the hourly schedule the spec asks for needs the Pro plan. `npm run check:ots`
+fails if the expression stops being daily.
 
 ### Conventions
 
