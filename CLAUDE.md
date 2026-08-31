@@ -43,6 +43,7 @@ npm run dev          # Next dev server
 npm run build        # production build
 npm run start        # serve the build
 npm run lint         # next lint
+npm run check:boot        # no module dies on import for a runtime secret
 npm run check:fees        # fee arithmetic
 npm run check:canonical   # canonical serialisation for the chain records
 npm run check:records     # the three Arweave records, and what must stay out of them
@@ -148,6 +149,41 @@ silent.** The row saves and the value is never read again. Three of these were
 being read by the admin panel, which is why its explorer link never appeared.
 When two columns look interchangeable, check which one has data before trusting
 either.
+
+### Nothing throws at import for a runtime secret
+
+Next imports every route during the build to collect page data. A module that
+throws in its body, or builds a client there, does not fail when someone calls
+it — **it fails the build**, and takes the whole deployment with it even if that
+route is never used. It cost this repo red previews twice: `lib/stripe.ts`, and
+then `api/stripe/webhook`, which kept its own `throw` and its own `createClient`.
+
+The rule is not "never throw at import". It is: never throw for a **runtime
+secret**. `NEXT_PUBLIC_*` values are inlined at build time, so a missing one
+means the app cannot work in a browser and failing the build is the right
+answer — which is why `lib/supabase.ts` passes, and passes by the rule rather
+than by an exception list.
+
+Preview does not carry server keys and should not: a preview holding the key
+that bypasses RLS is a surface nobody wants. `npm run check:boot` walks every
+module with the TypeScript AST and fails on a top-level throw or client
+construction in any file that reads a non-`NEXT_PUBLIC_` env var at the top
+level.
+
+### The cron is daily because the account is Hobby
+
+`vercel.json` declares one job. **A Hobby account allows one run per day, and
+Vercel does not warn — it rejects the whole deployment.** An hourly expression
+blocked every build, preview and production, for fifteen hours, with the reason
+visible only inside the build detail:
+
+> Hobby accounts are limited to daily cron jobs. This cron expression
+> (0 * * * *) would run more than once per day.
+
+What that costs is confirmation latency, not the proof: the time an anchor
+attests is the time it was **stamped**, not the time it was checked. Restoring
+the hourly schedule the spec asks for needs the Pro plan. `npm run check:ots`
+fails if the expression stops being daily.
 
 ### Conventions
 

@@ -7,6 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
+    "check:boot": "npx --yes tsx scripts/boot-check.ts",
     "check:fees": "npx --yes tsx scripts/fees-check.ts",
     "check:canonical": "npx --yes tsx scripts/canonical-check.ts",
     "check:records": "npx --yes tsx scripts/records-check.ts",
