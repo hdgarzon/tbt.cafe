@@ -45,7 +45,17 @@ export type Transfer = {
 }
 
 export type CreateTransferInput = {
+  /** UUID de la obra: lo que la API necesita para escribir la fila. */
   workId: string
+  /**
+   * El id humano (TBT-2026-XXXXXX), SOLO para las URLs de retorno.
+   *
+   * No es redundante con workId. /work/[tbtId] enruta por el id humano, que es
+   * el que llevan los QR; el UUID ahi da «We couldn't find a work with that
+   * ID». Se mandaba el UUID, asi que despues de pagar el emisor aterrizaba en
+   * una pantalla de no encontrado — el pago habia salido bien.
+   */
+  tbtId: string
   recipientPhone: string // E.164, +12035551234
   recipientName: string
   value: number
@@ -84,8 +94,8 @@ export async function createTransfer(
         biometricProof: input.biometricProof ?? null,
         // Checkout embebido (Spec 01 §3.1): el emisor no sale de tbt.cafe.
         embedded: true,
-        successUrl: `${origin}/work/${input.workId}?transfer=sent`,
-        cancelUrl: `${origin}/work/${input.workId}?transfer=cancelled`,
+        successUrl: `${origin}/work/${input.tbtId}?transfer=sent`,
+        cancelUrl: `${origin}/work/${input.tbtId}?transfer=cancelled`,
       }),
     })
     const body = await res.json()
