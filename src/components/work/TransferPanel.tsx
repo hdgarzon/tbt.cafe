@@ -63,6 +63,7 @@ export function TransferPanel({
     setBusy(true)
     const { clientSecret: secret, checkoutUrl, error } = await createTransfer({
       workId: work.id,
+      tbtId: work.tbt_id,
       recipientPhone: phone1,
       recipientName: name.trim(),
       value: numValue,
