@@ -89,7 +89,22 @@ export async function POST(request: NextRequest) {
         },
         dashboard: 'express',
         include: ['configuration.recipient', 'identity', 'requirements'],
-      })
+      },
+      /*
+       * Clave estable por persona, no la que el SDK genera por intento.
+       *
+       * La suya (`stripe-node-retry-<uuid>`) solo cubre sus propios reintentos
+       * de red. Si la llamada muere DESPUES de que Stripe creara la cuenta pero
+       * antes del insert de aqui abajo, no queda fila: en el siguiente intento
+       * `existing` es null y se crea un SEGUNDO acct_. La clave primaria de
+       * payout_connect_accounts no lo impide, porque no hay fila con la que
+       * chocar.
+       *
+       * Es exactamente lo que dice mas arriba que no puede pasar: un segundo
+       * acct_ para la misma persona le parte el saldo en dos. Anclada al
+       * user_id, el reintento devuelve la MISMA cuenta.
+       */
+      { idempotencyKey: `connect-acct-${auth.user.id}` })
 
       accountId = account.id
 

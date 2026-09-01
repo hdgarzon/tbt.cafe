@@ -21,7 +21,19 @@ function stripeClient(): Stripe {
   if (client) return client
   const key = process.env.STRIPE_SECRET_KEY
   if (!key) throw new Error('STRIPE_SECRET_KEY is required')
-  client = new Stripe(key, { typescript: true })
+  /*
+   * La version de API se fija AQUI, a proposito.
+   *
+   * Sin este campo el SDK impone la suya, asi que subir el paquete mueve
+   * tambien la API sin que nadie lo pida. Es lo que estuvo a punto de pasar:
+   * el bump automatico de 20.4.1 a 22.6.0 arrastraba clover -> dahlia, donde
+   * `ui_mode: 'embedded'` ya no existe. Ni tsc ni el build se quejan — el tipo
+   * admite cualquier cadena — y el fallo aparece al cobrar.
+   *
+   * Escrita, el salto de version es una linea del diff y no un efecto
+   * secundario de package.json.
+   */
+  client = new Stripe(key, { apiVersion: '2026-08-26.dahlia', typescript: true })
   return client
 }
 
@@ -139,7 +151,7 @@ export async function createCheckoutSession(params: CreateCheckoutParams) {
   if (embedded) {
     return stripe.checkout.sessions.create({
       mode: 'payment',
-      ui_mode: 'embedded',
+      ui_mode: 'embedded_page',
       line_items: lineItems,
       return_url: returnUrl,
       metadata,
