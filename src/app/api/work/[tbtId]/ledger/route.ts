@@ -22,10 +22,8 @@ type Anchor = {
   attestedAt: string | null
 }
 
-export async function GET(
-  _request: NextRequest,
-  { params }: { params: { tbtId: string } }
-) {
+export async function GET(_request: NextRequest, props: { params: Promise<{ tbtId: string }> }) {
+  const params = await props.params;
   try {
     const admin = createAdminClient()
 

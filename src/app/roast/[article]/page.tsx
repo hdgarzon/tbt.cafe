@@ -14,7 +14,8 @@ export function generateStaticParams() {
   return ROAST_ARTICLES.map((a) => ({ article: a.id }))
 }
 
-export default function RoastArticlePage({ params }: { params: { article: string } }) {
+export default async function RoastArticlePage(props: { params: Promise<{ article: string }> }) {
+  const params = await props.params;
   const article = roastArticle(params.article)
   if (!article) notFound()
 

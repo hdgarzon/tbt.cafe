@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, use } from 'react';
 import { useLocale } from '@/i18n/LocaleProvider'
 import { useShell } from '@/components/AppShell'
 import { money } from '@/lib/fees'
@@ -14,7 +14,8 @@ import { fetchTransferForAccept, respondTransfer, type TransferForAccept } from 
  * pantalla (screenshot risk), así que esta pantalla solo confirma que se
  * envió, no lo muestra.
  */
-export default function TransferAcceptPage({ params }: { params: { transferId: string } }) {
+export default function TransferAcceptPage(props: { params: Promise<{ transferId: string }> }) {
+  const params = use(props.params);
   const { t } = useLocale()
   const { connected, openAuth } = useShell()
 
