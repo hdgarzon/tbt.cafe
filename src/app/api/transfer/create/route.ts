@@ -36,11 +36,35 @@ export async function POST(request: NextRequest) {
     if (!Number.isFinite(recordedValue) || recordedValue < 0) {
       return NextResponse.json({ error: 'invalidValue' }, { status: 400 })
     }
-    // Only redirect back to an already-allowlisted origin (tbt.cafe) — never
-    // an open redirect to a URL supplied unchecked by the request body.
+    /*
+     * Solo se vuelve al origen propio — nunca a una URL que venga en el cuerpo
+     * sin comprobar, que seria un redirect abierto con Stripe de por medio.
+     *
+     * Esto comparaba contra `origin` a secas, que NO esta declarado en este
+     * modulo. En un navegador seria `location.origin`; en Node no existe, asi
+     * que la expresion lanzaba ReferenceError, el `catch` de al lado lo volvia
+     * `false`, y la comprobacion NUNCA pasaba. Ninguna transferencia podia
+     * empezar: la ruta respondia 400 `invalidRedirect` incluso cuando las URLs
+     * eran del mismo origen que la pagina. Compilaba porque el tsconfig incluye
+     * la libreria "dom", que declara ese global sin que el runtime lo tenga.
+     *
+     * Es el mismo fallo que ya se corrigio en stripe/create-checkout. Aquel
+     * arreglo no toco esta ruta, y aqui no degradaba: cerraba el camino entero.
+     *
+     * Se compara contra el origen de la propia app y NO contra la cabecera
+     * `Origin`, que la elige quien llama.
+     */
+    const appOrigin = (() => {
+      try {
+        return new URL(process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000').origin
+      } catch {
+        return null
+      }
+    })()
+
     const redirectOriginOk = (u: string) => {
       try {
-        return origin && new URL(u).origin === origin
+        return !!appOrigin && new URL(u).origin === appOrigin
       } catch {
         return false
       }
