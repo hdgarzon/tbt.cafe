@@ -10,7 +10,8 @@ import { authenticate } from '@/lib/route-auth'
  * que ya está en la URL que el recipiente recibió.
  */
 
-export async function GET(request: NextRequest, { params }: { params: { transferId: string } }) {
+export async function GET(request: NextRequest, props: { params: Promise<{ transferId: string }> }) {
+  const params = await props.params;
 
   const service = createAdminClient()
   const { data: transfer } = await service

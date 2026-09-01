@@ -17,7 +17,8 @@ export function generateStaticParams() {
   return LEGAL_DOCS.map((d) => ({ doc: d.slug }))
 }
 
-export default function LegalPage({ params }: { params: { doc: string } }) {
+export default async function LegalPage(props: { params: Promise<{ doc: string }> }) {
+  const params = await props.params;
   const doc = legalDoc(params.doc)
   if (!doc) notFound()
 

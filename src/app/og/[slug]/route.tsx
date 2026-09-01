@@ -54,7 +54,8 @@ async function loadArtwork(url: string): Promise<string | null> {
   }
 }
 
-export async function GET(request: Request, { params }: { params: { slug: string } }) {
+export async function GET(request: Request, props: { params: Promise<{ slug: string }> }) {
+  const params = await props.params;
   // La ruta se publica como /og/{TBT-ID}.png para que la URL termine en una
   // extensión de imagen, que es lo que esperan varios rastreadores.
   const tbtId = decodeURIComponent(params.slug).replace(/\.(png|jpg|jpeg)$/i, '')

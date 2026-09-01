@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useState, use } from 'react';
 import { useLocale } from '@/i18n/LocaleProvider'
 import { findCreatorBySeg, fetchCreatorWorks, type PublicCreator, type PublicWork } from '@/lib/creator-data'
 import { fetchCreatorSeries, type SeriesWithCount } from '@/lib/series-data'
@@ -26,7 +26,7 @@ function monogram(name: string): string {
     .slice(0, 2)
     .map((w) => w[0])
     .join('')
-    .toUpperCase()
+    .toUpperCase();
 }
 
 /**
@@ -53,7 +53,7 @@ function cleanSocial(raw: string | null): string | null {
 
 /** Texto compacto del pill social — sin protocolo ni barra final. */
 function socialDisplay(v: string): string {
-  return v.replace(/^https?:\/\//, '').replace(/\/+$/, '')
+  return v.replace(/^https?:\/\//, '').replace(/\/+$/, '');
 }
 
 /** Resuelve un href navegable por red social a partir de un handle o URL. */
@@ -86,7 +86,8 @@ function applySortFilter(works: PublicWork[], sort: SortKey, filter: FilterKey):
   }
 }
 
-export default function CreatorPage({ params }: { params: { seg: string } }) {
+export default function CreatorPage(props: { params: Promise<{ seg: string }> }) {
+  const params = use(props.params);
   const { t } = useLocale()
   const [loading, setLoading] = useState(true)
   const [creator, setCreator] = useState<PublicCreator | null>(null)

@@ -25,8 +25,9 @@ function publicClient() {
   )
 }
 
-export async function generateMetadata({ params }: { params: { tbtId: string } }): Promise<Metadata> {
-  const locale = localeFromAcceptLanguage(headers().get('accept-language'))
+export async function generateMetadata(props: { params: Promise<{ tbtId: string }> }): Promise<Metadata> {
+  const params = await props.params;
+  const locale = localeFromAcceptLanguage((await headers()).get('accept-language'))
   const canonical = `${SITE}/work/${params.tbtId}`
 
   const { data } = await publicClient()
@@ -72,6 +73,7 @@ export async function generateMetadata({ params }: { params: { tbtId: string } }
   }
 }
 
-export default function Page({ params }: { params: { tbtId: string } }) {
+export default async function Page(props: { params: Promise<{ tbtId: string }> }) {
+  const params = await props.params;
   return <WorkClient params={params} />
 }

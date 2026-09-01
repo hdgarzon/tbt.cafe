@@ -13,10 +13,8 @@ import { createAdminClient } from '@/lib/supabase-admin'
  */
 export const dynamic = 'force-dynamic'
 
-export async function GET(
-  _request: NextRequest,
-  { params }: { params: { hash: string } }
-) {
+export async function GET(_request: NextRequest, props: { params: Promise<{ hash: string }> }) {
+  const params = await props.params;
   const hash = params.hash.replace(/^sha256:/i, '').replace(/\.ots$/i, '')
 
   if (!/^[0-9a-f]{64}$/i.test(hash)) {
