@@ -56,11 +56,37 @@ textarea::placeholder {
   opacity: 1;
 }
 
-/* Foco visible siempre — accesibilidad */
-:focus-visible {
-  outline: 2px solid var(--t-cyan);
-  outline-offset: 2px;
-  border-radius: 4px;
+/*
+ * Foco visible por teclado — accesibilidad.
+ *
+ * VA EN @layer base, Y ESO ES TODA LA CORRECCION.
+ *
+ * `.outline-none` de Tailwind y `:focus-visible` empatan en especificidad:
+ * (0,1,0) los dos. Un empate lo decide el ORDEN, y esta regla vivia suelta en
+ * la linea 60 mientras `@tailwind utilities` sale en la 3 — asi que ganaba
+ * siempre, y el buscador de la portada dibujaba un anillo cian que el
+ * prototipo no tiene.
+ *
+ * Metida en la capa base, Tailwind la emite ANTES de las utilidades, y el
+ * empate lo gana `.outline-none`. Con eso ceden de golpe los 52 campos que ya
+ * la llevan —el buscador, el codigo privado, los del asistente, los del
+ * brew— sin tocar un solo componente. Un campo con `outline-none` es
+ * justamente uno que ya trae su propio tratamiento de foco: en el buscador,
+ * el subrayado.
+ *
+ * Y lo que NO lleva `outline-none` —botones, enlaces, entradas de menu—
+ * conserva su anillo entero, que es el trabajo de accesibilidad de verdad.
+ *
+ * Nota: el spec proponia `:focus-visible:not(.focus-self)` y una clase nueva
+ * en cada campo. Misma intencion, pero 52 sitios que hay que acordarse de
+ * marcar; y el marcador que buscaba ya existe y se llama `outline-none`.
+ */
+@layer base {
+  :focus-visible {
+    outline: 2px solid var(--t-cyan);
+    outline-offset: 2px;
+    border-radius: 4px;
+  }
 }
 
 /* Guarda de movimiento reducido (Master Handoff §5) */
