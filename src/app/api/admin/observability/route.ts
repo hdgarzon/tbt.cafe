@@ -34,7 +34,19 @@ export async function GET(request: NextRequest) {
 
     const sinceIso = new Date(Date.now() - hours * 3_600_000).toISOString()
 
-    const [failures, recent, chainPending, mmsFailed, mmsUnknown] = await Promise.all([
+    /*
+     * Las disputas se cuentan aparte, NO dentro de la tasa de fallos de Stripe.
+     *
+     * Un contracargo no es un fallo de integracion: la llamada a Stripe salio
+     * perfecta y el dinero se fue igual. Meterlo en `failureRate` ensuciaria la
+     * senal que sirve para saber si la pasarela esta sana, y ademas lo diluiria
+     * entre cientos de llamadas correctas justo cuando hay que verlo.
+     *
+     * Hasta ahora `payment_disputes` se escribia y no la leia NADIE: ni esta
+     * ruta, ni el admin, ni una notificacion. La fila existia y aun asi nadie
+     * se enteraba, que es la misma forma de fallo que el MMS.
+     */
+    const [failures, recent, chainPending, mmsFailed, mmsUnknown, disputesOpen, disputesLost, disputesUnlinked, refundsTotal] = await Promise.all([
       supabase.rpc('provider_failure_summary', { window_hours: hours }),
       supabase
         .from('provider_events')
@@ -58,6 +70,35 @@ export async function GET(request: NextRequest) {
         .select('id', { count: 'exact', head: true })
         .eq('status', 'certified')
         .is('mms_delivery_status', null),
+
+      // Abiertas: hay una ventana para responder y se puede perder dinero.
+      supabase
+        .from('payment_disputes')
+        .select('provider_ref', { count: 'exact', head: true })
+        .eq('kind', 'dispute')
+        .in('status', ['needs_response', 'under_review', 'warning_needs_response', 'warning_under_review']),
+
+      // Perdidas: el dinero ya salio. Se mira aunque no haya nada que hacer.
+      supabase
+        .from('payment_disputes')
+        .select('provider_ref', { count: 'exact', head: true })
+        .eq('kind', 'dispute')
+        .eq('status', 'lost'),
+
+      /*
+       * Sin resolver a ninguna obra. Es el «no lo sabemos» de este bloque: la
+       * disputa consta pero no se sabe sobre que, asi que hay que abrir el
+       * evento crudo a mano. Cero disputas y cero rastreables no son lo mismo.
+       */
+      supabase
+        .from('payment_disputes')
+        .select('provider_ref', { count: 'exact', head: true })
+        .is('work_id', null),
+
+      supabase
+        .from('payment_disputes')
+        .select('provider_ref', { count: 'exact', head: true })
+        .eq('kind', 'refund'),
     ])
 
     // Latencia y tasa de éxito por proveedor, calculadas de la muestra traída.
@@ -86,6 +127,12 @@ export async function GET(request: NextRequest) {
       windowHours: hours,
       failures: failures.data ?? [],
       providers,
+      disputes: {
+        open: disputesOpen.count ?? 0,
+        lost: disputesLost.count ?? 0,
+        unlinked: disputesUnlinked.count ?? 0,
+        refunds: refundsTotal.count ?? 0,
+      },
       chain: {
         certifiedWithoutMint: chainPending.count ?? 0,
         certificateDeliveriesFailed: mmsFailed.count ?? 0,

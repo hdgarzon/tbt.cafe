@@ -1142,6 +1142,29 @@ export default function AdminPage() {
           )}
 
           <div className="text-[11px] font-medium tracking-[0.16em] uppercase text-ink-soft mt-6 mb-2">
+            Money taken back
+          </div>
+          <div className="border border-hairline rounded-2xl p-4">
+            <Row k="Disputes open" v={String(obs.disputes?.open ?? 0)} />
+            <Row k="Disputes lost" v={String(obs.disputes?.lost ?? 0)} />
+            <Row k="Refunds recorded" v={String(obs.disputes?.refunds ?? 0)} />
+            {/* Igual que las entregas sin registro: una disputa que no se pudo
+                atar a una obra no es una disputa que no existe. */}
+            <Row k="Not linked to a work" v={String(obs.disputes?.unlinked ?? 0)} />
+          </div>
+          {(obs.disputes?.open ?? 0) > 0 && (
+            <p className="text-[11px] leading-[1.5] text-placeholder mt-2">
+              An open dispute has a response window. Stripe closes it for you if nobody answers.
+            </p>
+          )}
+          {(obs.disputes?.unlinked ?? 0) > 0 && (
+            <p className="text-[11px] leading-[1.5] text-placeholder mt-2">
+              Those carry the full Stripe event in `payment_disputes.raw` — the work has to be
+              matched by hand.
+            </p>
+          )}
+
+          <div className="text-[11px] font-medium tracking-[0.16em] uppercase text-ink-soft mt-6 mb-2">
             Chain writes
           </div>
           <div className="border border-hairline rounded-2xl p-4">
