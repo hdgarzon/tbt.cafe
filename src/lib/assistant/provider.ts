@@ -96,8 +96,48 @@ QUESTION: ${req.question}
 
 Reply as JSON only:
 {"text": "...", "cta": {"label": "...", "href": "/..."} or null, "escalate": true or false}
-The cta href must be a path inside tbt.cafe, or null.`
+The cta href must be one of these exact paths, or null: ${ALLOWED_CTA.join(', ')}.
+There is NO sign-in page: signing in is a sheet opened from the header toggle.
+Never send anyone to /signin, /login or /account — say what to tap instead.`
 }
+
+/**
+ * Las unicas rutas a las que el asistente puede mandar a alguien.
+ *
+ * Antes bastaba con que el enlace empezara por `/`, asi que cualquier ruta que
+ * el modelo inventara pasaba el filtro. Y la que inventa con mas naturalidad al
+ * hablar con una visita es `/signin` — que en esta aplicacion NO EXISTE, porque
+ * autenticarse es un sheet que sale del interruptor del header, no una pagina.
+ * Un 404 es peor que no ofrecer nada.
+ *
+ * Abrir el asistente a quien no ha entrado (Gating Spec 01, item 2) es lo que lo
+ * saco a la luz: antes casi nadie pedia iniciar sesion estando ya dentro.
+ *
+ * La lista se comprueba contra `src/app` en `npm run check:gating`, para que no
+ * se quede nombrando rutas que ya no estan.
+ */
+export const ALLOWED_CTA = [
+  '/brew',
+  '/roast',
+  '/help',
+  '/collections/favorites',
+  '/collections/creations',
+  '/collections/acquisitions',
+  '/history/brews',
+  '/history/sales',
+  '/history/purchased',
+  '/history/offers',
+  '/history/royalties',
+  '/history/payouts',
+  '/history/transactions',
+  '/profile/creator',
+  '/profile/collector',
+  '/settings/authentication',
+  '/settings/notifications',
+  '/settings/payouts',
+  '/legal/terms',
+  '/legal/privacy',
+] as const
 
 /** Adaptador de Gemini. Mismo estilo de llamada que el resto del backend. */
 export const geminiProvider: AssistantProvider = {
@@ -131,9 +171,13 @@ export const geminiProvider: AssistantProvider = {
 
     return {
       text: parsed.text,
-      // Solo rutas internas: un enlace externo salido del modelo no es algo que
-      // debamos poner delante de alguien.
-      cta: parsed.cta && parsed.cta.href?.startsWith('/') ? parsed.cta : undefined,
+      // Solo rutas que EXISTEN. Que empiece por `/` no basta: el modelo se
+      // inventa caminos, y un enlace roto delante de una visita es peor que
+      // ninguno.
+      cta:
+        parsed.cta && (ALLOWED_CTA as readonly string[]).includes(parsed.cta.href)
+          ? parsed.cta
+          : undefined,
       escalate: parsed.escalate === true,
     }
   },

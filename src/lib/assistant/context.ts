@@ -116,7 +116,24 @@ export async function loadPersonContext(
  * de un ticket lo escribió una persona, y nunca debe ejecutarse como una orden
  * (§4.2).
  */
-export function renderContext(ctx: PersonContext): string {
+/**
+ * Lo que el modelo puede mirar de esta persona — o el aviso de que no hay nadie.
+ *
+ * `null` significa VISITA sin sesión, y se dice explícitamente en vez de mandar
+ * una cadena vacía. Vacío el modelo lo lee como «esta persona no tiene nada», y
+ * de ahí a inventarle una cifra hay un paso; dicho, sabe que no tiene registros
+ * que mirar y que la salida es invitar a entrar (Gating Spec 01, ítem 2).
+ */
+export function renderContext(ctx: PersonContext | null): string {
+  if (!ctx) {
+    return [
+      'You are speaking to a visitor who has not signed in.',
+      'There are no records for them: no works, no transfers, no offers, no support requests.',
+      'If a question needs their account, say so plainly and invite them to sign in.',
+      'Never estimate, guess or invent a figure about them.',
+    ].join('\n')
+  }
+
   const lines: string[] = []
   if (ctx.tickets.length) {
     lines.push(
