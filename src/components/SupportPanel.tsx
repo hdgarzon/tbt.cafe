@@ -101,7 +101,7 @@ export function SupportPanel({ compact = false }: { compact?: boolean }) {
           <p className="text-[12px] leading-[1.6] text-ink-soft mt-2">{t.help.gateSub}</p>
           <button
             type="button"
-            onClick={openAuth}
+            onClick={() => openAuth()}
             className="mt-5 px-6 py-3.5 text-[12px] font-semibold tracking-[0.16em] uppercase bg-ink text-paper rounded-xl"
           >
             {t.help.authenticate}

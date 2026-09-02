@@ -24,12 +24,26 @@ export async function isFavorited(targetType: FavoriteTargetType, targetId: stri
   return !!data
 }
 
-/** Alterna el favorito; devuelve el nuevo estado. false si no hay sesión. */
-export async function toggleFavorite(targetType: FavoriteTargetType, targetId: string): Promise<boolean> {
+/**
+ * Alterna el favorito y devuelve el nuevo estado, o dice que falta sesión.
+ *
+ * Devolvía `false` sin sesión, y quien llamaba lo metía tal cual en el estado
+ * del corazón: no se llenaba, no se guardaba nada y no se decía nada. Tocar y
+ * que la interfaz no reaccione es indistinguible de que esté rota.
+ *
+ * La capa de datos INFORMA, no decide. `{ error: 'needSignIn' }` es la forma de
+ * la casa —`offers-data.ts` y `curation-data.ts` ya la usan— y este archivo era
+ * el único que se salía de ella. Quien llama decide qué hacer, que en la
+ * interfaz es abrir la autenticación y reanudar.
+ */
+export async function toggleFavorite(
+  targetType: FavoriteTargetType,
+  targetId: string
+): Promise<boolean | { error: 'needSignIn' }> {
   const {
     data: { user },
   } = await supabase.auth.getUser()
-  if (!user) return false
+  if (!user) return { error: 'needSignIn' as const }
 
   const already = await isFavorited(targetType, targetId)
   if (already) {

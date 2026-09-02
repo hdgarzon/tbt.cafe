@@ -1,8 +1,9 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useLocale } from '@/i18n/LocaleProvider'
+import { SignInGate } from '@/components/SignInGate'
 import {
   fetchCollections,
   deriveCreators,
@@ -44,40 +45,45 @@ export default function AcquisitionsPage() {
   const [sort, setSort] = useState<SortKey>('recent')
   const [filter, setFilter] = useState<FilterKey>('all')
 
-  useEffect(() => {
-    ;(async () => {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser()
-      if (!user) {
-        setSignedIn(false)
-        setLoading(false)
-        return
-      }
-      const w = await fetchCollections(user.id)
-      setWorks(w)
-      const creators = deriveCreators(w)
-      const series = deriveSeries(w)
-      const { creatorTotals: ct, seriesTotals: st } = await fetchOwnershipTotals(
-        creators.map((c) => c.id),
-        series.map((s) => s.id)
-      )
-      setCreatorTotals(ct)
-      setSeriesTotals(st)
+  /**
+   * El cargador, con nombre para poder volver a llamarlo.
+   *
+   * La sesión se comprueba UNA VEZ al montar, así que `connected` cambiando no
+   * recarga nada: sin esto, alguien entra desde el botón de la puerta y se queda
+   * mirando la misma frase. `SignInGate` lo recibe y `openAuth` lo vuelve a
+   * correr al terminar (Gating Spec 01, ítem 6).
+   */
+  const load = useCallback(async () => {
+    const {
+      data: { user },
+    } = await supabase.auth.getUser()
+    if (!user) {
+      setSignedIn(false)
       setLoading(false)
-    })()
+      return
+    }
+    setSignedIn(true)
+    setLoading(true)
+    const w = await fetchCollections(user.id)
+    setWorks(w)
+    const creators = deriveCreators(w)
+    const series = deriveSeries(w)
+    const { creatorTotals: ct, seriesTotals: st } = await fetchOwnershipTotals(
+      creators.map((c) => c.id),
+      series.map((s) => s.id)
+    )
+    setCreatorTotals(ct)
+    setSeriesTotals(st)
+    setLoading(false)
   }, [])
+
+  useEffect(() => {
+    load()
+  }, [load])
 
   if (loading) return <div className="px-4 pt-6 text-[13px] text-ink-soft">{t.authHub.loading}</div>
   if (!signedIn) {
-    return (
-      <div className="px-4 pt-6">
-        <a href="/" className="back-link">
-          ← {t.purchase.home}
-        </a>
-        <p className="text-[14px] mt-6">{t.myCollections.needSignIn}</p>
-      </div>
-    )
+    return <SignInGate message={t.myCollections.needSignIn} onSignedIn={load} />
   }
 
   const creators: DerivedGroup[] = deriveCreators(works)

@@ -1,8 +1,9 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useLocale } from '@/i18n/LocaleProvider'
+import { SignInGate } from '@/components/SignInGate'
 import { fetchCreations, deriveSeries, onlyFeatured, type CollectionWork, type DerivedGroup } from '@/lib/collections-data'
 import { WorkCell } from '@/components/WorkCell'
 import { PersonalTabs, SeriesDropdown, type SortKey, type FilterKey } from '@/components/PersonalTabs'
@@ -38,31 +39,36 @@ export default function CreationsPage() {
   const [sort, setSort] = useState<SortKey>('recent')
   const [filter, setFilter] = useState<FilterKey>('all')
 
-  useEffect(() => {
-    ;(async () => {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser()
-      if (!user) {
-        setSignedIn(false)
-        setLoading(false)
-        return
-      }
-      setWorks(await fetchCreations(user.id))
+  /**
+   * El cargador, con nombre para poder volver a llamarlo.
+   *
+   * La sesión se comprueba UNA VEZ al montar, así que `connected` cambiando no
+   * recarga nada: sin esto, alguien entra desde el botón de la puerta y se queda
+   * mirando la misma frase. `SignInGate` lo recibe y `openAuth` lo vuelve a
+   * correr al terminar (Gating Spec 01, ítem 6).
+   */
+  const load = useCallback(async () => {
+    const {
+      data: { user },
+    } = await supabase.auth.getUser()
+    if (!user) {
+      setSignedIn(false)
       setLoading(false)
-    })()
+      return
+    }
+    setSignedIn(true)
+    setLoading(true)
+    setWorks(await fetchCreations(user.id))
+    setLoading(false)
   }, [])
+
+  useEffect(() => {
+    load()
+  }, [load])
 
   if (loading) return <div className="px-4 pt-6 text-[13px] text-ink-soft">{t.authHub.loading}</div>
   if (!signedIn) {
-    return (
-      <div className="px-4 pt-6">
-        <a href="/" className="back-link">
-          ← {t.purchase.home}
-        </a>
-        <p className="text-[14px] mt-6">{t.myCollections.needSignIn}</p>
-      </div>
-    )
+    return <SignInGate message={t.myCollections.needSignIn} onSignedIn={load} />
   }
 
   const series: DerivedGroup[] = deriveSeries(works)

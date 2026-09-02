@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { useLocale } from '@/i18n/LocaleProvider'
+import { useShell } from '@/components/AppShell'
 import { StandingSheet } from '@/components/Sheet'
 import { supabase } from '@/lib/supabase'
 import {
@@ -45,6 +46,7 @@ export function CurationModal({
   target: CurationTarget | null
 }) {
   const { t } = useLocale()
+  const { openAuth } = useShell()
   const [list, setList] = useState<Curation[]>([])
   const [adding, setAdding] = useState(false)
   const [scores, setScores] = useState<Partial<Record<Axis, number>>>({})
@@ -61,6 +63,24 @@ export function CurationModal({
     setIsPublic(true)
     setMsg('')
     fetchCurations(target.type, target.id).then(setList)
+
+    /*
+     * La puerta va AL ABRIR, no al publicar — Gating Spec 01, ítem 4.
+     *
+     * Antes se comprobaba dentro del envío: la persona puntuaba técnica, color
+     * y significado, escribía su curación, elegía pública o privada, pulsaba
+     * Publicar, y SOLO ENTONCES se le pedía entrar. Todo lo escrito seguía en
+     * pantalla y nada se había guardado.
+     *
+     * El sheet se abre ENCIMA y el modal no se cierra: al terminar, las notas y
+     * el texto siguen ahí. Cerrarlo obligaría a hacer el trabajo dos veces, que
+     * es peor que el defecto.
+     */
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (!user) openAuth()
+    })
+    // `openAuth` es estable — cuelga del shell, no de este render.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, target])
 
   if (!open || !target) return null
@@ -82,7 +102,11 @@ export function CurationModal({
     const {
       data: { user },
     } = await supabase.auth.getUser()
-    if (!user) return setMsg(t.curation.needSignIn)
+    /*
+     * El respaldo, para la sesión que caduca con el formulario abierto — que es
+     * justo cuando `resume` más importa: reanuda ESTE envío con lo escrito.
+     */
+    if (!user) return openAuth({ resume: submit })
     if (!body.trim()) return setMsg(t.curation.writeFirst)
     if (AXES.some((a) => !scores[a])) return setMsg(t.curation.rateFirst)
 
