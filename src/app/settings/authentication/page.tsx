@@ -9,6 +9,7 @@ import { PrivateCodeSheet } from '@/components/PrivateCodeSheet'
 import { SecBlock } from '@/components/FormBits'
 import { RecoveryEmailSheet } from '@/components/RecoveryEmailSheet'
 import { BiometricSheet } from '@/components/BiometricSheet'
+import { SignInGate } from '@/components/SignInGate'
 
 /**
  * Hub de autenticación — Master Handoff §8.
@@ -82,12 +83,7 @@ export default function AuthHubPage() {
   }
 
   if (!phone) {
-    return (
-      <div className="px-4 pt-6">
-        <a href="/" className="back-link">← {t.purchase.home}</a>
-        <p className="text-[14px] mt-6">{t.authHub.needSignIn}</p>
-      </div>
-    )
+    return <SignInGate message={t.authHub.needSignIn} />
   }
 
   const hasCode = !!profile?.private_code_hash

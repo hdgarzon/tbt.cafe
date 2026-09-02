@@ -7,6 +7,7 @@ import { money } from '@/lib/fees'
 import { fetchEarnings, sumOf, type Earning } from '@/lib/payout-data'
 import { ReceiptIcon } from '@/components/Brand'
 import { CollectSheet } from '@/components/CollectSheet'
+import { SignInGate } from '@/components/SignInGate'
 
 /**
  * /history/payouts — payoutPage del prototipo.
@@ -72,14 +73,7 @@ export default function PayoutsPage() {
   if (loading) return <div className="px-4 pt-6 text-[13px] text-ink-soft">{t.authHub.loading}</div>
 
   if (!signedIn) {
-    return (
-      <div className="px-4 pt-6">
-        <a href="/" className="back-link">
-          ← {t.purchase.home}
-        </a>
-        <p className="text-[14px] mt-6">{t.myCollections.needSignIn}</p>
-      </div>
-    )
+    return <SignInGate message={t.myCollections.needSignIn} />
   }
 
   return (

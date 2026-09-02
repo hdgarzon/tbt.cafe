@@ -63,7 +63,10 @@ const curation = read('src/components/CurationModal.tsx')
 
 // ---- la puerta compartida
 {
-  ok('la puerta lleva botón', gate.includes('openAuth({ resume: onSignedIn })'))
+  ok('la puerta lleva botón', gate.includes('openAuth({ resume })'))
+  ok('y siempre devuelve a la misma página',
+     gate.includes('onSignedIn ?? (() => window.location.reload())'),
+     'sin cargador propio se recarga la ruta: entrar y quedarse en la misma frase no es entrar')
   ok('y reusa una cadena que ya existe en los cuatro idiomas', gate.includes('t.header.signIn'))
 
   for (const page of ['favorites', 'creations', 'acquisitions']) {
@@ -72,6 +75,32 @@ const curation = read('src/components/CurationModal.tsx')
     ok(`  y vuelve a cargarse al entrar`, src.includes('onSignedIn={load}'),
        'la sesión se comprueba una vez al montar: sin esto se queda en la misma frase')
   }
+
+  /*
+   * NINGUNA página se queda con la frase a secas — ítem 6.
+   *
+   * Se recorre el árbol en vez de listar las diecisiete: una pantalla nueva que
+   * escriba `needSignIn` y pare cae aquí sola, que es lo que impide que el
+   * defecto vuelva de a una.
+   */
+  const pages: string[] = []
+  const walkPages = (d: string) => {
+    for (const n of readdirSync(d)) {
+      const p = join(d, n)
+      if (statSync(p).isDirectory()) walkPages(p)
+      else if (n === 'page.tsx') pages.push(p)
+    }
+  }
+  walkPages(join(process.cwd(), 'src/app'))
+
+  const deadEnds = pages.filter((f) => {
+    const src = readFileSync(f, 'utf8')
+    if (!src.includes('needSignIn')) return false
+    // Ofrecer el paso vale con la puerta compartida o llamando a openAuth.
+    return !src.includes('<SignInGate') && !src.includes('openAuth')
+  })
+  ok(`ninguna de las ${pages.length} páginas es un callejón sin salida`, deadEnds.length === 0,
+     deadEnds.map((f) => f.replace(process.cwd() + '/', '')).join(', '))
 }
 
 // ---- el asistente, abierto a quien todavía no se ha unido

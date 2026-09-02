@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useLocale, type Dictionary } from '@/i18n/LocaleProvider'
 import { useShell } from '@/components/AppShell'
+import { SignInGate } from '@/components/SignInGate'
 
 /**
  * Notificaciones — Master Handoff §15.
@@ -199,12 +200,7 @@ export default function NotificationsPage() {
 
   if (loading) return <div className="px-4 pt-6 text-[13px] text-ink-soft">{t.authHub.loading}</div>
   if (!signedIn) {
-    return (
-      <div className="px-4 pt-6">
-        <a href="/" className="back-link">← {t.purchase.home}</a>
-        <p className="text-[14px] mt-6">{t.notifications.needSignIn}</p>
-      </div>
-    )
+    return <SignInGate message={t.notifications.needSignIn} />
   }
 
   const categories = buildCategories(t)

@@ -4,6 +4,7 @@ import { useEffect, useState, useMemo, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import { useLocale, type Dictionary } from '@/i18n/LocaleProvider'
+import { SignInGate } from '@/components/SignInGate'
 
 /**
  * /history/transactions — transferencias enviadas o recibidas
@@ -95,12 +96,7 @@ function TransfersLedger() {
   if (!signedIn) {
 
 
-    return (
-      <div className="px-4 pt-6">
-        <a href="/" className="back-link">← {t.purchase.home}</a>
-        <p className="text-[14px] mt-6">{t.myCollections.needSignIn}</p>
-      </div>
-    )
+    return <SignInGate message={t.myCollections.needSignIn} />
   }
 
   return (

@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useLocale } from '@/i18n/LocaleProvider'
 import { Field, TextArea, CategoryPicker, SaveBar, type Category } from '@/components/FormBits'
+import { SignInGate } from '@/components/SignInGate'
 
 /**
  * Perfil de Creador — Master Handoff §11.1.
@@ -109,12 +110,7 @@ export default function CreatorProfilePage() {
 
   if (loading) return <div className="px-4 pt-6 text-[13px] text-ink-soft">{t.authHub.loading}</div>
   if (!signedIn) {
-    return (
-      <div className="px-4 pt-6">
-        <a href="/profile" className="back-link">← {t.profile.title}</a>
-        <p className="text-[14px] mt-6">{t.profileCreator.needSignIn}</p>
-      </div>
-    )
+    return <SignInGate message={t.profileCreator.needSignIn} backHref="/profile" backLabel={t.profile.title} />
   }
 
   return (
