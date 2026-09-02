@@ -128,7 +128,7 @@ export default function TransferAcceptPage(props: { params: Promise<{ transferId
           <p className="text-[13px] text-ink-soft px-4">{t.transferAccept.needSignInBody}</p>
           <button
             type="button"
-            onClick={openAuth}
+            onClick={() => openAuth()}
             className="w-full mt-5 py-4 text-[12px] font-semibold tracking-[0.16em] uppercase bg-ink text-paper rounded-xl hover:bg-black transition-colors"
           >
             {t.transferAccept.needSignInTitle}

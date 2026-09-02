@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { useLocale } from '@/i18n/LocaleProvider'
+import { useShell } from '@/components/AppShell'
 import { HeartIcon, CurateIcon, ShareIcon } from '@/components/Brand'
 import { isFavorited, toggleFavorite, type FavoriteTargetType } from '@/lib/favorites-data'
 import { countCurations, type CurationTargetType } from '@/lib/curation-data'
@@ -29,6 +30,7 @@ export function WorkActions({
   shareUrl: string
 }) {
   const { t } = useLocale()
+  const { openAuth } = useShell()
   const [saved, setSaved] = useState(false)
   const [curationCount, setCurationCount] = useState(0)
   const [curating, setCurating] = useState(false)
@@ -45,7 +47,18 @@ export function WorkActions({
 
   async function onFavorite() {
     if (!favorite) return
-    setSaved(await toggleFavorite(favorite.type, favorite.id))
+    const result = await toggleFavorite(favorite.type, favorite.id)
+
+    /*
+     * Sin sesión no se calla: se ofrece la manera de entrar y se REANUDA.
+     *
+     * `resume` vuelve a correr esta misma función cuando la autenticación
+     * termina, así que el toque que hizo la persona es el toque que cuenta.
+     * Pedirle que se autentique y luego que vuelva a buscar la obra sería una
+     * segunda negativa con mejores modales (Gating Spec 01, ítem 3).
+     */
+    if (typeof result === 'object') return openAuth({ resume: onFavorite })
+    setSaved(result)
   }
 
   async function onShare() {

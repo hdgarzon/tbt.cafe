@@ -1,8 +1,9 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useLocale } from '@/i18n/LocaleProvider'
+import { SignInGate } from '@/components/SignInGate'
 import { WorkCell } from '@/components/WorkCell'
 import { listFavorites, resolveFavorites, type ResolvedFavorites } from '@/lib/favorites-data'
 import { PersonalTabs } from '@/components/PersonalTabs'
@@ -28,32 +29,37 @@ export default function FavoritesPage() {
   const [data, setData] = useState<ResolvedFavorites>({ creators: [], series: [], works: [] })
   const [tab, setTab] = useState<Tab>('creators')
 
-  useEffect(() => {
-    ;(async () => {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser()
-      if (!user) {
-        setSignedIn(false)
-        setLoading(false)
-        return
-      }
-      const rows = await listFavorites()
-      setData(await resolveFavorites(rows))
+  /**
+   * El cargador, con nombre para poder volver a llamarlo.
+   *
+   * La sesión se comprueba UNA VEZ al montar, así que `connected` cambiando no
+   * recarga nada: sin esto, alguien entra desde el botón de la puerta y se queda
+   * mirando la misma frase. `SignInGate` lo recibe y `openAuth` lo vuelve a
+   * correr al terminar (Gating Spec 01, ítem 6).
+   */
+  const load = useCallback(async () => {
+    const {
+      data: { user },
+    } = await supabase.auth.getUser()
+    if (!user) {
+      setSignedIn(false)
       setLoading(false)
-    })()
+      return
+    }
+    setSignedIn(true)
+    setLoading(true)
+    const rows = await listFavorites()
+    setData(await resolveFavorites(rows))
+    setLoading(false)
   }, [])
+
+  useEffect(() => {
+    load()
+  }, [load])
 
   if (loading) return <div className="px-4 pt-6 text-[13px] text-ink-soft">{t.authHub.loading}</div>
   if (!signedIn) {
-    return (
-      <div className="px-4 pt-6">
-        <a href="/" className="back-link">
-          ← {t.purchase.home}
-        </a>
-        <p className="text-[14px] mt-6">{t.myCollections.needSignIn}</p>
-      </div>
-    )
+    return <SignInGate message={t.myCollections.needSignIn} onSignedIn={load} />
   }
 
   return (

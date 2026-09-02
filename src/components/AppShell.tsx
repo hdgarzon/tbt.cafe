@@ -31,7 +31,15 @@ type ShellValue = {
   connected: boolean
   /** Teléfono enmascarado de la sesión, para el hub de autenticación. */
   maskedPhone: string | null
-  openAuth: () => void
+  /**
+   * Abre la autenticación, y opcionalmente REANUDA la acción que la pidió.
+   *
+   * Sin `resume`, autenticarse deja a la persona donde estaba y con el gesto
+   * perdido: hay que volver a encontrar la obra y volver a tocar el corazón.
+   * Eso es una segunda negativa con mejores modales. Con `resume`, el toque que
+   * hizo es el toque que cuenta (Gating Spec 01, ítems 3, 4 y 6).
+   */
+  openAuth: (options?: { resume?: () => void }) => void
   /** Abre el cajón de menú — el prototipo vuelve al Menú desde /profile. */
   openMenu: () => void
 }
@@ -50,6 +58,15 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const [maskedPhone, setMaskedPhone] = useState<string | null>(null)
   const [menuOpen, setMenuOpen] = useState(false)
   const [authOpen, setAuthOpen] = useState(false)
+  /*
+   * La acción que quedó a medias esperando sesión.
+   *
+   * Se guarda con `useState(() => fn)` porque React trata una función pasada a
+   * un setter como actualizador: sin el envoltorio, guardaría el RESULTADO de
+   * llamarla — es decir, ejecutaría la acción justo cuando todavía no hay
+   * sesión, que es exactamente lo que se está evitando.
+   */
+  const [resumeAfterAuth, setResumeAfterAuth] = useState<(() => void) | null>(null)
   const [bioAuthOpen, setBioAuthOpen] = useState(false)
   const [notifOpen, setNotifOpen] = useState(false)
   const [unread, setUnread] = useState(0)
@@ -111,14 +128,35 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     }
   }
 
+  function openAuth(options?: { resume?: () => void }) {
+    setResumeAfterAuth(() => options?.resume ?? null)
+    setAuthOpen(true)
+  }
+
+  /**
+   * Cierra la autenticación y decide si la acción pendiente sigue viva.
+   *
+   * Cancelar la DESCARTA. Una acción guardada que sobreviviera a un «no» se
+   * dispararía sola la próxima vez que alguien se autentique por otro motivo.
+   */
+  function closeAuth(resumed: boolean) {
+    setAuthOpen(false)
+    const pending = resumeAfterAuth
+    setResumeAfterAuth(null)
+    // Tras el tic: el sheet termina de cerrarse y la sesión ya está puesta
+    // antes de que la acción vuelva a preguntar por ella.
+    if (resumed && pending) setTimeout(pending, 0)
+  }
+
   function handleAuthenticated(digits: string, country: Country) {
     setConnected(true)
     setMaskedPhone(maskPhone(digits, country))
+    closeAuth(true)
   }
 
   return (
     <ShellContext.Provider
-      value={{ connected, maskedPhone, openAuth: () => setAuthOpen(true), openMenu: () => setMenuOpen(true) }}
+      value={{ connected, maskedPhone, openAuth, openMenu: () => setMenuOpen(true) }}
     >
       <Header
         connected={connected}
@@ -144,7 +182,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
       <AuthSheet
         open={authOpen}
-        onClose={() => setAuthOpen(false)}
+        onClose={() => closeAuth(false)}
         onAuthenticated={handleAuthenticated}
         onSwitchToBiometric={() => {
           setAuthOpen(false)
@@ -155,7 +193,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       <BiometricSignInSheet
         open={bioAuthOpen}
         onClose={() => setBioAuthOpen(false)}
-        onAuthenticated={() => setConnected(true)}
+        onAuthenticated={() => {
+          setConnected(true)
+          closeAuth(true)
+        }}
       />
     </ShellContext.Provider>
   )
