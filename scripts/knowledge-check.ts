@@ -2,7 +2,7 @@ import { readFileSync } from 'fs'
 import { join } from 'path'
 import { retrieve, KNOWLEDGE, type Locale } from '../src/lib/assistant/knowledge'
 import { FEE, ROYALTY_FLOOR } from '../src/lib/fees'
-import { parseReply } from '../src/lib/assistant/provider'
+import { parseReply, callWithRetry } from '../src/lib/assistant/provider'
 
 /**
  * Lo que el asistente sabe, y lo que la aplicación le promete que sabe.
@@ -114,5 +114,54 @@ const dict = (l: Locale) =>
   ok('lo irrecuperable sí lanza', lanzo, 'inventar una respuesta sería peor que fallar')
 }
 
-console.log(bad === 0 ? '\ntodo en orden' : `\n${bad} fallo(s)`)
-process.exit(bad === 0 ? 0 : 1)
+// ---- un mal minuto del proveedor no tumba la conversación
+//
+// Un 503 de Gemini subía como un 500 y se llevaba la respuesta por delante.
+{
+  const real = globalThis.fetch
+  const stub = (respuestas: Array<number | 'red'>) => {
+    let i = 0
+    const llamadas: number[] = []
+    globalThis.fetch = (async () => {
+      const r = respuestas[Math.min(i, respuestas.length - 1)]
+      llamadas.push(i)
+      i++
+      if (r === 'red') throw new Error('socket cortado')
+      return new Response('{}', { status: r })
+    }) as typeof fetch
+    return () => llamadas.length
+  }
+
+  async function main() {
+    let veces = stub([503, 200])
+    let res = await callWithRetry('http://x', {}, [0, 0])
+    ok('un 503 se reintenta y sale', res.status === 200 && veces() === 2)
+
+    veces = stub([400])
+    res = await callWithRetry('http://x', {}, [0, 0])
+    ok('un 400 no se reintenta', res.status === 400 && veces() === 1,
+       'ese es nuestro y reintentarlo solo gasta tiempo')
+
+    veces = stub([503, 503, 503])
+    res = await callWithRetry('http://x', {}, [0, 0])
+    ok('tres 503 devuelven el último, no lanzan', res.status === 503 && veces() === 3,
+       'quien llama lanza con el estado dentro, para que quede anotado')
+
+    veces = stub(['red', 200])
+    res = await callWithRetry('http://x', {}, [0, 0])
+    ok('un corte de red también se reintenta', res.status === 200 && veces() === 2)
+
+    let lanzo = false
+    stub(['red'])
+    try { await callWithRetry('http://x', {}, [0, 0]) } catch { lanzo = true }
+    ok('una red que no vuelve sí lanza', lanzo)
+
+    globalThis.fetch = real
+  }
+
+  // `await` en el cuerpo del módulo no compila al formato CJS de estos scripts.
+  main().then(() => {
+    console.log(bad === 0 ? '\ntodo en orden' : `\n${bad} fallo(s)`)
+    process.exit(bad === 0 ? 0 : 1)
+  })
+}

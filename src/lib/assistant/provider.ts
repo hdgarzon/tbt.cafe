@@ -173,27 +173,75 @@ export function parseReply(
   }
 }
 
+/**
+ * Estados que merecen otro intento: son del proveedor, no de la peticion.
+ *
+ * Un 400 o un 401 los causamos nosotros y reintentarlos solo gasta tiempo. Un
+ * 503 es que Gemini tuvo un mal minuto — y sin esto, ese minuto tumbaba la
+ * conversacion entera con un 500. Visto en el log durante las pruebas:
+ *
+ *   [assistant] failed: Error: assistant provider 503
+ */
+const RETRYABLE = new Set([429, 500, 502, 503, 504])
+
+/** Espera creciente entre intentos, como `generate-context` y el minteo. */
+const BACKOFF_MS = [1000, 2000]
+
+/**
+ * Llama al proveedor y aguanta un mal minuto.
+ *
+ * Devuelve la respuesta del ULTIMO intento aunque sea un fallo: quien llama
+ * decide que hacer con ella, que aqui es lanzar con el estado dentro para que
+ * `trackProvider` lo anote.
+ */
+export async function callWithRetry(
+  url: string,
+  payload: unknown,
+  /** Las esperas. La prueba las pone en cero; nada mas debería tocarlas. */
+  backoff: readonly number[] = BACKOFF_MS
+): Promise<Response> {
+  let last: Response | null = null
+
+  for (let attempt = 0; attempt <= backoff.length; attempt++) {
+    try {
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      })
+      if (res.ok || !RETRYABLE.has(res.status)) return res
+      last = res
+    } catch (networkError) {
+      // La red tambien cuenta como mal minuto.
+      if (attempt === backoff.length) throw networkError
+    }
+
+    if (attempt < backoff.length) {
+      console.warn(`[assistant] intento ${attempt + 1} sin suerte, esperando ${backoff[attempt]}ms`)
+      await new Promise((r) => setTimeout(r, backoff[attempt]))
+    }
+  }
+
+  return last as Response
+}
+
 /** Adaptador de Gemini. Mismo estilo de llamada que el resto del backend. */
 export const geminiProvider: AssistantProvider = {
   async answer(req) {
     const apiKey = process.env.GEMINI_API_KEY
     if (!apiKey) throw new Error('GEMINI_API_KEY is not configured')
 
-    const res = await fetch(
+    const res = await callWithRetry(
       `https://generativelanguage.googleapis.com/v1beta/models/${MODELS[req.tier]}:generateContent?key=${apiKey}`,
       {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          contents: [{ parts: [{ text: buildPrompt(req) }] }],
-          generationConfig: {
-            temperature: 0.2,
-            responseMimeType: 'application/json',
-            // 800 cortaba respuestas normales por la mitad, y el corte llega
-            // como JSON invalido. Ver `parseReply`.
-            maxOutputTokens: 1400,
-          },
-        }),
+        contents: [{ parts: [{ text: buildPrompt(req) }] }],
+        generationConfig: {
+          temperature: 0.2,
+          responseMimeType: 'application/json',
+          // 800 cortaba respuestas normales por la mitad, y el corte llega
+          // como JSON invalido. Ver `parseReply`.
+          maxOutputTokens: 1400,
+        },
       }
     )
 

@@ -72,9 +72,12 @@ exits non-zero. Two habits matter when writing one:
   `someName` is not used. Assert on `someName(` or on the exact interpolation.
 - A helper ending in `})` followed by a bare `{` block parses as an arrow
   function. Terminate it with a semicolon.
-- `tsc --noEmit` is **not** the build. `next build` type-checks `scripts/` under
-  its own settings and rejects what the standalone compiler accepts — iterating
-  a `Buffer` with `for…of` was one. Run the build before pushing.
+- **The guards run as CommonJS, at a lower target than the app.** Three shapes
+  have now failed there and nowhere else: `for…of` over a `Buffer`, `for…of`
+  over a `Set` (both want `--downlevelIteration`), and `await` in the body of
+  the module (`ERR_REQUIRE_ASYNC_MODULE`). Use index loops, `Array.from`, and
+  an async `main()` whose `.then()` prints the summary. `tsc --noEmit` accepts
+  all three; `next build` and `tsx` do not, so run both before pushing.
 
 And one about staging, because it has cost three commits:
 
