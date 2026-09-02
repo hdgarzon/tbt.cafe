@@ -59,7 +59,17 @@ export function SupportPanel({ compact = false }: { compact?: boolean }) {
       const {
         data: { user },
       } = await supabase.auth.getUser()
-      if (!user) return
+      if (!user) {
+        /*
+         * Sin sesión se abre en «preguntar» — Gating Spec 01, ítem 2.
+         *
+         * Alertas y solicitudes son personales y no tienen nada que enseñarle a
+         * una visita. El asistente sí, y es la razón de que este panel exista
+         * para quien todavía no se ha unido.
+         */
+        setTab('ask')
+        return
+      }
       setUserId(user.id)
       load(user.id)
     })()
@@ -93,23 +103,28 @@ export function SupportPanel({ compact = false }: { compact?: boolean }) {
     load(userId)
   }
 
-  if (!userId) {
-    return (
-      <div className="px-4 pt-6">
-        <div className="border border-hairline rounded-2xl px-5 py-10 text-center mt-6">
-          <div className="text-[15px] font-medium text-ink">{t.help.gateTitle}</div>
-          <p className="text-[12px] leading-[1.6] text-ink-soft mt-2">{t.help.gateSub}</p>
-          <button
-            type="button"
-            onClick={() => openAuth()}
-            className="mt-5 px-6 py-3.5 text-[12px] font-semibold tracking-[0.16em] uppercase bg-ink text-paper rounded-xl"
-          >
-            {t.help.authenticate}
-          </button>
-        </div>
+  /*
+   * La puerta es de la PESTAÑA, no del panel.
+   *
+   * Tapaba las tres: sin sesión, el panel entero era esta tarjeta y las
+   * pestañas no llegaban a verse. Las solicitudes sí necesitan una cuenta —hay
+   * que poder contestarle a alguien— y ahí sigue, con su botón.
+   */
+  const requestsGate = (
+    <div className="px-4 pt-6">
+      <div className="border border-hairline rounded-2xl px-5 py-10 text-center mt-6">
+        <div className="text-[15px] font-medium text-ink">{t.help.gateTitle}</div>
+        <p className="text-[12px] leading-[1.6] text-ink-soft mt-2">{t.help.gateSub}</p>
+        <button
+          type="button"
+          onClick={() => openAuth()}
+          className="mt-5 px-6 py-3.5 text-[12px] font-semibold tracking-[0.16em] uppercase bg-ink text-paper rounded-xl"
+        >
+          {t.help.authenticate}
+        </button>
       </div>
-    )
-  }
+    </div>
+  )
 
   return (
     <div className={compact ? '' : 'px-4 pt-6 pb-10'}>
@@ -146,7 +161,9 @@ export function SupportPanel({ compact = false }: { compact?: boolean }) {
         </div>
       )}
 
-      {tab === 'requests' && (
+      {tab === 'requests' && !userId && requestsGate}
+
+      {tab === 'requests' && userId && (
       <>
       <div className="pt-1 pb-2 mt-4">
         <div className="text-[12px] font-semibold tracking-[0.04em] text-ink">{t.help.openRequest}</div>

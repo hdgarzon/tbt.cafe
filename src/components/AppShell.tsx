@@ -163,7 +163,19 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         onToggle={handleToggle}
         onMenu={() => setMenuOpen(true)}
         unread={unread}
-        onNotifications={() => (connected ? setNotifOpen(true) : setAuthOpen(true))}
+        /*
+         * El panel se abre para todo el mundo — Gating Spec 01, ítem 2.
+         *
+         * Este era el gate de FUERA, y el que de verdad cerraba la puerta: sin
+         * sesión, tocar el icono levantaba la autenticación y el panel no
+         * llegaba a abrirse nunca. Abrirlo enseña sus pestañas, y cada una
+         * responde por sí misma — el asistente atiende a cualquiera y
+         * `NotificationFeed` conserva la suya, que es personal por definición.
+         *
+         * Es el orden equivocado para la única superficie cuyo trabajo es
+         * explicar la plataforma a quien todavía no se ha unido.
+         */
+        onNotifications={() => setNotifOpen(true)}
       />
 
       {/* pb-[90px] libera el pie fijo de 30px con aire por debajo */}

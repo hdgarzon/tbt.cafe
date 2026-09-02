@@ -15,6 +15,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useLocale } from '@/i18n/LocaleProvider'
+import { useShell } from '@/components/AppShell'
 
 type Turn = { role: 'user' | 'assistant'; text: string }
 type Cta = { label: string; href: string }
@@ -52,23 +53,29 @@ const SPEECH_LANG: Record<string, string> = { en: 'en-US', es: 'es-CO', pt: 'pt-
 
 export function AssistantChat() {
   const { t, locale } = useLocale()
+  const { openAuth } = useShell()
   const [turns, setTurns] = useState<Turn[]>([])
   const [input, setInput] = useState('')
   const [busy, setBusy] = useState(false)
   const [cta, setCta] = useState<Cta | null>(null)
   const [escalated, setEscalated] = useState<string | null>(null)
   const [listening, setListening] = useState(false)
-  const [signedIn, setSignedIn] = useState<boolean | null>(null)
   const openedRef = useRef(false)
   const recRef = useRef<Recognition | null>(null)
   const endRef = useRef<HTMLDivElement | null>(null)
 
   const send = useCallback(
     async (question: string, viaVoice: boolean) => {
+      /*
+       * Sin sesión también se contesta — Gating Spec 01, ítem 2.
+       *
+       * Antes esto volvía sin hacer nada. La cabecera se manda solo si hay
+       * token: el servidor decide qué puede responder, porque es quien sabe qué
+       * preguntas tocan registros personales.
+       */
       const {
         data: { session },
       } = await supabase.auth.getSession()
-      if (!session) return
 
       setBusy(true)
       setCta(null)
@@ -80,7 +87,7 @@ export function AssistantChat() {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            Authorization: `Bearer ${session.access_token}`,
+            ...(session ? { Authorization: `Bearer ${session.access_token}` } : {}),
           },
           // No se manda ningún identificador de usuario: la identidad sale del
           // token en el servidor. Si el cliente pudiera elegirla, podría pedir
@@ -93,13 +100,16 @@ export function AssistantChat() {
         setTurns((prev) => [...prev, { role: 'assistant', text: body.text }])
         setCta(body.cta ?? null)
         if (body.escalatedTo) setEscalated(body.escalatedTo)
+        // Escalar necesita a quien responder: se pide la sesión en el momento
+        // en que hace falta, no antes de abrir la conversación.
+        if (body.needsSignIn) openAuth()
       } catch {
         setTurns((prev) => [...prev, { role: 'assistant', text: t.assistant.failed }])
       } finally {
         setBusy(false)
       }
     },
-    [turns, locale, t.assistant.failed]
+    [turns, locale, t.assistant.failed, openAuth]
   )
 
   // Apertura proactiva: si hay solicitudes abiertas se levanta la más grave.
@@ -110,9 +120,14 @@ export function AssistantChat() {
       const {
         data: { session },
       } = await supabase.auth.getSession()
-      setSignedIn(!!session)
-      if (!session) return
       openedRef.current = true
+
+      // La apertura proactiva mira solicitudes abiertas, y una visita no tiene.
+      // Se la saluda y ya; sondear no traería nada que enseñar.
+      if (!session) {
+        setTurns([{ role: 'assistant', text: t.assistant.greeting }])
+        return
+      }
 
       try {
         const res = await fetch('/api/assistant', {
@@ -165,10 +180,6 @@ export function AssistantChat() {
     rec.onerror = () => setListening(false)
     setListening(true)
     rec.start()
-  }
-
-  if (signedIn === false) {
-    return <p className="text-[12px] leading-[1.6] text-ink-soft">{t.assistant.needSignIn}</p>
   }
 
   return (

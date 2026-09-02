@@ -74,6 +74,78 @@ const curation = read('src/components/CurationModal.tsx')
   }
 }
 
+// ---- el asistente, abierto a quien todavía no se ha unido
+{
+  const chat = read('src/components/AssistantChat.tsx')
+  const route = read('src/app/api/assistant/route.ts')
+  const ctx = read('src/lib/assistant/context.ts')
+  const feed = read('src/components/NotificationFeed.tsx')
+
+  ok('el icono del header abre el panel, sin preguntar',
+     shell.includes('onNotifications={() => setNotifOpen(true)}'),
+     'era el gate de fuera: sin sesión el panel no llegaba a abrirse')
+  ok('la pestaña del asistente ya no exige sesión',
+     !chat.includes('if (signedIn === false)'),
+     'es la única superficie cuyo trabajo es explicar la plataforma a quien no se ha unido')
+  ok('y envía sin cabecera cuando no la hay',
+     chat.includes('...(session ? { Authorization: `Bearer ${session.access_token}` } : {})'))
+  ok('la de notificaciones SIGUE cerrada', feed.includes('if (signedIn === false)'),
+     'es personal por definición y no tiene nada que enseñarle a una visita')
+
+  ok('el servidor ya no rechaza sin sesión',
+     !route.includes('if (!auth.ok) return NextResponse.json(auth.body'))
+  ok('y solo carga el contexto personal si hay quien',
+     route.includes('auth.ok ? await loadPersonContext(auth.supabase, auth.user.id) : null'))
+  ok('el conocimiento se recupera igual para todos',
+     route.includes('const docs = retrieve(question, locale)'),
+     'retrieve() es puro sobre documentos estáticos y no toca dato de nadie')
+
+  ok('a una visita se le DICE que lo es', ctx.includes('You are speaking to a visitor who has not signed in.'),
+     'un contexto vacío el modelo lo lee como «no tiene nada», y de ahí inventa una cifra')
+  ok('y que no invente cifras', ctx.includes('Never estimate, guess or invent a figure about them.'))
+
+  ok('escalar sin destinatario pide la sesión en ese momento',
+     route.includes('needsSignIn = true') && chat.includes('if (body.needsSignIn) openAuth()'),
+     'un ticket sin persona a quien responder no es una escalada')
+}
+
+// ---- el asistente no manda a nadie a una página que no existe
+//
+// Abrirlo a visitas lo sacó a la luz: lo que inventa con más naturalidad al
+// hablar con quien no ha entrado es `/signin`, y aquí autenticarse es un sheet.
+
+{
+  const { ALLOWED_CTA } = require('../src/lib/assistant/provider') as { ALLOWED_CTA: readonly string[] }
+  const provider = read('src/lib/assistant/provider.ts')
+
+  ok('el enlace se compara contra una lista, no contra «empieza por /»',
+     provider.includes('(ALLOWED_CTA as readonly string[]).includes(parsed.cta.href)') &&
+     !provider.includes("parsed.cta.href?.startsWith('/') ? parsed.cta"))
+  ok('y al modelo se le dice que no hay página de acceso',
+     provider.includes('There is NO sign-in page'))
+
+  /** Existe si hay carpeta con ese nombre, o si el padre tiene un segmento dinámico. */
+  const routeExists = (route: string): boolean => {
+    const parts = route.replace(/^\//, '').split('/')
+    let dir = join(process.cwd(), 'src/app')
+    for (const part of parts) {
+      const literal = join(dir, part)
+      try {
+        if (statSync(literal).isDirectory()) { dir = literal; continue }
+      } catch { /* sigue: puede ser dinámico */ }
+      const dynamic = readdirSync(dir).find((n) => n.startsWith('[') && n.endsWith(']'))
+      if (!dynamic) return false
+      dir = join(dir, dynamic)
+    }
+    return true
+  }
+  const missing = ALLOWED_CTA.filter((route) => !routeExists(route))
+  ok(`las ${ALLOWED_CTA.length} rutas ofrecidas existen en src/app`, missing.length === 0,
+     'no existen: ' + missing.join(', '))
+  ok('y ninguna es la de acceso inventada',
+     !ALLOWED_CTA.some((r) => ['/signin', '/login', '/account'].includes(r)))
+}
+
 // ---- la trampa del evento como opciones
 {
   const files: string[] = []
