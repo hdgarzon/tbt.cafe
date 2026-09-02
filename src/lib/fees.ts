@@ -61,9 +61,19 @@ export function royaltyAmountOf(r: Royalty, value: number): number {
  * Los porcentajes no necesitan piso. Las transferencias tampoco lo llevan
  * (§2.3): ahí paga el emisor y ve el costo completo antes de confirmar.
  */
+/**
+ * El piso que una regalia fija le pone a la obra.
+ *
+ * Con nombre porque no vive solo aqui: el asistente lo explica, y el modulo de
+ * conocimiento interpola estas constantes en vez de escribir «5%» y «$25» a
+ * mano en cuatro idiomas. Dos veces en este proyecto una regla de dinero cambio
+ * en el codigo mientras la documentacion se quedaba atras.
+ */
+export const ROYALTY_FLOOR = { pct: 0.05, min: 25 } as const
+
 export function minPriceFor(r: Royalty): number {
   if (r.type !== 'fixed' || !r.value) return 0
-  return r.value + Math.max(r.value * 0.05, 25)
+  return r.value + Math.max(r.value * ROYALTY_FLOOR.pct, ROYALTY_FLOOR.min)
 }
 
 export type Quote = {

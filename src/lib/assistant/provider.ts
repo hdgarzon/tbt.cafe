@@ -94,6 +94,8 @@ ${req.history.map((h) => `${h.role === 'user' ? 'Person' : 'You'}: ${h.text}`).j
 
 QUESTION: ${req.question}
 
+Keep the answer under 120 words: it is read on a phone, in a panel.
+
 Reply as JSON only:
 {"text": "...", "cta": {"label": "...", "href": "/..."} or null, "escalate": true or false}
 The cta href must be one of these exact paths, or null: ${ALLOWED_CTA.join(', ')}.
@@ -139,6 +141,38 @@ export const ALLOWED_CTA = [
   '/legal/privacy',
 ] as const
 
+/**
+ * La respuesta del modelo, incluso cuando llega cortada.
+ *
+ * `JSON.parse` sobre una respuesta truncada lanza `Unterminated string`, y eso
+ * subia como un 500: la conversacion entera se caia porque la respuesta era
+ * larga. Se veia asi en el log, cuatro veces seguidas:
+ *
+ *   [assistant] failed: SyntaxError: Unterminated string in JSON at position 70
+ *
+ * Cuando el corte ocurre, lo que hay escrito casi siempre es util —el campo
+ * `text` va primero— asi que se rescata y se marca para que lo retome una
+ * persona. Una respuesta a medias que se reconoce como tal es mejor que un
+ * error, y mucho mejor que una respuesta a medias presentada como completa.
+ */
+export function parseReply(
+  raw: string,
+  finishReason?: string
+): { text: string; cta?: { label: string; href: string } | null; escalate?: boolean } {
+  try {
+    const parsed = JSON.parse(raw) as { text?: string; cta?: { label: string; href: string } | null; escalate?: boolean }
+    const text = parsed.text
+    if (!text) throw new Error('assistant provider returned no answer')
+    // Cortada pero valida: el modelo se quedo sin sitio a mitad de pensar.
+    return { ...parsed, text, escalate: finishReason === 'MAX_TOKENS' ? true : parsed.escalate }
+  } catch {
+    // El campo `text` es el primero del objeto, asi que sobrevive al corte.
+    const salvaged = raw.match(/"text"\s*:\s*"((?:[^"\\]|\\.)*)/)?.[1]
+    if (!salvaged) throw new Error('assistant provider returned unusable JSON')
+    return { text: JSON.parse(`"${salvaged}"`), cta: null, escalate: true }
+  }
+}
+
 /** Adaptador de Gemini. Mismo estilo de llamada que el resto del backend. */
 export const geminiProvider: AssistantProvider = {
   async answer(req) {
@@ -155,7 +189,9 @@ export const geminiProvider: AssistantProvider = {
           generationConfig: {
             temperature: 0.2,
             responseMimeType: 'application/json',
-            maxOutputTokens: 800,
+            // 800 cortaba respuestas normales por la mitad, y el corte llega
+            // como JSON invalido. Ver `parseReply`.
+            maxOutputTokens: 1400,
           },
         }),
       }
@@ -166,8 +202,7 @@ export const geminiProvider: AssistantProvider = {
     const raw = body?.candidates?.[0]?.content?.parts?.[0]?.text
     if (!raw) throw new Error('assistant provider returned no text')
 
-    const parsed = JSON.parse(raw) as { text?: string; cta?: { label: string; href: string } | null; escalate?: boolean }
-    if (!parsed.text) throw new Error('assistant provider returned no answer')
+    const parsed = parseReply(raw, body?.candidates?.[0]?.finishReason)
 
     return {
       text: parsed.text,

@@ -20,7 +20,7 @@
  * se quedaban atrás, produciendo material seguro de sí mismo y equivocado.
  * Derivarlas hace que esa deriva no pueda ocurrir.
  */
-import { FEE as PLATFORM } from '@/lib/fees'
+import { FEE as PLATFORM, ROYALTY_FLOOR } from '@/lib/fees'
 
 export type Locale = 'en' | 'es' | 'pt' | 'fr'
 
@@ -33,8 +33,58 @@ export type KnowledgeDoc = {
 
 const FEE = PLATFORM.service
 const COVERED = 10
+/** El piso de una regalia fija y el procesamiento, derivados igual que la tarifa. */
+const FLOOR_PCT = ROYALTY_FLOOR.pct * 100
+const FLOOR_MIN = ROYALTY_FLOOR.min
+const STRIPE_PCT = PLATFORM.stripePct * 100
 
 export const KNOWLEDGE: KnowledgeDoc[] = [
+  {
+    /*
+     * COMO se registra, que no es lo mismo que CUANTO cuesta.
+     *
+     * Faltaba, y el hueco se veia desde la primera pantalla: «How do I brew a
+     * TBT?» es una de las tres preguntas que la propia aplicacion sugiere, y lo
+     * unico que recuperaba era el documento de la tarifa — que habla de dinero.
+     * El asistente contestaba, correctamente, que no sabia el proceso.
+     */
+    id: 'how_to_register',
+    terms: {
+      en: ['how do i brew', 'brew a tbt', 'how to register', 'steps', 'seal', 'process', 'certify', 'start'],
+      es: ['cómo registro', 'cómo registrar', 'pasos', 'sellar', 'sello', 'proceso', 'certificar', 'empezar'],
+      pt: ['como registro', 'como registrar', 'passos', 'selar', 'selo', 'processo', 'certificar', 'começar'],
+      fr: ['comment enregistrer', 'étapes', 'sceller', 'sceau', 'processus', 'certifier', 'commencer'],
+    },
+    body: {
+      en: `Registering happens in Brew. You need a creator profile first. There are two ways through: Cold Brew asks step by step, and Espresso is a short interview, spoken or written, that collects the same things. You give the work — image, title, category, technique, when it was made — and the image is scanned for originality before anything is sealed. Then the value and the royalty terms, then the Context: where and when, with a summary you can edit. The Seal is a press and hold, and it freezes the price, the royalty, the context and the scan into that moment; it also opens a payment window of ten minutes. After payment — or straight through, if the registration is covered — the work is certified: an NFT is minted on Solana, the record is published to Arweave and anchored to Bitcoin, and the certificate is delivered by MMS.`,
+      es: `El registro ocurre en Brew. Antes hace falta un perfil de creador. Hay dos caminos: Cold Brew pregunta paso a paso, y Espresso es una entrevista corta, hablada o escrita, que recoge lo mismo. Se entrega la obra — imagen, título, categoría, técnica, cuándo se hizo — y la imagen se escanea por originalidad antes de sellar nada. Luego el valor y los términos de regalía, y después el Contexto: dónde y cuándo, con un resumen que puedes editar. El Sello se mantiene pulsado, y congela en ese instante el precio, la regalía, el contexto y el escaneo; también abre una ventana de pago de diez minutos. Tras el pago — o directo, si la registración está cubierta — la obra queda certificada: se mintea un NFT en Solana, el registro se publica en Arweave y se ancla a Bitcoin, y el certificado se entrega por MMS.`,
+      pt: `O registro acontece no Brew. Antes é preciso um perfil de criador. Há dois caminhos: Cold Brew pergunta passo a passo, e Espresso é uma entrevista curta, falada ou escrita, que recolhe as mesmas coisas. Você entrega a obra — imagem, título, categoria, técnica, quando foi feita — e a imagem é examinada quanto à originalidade antes de selar qualquer coisa. Depois o valor e os termos de royalty, e então o Contexto: onde e quando, com um resumo que você pode editar. O Selo é pressionar e segurar, e congela naquele instante o preço, o royalty, o contexto e a verificação; também abre uma janela de pagamento de dez minutos. Após o pagamento — ou direto, se o registro estiver coberto — a obra fica certificada: um NFT é cunhado na Solana, o registro é publicado na Arweave e ancorado ao Bitcoin, e o certificado é entregue por MMS.`,
+      fr: `L'enregistrement se fait dans Brew. Il faut d'abord un profil de créateur. Deux chemins : Cold Brew pose les questions une à une, et Espresso est un entretien court, parlé ou écrit, qui recueille les mêmes éléments. Vous remettez l'œuvre — image, titre, catégorie, technique, date — et l'image est analysée pour l'originalité avant que quoi que ce soit ne soit scellé. Ensuite la valeur et les conditions de redevance, puis le Contexte : où et quand, avec un résumé que vous pouvez modifier. Le Sceau se fait en maintenant appuyé, et il fige à cet instant le prix, la redevance, le contexte et l'analyse ; il ouvre aussi une fenêtre de paiement de dix minutes. Après le paiement — ou directement, si l'enregistrement est offert — l'œuvre est certifiée : un NFT est frappé sur Solana, le registre est publié sur Arweave et ancré à Bitcoin, et le certificat est remis par MMS.`,
+    },
+  },
+  {
+    /*
+     * Como se cobra. Tampoco estaba, y «How do I collect payouts?» es la
+     * tercera pregunta sugerida: no recuperaba NADA en los cuatro idiomas.
+     *
+     * Los dias y el umbral viven en `platform_config` y una administradora los
+     * cambia sin desplegar, asi que aqui va la REGLA y no la cifra. La fecha
+     * exacta la ensena la pantalla de cobros, que la lee de la fila.
+     */
+    id: 'payouts',
+    terms: {
+      en: ['payout', 'payouts', 'collect', 'get paid', 'withdraw', 'settlement', 'available', 'pending'],
+      es: ['cobro', 'cobros', 'cobrar', 'retirar', 'liquidación', 'disponible', 'pendiente', 'cómo cobro'],
+      pt: ['saque', 'saques', 'receber', 'retirar', 'liquidação', 'disponível', 'pendente', 'como recebo'],
+      fr: ['versement', 'versements', 'encaisser', 'retirer', 'règlement', 'disponible', 'en attente'],
+    },
+    body: {
+      en: `What you earn appears under Payouts. A royalty from a purchase arrives as pending and waits out a settlement window, which is longer for large sales; the exact date is shown next to the amount. A royalty from a transfer or an accepted offer does not wait at all — the counterparty accepting is the condition, so it lands available immediately. The service fee of $${FEE} is taken out of the royalty before it is recorded. Paying out charges the platform rate plus whatever the method itself costs, which depends on your country and the method you chose; the screen quotes both before you confirm. You choose the destination in Settings, and payment runs through Stripe Connect, to a bank account or in USDC. Nobody is ever paid a royalty on their own sale.`,
+      es: `Lo que ganas aparece en Cobros. Una regalía de una compra entra como pendiente y espera una ventana de liquidación, más larga en ventas grandes; la fecha exacta se muestra junto al monto. Una regalía de una transferencia o de una oferta aceptada no espera nada — la aceptación de la contraparte ES la condición, así que entra disponible de inmediato. La tarifa de servicio de $${FEE} se descuenta de la regalía antes de anotarla. Cobrar cuesta la tasa de la plataforma más lo que cueste el método, que depende de tu país y de cuál elegiste; la pantalla cotiza las dos antes de que confirmes. El destino se elige en Ajustes, y el pago va por Stripe Connect, a una cuenta bancaria o en USDC. Nadie cobra regalía por su propia venta.`,
+      pt: `O que você ganha aparece em Saques. Um royalty de uma compra entra como pendente e aguarda uma janela de liquidação, mais longa em vendas grandes; a data exata aparece ao lado do valor. Um royalty de uma transferência ou de uma oferta aceita não espera — a aceitação da contraparte É a condição, então entra disponível na hora. A taxa de serviço de $${FEE} é descontada do royalty antes de registrá-lo. Sacar custa a taxa da plataforma mais o que o método cobrar, o que depende do seu país e do método escolhido; a tela cota as duas antes de você confirmar. O destino se escolhe em Ajustes, e o pagamento vai pela Stripe Connect, para uma conta bancária ou em USDC. Ninguém recebe royalty pela própria venda.`,
+      fr: `Ce que vous gagnez apparaît dans Versements. Une redevance issue d'un achat arrive en attente et patiente le temps d'un règlement, plus long pour les ventes importantes ; la date exacte est affichée à côté du montant. Une redevance issue d'un transfert ou d'une offre acceptée n'attend pas — l'acceptation de la contrepartie EST la condition, elle est donc disponible immédiatement. Les frais de service de $${FEE} sont déduits de la redevance avant son enregistrement. Encaisser coûte le taux de la plateforme plus ce que coûte le moyen choisi, qui dépend de votre pays ; l'écran chiffre les deux avant confirmation. La destination se choisit dans Réglages, et le paiement passe par Stripe Connect, vers un compte bancaire ou en USDC. Personne ne touche de redevance sur sa propre vente.`,
+    },
+  },
   {
     id: 'registration_fee',
     terms: {
@@ -59,10 +109,10 @@ export const KNOWLEDGE: KnowledgeDoc[] = [
       fr: ['vente', 'vendre', 'acheteur paie', 'frais de service', 'combien je reçois', 'traitement'],
     },
     body: {
-      en: `On a sale the buyer pays the price plus $${FEE}. The seller has $${FEE} deducted as well — the service fee is charged on both sides, $${FEE * 2} per sale to the platform. Card processing is (royalty + $${FEE}) x 2.9% + $0.30 and is borne by the seller only; it is never added to the buyer. The seller receives price − royalty − $${FEE} − processing.`,
-      es: `En una venta el comprador paga el precio más $${FEE}. Al vendedor también se le descuentan $${FEE} — la tarifa de servicio se cobra en ambos lados, $${FEE * 2} por venta para la plataforma. El procesamiento de tarjeta es (regalía + $${FEE}) x 2,9% + $0,30 y lo absorbe solo el vendedor; nunca se le suma al comprador. El vendedor recibe precio − regalía − $${FEE} − procesamiento.`,
-      pt: `Em uma venda o comprador paga o preço mais $${FEE}. Do vendedor também são descontados $${FEE} — a taxa de serviço é cobrada dos dois lados, $${FEE * 2} por venda para a plataforma. O processamento do cartão é (royalty + $${FEE}) x 2,9% + $0,30 e é absorvido só pelo vendedor; nunca é somado ao comprador. O vendedor recebe preço − royalty − $${FEE} − processamento.`,
-      fr: `Lors d'une vente, l'acheteur paie le prix plus $${FEE}. Le vendeur se voit aussi déduire $${FEE} — les frais de service sont prélevés des deux côtés, $${FEE * 2} par vente pour la plateforme. Les frais de carte sont (redevance + $${FEE}) x 2,9 % + $0,30 et sont supportés uniquement par le vendeur ; ils ne sont jamais ajoutés à l'acheteur. Le vendeur reçoit prix − redevance − $${FEE} − frais.`,
+      en: `On a sale the buyer pays the price plus $${FEE}. The seller has $${FEE} deducted as well — the service fee is charged on both sides, $${FEE * 2} per sale to the platform. Card processing is (royalty + $${FEE}) x ${STRIPE_PCT}% + $0.30 and is borne by the seller only; it is never added to the buyer. The seller receives price − royalty − $${FEE} − processing.`,
+      es: `En una venta el comprador paga el precio más $${FEE}. Al vendedor también se le descuentan $${FEE} — la tarifa de servicio se cobra en ambos lados, $${FEE * 2} por venta para la plataforma. El procesamiento de tarjeta es (regalía + $${FEE}) x ${STRIPE_PCT}% + $0,30 y lo absorbe solo el vendedor; nunca se le suma al comprador. El vendedor recibe precio − regalía − $${FEE} − procesamiento.`,
+      pt: `Em uma venda o comprador paga o preço mais $${FEE}. Do vendedor também são descontados $${FEE} — a taxa de serviço é cobrada dos dois lados, $${FEE * 2} por venda para a plataforma. O processamento do cartão é (royalty + $${FEE}) x ${STRIPE_PCT}% + $0,30 e é absorvido só pelo vendedor; nunca é somado ao comprador. O vendedor recebe preço − royalty − $${FEE} − processamento.`,
+      fr: `Lors d'une vente, l'acheteur paie le prix plus $${FEE}. Le vendeur se voit aussi déduire $${FEE} — les frais de service sont prélevés des deux côtés, $${FEE * 2} par vente pour la plateforme. Les frais de carte sont (redevance + $${FEE}) x ${STRIPE_PCT} % + $0,30 et sont supportés uniquement par le vendeur ; ils ne sont jamais ajoutés à l'acheteur. Le vendeur reçoit prix − redevance − $${FEE} − frais.`,
     },
   },
   {
@@ -70,14 +120,14 @@ export const KNOWLEDGE: KnowledgeDoc[] = [
     terms: {
       en: ['royalty', 'royalties', 'percentage', 'fixed royalty', 'resale', 'minimum price', 'floor'],
       es: ['regalía', 'regalías', 'porcentaje', 'regalía fija', 'reventa', 'precio mínimo', 'piso'],
-      pt: ['royalty', 'royalties', 'porcentagem', 'royalty fixo', 'revenda', 'preço mínimo', 'piso'],
+      pt: ['royalty', 'royalties', 'direitos autorais', 'direitos', 'porcentagem', 'royalty fixo', 'revenda', 'preço mínimo', 'piso'],
       fr: ['redevance', 'redevances', 'pourcentage', 'redevance fixe', 'revente', 'prix minimum', 'plancher'],
     },
     body: {
-      en: `A royalty is either a percentage of the value or a fixed amount. A fixed royalty is absolute: it is owed in full whatever the value, including a zero-value gift transfer. Because that could otherwise leave a seller paying to sell, a fixed royalty gives the work a minimum price of royalty + max(5%, $25), and that floor is enforced — a price or an offer below it is rejected. There is no shortfall payment and no prepaid royalty. The royalty locks permanently at the first sale, both its amount and its type. A fixed royalty never displays a percentage, because none applies.`,
-      es: `Una regalía es un porcentaje del valor o un monto fijo. Una regalía fija es absoluta: se debe completa sea cual sea el valor, incluso en una donación de valor cero. Como eso podría dejar al vendedor pagando por vender, una regalía fija le da a la obra un precio mínimo de regalía + max(5%, $25), y ese piso se hace cumplir — un precio o una oferta por debajo se rechazan. No hay pago de faltante ni regalía prepagada. La regalía se congela para siempre en la primera venta, tanto el monto como el tipo. Una regalía fija nunca muestra un porcentaje, porque no aplica ninguno.`,
-      pt: `Um royalty é uma porcentagem do valor ou um valor fixo. Um royalty fixo é absoluto: é devido integralmente qualquer que seja o valor, inclusive numa transferência de valor zero. Como isso poderia deixar o vendedor pagando para vender, um royalty fixo dá à obra um preço mínimo de royalty + max(5%, $25), e esse piso é obrigatório — preço ou oferta abaixo dele são recusados. Não há pagamento de diferença nem royalty pré-pago. O royalty é travado permanentemente na primeira venda, valor e tipo. Um royalty fixo nunca exibe porcentagem, porque nenhuma se aplica.`,
-      fr: `Une redevance est soit un pourcentage de la valeur, soit un montant fixe. Une redevance fixe est absolue : elle est due en totalité quelle que soit la valeur, y compris pour un don de valeur nulle. Comme cela pourrait amener un vendeur à payer pour vendre, une redevance fixe donne à l'œuvre un prix minimum de redevance + max(5 %, $25), et ce plancher est appliqué — un prix ou une offre en dessous est refusé. Il n'existe ni paiement de complément ni redevance prépayée. La redevance est verrouillée définitivement à la première vente, son montant comme son type. Une redevance fixe n'affiche jamais de pourcentage, car aucun ne s'applique.`,
+      en: `A royalty is either a percentage of the value or a fixed amount. A fixed royalty is absolute: it is owed in full whatever the value, including a zero-value gift transfer. Because that could otherwise leave a seller paying to sell, a fixed royalty gives the work a minimum price of royalty + max(${FLOOR_PCT}%, $${FLOOR_MIN}), and that floor is enforced — a price or an offer below it is rejected. There is no shortfall payment and no prepaid royalty. The royalty locks permanently at the first sale, both its amount and its type. A fixed royalty never displays a percentage, because none applies.`,
+      es: `Una regalía es un porcentaje del valor o un monto fijo. Una regalía fija es absoluta: se debe completa sea cual sea el valor, incluso en una donación de valor cero. Como eso podría dejar al vendedor pagando por vender, una regalía fija le da a la obra un precio mínimo de regalía + max(${FLOOR_PCT}%, $${FLOOR_MIN}), y ese piso se hace cumplir — un precio o una oferta por debajo se rechazan. No hay pago de faltante ni regalía prepagada. La regalía se congela para siempre en la primera venta, tanto el monto como el tipo. Una regalía fija nunca muestra un porcentaje, porque no aplica ninguno.`,
+      pt: `Um royalty é uma porcentagem do valor ou um valor fixo. Um royalty fixo é absoluto: é devido integralmente qualquer que seja o valor, inclusive numa transferência de valor zero. Como isso poderia deixar o vendedor pagando para vender, um royalty fixo dá à obra um preço mínimo de royalty + max(${FLOOR_PCT}%, $${FLOOR_MIN}), e esse piso é obrigatório — preço ou oferta abaixo dele são recusados. Não há pagamento de diferença nem royalty pré-pago. O royalty é travado permanentemente na primeira venda, valor e tipo. Um royalty fixo nunca exibe porcentagem, porque nenhuma se aplica.`,
+      fr: `Une redevance est soit un pourcentage de la valeur, soit un montant fixe. Une redevance fixe est absolue : elle est due en totalité quelle que soit la valeur, y compris pour un don de valeur nulle. Comme cela pourrait amener un vendeur à payer pour vendre, une redevance fixe donne à l'œuvre un prix minimum de redevance + max(${FLOOR_PCT} %, $${FLOOR_MIN}), et ce plancher est appliqué — un prix ou une offre en dessous est refusé. Il n'existe ni paiement de complément ni redevance prépayée. La redevance est verrouillée définitivement à la première vente, son montant comme son type. Une redevance fixe n'affiche jamais de pourcentage, car aucun ne s'applique.`,
     },
   },
   {
@@ -104,10 +154,10 @@ export const KNOWLEDGE: KnowledgeDoc[] = [
       fr: ['transfert', 'transférer', 'envoyer un tbt', 'cadeau', 'destinataire', 'coût du transfert'],
     },
     body: {
-      en: `On a transfer the sender pays; there is no buyer. The cost is the royalty plus $${FEE} plus processing of (royalty + $${FEE}) x 2.9% + $0.30. A transfer value may be zero — with a percentage royalty the royalty is then zero, but a fixed royalty is still owed in full. Transfers carry no minimum price floor, because the sender is the paying party and sees the full cost before committing.`,
-      es: `En una transferencia paga el emisor; no hay comprador. El costo es la regalía más $${FEE} más el procesamiento de (regalía + $${FEE}) x 2,9% + $0,30. El valor de una transferencia puede ser cero: con regalía porcentual la regalía es entonces cero, pero una regalía fija se debe completa igual. Las transferencias no llevan piso de precio, porque quien paga es el emisor y ve el costo completo antes de confirmar.`,
-      pt: `Numa transferência quem paga é o remetente; não há comprador. O custo é o royalty mais $${FEE} mais o processamento de (royalty + $${FEE}) x 2,9% + $0,30. O valor de uma transferência pode ser zero: com royalty percentual o royalty é então zero, mas um royalty fixo continua devido integralmente. Transferências não têm piso de preço, porque quem paga é o remetente e vê o custo completo antes de confirmar.`,
-      fr: `Lors d'un transfert, c'est l'expéditeur qui paie ; il n'y a pas d'acheteur. Le coût est la redevance plus $${FEE} plus les frais de (redevance + $${FEE}) x 2,9 % + $0,30. La valeur d'un transfert peut être nulle : avec une redevance en pourcentage elle est alors nulle, mais une redevance fixe reste due en totalité. Les transferts n'ont pas de prix plancher, car l'expéditeur est la partie payante et voit le coût complet avant de confirmer.`,
+      en: `On a transfer the sender pays; there is no buyer. The cost is the royalty plus $${FEE} plus processing of (royalty + $${FEE}) x ${STRIPE_PCT}% + $0.30. A transfer value may be zero — with a percentage royalty the royalty is then zero, but a fixed royalty is still owed in full. Transfers carry no minimum price floor, because the sender is the paying party and sees the full cost before committing.`,
+      es: `En una transferencia paga el emisor; no hay comprador. El costo es la regalía más $${FEE} más el procesamiento de (regalía + $${FEE}) x ${STRIPE_PCT}% + $0,30. El valor de una transferencia puede ser cero: con regalía porcentual la regalía es entonces cero, pero una regalía fija se debe completa igual. Las transferencias no llevan piso de precio, porque quien paga es el emisor y ve el costo completo antes de confirmar.`,
+      pt: `Numa transferência quem paga é o remetente; não há comprador. O custo é o royalty mais $${FEE} mais o processamento de (royalty + $${FEE}) x ${STRIPE_PCT}% + $0,30. O valor de uma transferência pode ser zero: com royalty percentual o royalty é então zero, mas um royalty fixo continua devido integralmente. Transferências não têm piso de preço, porque quem paga é o remetente e vê o custo completo antes de confirmar.`,
+      fr: `Lors d'un transfert, c'est l'expéditeur qui paie ; il n'y a pas d'acheteur. Le coût est la redevance plus $${FEE} plus les frais de (redevance + $${FEE}) x ${STRIPE_PCT} % + $0,30. La valeur d'un transfert peut être nulle : avec une redevance en pourcentage elle est alors nulle, mais une redevance fixe reste due en totalité. Les transferts n'ont pas de prix plancher, car l'expéditeur est la partie payante et voit le coût complet avant de confirmer.`,
     },
   },
   {

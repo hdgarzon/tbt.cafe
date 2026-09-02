@@ -15,6 +15,7 @@
     "check:coupon": "npx --yes tsx scripts/coupon-check.ts",
     "check:notify": "npx --yes tsx scripts/notify-check.ts",
     "check:gating": "npx --yes tsx scripts/gating-check.ts",
+    "check:knowledge": "npx --yes tsx scripts/knowledge-check.ts",
     "check:dispute": "npx --yes tsx scripts/dispute-check.ts",
     "check:approvals": "npx --yes tsx scripts/approvals-check.ts",
     "check:amend": "npx --yes tsx scripts/amend-check.ts",
