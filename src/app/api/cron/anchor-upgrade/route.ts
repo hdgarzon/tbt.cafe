@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase-admin'
-import { upgrade } from '@/lib/chain/ots'
+import { upgrade, toBytea, fromBytea } from '@/lib/chain/ots'
 
 /**
  * Actualiza las anclas pendientes — Chain Spec 01, Item 8.
@@ -77,8 +77,7 @@ export async function GET(request: NextRequest) {
   for (const row of pending ?? []) {
     try {
       // Supabase devuelve bytea como cadena hex con prefijo \x.
-      const raw = row.ots_proof as unknown as string
-      const proof = Buffer.from(raw.replace(/^\\x/, ''), 'hex')
+      const proof = fromBytea(row.ots_proof as unknown as string)
 
       const result = await upgrade(proof)
 
@@ -86,7 +85,7 @@ export async function GET(request: NextRequest) {
         await admin
           .from('chain_anchors')
           .update({
-            ots_proof: result.proof,
+            ots_proof: toBytea(result.proof),
             status: 'confirmed',
             block_height: result.blockHeight,
             attested_at: new Date().toISOString(),
@@ -105,7 +104,7 @@ export async function GET(request: NextRequest) {
         await admin
           .from('chain_anchors')
           .update({
-            ...(result.upgraded ? { ots_proof: result.proof } : {}),
+            ...(result.upgraded ? { ots_proof: toBytea(result.proof) } : {}),
             upgrade_attempts: (await attemptsFor(admin, row.record_hash)) + 1,
             last_attempt_at: new Date().toISOString(),
             updated_at: new Date().toISOString(),
@@ -114,7 +113,27 @@ export async function GET(request: NextRequest) {
         stillPending++
       }
     } catch (err) {
+      /*
+       * Un fallo tambien es un intento, y tiene que verse en la fila.
+       *
+       * Antes solo se gritaba al log del servidor: `upgrade_attempts` se
+       * quedaba en 0 para siempre y `last_attempt_at` en nulo, de modo que un
+       * ancla rota era indistinguible de una que nadie ha revisado todavia. La
+       * columna existe «para poder ver uno atascado» y no podia verlo.
+       *
+       * Es como se encontro el fallo del bytea: cuatro anclas con cero
+       * intentos, que parecian un cron que no corria y era un cron que corria y
+       * fallaba en silencio.
+       */
       console.error(`[ots-cron] ${row.record_hash.slice(0, 16)}…:`, err)
+      await admin
+        .from('chain_anchors')
+        .update({
+          upgrade_attempts: (await attemptsFor(admin, row.record_hash)) + 1,
+          last_attempt_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        })
+        .eq('record_hash', row.record_hash)
       stillPending++
     }
   }
