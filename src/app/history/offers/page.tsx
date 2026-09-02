@@ -7,6 +7,7 @@ import { useLocale } from '@/i18n/LocaleProvider'
 import { fetchOffersLedger, type OfferRow } from '@/lib/history-data'
 import { LedgerRow } from '@/components/LedgerRow'
 import { money } from '@/lib/fees'
+import { SignInGate } from '@/components/SignInGate'
 
 const plural = (n: number, one: string, many: string) => (n === 1 ? one : many).replace('{n}', String(n))
 
@@ -54,14 +55,7 @@ function OffersLedger() {
 
   if (loading) return <div className="px-4 pt-6 text-[13px] text-ink-soft">{t.authHub.loading}</div>
   if (!signedIn) {
-    return (
-      <div className="px-4 pt-6">
-        <a href="/" className="back-link">
-          ← {t.purchase.home}
-        </a>
-        <p className="text-[14px] mt-6">{t.myCollections.needSignIn}</p>
-      </div>
-    )
+    return <SignInGate message={t.myCollections.needSignIn} />
   }
 
   return (

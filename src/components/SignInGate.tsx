@@ -29,27 +29,37 @@ export function SignInGate({
   message,
   onSignedIn,
   backHref = '/',
+  backLabel,
 }: {
   /** La frase que la página ya tenía. No se cambia el texto, se le añade salida. */
   message: string
-  /** El cargador de la página, para que al volver muestre lo que venía a ver. */
+  /**
+   * El cargador de la página, para que al volver muestre lo que venía a ver.
+   *
+   * Sin él se recarga la ruta, que es más tosco pero igual de correcto y no
+   * obliga a destripar el efecto de cada una de las diecisiete pantallas. Donde
+   * el cargador está a mano se pasa, y no hay parpadeo.
+   */
   onSignedIn?: () => void
   backHref?: string
+  backLabel?: string
 }) {
   const { t } = useLocale()
   const { openAuth } = useShell()
 
+  const resume = onSignedIn ?? (() => window.location.reload())
+
   return (
     <div className="px-4 pt-6">
       <a href={backHref} className="back-link">
-        ← {t.purchase.home}
+        ← {backLabel ?? t.purchase.home}
       </a>
 
       <p className="text-[14px] mt-6">{message}</p>
 
       <button
         type="button"
-        onClick={() => openAuth({ resume: onSignedIn })}
+        onClick={() => openAuth({ resume })}
         className="mt-4 px-4 py-2.5 rounded-xl bg-ink text-paper text-[11px] font-semibold tracking-[0.14em] uppercase"
       >
         {t.header.signIn}

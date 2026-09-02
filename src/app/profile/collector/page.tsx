@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useLocale } from '@/i18n/LocaleProvider'
 import { Field, TextArea, CategoryPicker, SaveBar, type Category } from '@/components/FormBits'
+import { SignInGate } from '@/components/SignInGate'
 
 /**
  * Perfil de Coleccionista — Master Handoff §11.2.
@@ -83,12 +84,7 @@ export default function CollectorProfilePage() {
 
   if (loading) return <div className="px-4 pt-6 text-[13px] text-ink-soft">{t.authHub.loading}</div>
   if (!signedIn) {
-    return (
-      <div className="px-4 pt-6">
-        <a href="/profile" className="back-link">← {t.profile.title}</a>
-        <p className="text-[14px] mt-6">{t.profileCollector.needSignIn}</p>
-      </div>
-    )
+    return <SignInGate message={t.profileCollector.needSignIn} backHref="/profile" backLabel={t.profile.title} />
   }
 
   // Los campos de identidad se atenúan (no se deshabilitan) cuando es anónimo

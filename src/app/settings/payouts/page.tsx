@@ -20,6 +20,7 @@ import {
   type PayoutDestination,
   type ConnectAccount,
 } from '@/lib/payout-data'
+import { SignInGate } from '@/components/SignInGate'
 
 /**
  * /settings/payouts — payoutSettingsPage del prototipo.
@@ -101,14 +102,7 @@ export default function PayoutSettingsPage() {
   if (loading) return <div className="px-4 pt-6 text-[13px] text-ink-soft">{t.authHub.loading}</div>
 
   if (!signedIn) {
-    return (
-      <div className="px-4 pt-6">
-        <a href="/" className="back-link">
-          ← {t.purchase.home}
-        </a>
-        <p className="text-[14px] mt-6">{t.myCollections.needSignIn}</p>
-      </div>
-    )
+    return <SignInGate message={t.myCollections.needSignIn} />
   }
 
   const activeMethod = destination
