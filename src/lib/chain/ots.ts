@@ -126,6 +126,35 @@ export async function verify(proof: Buffer, hashHex: string): Promise<VerifyResu
  * intento sobre el mismo registro no duplica ni pisa una prueba ya
  * actualizada.
  */
+/**
+ * Un Buffer como `bytea`, y de vuelta.
+ *
+ * EL FALLO QUE ESTO ARREGLA
+ *
+ * `ots_proof: proof` con un Buffer de Node parece obvio y no lo es: el cliente
+ * de Supabase lo pasa por `JSON.stringify`, que a un Buffer lo convierte en
+ * `{"type":"Buffer","data":[0,79,112,...]}`. Eso es lo que acababa dentro de la
+ * columna — el texto del JSON, no la prueba.
+ *
+ * Al leerlo de vuelta, `DetachedTimestampFile.deserialize` lanzaba:
+ *
+ *   Error [BadMagicError]: 0,79,112,101,110,84,105,109,101,115,116,97,109,112,115,...
+ *
+ * y esos numeros no eran una cabecera rota: eran el principio del array `data`.
+ * La prueba estaba entera ahi dentro, envuelta y por eso ilegible.
+ *
+ * Consecuencia: NINGUN ancla podia confirmarse nunca. La capa de Bitcoin
+ * sellaba, guardaba, y no podia volver a abrir lo que habia guardado.
+ *
+ * `\x<hex>` es el formato de entrada de bytea que Postgres entiende, y es lo
+ * que PostgREST le pasa tal cual.
+ */
+export const toBytea = (buf: Buffer): string => '\\x' + buf.toString('hex')
+
+/** Lo que PostgREST devuelve de una columna bytea: `\x` y hex. */
+export const fromBytea = (raw: string): Buffer =>
+  Buffer.from(raw.startsWith('\\x') ? raw.slice(2) : raw, 'hex')
+
 export async function anchorRecord(
   recordHash: string,
   kind: 'registration' | 'provenance' | 'amendment',
@@ -141,7 +170,7 @@ export async function anchorRecord(
         record_hash: recordHash.replace(/^sha256:/i, ''),
         record_kind: kind,
         record_uri: recordUri ?? null,
-        ots_proof: proof,
+        ots_proof: toBytea(proof),
       })
 
     // 23505 es la clave duplicada: ya estaba anclado. Es el resultado buscado.

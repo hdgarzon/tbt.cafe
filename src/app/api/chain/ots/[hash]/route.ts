@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase-admin'
+import { fromBytea } from '@/lib/chain/ots'
 
 /**
  * Sirve la prueba .ots — Chain Spec 01, Item 8.
@@ -32,8 +33,7 @@ export async function GET(_request: NextRequest, props: { params: Promise<{ hash
   }
 
   // Supabase devuelve bytea como cadena hex con prefijo \x.
-  const raw = data.ots_proof as unknown as string
-  const proof = Buffer.from(raw.replace(/^\\x/, ''), 'hex')
+  const proof = fromBytea(data.ots_proof as unknown as string)
 
   return new NextResponse(new Uint8Array(proof), {
     headers: {
