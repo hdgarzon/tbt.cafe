@@ -1,7 +1,53 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { Resend } from 'resend'
 import { authenticate } from '@/lib/route-auth'
+import { createAdminClient } from '@/lib/supabase-admin'
 import { isProduction } from '@/lib/app-env'
+
+/**
+ * Anota el intento en `email_deliveries`.
+ *
+ * Simular no es enviar y aceptado no es entregado: los tres desenlaces se
+ * escriben con su nombre, porque un libro que solo sabe decir que si no sirve
+ * para preguntarle si algo salio. Es lo que `mms_deliveries` hace por el MMS —
+ * y lo unico por lo que hoy se puede saber que ningun certificado ha salido
+ * nunca por ese canal.
+ *
+ * SIEMPRE CON EL CLIENTE DE SERVICIO. Con el token del usuario la RLS deniega
+ * la escritura y la tabla queda vacia sin que nadie se entere; por eso el error
+ * de la insercion se lee y se registra, en lugar de descartarse.
+ */
+async function recordDelivery(row: {
+  workId: string | null
+  userId: string | null
+  email: string
+  status: 'sent' | 'failed' | 'simulated'
+  resendMessageId?: string | null
+  certificateUrl?: string | null
+  errorMessage?: string | null
+}): Promise<void> {
+  try {
+    const { error } = await createAdminClient().from('email_deliveries').insert({
+      work_id: row.workId,
+      user_id: row.userId,
+      email: row.email,
+      resend_message_id: row.resendMessageId ?? null,
+      status: row.status,
+      certificate_url: row.certificateUrl ?? null,
+      error_message: row.errorMessage ?? null,
+      sent_at: row.status === 'sent' ? new Date().toISOString() : null,
+    })
+    if (error) console.error('[send-email] no se pudo registrar la entrega:', error)
+  } catch (ledgerError) {
+    /*
+     * Anotar no puede romper lo anotado. Si el cliente de servicio no se puede
+     * construir —falta la clave, por ejemplo— esto lanzaría en mitad de la rama
+     * de éxito y convertiría un correo entregado en un 500, además de escribir
+     * una segunda fila desde el catch de abajo. El libro observa; no decide.
+     */
+    console.error('[send-email] el registro de la entrega falló:', ledgerError)
+  }
+}
 
 
 
@@ -279,6 +325,13 @@ Powered by BROCHA & Transbit
 }
 
 export async function POST(request: NextRequest) {
+  /*
+   * Fuera del try a proposito: el catch exterior necesita saber a quien se le
+   * estaba escribiendo para poder anotar el fallo. Si ni siquiera se llego a
+   * leer el cuerpo, se queda nulo y no se inventa una fila.
+   */
+  let parsed: SendEmailRequest | null = null
+
   try {
     /*
      * La sesion primero. La rama de abajo respondia antes de mirar quien
@@ -289,30 +342,24 @@ export async function POST(request: NextRequest) {
     if (!auth.ok) return NextResponse.json(auth.body, { status: auth.status })
     const { supabase, user } = auth
 
-    if (!process.env.RESEND_API_KEY) {
-      /*
-       * Simular no es enviar. Esta rama devolvía éxito, y complete-tbt registra
-       * `emailSent` a partir de esta respuesta: por eso nadie supo nunca que los
-       * correos de certificación no salían. Mismo fallo que el MMS, misma
-       * corrección — en producción se dice, fuera de producción se simula y se
-       * marca como tal.
-       */
-      console.error('⚠️ Resend not configured — the email was NOT sent.')
-      if (isProduction) {
-        return NextResponse.json(
-          { error: 'no_email_provider', message: 'No email provider is configured.' },
-          { status: 502 }
-        )
-      }
-      return NextResponse.json({
-        success: true,
-        simulated: true,
-        message: 'Email simulado (Resend no configurado)',
-      })
-    }
+    /*
+     * La comprobación del proveedor va MÁS ABAJO, después de saber de qué obra
+     * se habla.
+     *
+     * Estaba aquí, y desde aquí no se puede anotar nada: `workId` y `userId`
+     * llegan en el cuerpo, que todavía no se ha leído. Una fila de entrega sin
+     * obra ni destinatario no responde a la única pregunta que se le hace al
+     * libro —«¿salió el certificado de ESTA obra?»—, así que la rama se movió
+     * en lugar de registrar huecos.
+     *
+     * Lo que no se mueve es la sesión: sigue siendo lo primero, para que un
+     * extraño no pueda preguntarle a esta ruta si hay proveedor configurado.
+     * Bajarla sólo refuerza esa propiedad.
+     */
 
     // Parse request body
     const body: SendEmailRequest = await request.json()
+    parsed = body
     const { email, workId, userId, mintAddress, solscanUrl } = body
 
     if (!email || !workId || !userId) {
@@ -355,6 +402,39 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
 
+    const certificateUrl = `${process.env.NEXT_PUBLIC_APP_URL}/work/${work.tbt_id}`
+
+    if (!process.env.RESEND_API_KEY) {
+      /*
+       * Simular no es enviar. Esta rama devolvía éxito, y complete-tbt registra
+       * `emailSent` a partir de esta respuesta: por eso nadie supo nunca que los
+       * correos de certificación no salían. Mismo fallo que el MMS, misma
+       * corrección — en producción se dice, fuera de producción se simula y se
+       * marca como tal.
+       *
+       * Y ahora ambas dejan rastro, cada una con su nombre: en producción esto
+       * es un fallo de entrega, y fuera de ella es un simulacro. Un libro que
+       * anotase las dos como envío repetiría el fallo que vino a registrar.
+       */
+      console.error('⚠️ Resend not configured — the email was NOT sent.')
+      if (isProduction) {
+        await recordDelivery({
+          workId, userId, email, status: 'failed', certificateUrl,
+          errorMessage: 'no_email_provider: RESEND_API_KEY is not configured',
+        })
+        return NextResponse.json(
+          { error: 'no_email_provider', message: 'No email provider is configured.' },
+          { status: 502 }
+        )
+      }
+      await recordDelivery({ workId, userId, email, status: 'simulated', certificateUrl })
+      return NextResponse.json({
+        success: true,
+        simulated: true,
+        message: 'Email simulado (Resend no configurado)',
+      })
+    }
+
     // Get creator name
     const creatorData = work.creator as any
     const creatorName = Array.isArray(creatorData) 
@@ -389,7 +469,7 @@ export async function POST(request: NextRequest) {
       price: commerce?.initial_price?.toString(),
       currency: commerce?.currency || 'USD',
       mediaUrl: work.media_url,
-      tbtUrl: `${process.env.NEXT_PUBLIC_APP_URL}/work/${work.tbt_id}`,
+      tbtUrl: certificateUrl,
       solscanUrl: solscanUrl || undefined,
       mintAddress: mintAddress || undefined,
     }
@@ -413,6 +493,10 @@ export async function POST(request: NextRequest) {
 
       if (error) {
         console.error('📧 Resend refused the message:', error.name, error.message)
+        await recordDelivery({
+          workId, userId, email, status: 'failed', certificateUrl,
+          errorMessage: `${error.name}: ${error.message}`,
+        })
         return NextResponse.json(
           { error: 'delivery_failed', name: error.name, message: error.message },
           { status: 502 }
@@ -420,6 +504,17 @@ export async function POST(request: NextRequest) {
       }
 
       console.log('📧 Email accepted by Resend for:', email)
+
+      /*
+       * ACEPTADO NO ES ENTREGADO. Resend responde con un id en cuanto toma el
+       * mensaje y decide después si pudo entregarlo, igual que Twilio. Aquí se
+       * anota 'sent' porque es lo que se sabe; `delivered_at` queda nula hasta
+       * que exista el webhook que la cierre.
+       */
+      await recordDelivery({
+        workId, userId, email, status: 'sent', certificateUrl,
+        resendMessageId: data?.id ?? null,
+      })
 
       return NextResponse.json({
         success: true,
@@ -430,6 +525,10 @@ export async function POST(request: NextRequest) {
       // Resend rechaza devolviendo `error`, no lanzando; llegar aqui es que
       // fallo la llamada misma.
       console.error('[send-email] la llamada a Resend fallo:', sendError)
+      await recordDelivery({
+        workId, userId, email, status: 'failed', certificateUrl,
+        errorMessage: sendError?.message ?? 'the call to Resend failed',
+      })
 
       return NextResponse.json(
         { error: 'Error al enviar email' },
@@ -439,6 +538,22 @@ export async function POST(request: NextRequest) {
 
   } catch (error: any) {
     console.error('Error in send-email:', error)
+
+    /*
+     * Un fallo antes de llegar a Resend —la obra no carga, la plantilla
+     * revienta— tambien es un certificado que no salio. Sin esta linea el libro
+     * solo sabe de los fallos del proveedor, y un correo que murio antes es
+     * indistinguible de uno que nadie intento enviar.
+     */
+    if (parsed?.email) {
+      await recordDelivery({
+        workId: parsed.workId ?? null,
+        userId: parsed.userId ?? null,
+        email: parsed.email,
+        status: 'failed',
+        errorMessage: error?.message ?? 'send-email failed before reaching the provider',
+      })
+    }
 
     return NextResponse.json(
       { error: 'Error al procesar solicitud de email' },

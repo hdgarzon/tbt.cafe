@@ -616,6 +616,20 @@ create table if not exists public.mms_deliveries (
   created_at timestamp with time zone default now()
 );
 
+create table if not exists public.email_deliveries (
+  id uuid default extensions.uuid_generate_v4() not null,
+  work_id uuid,
+  user_id uuid,
+  email text not null,
+  resend_message_id text,
+  status text default 'pending'::text,
+  certificate_url text,
+  sent_at timestamp with time zone,
+  delivered_at timestamp with time zone,
+  error_message text,
+  created_at timestamp with time zone default now()
+);
+
 -- ============================================================================
 -- TABLAS — descubrimiento y comunidad
 -- ============================================================================
@@ -854,6 +868,9 @@ alter table public.payment_disputes add constraint payment_disputes_amount_check
 alter table public.mms_deliveries add constraint mms_deliveries_pkey PRIMARY KEY (id);
 alter table public.mms_deliveries add constraint mms_deliveries_work_id_fkey FOREIGN KEY (work_id) REFERENCES works(id) ON DELETE CASCADE;
 alter table public.mms_deliveries add constraint mms_deliveries_user_id_fkey FOREIGN KEY (user_id) REFERENCES profiles(id) ON DELETE CASCADE;
+alter table public.email_deliveries add constraint email_deliveries_pkey PRIMARY KEY (id);
+alter table public.email_deliveries add constraint email_deliveries_work_id_fkey FOREIGN KEY (work_id) REFERENCES works(id) ON DELETE CASCADE;
+alter table public.email_deliveries add constraint email_deliveries_user_id_fkey FOREIGN KEY (user_id) REFERENCES profiles(id) ON DELETE CASCADE;
 
 alter table public.work_series add constraint work_series_pkey PRIMARY KEY (id);
 alter table public.work_series add constraint work_series_creator_id_slug_key UNIQUE (creator_id, slug);
@@ -963,6 +980,8 @@ create index if not exists payment_disputes_work_idx ON public.payment_disputes 
 create index if not exists payment_disputes_user_idx ON public.payment_disputes USING btree (subject_user) WHERE (subject_user IS NOT NULL);
 create index if not exists payment_disputes_unresolved_idx ON public.payment_disputes USING btree (created_at DESC) WHERE (work_id IS NULL);
 create index if not exists idx_mms_deliveries_work_id ON public.mms_deliveries USING btree (work_id);
+create index if not exists idx_email_deliveries_work_id ON public.email_deliveries USING btree (work_id);
+create index if not exists idx_email_deliveries_user_id ON public.email_deliveries USING btree (user_id);
 
 create index if not exists work_annotations_work_idx ON public.work_annotations USING btree (work_id, created_at DESC);
 create index if not exists favorites_user_idx ON public.favorites USING btree (user_id);
@@ -1012,6 +1031,7 @@ alter table public.payout_earnings enable row level security;
 alter table public.chain_anchors enable row level security;
 alter table public.payment_disputes enable row level security;
 alter table public.mms_deliveries enable row level security;
+alter table public.email_deliveries enable row level security;
 alter table public.work_series enable row level security;
 alter table public.work_annotations enable row level security;
 alter table public.favorites enable row level security;
@@ -1076,6 +1096,7 @@ create policy "own connect account readable" on public.payout_connect_accounts f
 create policy "own blocks readable" on public.payout_blocks for select using ((( SELECT auth.uid() AS uid) = user_id));
 create policy "own earnings readable" on public.payout_earnings for select using ((( SELECT auth.uid() AS uid) = user_id));
 create policy "Users can view their MMS deliveries" on public.mms_deliveries for select using ((user_id = auth.uid()));
+create policy "Users can view their email deliveries" on public.email_deliveries for select using ((user_id = ( SELECT auth.uid() )));
 
 create policy "series readable" on public.work_series for select using (true);
 create policy "own series write" on public.work_series for all using ((auth.uid() = creator_id)) with check ((auth.uid() = creator_id));
