@@ -55,5 +55,67 @@ ok('simulated con cualquier valor cierto', wasDelivered({ ok: true }, { simulate
   )
 }
 
+// ---- LA GUARDA: el correo tenía la misma boca cerrada
+{
+  const email = readFileSync(join(__dirname, '..', 'src/app/api/send-email/route.ts'), 'utf8')
+
+  ok(
+    'el correo deja rastro',
+    email.includes("from('email_deliveries')"),
+    'sin libro, saber si un certificado salió exigía abrir el panel de Resend'
+  )
+  ok(
+    'no usa el cliente del usuario',
+    !email.includes("supabase.from('email_deliveries')"),
+    'con el token del usuario la RLS la deniega y el registro queda vacío'
+  )
+  ok(
+    'lee el error de la inserción',
+    /const \{ error \} = await createAdminClient\(\)\.from\('email_deliveries'\)/.test(email),
+    'una denegación muda es como el registro del MMS quedó a cero'
+  )
+
+  // Los tres desenlaces, cada uno con su nombre.
+  for (const estado of ['sent', 'failed', 'simulated']) {
+    ok(`anota '${estado}'`, email.includes(`status: '${estado}'`))
+  }
+  ok(
+    'simulado no se anota como enviado',
+    !/simulated: true[\s\S]{0,400}status: 'sent'/.test(email),
+    'un libro que llame envío a lo que nadie recibió repite el fallo que vino a registrar'
+  )
+
+  // Cuatro caminos terminan mal —sin proveedor, rechazo de Resend, la llamada
+  // que revienta, y el fallo previo a llegar al proveedor— y los cuatro anotan.
+  ok(
+    'los cuatro fallos dejan fila',
+    (email.match(/status: 'failed'/g) ?? []).length >= 4,
+    'con inserts solo en los caminos de éxito, la tabla no puede responder que no'
+  )
+  ok(
+    'el catch exterior también registra',
+    /catch \(error: any\)[\s\S]{0,800}recordDelivery\(/.test(email),
+    'un correo que muere antes de Resend es indistinguible de uno que nadie intentó'
+  )
+  ok(
+    'anotar no puede romper lo anotado',
+    /async function recordDelivery[\s\S]{0,900}catch \(ledgerError\)/.test(email),
+    'si el registro lanza en la rama de éxito, convierte un correo entregado en un 500'
+  )
+
+  // La comprobación del proveedor tiene que ver el cuerpo ya leído, o no sabe
+  // de qué obra hablar; y la sesión sigue yendo antes que nada.
+  ok(
+    'el proveedor se comprueba después de leer el cuerpo',
+    email.indexOf('const body: SendEmailRequest') < email.indexOf('if (!process.env.RESEND_API_KEY)'),
+    'desde arriba no hay workId ni userId que anotar'
+  )
+  ok(
+    'la sesión sigue siendo lo primero',
+    email.indexOf('const auth = await authenticate(request)') < email.indexOf('const body: SendEmailRequest'),
+    'un extraño no puede preguntarle a la ruta si hay proveedor configurado'
+  )
+}
+
 console.log(bad === 0 ? '\ntodo en orden' : `\n${bad} fallo(s)`)
 process.exit(bad === 0 ? 0 : 1)
