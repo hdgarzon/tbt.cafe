@@ -123,5 +123,65 @@ const migration = read('supabase/migrations/037_approval_execution.sql')
   ok('y hay índice para la lista de «te toca»', migration.includes("where status = 'approved' and executed_at is null"))
 }
 
-console.log(bad === 0 ? '\ntodo en orden' : `\n${bad} fallo(s)`)
+// ---- LA GUARDA: quien aprueba es quien llama, no quien se nombre
+{
+  const core = readFileSync(join(__dirname, '..', 'supabase/migrations/013_admin_core.sql'), 'utf8')
+  const fix = readFileSync(
+    join(__dirname, '..', 'supabase/migrations/042_approval_identity_from_session.sql'), 'utf8')
+
+  // La cabecera CITA la firma vieja para explicar el fallo. Sobre prosa no se
+  // afirma nada: lo que se mira es el SQL, sin comentarios.
+  const sql = fix.split('\n').filter((l) => !l.trim().startsWith('--')).join('\n')
+
+  // La version de tres argumentos aceptaba a quien aprueba por parametro, y con
+  // ella una sola persona cumplia la regla de dos nombrando a un colega.
+  ok(
+    'la firma de tres argumentos queda retirada',
+    sql.includes('drop function if exists public.admin_resolve_approval(uuid, text, uuid)'),
+    'create or replace no puede quitar un parametro; sin el drop conviven las dos'
+  )
+  ok(
+    'la nueva no recibe a quien aprueba',
+    !/create or replace function public\.admin_resolve_approval\([^)]*approver[^)]*\)/.test(sql),
+    'un argumento de identidad en una funcion security definer se puede mandar'
+  )
+  ok(
+    'la identidad sale de la sesion, dentro',
+    /approver uuid := auth\.uid\(\)/.test(sql),
+    'auth.uid() lo firma el token; un parametro lo escribe quien llama'
+  )
+  ok('sin sesion no se aprueba', /if approver is null then\s*\n\s*raise exception/.test(sql))
+
+  // Postgres concede EXECUTE a PUBLIC al crear la funcion, y este esquema no
+  // tenia un solo revoke: se podia invocar con la clave anonima.
+  ok(
+    'se revoca EXECUTE de public y de anon',
+    /revoke execute on function public\.admin_resolve_approval\(uuid, text\) from public/.test(sql) &&
+    /revoke execute on function public\.admin_resolve_approval\(uuid, text\) from anon/.test(sql),
+    'security definer + EXECUTE a PUBLIC es la puerta abierta'
+  )
+  ok(
+    'y solo la invoca authenticated',
+    /grant execute on function public\.admin_resolve_approval\(uuid, text\) to authenticated/.test(sql)
+  )
+
+  // Caducada devolvia la fila en vez de lanzar: la ruta no veia error y
+  // contestaba 200 anotando una aprobacion que no ocurrio.
+  ok(
+    'caducada lanza en lugar de contestar que si',
+    /if row\.expires_at < now\(\) then\s*\n\s*raise exception/.test(sql),
+    'devolver la fila hacia que la bitacora registrase approval.approved'
+  )
+
+  // Y que la version vieja sigue siendo la que se describe, para que esta
+  // prueba no pase sola el dia que alguien reescriba 013.
+  ok(
+    'la migracion original es la que se corrige',
+    core.includes('approver uuid default auth.uid()'),
+    'si 013 ya no tiene el parametro, esta guarda sobra y hay que revisarla'
+  )
+}
+
+console.log(bad === 0 ? '\ntodo en orden' : `${'\n'}${bad} fallo(s)`)
+
 process.exit(bad === 0 ? 0 : 1)
