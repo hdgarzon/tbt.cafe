@@ -105,7 +105,7 @@ src/app/
 src/components/brew/  work/
 src/lib/                             # supabase client, stripe, auth helpers
 src/i18n/messages/                   # translation catalogues
-supabase/migrations/                 # 001 → 030, ordered
+supabase/migrations/                 # contiguous from 001, ordered
 scripts/*-check.ts                   # one guard per invariant
 ```
 

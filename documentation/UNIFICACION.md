@@ -1,11 +1,12 @@
 # Unificar el backend en tbt-cafe
 
-Estado al 20 ago 2026. Este documento existe para que la sesión que haga la
-migración no vuelva a descubrir lo que ya costó descubrir.
+Terminada el 10 sep 2026. Este documento existió para que la sesión que hiciera
+la migración no volviera a descubrir lo que ya costó descubrir; ahora queda como
+registro de cómo se hizo y de sus trampas.
 
 ## El objetivo
 
-Un solo proyecto de Vercel. Hoy son dos:
+Un solo proyecto de Vercel. Eran dos:
 
 | Proyecto | Sirve | Qué es |
 |---|---|---|
@@ -34,10 +35,17 @@ Esto es la mitad del valor de hacerlo:
 - La duplicación de `money.ts` (Forms) y `fees.ts` (tbt-cafe), que hoy tienen
   que restar lo mismo o el creador ve una cifra y cobra otra
 
-## Estado: el codigo ya cruzo
+## Estado: hecho
 
-**Las 27 rutas del backend estan en este repo**, desplegadas y verificadas en
-produccion. Lo que queda no es codigo.
+**La unificacion esta terminada.** Comprobado el 10 sep 2026:
+
+| | |
+|---|---|
+| `tbt.cafe` y `www.tbt.cafe` | los dos sirven el proyecto `tbt-cafe` |
+| Proyecto `brocha` en Vercel | ya no existe |
+| Repo `hdgarzon/tbt` | archivado en GitHub; su ultimo push fue el 21 ago |
+| Las 27 rutas del backend | todas aqui (este repo sirve 43) |
+| `NEXT_PUBLIC_TBT_BACKEND_URL` | ninguna referencia; `backend.ts` ya no existe |
 
 | Fase | | |
 |---|---|---|
@@ -45,20 +53,17 @@ produccion. Lo que queda no es codigo.
 | 2 | Rutas sin sesion: `tbt-image/*`, `generate-context`, `espresso/extract`, `assistant` | hecha |
 | 3 | Stripe, transferencias, `complete-*`, `validate-coupon`, notificaciones | hecha |
 | 4 | Admin: 8 rutas, el guard y la cadena de notificacion | hecha |
-| 5 | **Variables de entorno** y repunte del front | pendiente |
-| 6 | `www.tbt.cafe` resuelto; borrar `brocha` | **NO todavia** — ver abajo |
+| 5 | Variables de entorno y repunte del front | hecha, con dos ausencias — ver abajo |
+| 6 | `www.tbt.cafe` resuelto; `brocha` borrado | hecha |
 
-### Por que `brocha` sigue en pie
+### Por que dejo de importar que `brocha` guardase los secretos
 
-Ya era el ultimo paso. Ahora hay dos razones y no una:
+Era la razon para no borrarlo, y dejo de serlo por los dos lados:
 
-- es el unico rollback del repunte mientras el front apunte aqui;
-- **sus funciones son la unica copia viva de los secretos reales.** Los valores
-  Sensitive no se leen de vuelta ni por CLI ni por panel.
-
-`WALLET_ENCRYPTION_KEY` descifra tres wallets custodiadas. Si solo vivio en ese
-proyecto, borrarlo las deja indescifrables para siempre. Guardan SOL de devnet,
-asi que no hay dinero en juego — pero que sea una decision y no un hallazgo.
+- **`WALLET_ENCRYPTION_KEY` ya no descifra nada.** La migracion 032 borro
+  `wallets` —la tabla no existe en la base viva— y nada en `src/` la lee.
+- **No habia un secreto que solo viviera alli.** La copia local del entorno del
+  backend coincidia con la de este repo variable por variable.
 
 ### Lo que se quedo en el backend, y por que
 
@@ -71,31 +76,30 @@ Seis libs, todas reemplazadas y no descartadas:
 | `money.ts`, `pricing.ts` | `fees.ts` es el superconjunto y se quedo con los centavos de Stripe |
 | `solana/wallet.ts` | sin un solo importador, tambien en el backend |
 
-### Fase 5: lo que hace falta para que algo de esto se use
+### Variables que siguen sin estar en produccion
 
-Hoy hay 27 rutas correctas a las que nadie llama: el front sigue apuntando a
-`NEXT_PUBLIC_TBT_BACKEND_URL`. Faltan estas variables en este proyecto:
+De la lista de la fase 5 estan todas salvo estas:
 
-```
-NEXT_PUBLIC_APP_URL              STRIPE_SECRET_KEY          STRIPE_WEBHOOK_SECRET
-TBT_IMAGE_PROCESSOR_URL          TBT_IMAGE_PROCESSOR_API_KEY
-GEMINI_API_KEY                   OPENWEATHER_API_KEY
-RESEND_API_KEY                   RESEND_FROM_EMAIL
-TWILIO_ACCOUNT_SID               TWILIO_AUTH_TOKEN          TWILIO_PHONE_NUMBER
-AWS_ACCESS_KEY_ID                AWS_SECRET_ACCESS_KEY      AWS_REGION
-SOLANA_*                         WALLET_ENCRYPTION_KEY
-```
+| | |
+|---|---|
+| `SOLANA_RPC_URL` | solo importa en mainnet, y alli `check:solana` impide caer en silencio al RPC publico |
+| `OPENWEATHER_API_KEY` | opcional: sin ella no se sella un clima inventado (`check:context`) |
+| `WALLET_ENCRYPTION_KEY` | ya no hace falta, ver arriba |
 
-`GOOGLE_SHEETS_*` ya no esta en la lista. Los cupones se resuelven contra
-Stripe (#33), que es donde vive el descuento; la hoja era una segunda lista
-para el mismo dato y nunca llego a configurarse.
+`GOOGLE_SHEETS_*` tampoco: los cupones se resuelven contra Stripe (#33), que es
+donde vive el descuento.
 
-`SOLANA_PAYER_PRIVATE_KEY` y `WALLET_ENCRYPTION_KEY` **hay que rotarlas antes**:
-estuvieron 140 dias en un proyecto de Vercel que se borro, y borrarlo no las
-invalido.
+### Lo que vivia fuera de git en la carpeta del backend
 
-Con eso puesto, el repunte son unas pocas lineas en `brew-data.ts`,
-`admin/page.tsx` y `backend.ts`.
+La carpeta local del backend tenia directorios ignorados que no estaban en
+ningun repo. Antes de retirarla, cada uno encontro su sitio:
+
+| | |
+|---|---|
+| `tbt_image_processor/` | es su propio repo, `cslucano/tbt_image_processor`, desplegado en AWS App Runner. **Produccion corria un middleware de `X-API-Key` y un `Dockerfile` que nunca se habian subido**: una peticion sin clave recibe su 401 exacto. Estan en `main` desde `ddca114` y `5b23614`, y la carpeta vive ahora junto a esta |
+| Los `.docx` del spec y `tbt-auth.html` | copia identica en `Documentos/old/` |
+| `Paginas/Landing.png` | en `Documentos/` |
+| El resto | clones de repos de terceros y skills ya instaladas globalmente |
 
 ## Trampas que ya nos costaron tiempo
 
@@ -111,9 +115,8 @@ por un `useSearchParams` sin límite de Suspense. Hay que leer más allá de esa
 línea o mirar el código de salida.
 
 **Las migraciones son de tbt-cafe.** `tbt-cafe/supabase/migrations`, contigua
-001→022, todas aplicadas en `tbt-brocha`. El repo `tbt` tiene copias inertes de
-001, 002, 003 y 010 con un README que apunta aquí; conviene borrarlas cuando se
-confirme que nadie las lee por ruta.
+desde 001. Las copias inertes que tenia el repo `tbt` se quedaron con el,
+archivado.
 
 **Variables de entorno.** Las cuatro `NEXT_PUBLIC_*` están en Production,
 Preview y Development. `SUPABASE_SERVICE_ROLE_KEY` está **solo en Production**,
@@ -150,8 +153,9 @@ sustitución de comandos. Escribirlos con `-F` desde archivo.
 
 ## Decisiones abiertas, no técnicas
 
-- **Rotar** `SOLANA_PAYER_PRIVATE_KEY` y `WALLET_ENCRYPTION_KEY`: estuvieron
-  140 días en el proyecto borrado. Borrarlo no las invalidó
+- **Rotar** `SOLANA_PAYER_PRIVATE_KEY`: estuvo 140 días en un proyecto de
+  Vercel que se borró, y borrarlo no la invalidó. `WALLET_ENCRYPTION_KEY` ya no
+  protege nada desde la 032
 - **`sk_test` o `sk_live`** en producción — sin confirmar
 - **Moderación** de las preguntas de Roast, ya desplegadas
 - **Cobertura de Connect por país**: mantiene `bank` deshabilitado y los
