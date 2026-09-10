@@ -119,6 +119,7 @@ export async function POST(request: NextRequest) {
         category,
         certified_at,
         creator_id,
+        current_owner_id,
         creator:profiles!works_creator_id_fkey(display_name, public_alias),
         work_commerce(initial_price, currency)
       `)
@@ -132,8 +133,15 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Verify the caller is the creator or current owner of the work
-    if ((work as any).creator_id !== user.id) {
+    /*
+     * El creador, o quien tiene la obra ahora.
+     *
+     * El comentario siempre dijo las dos cosas y la condicion solo comprobaba la
+     * primera: un coleccionista que ya es dueño de la obra recibia un 403 al
+     * pedir lo suyo, y no habia forma de hacerselo llegar.
+     */
+    const owner = work as any
+    if (owner.creator_id !== user.id && owner.current_owner_id !== user.id) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
 
