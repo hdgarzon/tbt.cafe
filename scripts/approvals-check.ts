@@ -182,6 +182,116 @@ const migration = read('supabase/migrations/037_approval_execution.sql')
   )
 }
 
+// ---- LA GUARDA: la capacidad es de quien llama, no de quien se nombre
+{
+  const core = readFileSync(join(__dirname, '..', 'supabase/migrations/013_admin_core.sql'), 'utf8')
+  const snapshot = readFileSync(join(__dirname, '..', 'supabase/schema-snapshot.sql'), 'utf8')
+  const fix = readFileSync(
+    join(__dirname, '..', 'supabase/migrations/043_admin_has_identity_from_session.sql'), 'utf8')
+
+  // Igual que arriba: la cabecera cita la firma vieja. Se mira el SQL.
+  const sql = fix.split('\n').filter((l) => !l.trim().startsWith('--')).join('\n')
+  const body = (name: string) => {
+    const at = sql.indexOf(`create or replace function public.${name}(`)
+    return at < 0 ? '' : sql.slice(at, sql.indexOf('$$;', at))
+  }
+  const has = body('admin_has')
+  const resolve = body('admin_resolve_approval')
+  const dropFn = sql.indexOf('drop function if exists public.admin_has(text, uuid);')
+
+  // Con `who`, cualquiera con EXECUTE —anon incluido— preguntaba por un uuid
+  // ajeno. Revocar sin quitarlo solo cambiaba quien pregunta.
+  ok(
+    'la firma de dos argumentos queda retirada',
+    dropFn >= 0,
+    'create or replace no puede quitar un parametro; sin el drop conviven las dos'
+  )
+  ok('sin cascade', !/drop function[^;]*admin_has[^;]*cascade/.test(sql),
+     'cascade borraria en silencio las cuatro politicas')
+  ok(
+    'la nueva solo recibe la capacidad',
+    /create or replace function public\.admin_has\(capability text\)/.test(sql),
+    'un argumento de identidad en una funcion security definer se puede mandar'
+  )
+  ok('y pregunta por la sesion, dentro',
+     has.includes('where user_id = auth.uid()') && !/\bwho\b/.test(has))
+
+  ok(
+    'se revoca EXECUTE de public y de anon',
+    sql.includes('revoke execute on function public.admin_has(text) from public;') &&
+    sql.includes('revoke execute on function public.admin_has(text) from anon;'),
+    'Supabase concede EXECUTE a anon por nombre; revocar solo de public no basta'
+  )
+  ok(
+    'y la invoca authenticated, que evalua las politicas',
+    sql.includes('grant execute on function public.admin_has(text) to authenticated;'),
+    'sin EXECUTE, una lectura con sesion de estas tablas devuelve permission denied'
+  )
+
+  // Las politicas dependen de la firma por su oid: con ellas en pie el drop
+  // falla. Se borran antes y vuelven con la forma de un argumento.
+  const policies: Array<[string, string, string]> = [
+    ['audit readable by viewers', 'admin_audit_log', 'audit.view'],
+    ['pending readable by admins', 'admin_pending_approvals', 'dashboard.view'],
+    ['annotations readable by team', 'work_annotations', 'works.view'],
+    ['observability readable by team', 'provider_events', 'observability.view'],
+  ]
+  for (let i = 0; i < policies.length; i++) {
+    const [name, table, cap] = policies[i]
+    const drop = sql.indexOf(`drop policy if exists "${name}" on public.${table};`)
+    const create = sql.indexOf(
+      `create policy "${name}" on public.${table}\n  for select using (public.admin_has('${cap}'));`)
+    ok(`"${name}" se borra antes que la funcion`, drop >= 0 && drop < dropFn,
+       'con la politica en pie, el drop de la funcion falla')
+    ok(`"${name}" vuelve despues, con un argumento`, create > dropFn)
+    ok(
+      `"${name}" en la foto del esquema es la misma`,
+      snapshot.includes(
+        `create policy "${name}" on public.${table} for select using (admin_has('${cap}'::text));`),
+      'el snapshot describe las politicas que deja esta migracion'
+    )
+  }
+
+  // plpgsql no registra a quien llama: el drop pasa y la llamada falla al
+  // usarse. Por eso se busca a los llamantes antes, y por eso ninguno queda con
+  // dos argumentos.
+  ok(
+    'antes de borrar, busca otros llamantes en la base',
+    sql.indexOf("strpos(p.prosrc, 'admin_has') > 0") >= 0 &&
+    sql.indexOf("strpos(p.prosrc, 'admin_has') > 0") < dropFn &&
+    sql.includes("raise exception 'admin_has tiene llamantes"),
+    'el esquema base no esta en el repositorio; un llamante de alli se romperia en silencio'
+  )
+  ok('nadie la llama ya con dos argumentos', !/admin_has\('[^']*',/.test(sql))
+  ok('admin_resolve_approval pasa a un argumento', resolve.includes("public.admin_has('approve_high_risk')"))
+  ok('ninguna politica de la foto pasa a quien', !/admin_has\('[^']*'::text,/.test(snapshot))
+  ok(
+    'todo en una transaccion',
+    /^begin;$/m.test(sql) && /^commit;$/m.test(sql),
+    'entre el drop y el create las tablas no tienen politica y aprobar no funciona'
+  )
+  ok(
+    'comprueba que el propietario de admin_resolve_approval puede llamarla',
+    sql.includes("'public.admin_has(text)',\n    'execute'"),
+    'es security definer: llama con los permisos de su propietario, y PUBLIC ya no los da'
+  )
+
+  // 043 reescribe la funcion que 042 corrigio. Lo que 042 garantiza tiene que
+  // seguir en el cuerpo nuevo, o esta migracion lo desharia sin que nada falle.
+  ok('la firma sigue siendo la de dos',
+     /create or replace function public\.admin_resolve_approval\(\s*approval_id uuid,\s*decision text\s*\)/.test(sql))
+  ok('quien aprueba sigue saliendo de la sesion', /approver uuid := auth\.uid\(\)/.test(resolve))
+  ok('sin sesion sigue sin aprobarse', /if approver is null then\s*\n\s*raise exception/.test(resolve))
+  ok('quien inicia sigue sin poder aprobar', resolve.includes('if row.initiator_id = approver then'))
+  ok('caducada sigue lanzando', /if row\.expires_at < now\(\) then\s*\n\s*raise exception/.test(resolve))
+
+  ok(
+    'la migracion original es la que se corrige',
+    core.includes('create or replace function public.admin_has(capability text, who uuid default auth.uid())'),
+    'si 013 ya no tiene el parametro, esta guarda sobra y hay que revisarla'
+  )
+}
+
 console.log(bad === 0 ? '\ntodo en orden' : `${'\n'}${bad} fallo(s)`)
 
 process.exit(bad === 0 ? 0 : 1)
