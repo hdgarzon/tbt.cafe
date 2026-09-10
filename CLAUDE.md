@@ -61,6 +61,7 @@ npm run check:image       # no metadata rides along with a published image
 npm run check:writeorder  # a transfer never rewrites the registration record
 npm run check:pseudonym   # nobody identifiable reaches Arweave
 npm run check:ots         # a pending anchor is a normal state, not a failure
+npm run check:grants      # no security definer function runs without a server
 ```
 
 Each guard is a plain script under `scripts/`, written BEFORE the module it
@@ -227,6 +228,20 @@ What that costs is confirmation latency, not the proof: the time an anchor
 attests is the time it was **stamped**, not the time it was checked. Restoring
 the hourly schedule the spec asks for needs the Pro plan. `npm run check:ots`
 fails if the expression stops being daily.
+
+### A `security definer` function is a public endpoint until proven otherwise
+
+Postgres grants `EXECUTE` to `PUBLIC` when a function is created, and Supabase
+grants it to `anon` and `authenticated` by name as well. A `security definer`
+function runs as its owner and skips RLS, so every one of them is a PostgREST
+endpoint that accepts the anon key — the key every browser holds.
+
+It went wrong three times in the same shape (`042`, `043`, `044`): a function
+that took the person as a parameter and was never revoked. In the migration that
+creates one, revoke `EXECUTE` from `public, anon, authenticated` and grant it
+back only to whoever must call it. If it acts on the caller, derive the caller
+from `auth.uid()` inside, never from an argument. `npm run check:grants` replays
+every migration's create, drop, revoke and grant, and fails otherwise.
 
 ### Conventions
 
