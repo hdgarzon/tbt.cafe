@@ -44,3 +44,6 @@ Documentos/
 
 # Volcado de esquema generado con `supabase db dump` — se regenera, no se versiona
 schema.sql
+
+# ajustes locales por persona: sus listas de permisos son lineas de comando enteras, y pueden llevar credenciales
+.claude/settings.local.json
