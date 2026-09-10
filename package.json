@@ -32,19 +32,19 @@
     "check:grants": "npx --yes tsx scripts/grants-check.ts"
   },
   "dependencies": {
-    "@aws-sdk/client-sns": "^3.1124.0",
+    "@aws-sdk/client-sns": "^3.1127.0",
     "@metaplex-foundation/js": "^0.20.1",
     "@simplewebauthn/browser": "^13.3.0",
     "@simplewebauthn/server": "^13.3.3",
     "@solana/web3.js": "^1.98.4",
-    "@stripe/react-stripe-js": "^6.8.2",
+    "@stripe/react-stripe-js": "^6.9.0",
     "@stripe/stripe-js": "^9.15.0",
-    "@supabase/supabase-js": "^2.113.0",
+    "@supabase/supabase-js": "^2.116.0",
     "javascript-opentimestamps": "^0.4.5",
     "next": "^16.3.4",
     "react": "^18",
     "react-dom": "^18",
-    "resend": "^6.25.0",
+    "resend": "^6.26.0",
     "stripe": "^22.6.1",
     "twilio": "^5.13.1"
   },
