@@ -8,3 +8,30 @@ updates:
     groups:
       minor-and-patch:
         update-types: [minor, patch]
+    # Saltos de version que son migraciones, no subidas. Cada uno se probo y
+    # rompio algo concreto; se quita de aqui el dia que se decida migrar.
+    ignore:
+      # ESLint 10: el lint revienta con «scopeManager.addGlobals is not a
+      # function», porque un plugin de eslint-config-next aun no lo soporta. El
+      # build no lo detecta: Next 16 ya no pasa el linter al construir.
+      - dependency-name: eslint
+        update-types: [version-update:semver-major]
+      # Tailwind 4: el plugin de PostCSS paso a @tailwindcss/postcss, y el build
+      # falla hasta cambiar la configuracion.
+      - dependency-name: tailwindcss
+        update-types: [version-update:semver-major]
+      # React 19: tiene que subir junto con react-dom y los dos paquetes de
+      # tipos. Por separado, npm no resuelve el arbol.
+      - dependency-name: react
+        update-types: [version-update:semver-major]
+      - dependency-name: react-dom
+        update-types: [version-update:semver-major]
+      - dependency-name: "@types/react"
+        update-types: [version-update:semver-major]
+      - dependency-name: "@types/react-dom"
+        update-types: [version-update:semver-major]
+      # TypeScript 7 ya no expone la API del compilador desde `typescript`, y el
+      # build falla en scripts/boot-check.ts, que recorre el AST con ella.
+      # typescript-eslint tampoco pasa de la 6.0. La 6 sigue permitida.
+      - dependency-name: typescript
+        versions: ["7.x"]
