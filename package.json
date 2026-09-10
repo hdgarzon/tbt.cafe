@@ -35,7 +35,7 @@
     "@aws-sdk/client-sns": "^3.1127.0",
     "@metaplex-foundation/js": "^0.20.1",
     "@simplewebauthn/browser": "^13.3.0",
-    "@simplewebauthn/server": "^13.3.3",
+    "@simplewebauthn/server": "^14.0.1",
     "@solana/web3.js": "^1.98.4",
     "@stripe/react-stripe-js": "^6.9.0",
     "@stripe/stripe-js": "^9.15.0",
