@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase-admin'
+import { currentTbtIdFor } from '@/lib/tbt-id'
 
 /**
  * El libro de la obra — Chain Spec 01, Item 10 Change A.
@@ -27,10 +28,13 @@ export async function GET(_request: NextRequest, props: { params: Promise<{ tbtI
   try {
     const admin = createAdminClient()
 
+    // Un ID anterior a la migracion 045 responde con la obra de hoy.
+    const tbtId = (await currentTbtIdFor(admin, params.tbtId)) ?? params.tbtId
+
     const { data: work } = await admin
       .from('works')
       .select('id, tbt_id, status, mint_address, certified_at, registration_record_uri, registration_record_hash')
-      .eq('tbt_id', params.tbtId)
+      .eq('tbt_id', tbtId)
       .single()
 
     // Un borrador no tiene libro que enseñar, y su existencia no es publica.

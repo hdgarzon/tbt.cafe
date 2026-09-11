@@ -48,7 +48,7 @@ export type CreateTransferInput = {
   /** UUID de la obra: lo que la API necesita para escribir la fila. */
   workId: string
   /**
-   * El id humano (TBT-2026-XXXXXX), SOLO para las URLs de retorno.
+   * El id humano (tres letras y cuatro digitos, como RRO5501), SOLO para las URLs de retorno.
    *
    * No es redundante con workId. /work/[tbtId] enruta por el id humano, que es
    * el que llevan los QR; el UUID ahi da «We couldn't find a work with that

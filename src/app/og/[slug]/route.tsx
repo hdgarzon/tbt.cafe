@@ -19,6 +19,7 @@
 import { ImageResponse } from 'next/og'
 import { createClient } from '@supabase/supabase-js'
 import { localeFromAcceptLanguage, ogImageAlt } from '@/lib/og-copy'
+import { currentTbtIdFor } from '@/lib/tbt-id'
 
 export const runtime = 'edge'
 
@@ -69,10 +70,13 @@ export async function GET(request: Request, props: { params: Promise<{ slug: str
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
     )
+    // Con el ID anterior la imagen se sirve directa, sin redirigir: §3.2 la exige
+    // servida sin cadena de redirecciones, y lo ya compartido la sigue pidiendo.
+    const current = (await currentTbtIdFor(supabase, tbtId)) ?? tbtId
     const { data } = await supabase
       .from('works')
       .select('title, media_url, creator:profiles!works_creator_id_fkey(public_alias, display_name)')
-      .eq('tbt_id', tbtId)
+      .eq('tbt_id', current)
       .single()
 
     if (data) {
