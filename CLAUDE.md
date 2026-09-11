@@ -62,6 +62,7 @@ npm run check:writeorder  # a transfer never rewrites the registration record
 npm run check:pseudonym   # nobody identifiable reaches Arweave
 npm run check:ots         # a pending anchor is a normal state, not a failure
 npm run check:grants      # no security definer function runs without a server
+npm run check:tbtid       # a work ID is three letters and four digits
 ```
 
 Each guard is a plain script under `scripts/`, written BEFORE the module it

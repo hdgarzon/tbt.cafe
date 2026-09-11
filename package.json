@@ -29,7 +29,8 @@
     "check:pseudonym": "npx --yes tsx scripts/pseudonym-check.ts",
     "check:ots": "npx --yes tsx scripts/ots-check.ts",
     "check:ledger": "npx --yes tsx scripts/ledger-check.ts",
-    "check:grants": "npx --yes tsx scripts/grants-check.ts"
+    "check:grants": "npx --yes tsx scripts/grants-check.ts",
+    "check:tbtid": "npx --yes tsx scripts/tbt-id-check.ts"
   },
   "dependencies": {
     "@aws-sdk/client-sns": "^3.1127.0",

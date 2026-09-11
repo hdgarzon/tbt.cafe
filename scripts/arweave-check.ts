@@ -13,7 +13,7 @@ const ok = (label: string, cond: boolean, detail = '') => {
 }
 
 const record = registrationRecord({
-  tbtId: 'TBT-2026-ABC123',
+  tbtId: 'RRO5501',
   sequence: 1,
   contentHash: 'sha256:9f2c3d4e5a6b7c8d9e0f1a2b3c4d5e6f708192a3b4c5d6e7f8091a2b3c4d5e6f',
   creator: { name: 'Sara Alarcón', id: 'cr_8812', type: 'individual' },
@@ -38,7 +38,7 @@ const record = registrationRecord({
 // ---- el nombre identifica el registro sin abrirlo
 {
   const file = recordFileFor(record)
-  ok('el nombre lleva el TBT', file.fileName.includes('TBT-2026-ABC123'))
+  ok('el nombre lleva el TBT', file.fileName.includes('RRO5501'))
   ok('y el tipo de registro', file.fileName.includes('registration'))
 }
 
@@ -49,7 +49,7 @@ const record = registrationRecord({
   ok('etiqueta de aplicación', tags[RECORD_TAGS.app] === 'tbt.cafe')
   ok('etiqueta de esquema', tags[RECORD_TAGS.schema] === record.schema)
   ok('etiqueta de tipo', tags[RECORD_TAGS.type] === 'registration')
-  ok('etiqueta con el TBT', tags[RECORD_TAGS.tbtId] === 'TBT-2026-ABC123')
+  ok('etiqueta con el TBT', tags[RECORD_TAGS.tbtId] === 'RRO5501')
   ok('etiqueta con el hash del registro', tags[RECORD_TAGS.hash] === recordHash(record))
   ok('Content-Type para las pasarelas', tags['Content-Type'] === 'application/json')
 }
