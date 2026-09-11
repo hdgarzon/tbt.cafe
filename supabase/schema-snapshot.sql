@@ -139,6 +139,7 @@ create table if not exists public.profiles (
 create table if not exists public.works (
   id uuid default extensions.uuid_generate_v4() not null,
   tbt_id text not null,
+  legacy_tbt_id text,
   creator_id uuid not null,
   current_owner_id uuid not null,
   title text not null,
@@ -738,7 +739,8 @@ alter table public.profiles add constraint profiles_id_fkey FOREIGN KEY (id) REF
 
 alter table public.works add constraint works_pkey PRIMARY KEY (id);
 alter table public.works add constraint works_tbt_id_key UNIQUE (tbt_id);
-alter table public.works add constraint valid_tbt_id CHECK ((tbt_id ~ '^TBT-[0-9]{4}-[A-Z0-9]{6}$'::text));
+alter table public.works add constraint valid_tbt_id CHECK ((tbt_id ~ '^[A-Z]{3}[0-9]{4}$'::text));
+alter table public.works add constraint valid_legacy_tbt_id CHECK (((legacy_tbt_id IS NULL) OR (legacy_tbt_id ~ '^TBT-[0-9]{4}-[A-Z0-9]{6}$'::text)));
 alter table public.works add constraint works_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES profiles(id) ON DELETE RESTRICT;
 alter table public.works add constraint works_current_owner_id_fkey FOREIGN KEY (current_owner_id) REFERENCES profiles(id) ON DELETE RESTRICT;
 alter table public.works add constraint works_series_id_fkey FOREIGN KEY (series_id) REFERENCES work_series(id) ON DELETE SET NULL;
@@ -905,6 +907,7 @@ alter table public.plagiarism_scans add constraint plagiarism_scans_work_id_fkey
 -- ============================================================================
 
 create index if not exists idx_works_tbt_id ON public.works USING btree (tbt_id);
+create unique index if not exists works_legacy_tbt_id_key ON public.works USING btree (legacy_tbt_id) WHERE (legacy_tbt_id IS NOT NULL);
 create index if not exists idx_works_creator_id ON public.works USING btree (creator_id);
 create index if not exists idx_works_current_owner_id ON public.works USING btree (current_owner_id);
 create index if not exists idx_works_status ON public.works USING btree (status);

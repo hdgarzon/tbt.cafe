@@ -35,7 +35,7 @@ const B = pseudonymFor('51272678-0000-4000-8000-000000000000')
 const current: Record<string, unknown> = {
   schema: RECORD_SCHEMA,
   type: 'registration',
-  tbt_id: 'TBT-2026-ABC123',
+  tbt_id: 'RRO5501',
   sequence: 1,
   content_hash: 'sha256:' + 'a'.repeat(64),
   creator: { name: 'Sara Alarcón', id: A, type: 'individual' },
@@ -95,7 +95,7 @@ const meta = { supersedes: AR, reason: '  Título mal escrito.  ', decidedBy: { 
     amendRecord(current, { creator: { name: 'Otra' } } as never, meta))
   throws('ni la declaración de originalidad', () =>
     amendRecord(current, { originality: 'derivative' } as never, meta))
-  throws('ni el TBT', () => amendRecord(current, { tbt_id: 'TBT-2026-OTHER1' } as never, meta))
+  throws('ni el TBT', () => amendRecord(current, { tbt_id: 'TWW8803' } as never, meta))
   throws('la clase authorship no está construida', () =>
     amendRecord(current, { title: 'x' }, { ...meta, amendmentClass: 'authorship' }))
 }

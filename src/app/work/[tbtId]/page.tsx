@@ -10,9 +10,11 @@
  * Toda la interfaz sigue en WorkClient; aquí solo se generan las etiquetas.
  */
 import { headers } from 'next/headers'
+import { permanentRedirect } from 'next/navigation'
 import type { Metadata } from 'next'
 import { createClient } from '@supabase/supabase-js'
 import { OG_LOCALE, localeFromAcceptLanguage, ogTitle, ogDescription, ogImageAlt } from '@/lib/og-copy'
+import { currentTbtIdFor } from '@/lib/tbt-id'
 import WorkClient from './WorkClient'
 
 const SITE = 'https://tbt.cafe'
@@ -28,12 +30,15 @@ function publicClient() {
 export async function generateMetadata(props: { params: Promise<{ tbtId: string }> }): Promise<Metadata> {
   const params = await props.params;
   const locale = localeFromAcceptLanguage((await headers()).get('accept-language'))
-  const canonical = `${SITE}/work/${params.tbtId}`
+  // Un enlace con el ID anterior se describe con el actual: la pagina redirige, y
+  // la previsualizacion no puede quedarse con la direccion vieja.
+  const tbtId = (await currentTbtIdFor(publicClient(), params.tbtId)) ?? params.tbtId
+  const canonical = `${SITE}/work/${tbtId}`
 
   const { data } = await publicClient()
     .from('works')
     .select('tbt_id, title, series:work_series(name), creator:profiles!works_creator_id_fkey(public_alias, display_name)')
-    .eq('tbt_id', params.tbtId)
+    .eq('tbt_id', tbtId)
     .single()
 
   if (!data) {
@@ -46,7 +51,7 @@ export async function generateMetadata(props: { params: Promise<{ tbtId: string 
   const creator = creatorRow?.public_alias || creatorRow?.display_name || ''
   const title = ogTitle(data.title ?? '', creator)
   const description = ogDescription(locale, seriesRow?.name)
-  const image = `${SITE}/og/${encodeURIComponent(params.tbtId)}.png`
+  const image = `${SITE}/og/${encodeURIComponent(tbtId)}.png`
   const alt = ogImageAlt(locale, data.title ?? '', creator)
 
   return {
@@ -75,5 +80,12 @@ export async function generateMetadata(props: { params: Promise<{ tbtId: string 
 
 export default async function Page(props: { params: Promise<{ tbtId: string }> }) {
   const params = await props.params;
+  /*
+   * Los enlaces que ya estan en el mundo llevan el ID anterior a la migracion 045.
+   * Redirigen para siempre al actual (308): un buscador consolida la direccion
+   * nueva y nadie aterriza en «no encontrado».
+   */
+  const moved = await currentTbtIdFor(publicClient(), params.tbtId)
+  if (moved) permanentRedirect(`/work/${moved}`)
   return <WorkClient params={params} />
 }
