@@ -32,11 +32,11 @@
     "check:grants": "npx --yes tsx scripts/grants-check.ts"
   },
   "dependencies": {
-    "@aws-sdk/client-sns": "^3.1127.0",
+    "@aws-sdk/client-sns": "^3.1128.0",
     "@metaplex-foundation/js": "^0.20.1",
     "@simplewebauthn/browser": "^14.0.0",
     "@simplewebauthn/server": "^14.0.1",
-    "@solana/web3.js": "^1.98.4",
+    "@solana/web3.js": "^1.99.0",
     "@stripe/react-stripe-js": "^6.9.0",
     "@stripe/stripe-js": "^9.15.0",
     "@supabase/supabase-js": "^2.116.0",
