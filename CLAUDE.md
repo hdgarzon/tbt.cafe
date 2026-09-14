@@ -62,7 +62,8 @@ npm run check:writeorder  # a transfer never rewrites the registration record
 npm run check:pseudonym   # nobody identifiable reaches Arweave
 npm run check:ots         # a pending anchor is a normal state, not a failure
 npm run check:grants      # no security definer function runs without a server
-npm run check:titles      # a title is issued, not certified; the old table name survives only as a view
+npm run check:titles      # a title is issued, not certified; the old table name is gone
+npm run check:transfercode # no bearer code is generated that nobody receives
 ```
 
 Each guard is a plain script under `scripts/`, written BEFORE the module it
@@ -156,7 +157,10 @@ one of them empty in all 59 rows.
 
 The plaintext `transfer_code` went with them, on `works` and on `transfers`. The
 transfer code is a bearer secret: whoever holds it can claim the work, which is
-why only `transfer_code_hash` is kept.
+why only `transfer_code_hash` was kept — until `046` dropped that too. The code
+was generated, hashed and thrown away: never delivered to anyone, never checked
+against anything. Ownership is what the title says, and a title carries no
+bearer secret.
 
 Recorded because the lesson outlasts the columns: **writing to a dead twin is
 silent.** The row saves and the value is never read again. Three of these were

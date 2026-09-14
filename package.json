@@ -30,7 +30,8 @@
     "check:ots": "npx --yes tsx scripts/ots-check.ts",
     "check:ledger": "npx --yes tsx scripts/ledger-check.ts",
     "check:grants": "npx --yes tsx scripts/grants-check.ts",
-    "check:titles": "npx --yes tsx scripts/titles-check.ts"
+    "check:titles": "npx --yes tsx scripts/titles-check.ts",
+    "check:transfercode": "npx --yes tsx scripts/transfer-code-check.ts"
   },
   "dependencies": {
     "@aws-sdk/client-sns": "^3.1127.0",
