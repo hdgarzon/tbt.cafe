@@ -261,6 +261,39 @@ const transfers: Template = {
 }
 
 /**
+ * Una regalía que llega ya disponible. Solo las de liberación por evento —una
+ * transferencia aceptada— entran así; las de una compra esperan su ventana de
+ * liquidación y se avisan al liberarse. El importe es el neto, después de la
+ * tarifa de servicio, que es lo que la persona puede cobrar.
+ */
+const payout_available: Template = {
+  en: (p) => ({
+    subject: `A royalty of ${p.amount} USD is ready to collect`,
+    heading: 'A royalty is ready',
+    body: `“${p.title}” changed hands, and your royalty of ${p.amount} USD is available now. Collect it from Payouts whenever you choose.`,
+    cta: 'Go to Payouts',
+  }),
+  es: (p) => ({
+    subject: `Tienes una regalía de ${p.amount} USD lista para cobrar`,
+    heading: 'Tienes una regalía lista',
+    body: `«${p.title}» cambió de manos y tu regalía de ${p.amount} USD ya está disponible. Cóbrala desde Cobros cuando quieras.`,
+    cta: 'Ir a Cobros',
+  }),
+  pt: (p) => ({
+    subject: `Um royalty de ${p.amount} USD está pronto para receber`,
+    heading: 'Há um royalty pronto',
+    body: `“${p.title}” mudou de mãos e seu royalty de ${p.amount} USD já está disponível. Receba em Saques quando quiser.`,
+    cta: 'Ir para Saques',
+  }),
+  fr: (p) => ({
+    subject: `Une redevance de ${p.amount} USD est prête à être perçue`,
+    heading: 'Une redevance vous attend',
+    body: `« ${p.title} » a changé de mains et votre redevance de ${p.amount} USD est disponible. Percevez-la depuis Versements quand vous le souhaitez.`,
+    cta: 'Aller aux versements',
+  }),
+}
+
+/**
  * Solo los eventos con plantilla completa en los cuatro idiomas. Añadir uno
  * aquí sin sus cuatro traducciones es lo que el spec prohíbe.
  */
@@ -273,6 +306,7 @@ const TEMPLATES: Record<string, Template> = {
   payout_failed,
   purchases,
   transfers,
+  payout_available,
 }
 
 export function emailCopyFor(

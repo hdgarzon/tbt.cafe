@@ -988,7 +988,7 @@
       "favorites": "Activity on one of your favourites.",
       "surge": "Attention on a work is accelerating.",
       "new_from_followed": "Someone you follow registered a new work.",
-      "payout_available": "A payout is ready to collect.",
+      "payout_available": "A royalty of {amount} USD from “{title}” is ready to collect.",
       "payout_released": "Funds were released from pending.",
       "payout_completed": "Your collection of {amount} USD completed.",
       "payout_failed": "A payout of {amount} USD could not be completed.",

@@ -69,6 +69,7 @@ npm run check:notifyonce  # a notification is written once, and a person can onl
 npm run check:payoutnotice # a payout destination change always reaches the owner, by email too
 npm run check:payoutoutcome # a payout's outcome is told once, and only when the ledger moved
 npm run check:transfernotice # both sides of a sale or transfer hear what happened, once, with no HTML smuggled into the email
+npm run check:earningnotice # a royalty that lands available is told once; a pending one is not called ready
 ```
 
 Each guard is a plain script under `scripts/`, written BEFORE the module it
