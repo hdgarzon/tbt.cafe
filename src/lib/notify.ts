@@ -70,6 +70,12 @@ export async function notify(
     userId: string
     /** Coincide con el id de la preferencia: 'purchases', 'offer_received'… */
     eventKey: string
+    /**
+     * El hecho que se avisa, no el intento: la obra registrada, la respuesta, el
+     * ticket. Con la persona y el evento es único (migración 047), así que un
+     * reintento o un webhook repetido no escribe dos veces ni manda dos correos.
+     */
+    dedupeKey: string
     data?: Record<string, unknown>
     /** Ruta interna a la que lleva. */
     href?: string
@@ -97,14 +103,25 @@ export async function notify(
       if (enabled === false) return
     }
 
+    if (!params.dedupeKey) {
+      // Sin clave el aviso se escribe igual —perder un aviso de seguridad es peor
+      // que duplicarlo—, pero queda dicho que esta llamada no es idempotente.
+      console.error('[notify] missing dedupe key:', params.eventKey)
+    }
+
     const { error } = await supabase.from('notifications').insert({
       user_id: params.userId,
       event_key: params.eventKey,
       category,
       params: params.data ?? {},
       href: params.href ?? null,
+      dedupe_key: params.dedupeKey || null,
     })
     if (error) {
+      // 23505: esta persona ya tiene este aviso por este mismo hecho. No es un
+      // fallo, es el reintento que la clave vino a frenar — y el correo ya salió
+      // la primera vez.
+      if (error.code === '23505') return
       console.error('[notify] insert failed:', params.eventKey, error)
       return
     }

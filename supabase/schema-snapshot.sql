@@ -443,7 +443,8 @@ create table if not exists public.notifications (
   params jsonb default '{}'::jsonb not null,
   href text,
   read_at timestamp with time zone,
-  created_at timestamp with time zone default now() not null
+  created_at timestamp with time zone default now() not null,
+  dedupe_key text
 );
 
 create table if not exists public.notification_prefs (
@@ -969,6 +970,7 @@ create unique index if not exists tickets_system_dedupe_idx ON public.tickets US
 create index if not exists ticket_replies_ticket_idx ON public.ticket_replies USING btree (ticket_id, created_at);
 create index if not exists notifications_user_idx ON public.notifications USING btree (user_id, created_at DESC);
 create index if not exists notifications_unread_idx ON public.notifications USING btree (user_id) WHERE (read_at IS NULL);
+create unique index if not exists notifications_dedupe_idx ON public.notifications USING btree (user_id, event_key, dedupe_key) WHERE (dedupe_key IS NOT NULL);
 create index if not exists covered_registrations_creator_idx ON public.covered_registrations USING btree (creator_id);
 create unique index if not exists covered_registrations_work_idx ON public.covered_registrations USING btree (work_id) WHERE (work_id IS NOT NULL);
 create index if not exists provider_events_group_idx ON public.provider_events USING btree (provider, operation, error_code, created_at DESC);
@@ -1094,6 +1096,9 @@ create policy "own replies insert" on public.ticket_replies for insert with chec
 
 create policy "own notifications read" on public.notifications for select using ((auth.uid() = user_id));
 create policy "own notifications mark read" on public.notifications for update using ((auth.uid() = user_id)) with check ((auth.uid() = user_id));
+-- 047: la RLS filtra filas, no columnas. El cliente solo puede tocar read_at.
+revoke insert, update, delete on public.notifications from anon, authenticated;
+grant update (read_at) on public.notifications to authenticated;
 create policy "own prefs" on public.notification_prefs for all using ((auth.uid() = user_id)) with check ((auth.uid() = user_id));
 
 create policy "config readable" on public.platform_config for select using (true);

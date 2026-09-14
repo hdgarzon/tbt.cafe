@@ -64,6 +64,7 @@ npm run check:ots         # a pending anchor is a normal state, not a failure
 npm run check:grants      # no security definer function runs without a server
 npm run check:titles      # a title is issued, not certified; the old table name is gone
 npm run check:transfercode # no bearer code is generated that nobody receives
+npm run check:notifyonce  # a notification is written once, and a person can only mark it read
 ```
 
 Each guard is a plain script under `scripts/`, written BEFORE the module it
@@ -135,6 +136,12 @@ scripts/*-check.ts                   # one guard per invariant
 - **Fees** — run `npm run check:fees` after touching any pricing, transfer, or purchase path. Fee drift is silent and expensive.
 - **Covered registrations** (`011_covered_registrations`) and **tickets** (`012_tickets`) carry real user obligations.
 - **Notifications** (`015_notifications`) feed the in-app feed; writes must be idempotent.
+  Every `notify()` names the fact it announces as `dedupeKey` — a work id, a reply
+  id, a ticket id, never a timestamp — and `047` makes it unique per person and
+  event, so a retry or a redelivered webhook writes nothing and sends no second
+  email. The client can update `read_at` and no other column: RLS filters rows,
+  not columns, and a person who could rewrite their own rows could line one up
+  to swallow a future `payout_destination` notice.
 - **Amendments** (`038_work_amendments`, `src/lib/chain/amend.ts`) — a record is
   never edited. `amendRecord` copies the record that is **published** and applies
   the correction on top, so a field added to the schema later survives an
