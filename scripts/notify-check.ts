@@ -117,5 +117,20 @@ ok('simulated con cualquier valor cierto', wasDelivered({ ok: true }, { simulate
   )
 }
 
+// ---- LA GUARDA: quien tiene la obra tambien recibe lo suyo
+{
+  const sms = readFileSync(join(__dirname, '..', 'src/app/api/send-sms/route.ts'), 'utf8')
+  ok(
+    'send-sms lee quien tiene la obra ahora',
+    /\bcurrent_owner_id,/.test(sms),
+    'sin esa columna la puerta solo puede mirar al creador'
+  )
+  ok(
+    'la puerta deja pasar al creador o al dueño actual',
+    /creator_id !== user\.id && owner\.current_owner_id !== user\.id/.test(sms),
+    'un coleccionista que ya es dueño recibia un 403 al pedir lo suyo'
+  )
+}
+
 console.log(bad === 0 ? '\ntodo en orden' : `\n${bad} fallo(s)`)
 process.exit(bad === 0 ? 0 : 1)
