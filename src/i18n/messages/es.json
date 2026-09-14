@@ -984,8 +984,8 @@
       "new_from_followed": "Alguien que sigues registró una obra nueva.",
       "payout_available": "Tienes un cobro listo para retirar.",
       "payout_released": "Se liberaron fondos que estaban pendientes.",
-      "payout_completed": "Tu cobro se completó.",
-      "payout_failed": "No pudimos completar un cobro.",
+      "payout_completed": "Tu cobro de {amount} USD se completó.",
+      "payout_failed": "No pudimos completar un cobro de {amount} USD.",
       "payout_destination": "Cambió el destino de tus cobros a {to}."
     }
   },
