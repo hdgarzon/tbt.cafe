@@ -107,5 +107,45 @@ const FILES = ['src/lib/roast-content.ts', 'src/lib/legal-content.ts', 'src/lib/
   ok('sin «ID de Certificación» ni «DETALLES DE TU CERTIFICACIÓN»', !email.includes('ID de Certificación') && !email.includes('DETALLES DE TU CERTIFICACIÓN'))
 }
 
+// ---- el resto del producto que habla del titulo
+//
+// Los tickets de sistema, la notificacion de registro, la tarjeta OG, la
+// descripcion del sitio y el panel. La notificacion prometia ademas una llave de
+// transferencia en el telefono: la llave no existe desde la migracion 046.
+{
+  const MORE = [
+    'src/lib/system-tickets.ts',
+    'src/lib/email-templates.ts',
+    'src/lib/og-copy.ts',
+    'src/app/layout.tsx',
+    'src/app/admin/page.tsx',
+    'src/lib/solana/config.ts',
+  ]
+  const NOUN = /\bcertificates?\b|\bcertificats?\b|\bcertificados?\b/i
+  for (let f = 0; f < MORE.length; f++) {
+    const found = hits(read(MORE[f]), NOUN)
+    ok(`${MORE[f]}: sin «certificate»`, found.length === 0, found.slice(0, 3).join(', '))
+  }
+
+  const templates = read('src/lib/email-templates.ts')
+  ok(
+    'la notificacion de registro no promete una llave',
+    !/transfer key|llave de transferencia|chave de transferência|clé de transfert/i.test(templates),
+    'la llave no existe desde la migracion 046'
+  )
+  ok(
+    'ni algo enviado al telefono',
+    !/sent to your phone|enviaron a tu teléfono|enviados para o seu telefone|envoyés à votre téléphone/i.test(templates)
+  )
+  ok(
+    'el ticket de entrega fallida no menciona una llave',
+    !/and key did not|y su llave|e a chave|et sa clé/.test(read('src/lib/system-tickets.ts'))
+  )
+  ok(
+    'el aviso de Twilio habla del titulo',
+    read('src/app/api/twilio/status/route.ts').includes("subject: 'title delivery failed'")
+  )
+}
+
 console.log(bad === 0 ? '\ntodo en orden' : `\n${bad} fallo(s)`)
 process.exit(bad === 0 ? 0 : 1)
