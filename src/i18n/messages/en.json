@@ -986,7 +986,7 @@
       "payout_released": "Funds were released from pending.",
       "payout_completed": "Your collection completed.",
       "payout_failed": "A payout could not be completed.",
-      "payout_destination": "Your payout destination was changed."
+      "payout_destination": "Your payout destination was changed to {to}."
     }
   },
   "payouts": {
