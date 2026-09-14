@@ -82,7 +82,7 @@ const sqlOf = (p: string) => read(p).split('\n').filter((l) => !l.trim().startsW
   const snap = read('supabase/schema-snapshot.sql')
   ok('snapshot: la tabla titles', snap.includes('create table if not exists public.titles ('))
   ok('snapshot: sin la tabla vieja', !snap.includes('create table if not exists public.certificates ('))
-  ok('snapshot: la vista de transicion', /create or replace view public\.certificates with \(security_invoker = on\)/.test(snap))
+  ok('snapshot: la vista de transicion ya no esta', !/create (or replace )?view public\.certificates/.test(snap))
   ok('snapshot: owner_index', snap.includes('owner_index integer default 1 not null'))
   ok('snapshot: kind y delivery_state', snap.includes("kind text default 'standard'::text not null") && snap.includes("delivery_state text default 'pending'::text not null"))
 }
