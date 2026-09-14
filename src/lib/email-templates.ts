@@ -137,6 +137,73 @@ const payout_destination: Template = {
 }
 
 /**
+ * Cobro completado. "Enviado" quiere decir lo que `disburseBlock` puede afirmar:
+ * que la transferencia llegó al saldo de Stripe de la persona. De ahí al banco
+ * lo lleva Stripe con su calendario, y el correo no promete más.
+ */
+const payout_completed: Template = {
+  en: (p) => ({
+    subject: `Your payout of ${p.amount} USD was sent`,
+    heading: 'Your payout is on its way',
+    body: `${p.amount} USD from payout block ${p.block} reached your Stripe balance. Stripe sends it on to your bank account or wallet on its own schedule.`,
+    cta: 'See your payouts',
+  }),
+  es: (p) => ({
+    subject: `Enviamos tu cobro de ${p.amount} USD`,
+    heading: 'Tu cobro va en camino',
+    body: `${p.amount} USD del bloque de cobro ${p.block} llegaron a tu saldo de Stripe. Stripe los envía a tu cuenta bancaria o billetera según su propio calendario.`,
+    cta: 'Ver tus cobros',
+  }),
+  pt: (p) => ({
+    subject: `Enviamos seu recebimento de ${p.amount} USD`,
+    heading: 'Seu recebimento está a caminho',
+    body: `${p.amount} USD do bloco de recebimento ${p.block} chegaram ao seu saldo na Stripe. A Stripe os envia para sua conta bancária ou carteira no próprio calendário.`,
+    cta: 'Ver seus recebimentos',
+  }),
+  fr: (p) => ({
+    subject: `Votre versement de ${p.amount} USD a été envoyé`,
+    heading: 'Votre versement est en route',
+    body: `${p.amount} USD du bloc de versement ${p.block} sont arrivés sur votre solde Stripe. Stripe les transfère vers votre compte bancaire ou votre portefeuille selon son propre calendrier.`,
+    cta: 'Voir vos versements',
+  }),
+}
+
+/**
+ * Cobro fallido — protectora, no se apaga. Lo primero que hay que decir es que
+ * el dinero no se perdió: `fail_payout_block` devuelve las ganancias a
+ * disponible. Si el motivo es que la cuenta de cobro no está lista, se dice qué
+ * hacer; un código del proveedor no le sirve a nadie.
+ */
+const NEEDS_SETUP = ['no_connect_account', 'transfers_not_enabled']
+
+const payout_failed: Template = {
+  en: (p) => ({
+    subject: `Your payout of ${p.amount} USD did not go through`,
+    heading: 'Your payout was not completed',
+    body: `Payout block ${p.block} did not reach its destination. The ${p.amount} USD is back in your available balance, so nothing is lost and you can collect it again.${NEEDS_SETUP.includes(p.reason) ? ' Your payout account is not ready to receive money yet: finish setting it up in Settings, then collect again.' : ''}`,
+    cta: 'See your payouts',
+  }),
+  es: (p) => ({
+    subject: `Tu cobro de ${p.amount} USD no se completó`,
+    heading: 'No pudimos completar tu cobro',
+    body: `El bloque de cobro ${p.block} no llegó a su destino. Los ${p.amount} USD volvieron a tu saldo disponible: no se perdió nada y puedes cobrarlos otra vez.${NEEDS_SETUP.includes(p.reason) ? ' Tu cuenta de cobro aún no está lista para recibir dinero: termina de configurarla en Ajustes y vuelve a cobrar.' : ''}`,
+    cta: 'Ver tus cobros',
+  }),
+  pt: (p) => ({
+    subject: `Seu recebimento de ${p.amount} USD não foi concluído`,
+    heading: 'Não conseguimos concluir seu recebimento',
+    body: `O bloco de recebimento ${p.block} não chegou ao destino. Os ${p.amount} USD voltaram ao seu saldo disponível: nada foi perdido e você pode receber de novo.${NEEDS_SETUP.includes(p.reason) ? ' Sua conta de recebimento ainda não está pronta para receber dinheiro: termine a configuração em Ajustes e tente de novo.' : ''}`,
+    cta: 'Ver seus recebimentos',
+  }),
+  fr: (p) => ({
+    subject: `Votre versement de ${p.amount} USD n'a pas abouti`,
+    heading: "Votre versement n'a pas été effectué",
+    body: `Le bloc de versement ${p.block} n'est pas arrivé à destination. Les ${p.amount} USD sont revenus sur votre solde disponible : rien n'est perdu et vous pouvez les percevoir à nouveau.${NEEDS_SETUP.includes(p.reason) ? " Votre compte de versement n'est pas encore prêt à recevoir de l'argent : terminez sa configuration dans Réglages, puis réessayez." : ''}`,
+    cta: 'Voir vos versements',
+  }),
+}
+
+/**
  * Solo los eventos con plantilla completa en los cuatro idiomas. Añadir uno
  * aquí sin sus cuatro traducciones es lo que el spec prohíbe.
  */
@@ -145,6 +212,8 @@ const TEMPLATES: Record<string, Template> = {
   ticket_reply,
   ticket_system,
   payout_destination,
+  payout_completed,
+  payout_failed,
 }
 
 export function emailCopyFor(

@@ -984,8 +984,8 @@
       "new_from_followed": "Une personne que vous suivez a enregistré une œuvre.",
       "payout_available": "Un versement est prêt à être perçu.",
       "payout_released": "Des fonds en attente ont été libérés.",
-      "payout_completed": "Votre perception est terminée.",
-      "payout_failed": "Un versement n'a pas pu être effectué.",
+      "payout_completed": "Votre perception de {amount} USD est terminée.",
+      "payout_failed": "Un versement de {amount} USD n'a pas pu être effectué.",
       "payout_destination": "La destination de vos versements a changé pour {to}."
     }
   },
