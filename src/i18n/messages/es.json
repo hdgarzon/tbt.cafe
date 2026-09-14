@@ -988,7 +988,7 @@
       "favorites": "Actividad en uno de tus favoritos.",
       "surge": "La atención sobre una obra se está acelerando.",
       "new_from_followed": "Alguien que sigues registró una obra nueva.",
-      "payout_available": "Tienes un cobro listo para retirar.",
+      "payout_available": "Tienes una regalía de {amount} USD de «{title}» lista para cobrar.",
       "payout_released": "Se liberaron fondos que estaban pendientes.",
       "payout_completed": "Tu cobro de {amount} USD se completó.",
       "payout_failed": "No pudimos completar un cobro de {amount} USD.",
