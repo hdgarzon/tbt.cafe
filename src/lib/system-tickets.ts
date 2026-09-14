@@ -188,7 +188,7 @@ export async function fileSystemTicket(
     const locale = await localeFor(supabase, userId)
     const copy = template.copy[locale]
 
-    const { error } = await supabase.from('tickets').insert({
+    const { data: ticket, error } = await supabase.from('tickets').insert({
       origin: 'system',
       category: template.category,
       severity: template.severity,
@@ -203,7 +203,7 @@ export async function fileSystemTicket(
         error_detail: errorDetail ? JSON.parse(JSON.stringify(errorDetail)) : null,
         occurred_at: new Date().toISOString(),
       },
-    })
+    }).select('id').single()
 
     // 23505 = choque con el índice de deduplicación: ya hay un ticket abierto
     // para este mismo fallo. Se le añade el intento como contexto en vez de
@@ -233,7 +233,7 @@ export async function fileSystemTicket(
       return
     }
 
-    if (error) {
+    if (error || !ticket) {
       console.error('[system-ticket] insert failed:', eventCode, error)
       return
     }
@@ -243,6 +243,7 @@ export async function fileSystemTicket(
     await notify(supabase, {
       userId,
       eventKey: 'ticket_system',
+      dedupeKey: ticket.id,
       data: { subject: copy.subject, severity: template.severity },
       href: '/help',
     })
