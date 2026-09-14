@@ -68,6 +68,7 @@ npm run check:language    # the copy says title, not certificate; nothing arrive
 npm run check:notifyonce  # a notification is written once, and a person can only mark it read
 npm run check:payoutnotice # a payout destination change always reaches the owner, by email too
 npm run check:payoutoutcome # a payout's outcome is told once, and only when the ledger moved
+npm run check:transfernotice # both sides of a sale or transfer hear what happened, once, with no HTML smuggled into the email
 ```
 
 Each guard is a plain script under `scripts/`, written BEFORE the module it

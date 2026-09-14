@@ -204,6 +204,63 @@ const payout_failed: Template = {
 }
 
 /**
+ * Compras y transferencias: un evento, varias cosas que pueden haber pasado.
+ * `variant` elige cuál; una variante desconocida cae en un texto neutro antes que
+ * afirmar algo que no ocurrió.
+ *
+ * Ninguna promete dinero al vendedor: en una venta el precio cambia de manos
+ * fuera de la plataforma, y lo único que se anota es la regalía del creador.
+ */
+const pick = (variants: Record<string, EmailCopy>, variant: string, neutral: EmailCopy): EmailCopy =>
+  variants[variant] ?? neutral
+
+const purchases: Template = {
+  en: (p) => pick({
+    bought: { subject: `You bought “${p.title}”`, heading: 'It is yours now', body: `The purchase of “${p.title}” went through, and you are now its holder.`, cta: 'See the work' },
+    sold: { subject: `“${p.title}” sold`, heading: 'Your work changed hands', body: `“${p.title}” was bought and now has a new holder.`, cta: 'See the work' },
+  }, p.variant, { subject: `An update on “${p.title}”`, heading: 'A purchase completed', body: `There is an update on “${p.title}”.`, cta: 'See the work' }),
+  es: (p) => pick({
+    bought: { subject: `Compraste «${p.title}»`, heading: 'Ya es tuya', body: `La compra de «${p.title}» se completó y ahora eres quien la tiene.`, cta: 'Ver la obra' },
+    sold: { subject: `Se vendió «${p.title}»`, heading: 'Tu obra cambió de manos', body: `Compraron «${p.title}» y ahora tiene un nuevo dueño.`, cta: 'Ver la obra' },
+  }, p.variant, { subject: `Novedades de «${p.title}»`, heading: 'Se completó una compra', body: `Hay novedades sobre «${p.title}».`, cta: 'Ver la obra' }),
+  pt: (p) => pick({
+    bought: { subject: `Você comprou “${p.title}”`, heading: 'Agora é sua', body: `A compra de “${p.title}” foi concluída e agora você é quem a detém.`, cta: 'Ver a obra' },
+    sold: { subject: `“${p.title}” foi vendida`, heading: 'Sua obra mudou de mãos', body: `Compraram “${p.title}” e agora ela tem um novo dono.`, cta: 'Ver a obra' },
+  }, p.variant, { subject: `Novidades sobre “${p.title}”`, heading: 'Uma compra foi concluída', body: `Há novidades sobre “${p.title}”.`, cta: 'Ver a obra' }),
+  fr: (p) => pick({
+    bought: { subject: `Vous avez acheté « ${p.title} »`, heading: 'Elle est à vous', body: `L'achat de « ${p.title} » est finalisé : vous en êtes désormais le détenteur.`, cta: "Voir l'œuvre" },
+    sold: { subject: `« ${p.title} » a été vendue`, heading: 'Votre œuvre a changé de mains', body: `« ${p.title} » a été achetée et a désormais un nouveau détenteur.`, cta: "Voir l'œuvre" },
+  }, p.variant, { subject: `Du nouveau pour « ${p.title} »`, heading: 'Un achat a été finalisé', body: `Il y a du nouveau pour « ${p.title} ».`, cta: "Voir l'œuvre" }),
+}
+
+const transfers: Template = {
+  en: (p) => pick({
+    received: { subject: `“${p.title}” is yours now`, heading: 'The transfer went through', body: `The transfer of “${p.title}” is complete, and you are now its holder.`, cta: 'See the work' },
+    accepted: { subject: `Your transfer of “${p.title}” was accepted`, heading: 'The transfer went through', body: `The recipient accepted “${p.title}”. The work has a new holder, and the amount held on your card was charged.`, cta: 'See the work' },
+    declined: { subject: `Your transfer of “${p.title}” was declined`, heading: 'The transfer did not go ahead', body: `The recipient declined “${p.title}”. The hold on your card was released and nothing was charged. The work is still yours.`, cta: 'See the work' },
+    lapsed: { subject: `Your transfer of “${p.title}” expired`, heading: 'It was not accepted in time', body: `“${p.title}” was not accepted within 24 hours, so the hold on your card was released and nothing was charged. The work is still yours, and you can send the transfer again.`, cta: 'See the work' },
+  }, p.variant, { subject: `An update on “${p.title}”`, heading: 'A transfer changed', body: `There is an update on the transfer of “${p.title}”.`, cta: 'See the work' }),
+  es: (p) => pick({
+    received: { subject: `«${p.title}» ya es tuya`, heading: 'La transferencia se completó', body: `La transferencia de «${p.title}» se completó y ahora eres quien la tiene.`, cta: 'Ver la obra' },
+    accepted: { subject: `Aceptaron tu transferencia de «${p.title}»`, heading: 'La transferencia se completó', body: `Quien la recibe aceptó «${p.title}». La obra tiene un nuevo dueño y se cobró el monto que estaba retenido en tu tarjeta.`, cta: 'Ver la obra' },
+    declined: { subject: `Rechazaron tu transferencia de «${p.title}»`, heading: 'La transferencia no siguió', body: `Quien la iba a recibir rechazó «${p.title}». Se liberó la retención de tu tarjeta y no se cobró nada. La obra sigue siendo tuya.`, cta: 'Ver la obra' },
+    lapsed: { subject: `Venció tu transferencia de «${p.title}»`, heading: 'No se aceptó a tiempo', body: `«${p.title}» no se aceptó dentro de las 24 horas, así que se liberó la retención de tu tarjeta y no se cobró nada. La obra sigue siendo tuya y puedes enviar la transferencia de nuevo.`, cta: 'Ver la obra' },
+  }, p.variant, { subject: `Novedades de «${p.title}»`, heading: 'Cambió una transferencia', body: `Hay novedades sobre la transferencia de «${p.title}».`, cta: 'Ver la obra' }),
+  pt: (p) => pick({
+    received: { subject: `“${p.title}” agora é sua`, heading: 'A transferência foi concluída', body: `A transferência de “${p.title}” foi concluída e agora você é quem a detém.`, cta: 'Ver a obra' },
+    accepted: { subject: `Sua transferência de “${p.title}” foi aceita`, heading: 'A transferência foi concluída', body: `Quem recebe aceitou “${p.title}”. A obra tem um novo dono e o valor retido no seu cartão foi cobrado.`, cta: 'Ver a obra' },
+    declined: { subject: `Sua transferência de “${p.title}” foi recusada`, heading: 'A transferência não seguiu', body: `Quem ia receber recusou “${p.title}”. A retenção no seu cartão foi liberada e nada foi cobrado. A obra continua sendo sua.`, cta: 'Ver a obra' },
+    lapsed: { subject: `Sua transferência de “${p.title}” expirou`, heading: 'Não foi aceita a tempo', body: `“${p.title}” não foi aceita em 24 horas, então a retenção no seu cartão foi liberada e nada foi cobrado. A obra continua sendo sua e você pode enviar a transferência de novo.`, cta: 'Ver a obra' },
+  }, p.variant, { subject: `Novidades sobre “${p.title}”`, heading: 'Uma transferência mudou', body: `Há novidades sobre a transferência de “${p.title}”.`, cta: 'Ver a obra' }),
+  fr: (p) => pick({
+    received: { subject: `« ${p.title} » est à vous`, heading: 'Le transfert est finalisé', body: `Le transfert de « ${p.title} » est finalisé : vous en êtes désormais le détenteur.`, cta: "Voir l'œuvre" },
+    accepted: { subject: `Votre transfert de « ${p.title} » a été accepté`, heading: 'Le transfert est finalisé', body: `Le destinataire a accepté « ${p.title} ». L'œuvre a un nouveau détenteur et le montant bloqué sur votre carte a été débité.`, cta: "Voir l'œuvre" },
+    declined: { subject: `Votre transfert de « ${p.title} » a été refusé`, heading: "Le transfert n'a pas abouti", body: `Le destinataire a refusé « ${p.title} ». Le blocage sur votre carte a été levé et rien n'a été prélevé. L'œuvre est toujours à vous.`, cta: "Voir l'œuvre" },
+    lapsed: { subject: `Votre transfert de « ${p.title} » a expiré`, heading: "Il n'a pas été accepté à temps", body: `« ${p.title} » n'a pas été accepté dans les 24 heures : le blocage sur votre carte a été levé et rien n'a été prélevé. L'œuvre est toujours à vous et vous pouvez renvoyer le transfert.`, cta: "Voir l'œuvre" },
+  }, p.variant, { subject: `Du nouveau pour « ${p.title} »`, heading: 'Un transfert a changé', body: `Il y a du nouveau pour le transfert de « ${p.title} ».`, cta: "Voir l'œuvre" }),
+}
+
+/**
  * Solo los eventos con plantilla completa en los cuatro idiomas. Añadir uno
  * aquí sin sus cuatro traducciones es lo que el spec prohíbe.
  */
@@ -214,6 +271,8 @@ const TEMPLATES: Record<string, Template> = {
   payout_destination,
   payout_completed,
   payout_failed,
+  purchases,
+  transfers,
 }
 
 export function emailCopyFor(
@@ -231,10 +290,28 @@ export function emailCopyFor(
  * externas: los clientes de correo bloquean casi todo eso y una plantilla que
  * depende de ello llega rota.
  */
+/**
+ * Todo lo que entra en el HTML se escapa. Los parámetros de las plantillas llevan
+ * texto de personas —el título de una obra lo escribe su creador, el asunto de un
+ * ticket lo escribe quien lo abre— y, sin esto, cualquiera metía su propio enlace
+ * en el correo que recibe otra persona. Las plantillas son texto plano: no hay
+ * nada que escapar que debiera haberse quedado como etiqueta.
+ */
+function escapeHtml(value: string): string {
+  return value
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;')
+}
+
 export function renderEmail(copy: EmailCopy, href: string | null): string {
   const button = href && copy.cta
-    ? `<tr><td style="padding:26px 0 0"><a href="${href}" style="display:inline-block;background:#141312;color:#f4f2ef;text-decoration:none;font-size:13px;letter-spacing:.12em;text-transform:uppercase;padding:14px 26px;border-radius:10px">${copy.cta}</a></td></tr>`
+    ? `<tr><td style="padding:26px 0 0"><a href="${escapeHtml(href)}" style="display:inline-block;background:#141312;color:#f4f2ef;text-decoration:none;font-size:13px;letter-spacing:.12em;text-transform:uppercase;padding:14px 26px;border-radius:10px">${escapeHtml(copy.cta)}</a></td></tr>`
     : ''
+  const heading = escapeHtml(copy.heading)
+  const body = escapeHtml(copy.body)
 
   return `<!doctype html>
 <html><body style="margin:0;background:#f4f2ef;padding:32px 16px;font-family:-apple-system,Segoe UI,sans-serif">
@@ -242,8 +319,8 @@ export function renderEmail(copy: EmailCopy, href: string | null): string {
 <tr><td style="padding:34px 32px">
 <table role="presentation" cellpadding="0" cellspacing="0" width="100%">
 <tr><td style="font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:#9c968c;padding-bottom:14px">tbt.cafe</td></tr>
-<tr><td style="font-family:Georgia,serif;font-size:26px;line-height:1.15;color:#141312;padding-bottom:12px">${copy.heading}</td></tr>
-<tr><td style="font-size:15px;line-height:1.6;color:#6b665f">${copy.body}</td></tr>
+<tr><td style="font-family:Georgia,serif;font-size:26px;line-height:1.15;color:#141312;padding-bottom:12px">${heading}</td></tr>
+<tr><td style="font-size:15px;line-height:1.6;color:#6b665f">${body}</td></tr>
 ${button}
 </table>
 </td></tr>
