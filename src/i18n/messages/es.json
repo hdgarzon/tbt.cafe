@@ -986,7 +986,7 @@
       "payout_released": "Se liberaron fondos que estaban pendientes.",
       "payout_completed": "Tu cobro se completó.",
       "payout_failed": "No pudimos completar un cobro.",
-      "payout_destination": "Cambió el destino de tus cobros."
+      "payout_destination": "Cambió el destino de tus cobros a {to}."
     }
   },
   "payouts": {

@@ -66,6 +66,7 @@ npm run check:titles      # a title is issued, not certified; the old table name
 npm run check:transfercode # no bearer code is generated that nobody receives
 npm run check:language    # the copy says title, not certificate; nothing arrives by MMS; the royalty forks once
 npm run check:notifyonce  # a notification is written once, and a person can only mark it read
+npm run check:payoutnotice # a payout destination change always reaches the owner, by email too
 ```
 
 Each guard is a plain script under `scripts/`, written BEFORE the module it

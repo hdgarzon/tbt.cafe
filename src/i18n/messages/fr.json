@@ -986,7 +986,7 @@
       "payout_released": "Des fonds en attente ont été libérés.",
       "payout_completed": "Votre perception est terminée.",
       "payout_failed": "Un versement n'a pas pu être effectué.",
-      "payout_destination": "La destination de vos versements a changé."
+      "payout_destination": "La destination de vos versements a changé pour {to}."
     }
   },
   "payouts": {

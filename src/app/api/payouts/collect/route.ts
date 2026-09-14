@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { verifyTwoFactors } from '@/lib/two-factor'
 import { disburseBlock } from '@/lib/payout-disburse'
+import { notifyPayoutDestinationChanged } from '@/lib/payout-destination-notice'
 
 /**
  * Cobro de un bloque de payout — Backend Spec 02 §4, y Spec 01 §5.1.
@@ -91,14 +92,40 @@ export async function POST(request: NextRequest) {
     // El §5.1 exige biométrico + código privado para cambiarlo, y los dos
     // acaban de verificarse arriba, así que este es el momento legítimo.
     if (typeof destination === 'string' && destination.trim()) {
-      await admin.from('payout_destinations').update({ is_default: false }).eq('user_id', userId)
-      await admin.from('payout_destinations').insert({
-        user_id: userId,
-        method_id: methodId,
-        destination: destination.trim(),
-        destination_masked: masked,
-        is_default: true,
-      })
+      const typed = destination.trim()
+      const { data: previous } = await admin
+        .from('payout_destinations')
+        .select('id, method_id, destination')
+        .eq('user_id', userId)
+        .eq('is_default', true)
+        .maybeSingle()
+
+      // Volver a escribir el destino que ya estaba no es un cambio, y no se avisa.
+      if (!previous || previous.method_id !== methodId || previous.destination !== typed) {
+        await admin.from('payout_destinations').update({ is_default: false }).eq('user_id', userId)
+        const { data: saved, error: saveError } = await admin.from('payout_destinations').insert({
+          user_id: userId,
+          method_id: methodId,
+          destination: typed,
+          destination_masked: masked,
+          is_default: true,
+        }).select('id').single()
+
+        if (saveError || !saved) {
+          // El cobro sigue: el bloque ya existe y no depende de esta fila. Pero el
+          // anterior vuelve a ser el destino, y no se avisa de un cambio que no
+          // quedó guardado.
+          console.error('[payouts/collect] destination save failed:', saveError)
+          if (previous) await admin.from('payout_destinations').update({ is_default: true }).eq('id', previous.id)
+        } else {
+          await notifyPayoutDestinationChanged(admin, {
+            userId,
+            destinationId: saved.id,
+            destination: typed,
+            previousDestination: previous?.destination ?? null,
+          })
+        }
+      }
     }
 
     /**
