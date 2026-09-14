@@ -986,7 +986,7 @@
       "payout_released": "Fundos pendentes foram liberados.",
       "payout_completed": "Seu recebimento foi concluído.",
       "payout_failed": "Não conseguimos concluir um recebimento.",
-      "payout_destination": "O destino dos seus recebimentos mudou."
+      "payout_destination": "O destino dos seus recebimentos mudou para {to}."
     }
   },
   "payouts": {
