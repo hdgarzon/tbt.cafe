@@ -25,7 +25,7 @@ const cormorant = Cormorant_Garamond({
 export const metadata: Metadata = {
   title: "tbt.cafe",
   description:
-    "Certificados de autoría y propiedad para obra creativa. Transbit × BROCHA.",
+    "Títulos de autoría y propiedad para obra creativa. Transbit × BROCHA.",
 };
 
 export default function RootLayout({

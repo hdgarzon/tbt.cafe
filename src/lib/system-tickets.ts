@@ -8,7 +8,7 @@
  *
  * El texto se escribe PARA EL CLIENTE. Un código de error del proveedor va en
  * `context.error_detail`, jamás en el asunto: la persona lee "No pudimos
- * entregar tu certificado", no una traza.
+ * entregar tu título de propiedad", no una traza.
  */
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { notify } from '@/lib/notify'
@@ -40,29 +40,29 @@ type Template = { category: TicketCategory; severity: 'financial' | 'secondary';
  */
 const TEMPLATES: Record<SystemEventCode, Template> = {
   /**
-   * Severidad financiera aunque no mueva dinero: el certificado y la llave son
-   * el producto, se entregan solo por MMS y no se muestran nunca en pantalla.
-   * Una entrega fallida significa que el cliente pagó y no recibió nada.
+   * Severidad financiera aunque no mueva dinero: el título es lo que el cliente
+   * pagó por recibir, y una entrega fallida significa que pagó y no recibió nada.
+   * El código del evento conserva el nombre del canal que lo detecta hoy.
    */
   mms_delivery_failed: {
     category: 'registration',
     severity: 'financial',
     copy: {
       en: {
-        subject: 'We could not deliver your certificate',
-        body: 'Your work was registered, but the message carrying its certificate and key did not reach your number. Nothing is lost — we are on it and will resend it. Reply here if your number has changed.',
+        subject: 'We could not deliver your title',
+        body: 'Your work was registered, but the message carrying its title did not reach your number. Nothing is lost — we are on it and will resend it. Reply here if your number has changed.',
       },
       es: {
-        subject: 'No pudimos entregar tu certificado',
-        body: 'Tu obra quedó registrada, pero el mensaje con su certificado y su llave no llegó a tu número. No se perdió nada: estamos en ello y lo reenviaremos. Responde aquí si cambiaste de número.',
+        subject: 'No pudimos entregar tu título de propiedad',
+        body: 'Tu obra quedó registrada, pero el mensaje con su título de propiedad no llegó a tu número. No se perdió nada: estamos en ello y lo reenviaremos. Responde aquí si cambiaste de número.',
       },
       pt: {
-        subject: 'Não conseguimos entregar seu certificado',
-        body: 'Sua obra foi registrada, mas a mensagem com o certificado e a chave não chegou ao seu número. Nada foi perdido — já estamos cuidando disso e vamos reenviar. Responda aqui se o seu número mudou.',
+        subject: 'Não conseguimos entregar seu título de propriedade',
+        body: 'Sua obra foi registrada, mas a mensagem com o título de propriedade não chegou ao seu número. Nada foi perdido — já estamos cuidando disso e vamos reenviar. Responda aqui se o seu número mudou.',
       },
       fr: {
-        subject: "Nous n'avons pas pu livrer votre certificat",
-        body: "Votre œuvre a bien été enregistrée, mais le message contenant son certificat et sa clé n'est pas arrivé à votre numéro. Rien n'est perdu : nous nous en occupons et le renverrons. Répondez ici si votre numéro a changé.",
+        subject: "Nous n'avons pas pu livrer votre titre de propriété",
+        body: "Votre œuvre a bien été enregistrée, mais le message contenant son titre de propriété n'est pas arrivé à votre numéro. Rien n'est perdu : nous nous en occupons et le renverrons. Répondez ici si votre numéro a changé.",
       },
     },
   },
@@ -73,19 +73,19 @@ const TEMPLATES: Record<SystemEventCode, Template> = {
     copy: {
       en: {
         subject: 'Your work is registered, the chain record is still pending',
-        body: 'Your work and its certificate are safe. Writing its record to the chain has not confirmed yet. We are retrying and will let you know when it settles — you do not need to do anything.',
+        body: 'Your work and its title are safe. Writing its record to the chain has not confirmed yet. We are retrying and will let you know when it settles — you do not need to do anything.',
       },
       es: {
         subject: 'Tu obra está registrada; el asiento en cadena sigue pendiente',
-        body: 'Tu obra y su certificado están a salvo. La escritura del registro en la cadena todavía no confirma. Estamos reintentando y te avisamos cuando cierre; no tienes que hacer nada.',
+        body: 'Tu obra y su título de propiedad están a salvo. La escritura del registro en la cadena todavía no confirma. Estamos reintentando y te avisamos cuando cierre; no tienes que hacer nada.',
       },
       pt: {
         subject: 'Sua obra está registrada; o registro na cadeia ainda está pendente',
-        body: 'Sua obra e seu certificado estão seguros. A gravação do registro na cadeia ainda não confirmou. Estamos tentando novamente e avisaremos quando concluir — você não precisa fazer nada.',
+        body: 'Sua obra e seu título de propriedade estão seguros. A gravação do registro na cadeia ainda não confirmou. Estamos tentando novamente e avisaremos quando concluir — você não precisa fazer nada.',
       },
       fr: {
         subject: "Votre œuvre est enregistrée, l'inscription sur la chaîne est en attente",
-        body: "Votre œuvre et son certificat sont en sécurité. L'inscription du registre sur la chaîne n'est pas encore confirmée. Nous réessayons et vous préviendrons dès que ce sera fait — vous n'avez rien à faire.",
+        body: "Votre œuvre et son titre de propriété sont en sécurité. L'inscription du registre sur la chaîne n'est pas encore confirmée. Nous réessayons et vous préviendrons dès que ce sera fait — vous n'avez rien à faire.",
       },
     },
   },
@@ -238,7 +238,7 @@ export async function fileSystemTicket(
       return
     }
 
-    // Lo que afecta al dinero o al certificado se cuenta pronto (§7). Este
+    // Lo que afecta al dinero o al título se cuenta pronto (§7). Este
     // aviso no se puede silenciar, así que no se consulta la preferencia.
     await notify(supabase, {
       userId,

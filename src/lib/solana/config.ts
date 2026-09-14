@@ -55,7 +55,7 @@ export const getExplorerUrl = (address: string, type: 'address' | 'tx' = 'addres
 
 // NFT Collection info
 export const TBT_COLLECTION = {
-  name: 'TBT Certificates',
+  name: 'TBT Titles',
   symbol: 'TBT',
-  description: 'Certificados de autenticidad de obras de arte emitidos por TBT.cafe'
+  description: 'Títulos de autoría de obra creativa registrados en tbt.cafe'
 }

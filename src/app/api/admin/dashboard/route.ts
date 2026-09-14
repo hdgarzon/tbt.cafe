@@ -66,8 +66,8 @@ export async function GET(request: NextRequest) {
     failing.push({ what: 'Registrations without a confirmed chain write', count: chainPending.count!, where: 'works' })
   }
   if ((mmsFailed.count ?? 0) > 0) {
-    // Alguien pagó y no recibió el certificado. Es lo primero que hay que ver.
-    failing.push({ what: 'Certificate deliveries that failed', count: mmsFailed.count!, where: 'works' })
+    // Alguien pagó y no recibió el título. Es lo primero que hay que ver.
+    failing.push({ what: 'Title deliveries that failed', count: mmsFailed.count!, where: 'works' })
   }
   if ((ticketsFinancial.count ?? 0) > 0) {
     failing.push({ what: 'Open requests touching money', count: ticketsFinancial.count!, where: 'tickets' })

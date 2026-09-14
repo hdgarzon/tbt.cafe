@@ -29,10 +29,10 @@ export const OG_LOCALE: Record<Locale, string> = {
 }
 
 const CERTIFIED: Record<Locale, string> = {
-  en: 'Certificate of authorship, registered on tbt.cafe.',
-  es: 'Certificado de autoría, registrado en tbt.cafe.',
-  pt: 'Certificado de autoria, registrado no tbt.cafe.',
-  fr: "Certificat d'authenticité, enregistré sur tbt.cafe.",
+  en: 'Title of authorship, registered on tbt.cafe.',
+  es: 'Título de autoría, registrado en tbt.cafe.',
+  pt: 'Título de autoria, registrado no tbt.cafe.',
+  fr: "Titre d'auteur, enregistré sur tbt.cafe.",
 }
 
 const SERIES: Record<Locale, string> = {

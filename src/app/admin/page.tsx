@@ -878,7 +878,7 @@ export default function AdminPage() {
                 <div className="mt-2.5">
                   <Row k="Status" v={work.status ?? '—'} />
                   <Row k="Payment" v={work.paymentStatus ?? '—'} />
-                  <Row k="Certificate delivery" v={work.mmsDelivery ?? '—'} />
+                  <Row k="Title delivery" v={work.mmsDelivery ?? '—'} />
                   <Row k="Certified" v={work.certifiedAt ? new Date(work.certifiedAt).toLocaleDateString() : '—'} />
                 </div>
               </div>
@@ -1089,7 +1089,7 @@ export default function AdminPage() {
                   <div key={n} className="text-[11.5px] text-placeholder py-0.5">· {n}</div>
                 ))}
                 <p className="text-[10.5px] text-placeholder mt-2 leading-[1.5]">
-                  A certificate the issuer can quietly revise is not a certificate.
+                  A title the issuer can quietly revise is not a title.
                 </p>
               </div>
             </div>
@@ -1169,7 +1169,7 @@ export default function AdminPage() {
           </div>
           <div className="border border-hairline rounded-2xl p-4">
             <Row k="Certified without a mint" v={String(obs.chain.certifiedWithoutMint)} />
-            <Row k="Certificate deliveries failed" v={String(obs.chain.certificateDeliveriesFailed)} />
+            <Row k="Title deliveries failed" v={String(obs.chain.certificateDeliveriesFailed)} />
             {/* "No lo sabemos" no es "no falló". Sin esta fila el panel decía
                 cero para algo que llevaba meses sin entregarse. */}
             <Row

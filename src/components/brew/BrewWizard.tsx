@@ -92,7 +92,7 @@ type Declaration = 'original' | 'derivative' | 'authorized_edition'
 
 export function BrewWizard() {
   const { t } = useLocale()
-  const { connected, openAuth, maskedPhone } = useShell()
+  const { connected, openAuth } = useShell()
   const params = useSearchParams()
 
   const [step, setStep] = useState<Step>('loading')
@@ -1620,7 +1620,7 @@ export function BrewWizard() {
           <div className="border border-hairline rounded-[14px] bg-paper-warm px-4 py-[15px] text-center">
             <div className="text-[24px] leading-none">✉</div>
             <div className="text-[12px] font-medium text-ink mt-1.5">
-              {t.brew.certSentTo} {maskedPhone ?? ''}
+              {t.brew.certSentTo}
             </div>
             <div className="text-[10px] leading-[1.5] text-placeholder mt-1.5">{t.brew.certKeyInside}</div>
             <a
