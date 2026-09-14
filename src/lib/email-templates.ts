@@ -24,25 +24,25 @@ const registrations: Template = {
   en: (p) => ({
     subject: `${p.title} is registered`,
     heading: 'Your work is on the record',
-    body: `${p.title} was registered and is now verifiable. Its certificate and transfer key were sent to your phone.`,
+    body: `${p.title} was registered and is now verifiable.`,
     cta: 'See the work',
   }),
   es: (p) => ({
     subject: `${p.title} quedó registrada`,
     heading: 'Tu obra está en el registro',
-    body: `${p.title} quedó registrada y ya se puede verificar. Su certificado y su llave de transferencia se enviaron a tu teléfono.`,
+    body: `${p.title} quedó registrada y ya se puede verificar.`,
     cta: 'Ver la obra',
   }),
   pt: (p) => ({
     subject: `${p.title} foi registrada`,
     heading: 'Sua obra está no registro',
-    body: `${p.title} foi registrada e já pode ser verificada. O certificado e a chave de transferência foram enviados para o seu telefone.`,
+    body: `${p.title} foi registrada e já pode ser verificada.`,
     cta: 'Ver a obra',
   }),
   fr: (p) => ({
     subject: `${p.title} est enregistrée`,
     heading: 'Votre œuvre est au registre',
-    body: `${p.title} a été enregistrée et est désormais vérifiable. Son certificat et sa clé de transfert ont été envoyés à votre téléphone.`,
+    body: `${p.title} a été enregistrée et est désormais vérifiable.`,
     cta: "Voir l'œuvre",
   }),
 }
