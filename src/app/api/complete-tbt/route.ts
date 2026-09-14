@@ -263,9 +263,9 @@ export async function POST(request: NextRequest) {
       .eq('id', workId)
       .single()
 
-    // Create certificate record
-    const { error: certError } = await supabase
-      .from('certificates')
+    // Emitir el titulo. Incrementar version y enlazar supersedes es el Step 14.
+    const { error: titleError } = await supabase
+      .from('titles')
       .insert({
         work_id: workId,
         owner_id: user.id,
@@ -273,8 +273,8 @@ export async function POST(request: NextRequest) {
         version: 1,
       })
 
-    if (certError) {
-      console.warn('Certificate insert error:', certError)
+    if (titleError) {
+      console.warn('Title insert error:', titleError)
     }
 
     console.log('TBT certified with ID:', updatedWork?.tbt_id)
