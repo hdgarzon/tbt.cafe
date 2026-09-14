@@ -147,5 +147,61 @@ const FILES = ['src/lib/roast-content.ts', 'src/lib/legal-content.ts', 'src/lib/
   )
 }
 
+// ---- los catalogos de la interfaz, en los cuatro idiomas
+//
+// La pantalla final de Brew decia que el certificado, con la clave privada de
+// transferencia, se habia enviado al telefono, y enseñaba el numero. Nada de eso
+// ocurre. «Certificado» como estado de la obra —certificada, certificado— es un
+// adjetivo, no el documento, y se queda.
+{
+  // Adjetivos y participios: el estado de la obra, lo que alguien ha
+  // certificado, lo que aun no se puede certificar. Ninguno nombra el documento.
+  const ADJECTIVE_KEYS = [
+    'work.certified',
+    'myCollections.statusCertified',
+    'myCollections.eventCreation',
+    'myCollections.creationsSub',
+    'myCollections.creationsEmpty',
+    'brew.scanBlockTitle',
+  ]
+  const DOC = /\bcertificates?\b|\bcertificats?\b|\bcertificados?\b/i
+  const SECRET = /private key|transfer key|clave privada|clave de transferencia|llave privada|chave privada|chave de transferência|clé privée|clé de transfert/i
+  const LANGS = ['en', 'es', 'pt', 'fr']
+
+  const walk = (node: unknown, path: string, out: [string, string][]) => {
+    if (typeof node === 'string') out.push([path, node])
+    else if (Array.isArray(node)) for (let i = 0; i < node.length; i++) walk(node[i], `${path}.${i}`, out)
+    else if (node && typeof node === 'object') {
+      const keys = Object.keys(node as Record<string, unknown>)
+      for (let i = 0; i < keys.length; i++) walk((node as Record<string, unknown>)[keys[i]], path ? `${path}.${keys[i]}` : keys[i], out)
+    }
+  };
+
+  for (let l = 0; l < LANGS.length; l++) {
+    const values: [string, string][] = []
+    walk(JSON.parse(read(`src/i18n/messages/${LANGS[l]}.json`)), '', values)
+    const doc: string[] = []
+    const secret: string[] = []
+    const mms: string[] = []
+    for (let i = 0; i < values.length; i++) {
+      const [path, value] = values[i]
+      if (DOC.test(value) && ADJECTIVE_KEYS.indexOf(path) === -1) doc.push(path)
+      if (SECRET.test(value)) secret.push(path)
+      if (/\bMMS\b/.test(value)) mms.push(path)
+    }
+    ok(`${LANGS[l]}.json: ningun valor nombra un certificado`, doc.length === 0, doc.join(', '))
+    ok(`${LANGS[l]}.json: ninguno promete una clave`, secret.length === 0, secret.join(', '))
+    ok(`${LANGS[l]}.json: ninguno habla de MMS`, mms.length === 0, mms.join(', '))
+  }
+
+  const wizard = read('src/components/brew/BrewWizard.tsx')
+  ok(
+    'la tarjeta final no pone un telefono detras del titulo enviado',
+    wizard.includes('{t.brew.certSentTo}') && !/\{t\.brew\.certSentTo\}\s*\{maskedPhone/.test(wizard),
+    'el titulo va por correo; enseñar el numero dice lo contrario'
+  )
+  ok('el SMS no ofrece «Ver certificado»', !read('src/app/api/send-sms/route.ts').includes('Ver certificado'))
+}
+
 console.log(bad === 0 ? '\ntodo en orden' : `\n${bad} fallo(s)`)
 process.exit(bad === 0 ? 0 : 1)
