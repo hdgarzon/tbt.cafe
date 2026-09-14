@@ -346,14 +346,14 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Create certificate snapshot for new owner
-    const { error: certError } = await serviceClient.from('certificates').insert({
+    // Emitir el titulo del nuevo dueño. Incrementar version y enlazar supersedes es el Step 14.
+    const { error: titleError } = await serviceClient.from('titles').insert({
       work_id: transfer.work_id,
       owner_id: transfer.to_owner_id,
       qr_code_data: `${process.env.NEXT_PUBLIC_APP_URL}/work/${transfer.work.tbt_id}`,
       version: 1,
     })
-    if (certError) console.error('Error creating certificate:', certError)
+    if (titleError) console.error('Error issuing title:', titleError)
 
     return NextResponse.json({
       success: true,

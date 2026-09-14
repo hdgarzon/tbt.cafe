@@ -67,7 +67,7 @@ export async function GET(request: NextRequest) {
     // Las dependientes necesitan el id, que solo se conoce tras resolver el
     // TBT-ID, así que van en una segunda vuelta y en paralelo entre ellas.
     const workId = work.data.id
-    const [ctx, hist, notes, cert, anchor, amendments, series] = await Promise.all([
+    const [ctx, hist, notes, latestTitle, anchor, amendments, series] = await Promise.all([
       supabase
         .from('context_snapshots')
         .select('location_name, country, city, ai_summary, user_edited_summary, ai_model, signed_at')
@@ -84,7 +84,7 @@ export async function GET(request: NextRequest) {
         .eq('work_id', workId)
         .order('created_at', { ascending: false }),
       supabase
-        .from('certificates')
+        .from('titles')
         .select('version, generated_at')
         .eq('work_id', workId)
         .order('generated_at', { ascending: false })
@@ -175,7 +175,7 @@ export async function GET(request: NextRequest) {
               takingOffers: c.taking_offers,
             }
           : null,
-        certificate: cert.data ?? null,
+        latestTitle: latestTitle.data ?? null,
         ownership: hist.data ?? [],
         annotations: notes.data ?? [],
       },

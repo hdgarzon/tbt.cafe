@@ -24,7 +24,7 @@
 -- Las migraciones de `supabase/migrations/` empiezan en 001 y dan por supuesto
 -- un esquema base que no esta en ninguna parte del repositorio. De las 44 tablas
 -- que habia entonces, 28 se podian reconstruir desde alli y 16 no — y entre esas
--- 16 estaba el nucleo entero del producto: works, profiles, certificates,
+-- 16 estaba el nucleo entero del producto: works, profiles, titles (antes certificates),
 -- context_snapshots, work_commerce, tbt_payments, ownership_history y transfers.
 -- Este archivo llevaba 0 bytes.
 --
@@ -185,7 +185,10 @@ create table if not exists public.works (
   transfer_code_hash text,
   content_hash text,
   registration_record_uri text,
-  registration_record_hash text
+  registration_record_hash text,
+  owner_index integer default 1 not null,
+  creator_status text default 'living'::text not null,
+  provenance_hash text
 );
 
 comment on column public.works.mint_address is
@@ -208,15 +211,18 @@ create table if not exists public.work_commerce (
   royalty_locked boolean default false not null
 );
 
-create table if not exists public.certificates (
+create table if not exists public.titles (
   id uuid default extensions.uuid_generate_v4() not null,
   work_id uuid not null,
   owner_id uuid not null,
-  certificate_url text,
+  title_url text,
   qr_code_data text,
   version integer default 1,
   generated_at timestamp with time zone default now(),
-  valid_until timestamp with time zone
+  valid_until timestamp with time zone,
+  supersedes uuid,
+  kind text default 'standard'::text not null,
+  delivery_state text default 'pending'::text not null
 );
 
 create table if not exists public.context_snapshots (
@@ -739,6 +745,9 @@ alter table public.profiles add constraint profiles_id_fkey FOREIGN KEY (id) REF
 alter table public.works add constraint works_pkey PRIMARY KEY (id);
 alter table public.works add constraint works_tbt_id_key UNIQUE (tbt_id);
 alter table public.works add constraint valid_tbt_id CHECK ((tbt_id ~ '^TBT-[0-9]{4}-[A-Z0-9]{6}$'::text));
+alter table public.works add constraint works_owner_index_check CHECK ((owner_index >= 1));
+alter table public.works add constraint works_creator_status_check CHECK ((creator_status = ANY (ARRAY['living'::text, 'deceased'::text, 'unknown'::text])));
+alter table public.works add constraint works_provenance_hash_check CHECK (((provenance_hash IS NULL) OR (provenance_hash ~ '^sha256:[0-9a-f]{64}$'::text)));
 alter table public.works add constraint works_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES profiles(id) ON DELETE RESTRICT;
 alter table public.works add constraint works_current_owner_id_fkey FOREIGN KEY (current_owner_id) REFERENCES profiles(id) ON DELETE RESTRICT;
 alter table public.works add constraint works_series_id_fkey FOREIGN KEY (series_id) REFERENCES work_series(id) ON DELETE SET NULL;
@@ -750,9 +759,13 @@ alter table public.work_commerce add constraint work_commerce_availability_check
 alter table public.work_commerce add constraint valid_royalty_percentage CHECK (((royalty_type <> 'percentage'::royalty_type) OR ((royalty_value >= (0)::numeric) AND (royalty_value <= (50)::numeric))));
 alter table public.work_commerce add constraint valid_royalty_fixed CHECK (((royalty_type <> 'fixed'::royalty_type) OR (royalty_value >= (0)::numeric)));
 
-alter table public.certificates add constraint certificates_pkey PRIMARY KEY (id);
-alter table public.certificates add constraint certificates_work_id_fkey FOREIGN KEY (work_id) REFERENCES works(id) ON DELETE CASCADE;
-alter table public.certificates add constraint certificates_owner_id_fkey FOREIGN KEY (owner_id) REFERENCES profiles(id) ON DELETE RESTRICT;
+alter table public.titles add constraint titles_pkey PRIMARY KEY (id);
+alter table public.titles add constraint titles_work_id_fkey FOREIGN KEY (work_id) REFERENCES works(id) ON DELETE CASCADE;
+alter table public.titles add constraint titles_owner_id_fkey FOREIGN KEY (owner_id) REFERENCES profiles(id) ON DELETE RESTRICT;
+alter table public.titles add constraint titles_supersedes_fkey FOREIGN KEY (supersedes) REFERENCES titles(id) ON DELETE SET NULL;
+alter table public.titles add constraint titles_not_self_superseding CHECK (((supersedes IS NULL) OR (supersedes <> id)));
+alter table public.titles add constraint titles_kind_check CHECK ((kind = ANY (ARRAY['standard'::text, 'bonded'::text])));
+alter table public.titles add constraint titles_delivery_state_check CHECK ((delivery_state = ANY (ARRAY['pending'::text, 'sent'::text, 'failed'::text])));
 
 alter table public.context_snapshots add constraint context_snapshots_pkey PRIMARY KEY (id);
 alter table public.context_snapshots add constraint context_snapshots_work_id_fkey FOREIGN KEY (work_id) REFERENCES works(id) ON DELETE CASCADE;
@@ -920,8 +933,9 @@ create index if not exists works_payment_intent_idx ON public.works USING btree 
 create index if not exists idx_profiles_email ON public.profiles USING btree (email);
 create index if not exists idx_profiles_phone ON public.profiles USING btree (phone);
 create index if not exists idx_profiles_display_name ON public.profiles USING btree (display_name);
-create index if not exists idx_certificates_work_id ON public.certificates USING btree (work_id);
-create index if not exists idx_certificates_owner_id ON public.certificates USING btree (owner_id);
+create index if not exists idx_titles_work_id ON public.titles USING btree (work_id);
+create index if not exists idx_titles_owner_id ON public.titles USING btree (owner_id);
+create index if not exists idx_titles_supersedes ON public.titles USING btree (supersedes) WHERE (supersedes IS NOT NULL);
 create index if not exists idx_context_snapshots_elaboration_type ON public.context_snapshots USING btree (elaboration_type);
 create index if not exists idx_ownership_history_work_id ON public.ownership_history USING btree (work_id);
 create index if not exists idx_ownership_history_owner_user_id ON public.ownership_history USING btree (owner_user_id);
@@ -1002,7 +1016,7 @@ create index if not exists idx_plagiarism_scans_work_id ON public.plagiarism_sca
 alter table public.works enable row level security;
 alter table public.profiles enable row level security;
 alter table public.work_commerce enable row level security;
-alter table public.certificates enable row level security;
+alter table public.titles enable row level security;
 alter table public.context_snapshots enable row level security;
 alter table public.ownership_history enable row level security;
 alter table public.transfers enable row level security;
@@ -1053,8 +1067,14 @@ create policy "Creadores y propietarios pueden editar obras" on public.works for
 create policy "Commerce visible para obras accesibles" on public.work_commerce for select using ((EXISTS ( SELECT 1 FROM works w WHERE ((w.id = work_commerce.work_id) AND ((w.status = 'certified'::work_status) OR (w.creator_id = auth.uid()) OR (w.current_owner_id = auth.uid()))))));
 create policy "Creadores pueden gestionar commerce" on public.work_commerce for all using ((EXISTS ( SELECT 1 FROM works w WHERE ((w.id = work_commerce.work_id) AND (w.creator_id = auth.uid())))));
 
-create policy "Certificados son públicos" on public.certificates for select using (true);
-create policy "Sistema puede crear certificados" on public.certificates for insert with check ((EXISTS ( SELECT 1 FROM works w WHERE ((w.id = certificates.work_id) AND ((w.creator_id = auth.uid()) OR (w.current_owner_id = auth.uid()))))));
+create policy "Titulos son publicos" on public.titles for select using (true);
+create policy "Creador o dueño puede emitir titulos" on public.titles for insert with check ((EXISTS ( SELECT 1 FROM works w WHERE ((w.id = titles.work_id) AND ((w.creator_id = ( SELECT auth.uid() AS uid)) OR (w.current_owner_id = ( SELECT auth.uid() AS uid)))))));
+
+-- Transicion de la migracion 045: el nombre viejo, como vista, para el codigo que
+-- todavia no se ha desplegado. La siguiente migracion la quita.
+create or replace view public.certificates with (security_invoker = on) as
+  select id, work_id, owner_id, title_url, qr_code_data, version, generated_at, valid_until
+    from public.titles;
 
 create policy "Context snapshots are viewable for certified works" on public.context_snapshots for select using ((EXISTS ( SELECT 1 FROM works w WHERE ((w.id = context_snapshots.work_id) AND ((w.status = 'certified'::work_status) OR (w.creator_id = auth.uid()))))));
 create policy "Creators can manage their context snapshots" on public.context_snapshots for all using ((EXISTS ( SELECT 1 FROM works w WHERE ((w.id = context_snapshots.work_id) AND (w.creator_id = auth.uid())))));

@@ -62,6 +62,7 @@ npm run check:writeorder  # a transfer never rewrites the registration record
 npm run check:pseudonym   # nobody identifiable reaches Arweave
 npm run check:ots         # a pending anchor is a normal state, not a failure
 npm run check:grants      # no security definer function runs without a server
+npm run check:titles      # a title is issued, not certified; the old table name survives only as a view
 ```
 
 Each guard is a plain script under `scripts/`, written BEFORE the module it
@@ -112,7 +113,7 @@ scripts/*-check.ts                   # one guard per invariant
 
 > **The migrations do not describe the whole database.** They start at `001`
 > and assume a base schema that exists nowhere in them: `works`, `profiles`,
-> `certificates`, `context_snapshots`, `work_commerce`, `tbt_payments`,
+> `titles` (renamed from `certificates` in `045`), `context_snapshots`, `work_commerce`, `tbt_payments`,
 > `ownership_history`, `transfers` and `wallets` have no `create table` in any
 > migration. 28 of the 44 live tables can be rebuilt from `supabase/migrations`;
 > the other 16 cannot.
