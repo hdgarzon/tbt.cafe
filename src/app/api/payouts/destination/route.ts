@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { verifyTwoFactors } from '@/lib/two-factor'
+import { notifyPayoutDestinationChanged } from '@/lib/payout-destination-notice'
 
 /**
  * Alta y cambio del destino de payout — Backend Spec 06 §4.1, y Spec 01 §5.1.
@@ -53,22 +54,49 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'method_unavailable' }, { status: 409 })
     }
 
-    // Un solo destino por defecto: se baja el anterior antes de subir el nuevo.
+    // El destino que se reemplaza. El completo se lee para saber si de verdad
+    // cambia y para enmascararlo en el aviso; no sale de aquí.
+    const { data: previous } = await admin
+      .from('payout_destinations')
+      .select('id, method_id, destination')
+      .eq('user_id', userId)
+      .eq('is_default', true)
+      .maybeSingle()
+
+    // Guardar otra vez el mismo destino no es un cambio: ni fila nueva ni un aviso
+    // que alarme a la persona por algo que no pasó.
+    if (previous && previous.method_id === methodId && previous.destination === destination.trim()) {
+      return NextResponse.json({ masked: destinationMasked, methodId })
+    }
+
+    // Un solo destino por defecto (índice único parcial): se baja el anterior
+    // antes de subir el nuevo.
     await admin.from('payout_destinations').update({ is_default: false }).eq('user_id', userId)
 
-    const { error } = await admin.from('payout_destinations').insert({
+    const { data: saved, error } = await admin.from('payout_destinations').insert({
       user_id: userId,
       method_id: methodId,
       destination: destination.trim(),
       destination_masked: destinationMasked,
       network: network ?? null,
       is_default: true,
-    })
+    }).select('id').single()
 
-    if (error) {
+    if (error || !saved) {
       console.error('[payouts/destination] insert failed:', error)
+      // El anterior ya se bajó: sin esto la persona se queda sin destino.
+      if (previous) await admin.from('payout_destinations').update({ is_default: true }).eq('id', previous.id)
       return NextResponse.json({ error: 'save_failed' }, { status: 500 })
     }
+
+    // Antes de responder. Es la protectora que no se apaga (§5.3), y llega
+    // también por correo a la dirección de la cuenta.
+    await notifyPayoutDestinationChanged(admin, {
+      userId,
+      destinationId: saved.id,
+      destination: destination.trim(),
+      previousDestination: previous?.destination ?? null,
+    })
 
     return NextResponse.json({ masked: destinationMasked, methodId })
   } catch (error) {

@@ -32,7 +32,8 @@
     "check:grants": "npx --yes tsx scripts/grants-check.ts",
     "check:titles": "npx --yes tsx scripts/titles-check.ts",
     "check:transfercode": "npx --yes tsx scripts/transfer-code-check.ts",
-    "check:notifyonce": "npx --yes tsx scripts/notify-once-check.ts"
+    "check:notifyonce": "npx --yes tsx scripts/notify-once-check.ts",
+    "check:payoutnotice": "npx --yes tsx scripts/payout-notice-check.ts"
   },
   "dependencies": {
     "@aws-sdk/client-sns": "^3.1130.0",

@@ -102,6 +102,41 @@ const ticket_system: Template = {
 }
 
 /**
+ * Cambio de destino de cobro — una de las protectoras (§5.3), que no se apagan.
+ *
+ * El feed solo no basta: quien cambió el destino puede ser quien tiene la sesión
+ * abierta, y es quien ve el feed. El correo llega a la dirección de la cuenta.
+ * `to` y `from` los calcula el servidor a partir del destino completo; lo que
+ * mande el navegador no entra en este HTML.
+ */
+const payout_destination: Template = {
+  en: (p) => ({
+    subject: 'Your payout destination was changed',
+    heading: 'Where you get paid changed',
+    body: `Payouts now go to ${p.to}.${p.from ? ` This replaces ${p.from}.` : ''} If you made this change, there is nothing to do. If you did not, treat it as urgent and open a help request right away.`,
+    cta: 'Open a help request',
+  }),
+  es: (p) => ({
+    subject: 'Cambió el destino de tus cobros',
+    heading: 'Cambió a dónde te pagamos',
+    body: `Tus cobros ahora van a ${p.to}.${p.from ? ` Reemplaza a ${p.from}.` : ''} Si hiciste tú este cambio, no tienes que hacer nada. Si no fuiste tú, trátalo como urgente y abre una solicitud de ayuda de inmediato.`,
+    cta: 'Abrir una solicitud de ayuda',
+  }),
+  pt: (p) => ({
+    subject: 'O destino dos seus recebimentos mudou',
+    heading: 'Mudou para onde pagamos você',
+    body: `Seus recebimentos agora vão para ${p.to}.${p.from ? ` Substitui ${p.from}.` : ''} Se foi você quem fez essa mudança, não precisa fazer nada. Se não foi, trate como urgente e abra uma solicitação de ajuda imediatamente.`,
+    cta: 'Abrir uma solicitação de ajuda',
+  }),
+  fr: (p) => ({
+    subject: 'La destination de vos versements a changé',
+    heading: "L'endroit où nous vous payons a changé",
+    body: `Vos versements vont désormais vers ${p.to}.${p.from ? ` Elle remplace ${p.from}.` : ''} Si vous avez fait ce changement, vous n'avez rien à faire. Sinon, considérez-le comme urgent et ouvrez une demande d'assistance immédiatement.`,
+    cta: "Ouvrir une demande d'assistance",
+  }),
+}
+
+/**
  * Solo los eventos con plantilla completa en los cuatro idiomas. Añadir uno
  * aquí sin sus cuatro traducciones es lo que el spec prohíbe.
  */
@@ -109,6 +144,7 @@ const TEMPLATES: Record<string, Template> = {
   registrations,
   ticket_reply,
   ticket_system,
+  payout_destination,
 }
 
 export function emailCopyFor(
