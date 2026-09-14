@@ -90,14 +90,14 @@ export async function POST(request: NextRequest) {
         if (!body.ticketId || !body.text?.trim()) return NextResponse.json({ error: 'ticketId and text required' }, { status: 400 })
 
         const internal = body.internal === true
-        const { error } = await supabase.from('ticket_replies').insert({
+        const { data: reply, error } = await supabase.from('ticket_replies').insert({
           ticket_id: body.ticketId,
           author_type: 'team',
           author_name: admin.displayName,
           body: body.text.trim(),
           internal,
-        })
-        if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+        }).select('id').single()
+        if (error || !reply) return NextResponse.json({ error: error?.message ?? 'reply not saved' }, { status: 500 })
 
         // Una nota interna no le habla al cliente, así que no mueve el ticket a
         // 'answered' — si lo hiciera, el equipo creería haber respondido — ni
@@ -114,6 +114,7 @@ export async function POST(request: NextRequest) {
             await notify(supabase, {
               userId: tk.subject_user,
               eventKey: 'ticket_reply',
+              dedupeKey: reply.id,
               data: { ref: tk.ref, subject: tk.subject },
               href: '/help',
             })

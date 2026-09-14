@@ -3,7 +3,6 @@ import { validateRequest } from 'twilio/lib/webhooks/webhooks'
 import { createAdminClient } from '@/lib/supabase-admin'
 import { recordProviderEvent } from '@/lib/provider-events'
 import { fileSystemTicket } from '@/lib/system-tickets'
-import { notify } from '@/lib/notify'
 
 /**
  * Estado de entrega de Twilio — la mitad que faltaba del arreglo de entrega.
@@ -107,12 +106,9 @@ export async function POST(request: NextRequest) {
         entityId: delivery.work_id ?? sid,
         errorDetail: { twilioStatus: status, twilioErrorCode: errorCode, messageSid: sid },
       })
-      await notify(supabase, {
-        userId: delivery.user_id,
-        eventKey: 'ticket_system',
-        data: { subject: 'certificate delivery failed', severity: 'financial' },
-        href: '/help',
-      })
+      // Sin notify aquí: `fileSystemTicket` ya avisa, y solo cuando el ticket es
+      // nuevo. Un segundo aviso por su cuenta llegaba duplicado, y otra vez con
+      // cada callback repetido de Twilio.
     }
 
     return NextResponse.json({ ok: true })
