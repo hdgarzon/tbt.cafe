@@ -698,6 +698,7 @@ export async function POST(request: NextRequest) {
     await notify(supabase, {
       userId: user.id,
       eventKey: 'registrations',
+      dedupeKey: workId,
       data: { title: work.title, tbtId: updatedWork?.tbt_id ?? '' },
       href: updatedWork?.tbt_id ? `/work/${updatedWork.tbt_id}` : undefined,
     })
