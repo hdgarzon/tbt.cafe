@@ -64,6 +64,7 @@ npm run check:ots         # a pending anchor is a normal state, not a failure
 npm run check:grants      # no security definer function runs without a server
 npm run check:titles      # a title is issued, not certified; the old table name is gone
 npm run check:transfercode # no bearer code is generated that nobody receives
+npm run check:language    # the copy says title, not certificate; nothing arrives by MMS; the royalty forks once
 npm run check:notifyonce  # a notification is written once, and a person can only mark it read
 npm run check:payoutnotice # a payout destination change always reaches the owner, by email too
 npm run check:payoutoutcome # a payout's outcome is told once, and only when the ledger moved

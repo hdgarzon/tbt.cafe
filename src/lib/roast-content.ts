@@ -81,7 +81,7 @@ export const ROAST_ARTICLES: RoastArticle[] = [
       },
       {
         "kind": "p",
-        "html": "<b>Authorship.</b> Who made the work, and when. Sealed at registration and never rewritten — the certificate of authorship lives inside the token."
+        "html": "<b>Authorship.</b> Who made the work, and when. Sealed at registration and never rewritten — the title of authorship lives inside the token."
       },
       {
         "kind": "p",
@@ -93,11 +93,11 @@ export const ROAST_ARTICLES: RoastArticle[] = [
       },
       {
         "kind": "p",
-        "html": "<b>Commercial terms.</b> Its price, its availability, and the creator’s royalty — which travels with the token permanently and pays out on every future sale. This is the <b>billable</b> part, and it is what a certificate alone could never do."
+        "html": "<b>Commercial terms.</b> Its price, its availability, and the creator’s royalty — which travels with the token permanently and pays out on every future sale. This is the <b>billable</b> part, and it is what a title alone could never do."
       },
       {
         "kind": "p",
-        "html": "So a certificate of authorship is one of the things a TBT holds. It is not the whole of what a TBT is."
+        "html": "So a title of authorship is one of the things a TBT holds. It is not the whole of what a TBT is."
       },
       {
         "kind": "p",
@@ -200,7 +200,7 @@ export const ROAST_ARTICLES: RoastArticle[] = [
       },
       {
         "kind": "p",
-        "html": "When registration completes, your <b>certificate and private key arrive by MMS</b> — on your phone, and only there. They are never shown on screen, because screens get screenshotted and shared. The message is the original. Keep it."
+        "html": "When registration completes, your <b>title arrives by email</b> — shown in the message and attached as a file. A text confirms it was sent. Nothing on it is secret, so keep it wherever suits you, and print it if you like."
       },
       {
         "kind": "p",
@@ -294,6 +294,14 @@ export const ROAST_ARTICLES: RoastArticle[] = [
       {
         "kind": "p",
         "html": "Choose a number you’d be content with in ten years. Most creators land between 5% and 15%."
+      },
+      {
+        "kind": "p",
+        "html": "<b>One case where the word changes.</b> When a <b>collector</b> registers a work they did not make, the royalty accrues to them rather than to the maker — they bought it, held it, and brought it onto the record. On those works it is a <b>registrant royalty</b>, and the platform names it that way rather than calling it a creator royalty, because it is not one. Everything else about it is identical: same deduction from the sale, same lock at the first sale, same enforcement."
+      },
+      {
+        "kind": "p",
+        "html": "If that work is later authenticated and the maker or their estate is found, the royalty can be <b>redirected</b> to them. The percentage does not change — only where it is paid."
       }
     ]
   },
@@ -389,7 +397,7 @@ export const ROAST_ARTICLES: RoastArticle[] = [
       },
       {
         "kind": "p",
-        "html": "Payment is taken first. Then ownership transfers and the record is written to Solana — usually within a minute. Your <b>new certificate arrives by MMS</b>, on your phone and only there. That message is your original. Keep it."
+        "html": "Payment is taken first. Then ownership transfers and the record is written to Solana — usually within a minute. Your <b>new title arrives by email</b>, naming you as the holder. The seller’s title is superseded by it."
       },
       {
         "kind": "p",
@@ -397,7 +405,7 @@ export const ROAST_ARTICLES: RoastArticle[] = [
       },
       {
         "kind": "p",
-        "html": "What you own afterwards is the <b>token itself</b> — holding the certificate of authorship, the record of custody, and the work’s commercial terms. You can hold it, transfer it, or sell it on. If you later sell, the creator’s royalty is paid from your proceeds — that is the arrangement the creator set, and it does not change hands with the work."
+        "html": "What you own afterwards is the <b>token itself</b> — holding the title of authorship, the record of custody, and the work’s commercial terms. You can hold it, transfer it, or sell it on. If you later sell, the creator’s royalty is paid from your proceeds — that is the arrangement the creator set, and it does not change hands with the work."
       },
       {
         "kind": "p",
@@ -433,7 +441,7 @@ export const ROAST_ARTICLES: RoastArticle[] = [
     "id": "transfers",
     "title": "Transferring ownership",
     "minutes": 4,
-    "summary": "The two-phase card hold, the 24-hour window, and why the new certificate travels by MMS.",
+    "summary": "The two-phase card hold, the 24-hour window, and how the new title reaches the recipient.",
     "body": [
       {
         "kind": "p",
@@ -475,7 +483,7 @@ export const ROAST_ARTICLES: RoastArticle[] = [
       },
       {
         "kind": "p",
-        "html": "When a transfer completes, the work’s new certificate and key go to the recipient <b>by MMS</b> — same rule as brewing: never on screen, only on the phone of the person who now holds the work."
+        "html": "When a transfer completes, a <b>new title is issued to the recipient by email</b> — same as brewing. If they have no email address yet, the work is still theirs and the title waits: a text tells them to add one, and it is sent the moment they do."
       }
     ]
   },
@@ -618,7 +626,7 @@ export const ROAST_ARTICLES: RoastArticle[] = [
     "body": [
       {
         "kind": "p",
-        "html": "A certificate that is only as durable as the company issuing it is not really a certificate — it is a subscription. So the honest question is what remains if we stop existing."
+        "html": "A title that is only as durable as the company issuing it is not really a title — it is a subscription. So the honest question is what remains if we stop existing."
       },
       {
         "kind": "p",
@@ -638,7 +646,7 @@ export const ROAST_ARTICLES: RoastArticle[] = [
       },
       {
         "kind": "p",
-        "html": "The practical consequence for you: <b>keep the MMS</b>. Your certificate and private key arrive there and only there. The public record survives us; your private copy is yours to hold."
+        "html": "The practical consequence for you: the record outlives the document. Your title is evidence and can be reissued at any time; what cannot be taken away is the chain record it points at. That is the part built to survive us."
       }
     ]
   }

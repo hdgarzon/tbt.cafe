@@ -125,7 +125,7 @@ export const LEGAL_DOCS: LegalDoc[] = [
       },
       {
         "kind": "p",
-        "html": "A certificate of authorship is one of the things the token carries. It is <b>not</b> the whole of what a TBT is, and what you acquire when you buy a TBT is <b>the token and everything it holds</b>."
+        "html": "A title of authorship is one of the things the token carries. It is <b>not</b> the whole of what a TBT is, and what you acquire when you buy a TBT is <b>the token and everything it holds</b>."
       },
       {
         "kind": "p",
@@ -166,7 +166,7 @@ export const LEGAL_DOCS: LegalDoc[] = [
       },
       {
         "kind": "p",
-        "html": "Your certificate and private key are delivered by <b>MMS only</b> and are never displayed on screen. That message is your copy. We cannot retrieve a delivered key for you, and you should keep the message."
+        "html": "Your title is delivered by <b>email</b>, with a text message confirming it was sent. It carries no secret and may be shown, printed or forwarded freely. If it does not reach you, it is reissued on request."
       },
       {
         "kind": "h",
@@ -345,11 +345,11 @@ export const LEGAL_DOCS: LegalDoc[] = [
       },
       {
         "kind": "h",
-        "text": "Your certificate and key"
+        "text": "Your title"
       },
       {
         "kind": "p",
-        "html": "Your certificate and private key arrive by <b>MMS only</b>, and are never shown on screen — screens get photographed and shared. That message is the original. Keep it."
+        "html": "Your title arrives by <b>email</b>, shown in the message and attached as a file you can save or print. A text confirms it was sent. It names you as the holder and points at the public record — it is evidence of ownership, not the ownership itself."
       },
       {
         "kind": "h",
@@ -437,7 +437,7 @@ export const LEGAL_DOCS: LegalDoc[] = [
         "kind": "ul",
         "items": [
           "<b>Stripe</b> — to take payments and make payouts.",
-          "<b>Twilio</b> — to send verification codes, certificates and keys by SMS and MMS.",
+          "<b>Twilio</b> — to send verification codes and delivery confirmations by SMS.",
           "<b>SendGrid</b> — to send email notifications.",
           "<b>Public blockchains</b> — Solana, Arweave and Bitcoin, for the records described above.",
           "<b>Our AI provider</b> — to operate the assistant.",

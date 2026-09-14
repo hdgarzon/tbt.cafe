@@ -154,7 +154,7 @@ function generateEmailTemplate(data: {
                       <!-- TBT ID -->
                       <tr>
                         <td style="padding-bottom: 16px;">
-                          <p style="margin: 0 0 4px 0; color: #a0a0b0; font-size: 12px; text-transform: uppercase; letter-spacing: 1px;">ID de Certificación</p>
+                          <p style="margin: 0 0 4px 0; color: #a0a0b0; font-size: 12px; text-transform: uppercase; letter-spacing: 1px;">ID del TBT</p>
                           <p style="margin: 0; color: #00d4aa; font-size: 16px; font-family: monospace; font-weight: 600;">${data.tbtId}</p>
                         </td>
                       </tr>
@@ -177,7 +177,7 @@ function generateEmailTemplate(data: {
                                 <p style="margin: 0; color: #ffffff; font-size: 14px;">${data.category}</p>
                               </td>
                               <td width="50%" style="padding-bottom: 16px;">
-                                <p style="margin: 0 0 4px 0; color: #a0a0b0; font-size: 12px; text-transform: uppercase; letter-spacing: 1px;">Certificado</p>
+                                <p style="margin: 0 0 4px 0; color: #a0a0b0; font-size: 12px; text-transform: uppercase; letter-spacing: 1px;">Registrado</p>
                                 <p style="margin: 0; color: #ffffff; font-size: 14px;">${data.certifiedDate}</p>
                               </td>
                             </tr>
@@ -204,7 +204,7 @@ function generateEmailTemplate(data: {
                 <tr>
                   <td align="center" style="padding-bottom: 12px;">
                     <a href="${data.tbtUrl}" style="display: inline-block; background: linear-gradient(135deg, #ff6b35 0%, #f7931a 100%); color: #ffffff; text-decoration: none; padding: 16px 40px; border-radius: 8px; font-size: 16px; font-weight: 600;">
-                      Ver mi Certificado TBT
+                      Ver la página de la obra
                     </a>
                   </td>
                 </tr>
@@ -247,14 +247,14 @@ function generateEmailTemplate(data: {
                       Tu obra está ahora protegida y verificable en la blockchain de Solana.
                     </p>
                     <p style="margin: 0 0 16px 0; color: #606070; font-size: 12px;">
-                      Puedes compartir el enlace de tu certificado con cualquier persona.
+                      Puedes compartir el enlace de la página de tu obra con cualquier persona.
                     </p>
                   </td>
                 </tr>
                 <tr>
                   <td align="center" style="padding-top: 20px; border-top: 1px solid #2d2d44;">
                     <p style="margin: 0; color: #404050; font-size: 12px;">
-                      © ${new Date().getFullYear()} TBT - Token Basado en Trabajo<br>
+                      © ${new Date().getFullYear()} TBT - Transferable Billable Token<br>
                       Powered by BROCHA & Transbit
                     </p>
                   </td>
@@ -292,20 +292,20 @@ Gracias por proteger tu obra con TBT.
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-DETALLES DE TU CERTIFICACIÓN
+DETALLES DE TU REGISTRO
 
 📜 Obra: "${data.title}"
 🆔 ID: ${data.tbtId}
 👤 Creador: ${data.creatorName}
 🏷️ Categoría: ${data.category}
-📅 Certificado: ${data.certifiedDate}
+📅 Registrado: ${data.certifiedDate}
 ${data.price ? `💰 Valor: $${data.price} ${data.currency || 'USD'}` : ''}
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 ENLACES IMPORTANTES
 
-🔗 Ver tu certificado TBT:
+🔗 Ver la página de tu obra:
 ${data.tbtUrl}
 
 ${data.solscanUrl ? `⛓️ Ver en Solana (SolScan):
@@ -317,9 +317,9 @@ ${data.mintAddress}` : ''}
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 Tu obra está ahora protegida y verificable en la blockchain de Solana.
-Puedes compartir el enlace de tu certificado con cualquier persona.
+Puedes compartir el enlace de la página de tu obra con cualquier persona.
 
-© ${new Date().getFullYear()} TBT - Token Basado en Trabajo
+© ${new Date().getFullYear()} TBT - Transferable Billable Token
 Powered by BROCHA & Transbit
   `.trim()
 }
