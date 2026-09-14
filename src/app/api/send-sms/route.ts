@@ -170,10 +170,10 @@ export async function POST(request: NextRequest) {
       `📜 "${work.title}"\n` +
       `👤 Creador: ${creatorName || 'Artista'}\n` +
       `🏷️ Categoría: ${work.category || 'Arte'}\n` +
-      `📅 Certificado: ${certifiedDate}\n` +
+      `📅 Registrado: ${certifiedDate}\n` +
       `🆔 ID: ${work.tbt_id}\n` +
       (commerce ? `💰 Valor: $${commerce.initial_price?.toLocaleString()} ${commerce.currency}\n` : '') +
-      `\n🔗 Ver certificado:\n` +
+      `\n🔗 Ver la obra:\n` +
       `${process.env.NEXT_PUBLIC_APP_URL}/work/${work.tbt_id}\n\n` +
       `¡Gracias por proteger tu obra con TBT!`
 
@@ -310,7 +310,7 @@ export async function POST(request: NextRequest) {
       `🎨 ¡Tu TBT está certificado!\n\n` +
       `"${work.title}" - ${creatorName || 'Artista'}\n` +
       `ID: ${work.tbt_id}\n\n` +
-      `Ver certificado: ${certificateUrl}`
+      `Ver la obra: ${certificateUrl}`
 
     const command = new PublishCommand({
       PhoneNumber: phoneNumber,
