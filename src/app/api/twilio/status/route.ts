@@ -110,7 +110,7 @@ export async function POST(request: NextRequest) {
       await notify(supabase, {
         userId: delivery.user_id,
         eventKey: 'ticket_system',
-        data: { subject: 'title delivery failed', severity: 'financial' },
+        data: { subject: 'certificate delivery failed', severity: 'financial' },
         href: '/help',
       })
     }

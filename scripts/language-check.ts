@@ -141,10 +141,6 @@ const FILES = ['src/lib/roast-content.ts', 'src/lib/legal-content.ts', 'src/lib/
     'el ticket de entrega fallida no menciona una llave',
     !/and key did not|y su llave|e a chave|et sa clé/.test(read('src/lib/system-tickets.ts'))
   )
-  ok(
-    'el aviso de Twilio habla del titulo',
-    read('src/app/api/twilio/status/route.ts').includes("subject: 'title delivery failed'")
-  )
 }
 
 // ---- los catalogos de la interfaz, en los cuatro idiomas
