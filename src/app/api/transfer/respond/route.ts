@@ -2,8 +2,31 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase-admin'
 import { stripe } from '@/lib/stripe'
 import { authenticate } from '@/lib/route-auth'
+import { notify } from '@/lib/notify'
 
 const HOLD_WINDOW_MS = 24 * 3600 * 1000
+
+/**
+ * Avisa a quien envió que la transferencia no siguió. La clave lleva el motivo:
+ * una transferencia vence o se rechaza una sola vez, y un reintento de esta
+ * ruta choca con el índice de la 047 en vez de avisar dos veces.
+ */
+async function notifySender(
+  service: ReturnType<typeof createAdminClient>,
+  senderId: string | null,
+  transferId: string,
+  variant: 'declined' | 'lapsed',
+  work: { title?: string | null; tbt_id?: string | null } | null | undefined
+) {
+  if (!senderId) return
+  await notify(service, {
+    userId: senderId,
+    eventKey: 'transfers',
+    dedupeKey: `${transferId}:${variant}`,
+    data: { variant, title: work?.title ?? '' },
+    href: work?.tbt_id ? `/work/${work.tbt_id}` : undefined,
+  })
+}
 
 /**
  * Fase 2 del transfer de dos fases — el RECIPIENTE responde (Transfer
@@ -30,7 +53,7 @@ export async function POST(request: NextRequest) {
     const service = createAdminClient()
     const { data: transfer, error } = await service
       .from('transfers')
-      .select('id, work_id, from_owner_id, is_two_phase, payment_status, outcome, stripe_payment_intent_id, authorized_at, work:works(current_owner_id)')
+      .select('id, work_id, from_owner_id, is_two_phase, payment_status, outcome, stripe_payment_intent_id, authorized_at, work:works(current_owner_id, title, tbt_id)')
       .eq('id', transferId)
       .single()
     if (error || !transfer) return NextResponse.json({ error: 'transferNotFound' }, { status: 404 })
@@ -60,6 +83,8 @@ export async function POST(request: NextRequest) {
         console.error('Error releasing lapsed hold:', e)
       }
       await service.from('transfers').update({ payment_status: 'expired', outcome: 'lapsed' }).eq('id', transferId)
+      // Quien envió no está mirando: su tarjeta estaba retenida y ahora está libre.
+      await notifySender(service, transfer.from_owner_id, transferId, 'lapsed', work)
       return NextResponse.json({ error: 'lapsed' }, { status: 410 })
     }
 
@@ -73,6 +98,7 @@ export async function POST(request: NextRequest) {
         }
       }
       await service.from('transfers').update({ payment_status: 'expired', outcome: 'rejected' }).eq('id', transferId)
+      await notifySender(service, transfer.from_owner_id, transferId, 'declined', work)
       return NextResponse.json({ success: true, outcome: 'rejected' })
     }
 

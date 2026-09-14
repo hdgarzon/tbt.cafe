@@ -5,6 +5,7 @@ import { stripe } from '@/lib/stripe'
 import { getExplorerUrl } from '@/lib/solana/config'
 import { isProduction, assertServerEnv } from '@/lib/app-env'
 import { authenticate } from '@/lib/route-auth'
+import { notify } from '@/lib/notify'
 
 /**
  * Esta ruta mueve el NFT en cadena: inicializa Irys, consulta precio, transfiere fondos en
@@ -345,6 +346,55 @@ export async function POST(request: NextRequest) {
       version: 1,
     })
     if (titleError) console.error('Error issuing title:', titleError)
+
+    /*
+     * Avisar a las dos partes. Aquí la propiedad ya cambió y la regalía ya se
+     * anotó, así que no se avisa de nada que todavía pueda fallar.
+     *
+     * La clave es la transferencia más lo que se avisa. Esta ruta se reintenta
+     * —la página de éxito la llama al montar, y `respond` la llama por HTTP—, y
+     * dos llamadas a la vez pueden pasar juntas los atajos de arriba; el índice
+     * de la 047 hace que cada persona reciba cada aviso una sola vez.
+     */
+    const aboutWork = { title: transfer.work.title ?? '' }
+    const workHref = transfer.work.tbt_id ? `/work/${transfer.work.tbt_id}` : undefined
+    if (transfer.transfer_type === 'automatic') {
+      if (transfer.to_owner_id) {
+        await notify(serviceClient, {
+          userId: transfer.to_owner_id,
+          eventKey: 'purchases',
+          dedupeKey: `${transfer.id}:bought`,
+          data: { variant: 'bought', ...aboutWork },
+          href: workHref,
+        })
+      }
+      if (transfer.from_owner_id) {
+        await notify(serviceClient, {
+          userId: transfer.from_owner_id,
+          eventKey: 'purchases',
+          dedupeKey: `${transfer.id}:sold`,
+          data: { variant: 'sold', ...aboutWork },
+          href: workHref,
+        })
+      }
+    } else if (transfer.to_owner_id && transfer.to_owner_id !== transfer.from_owner_id) {
+      await notify(serviceClient, {
+        userId: transfer.to_owner_id,
+        eventKey: 'transfers',
+        dedupeKey: `${transfer.id}:received`,
+        data: { variant: 'received', ...aboutWork },
+        href: workHref,
+      })
+      if (transfer.from_owner_id) {
+        await notify(serviceClient, {
+          userId: transfer.from_owner_id,
+          eventKey: 'transfers',
+          dedupeKey: `${transfer.id}:accepted`,
+          data: { variant: 'accepted', ...aboutWork },
+          href: workHref,
+        })
+      }
+    }
 
     return NextResponse.json({
       success: true,
