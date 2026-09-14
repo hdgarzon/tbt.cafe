@@ -37,7 +37,10 @@ const DOT: Record<string, string> = {
 
 function render(t: Dictionary, row: Row): string {
   const events = t.feed.events as Record<string, string | undefined>
-  const template = events[row.event_key]
+  // Un evento puede decir QUÉ pasó: `transfers` con `variant: 'declined'` busca
+  // antes `transfers_declined`. Sin variante, o sin texto para ella, el genérico.
+  const variant = row.params?.variant
+  const template = (variant ? events[`${row.event_key}_${variant}`] : undefined) ?? events[row.event_key]
   // Un evento sin plantilla no se muestra con su clave cruda en la cara: mejor
   // decir algo neutro que enseñar 'offer_declined' a alguien.
   if (!template) return t.feed.title
