@@ -1,5 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { stripe } from '@/lib/stripe'
+import { notify } from '@/lib/notify'
 
 /**
  * La disposicion real del dinero — Spec 02 §4 paso 8.
@@ -92,11 +93,32 @@ export async function disburseBlock(
   blockId: string,
   netAmount: number
 ): Promise<DisburseResult> {
+  /*
+   * Lo que el aviso enseña: el neto y la referencia del bloque, que genera la
+   * base. El destino enmascarado del bloque llegó del navegador y no entra en un
+   * correo, que inserta estos valores en HTML.
+   */
+  const shown = {
+    amount: netAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
+    block: blockId,
+  }
+
   const fail = async (reason: string): Promise<DisburseResult> => {
     // Devuelve las ganancias a `available`: la persona puede volver a
     // intentarlo. Dejarlas en `collected` seria retenerle dinero por un fallo
     // que no es suyo.
-    await admin.rpc('fail_payout_block', { p_block_id: blockId, p_reason: reason })
+    const { data: moved } = await admin.rpc('fail_payout_block', { p_block_id: blockId, p_reason: reason })
+    // Solo si ESTA llamada marcó el bloque. La función devuelve false cuando ya
+    // no estaba en `processing`: ese fallo ya se avisó, o el bloque se cerró.
+    if (moved === true) {
+      await notify(admin, {
+        userId,
+        eventKey: 'payout_failed',
+        dedupeKey: blockId,
+        data: { ...shown, reason },
+        href: '/history/payouts',
+      })
+    }
     return { status: 'failed', reason }
   }
 
@@ -154,6 +176,19 @@ export async function disburseBlock(
         ok.error
       )
       return { status: 'paid', reference: transfer.id }
+    }
+
+    // Solo cuando esta llamada cerró el bloque. Un reintento que lo encuentra ya
+    // cerrado recibe false y no avisa otra vez. La rama de arriba —el dinero salió
+    // y la fila no se cerró— tampoco avisa: se reconcilia a mano.
+    if (ok.data === true) {
+      await notify(admin, {
+        userId,
+        eventKey: 'payout_completed',
+        dedupeKey: blockId,
+        data: shown,
+        href: '/history/payouts',
+      })
     }
 
     return { status: 'paid', reference: transfer.id }
