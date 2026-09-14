@@ -64,6 +64,7 @@ npm run check:ots         # a pending anchor is a normal state, not a failure
 npm run check:grants      # no security definer function runs without a server
 npm run check:titles      # a title is issued, not certified; the old table name is gone
 npm run check:transfercode # no bearer code is generated that nobody receives
+npm run check:language    # the copy says title, not certificate; nothing arrives by MMS; the royalty forks once
 ```
 
 Each guard is a plain script under `scripts/`, written BEFORE the module it

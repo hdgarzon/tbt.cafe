@@ -1,0 +1,111 @@
+import { readFileSync } from 'fs'
+import { join } from 'path'
+import { retrieve, KNOWLEDGE, type Locale } from '../src/lib/assistant/knowledge'
+import { ROAST_ARTICLES } from '../src/lib/roast-content'
+
+/**
+ * El lenguaje dice lo que el producto hace — Work Order 01, Steps 10 y 11.
+ *
+ * Unas veinte frases no eran un nombre viejo: afirmaban que un certificado y una
+ * clave privada llegaban por MMS y no se mostraban nunca en pantalla. El producto
+ * ya no hace nada de eso — emite un titulo, lo manda por correo con un SMS que
+ * confirma el envio, y no entrega ninguna clave. La version 11 del prototipo no
+ * tiene una sola aparicion de esas palabras; estos tres archivos tampoco.
+ *
+ * Y la regalia se bifurca una vez: en una obra registrada por un coleccionista es
+ * del registrante. En la de un creador sigue siendo del creador, y eso no se toca.
+ */
+
+let bad = 0
+const ok = (label: string, cond: boolean, detail = '') => {
+  if (!cond) bad++
+  console.log(`${cond ? 'ok  ' : 'FAIL'} ${label}${detail && !cond ? ` — ${detail}` : ''}`)
+}
+
+const root = join(__dirname, '..')
+const read = (p: string) => readFileSync(join(root, p), 'utf8')
+const hits = (text: string, re: RegExp) => text.match(new RegExp(re.source, re.flags.includes('g') ? re.flags : re.flags + 'g')) ?? []
+
+const FILES = ['src/lib/roast-content.ts', 'src/lib/legal-content.ts', 'src/lib/assistant/knowledge.ts']
+
+// ---- cero apariciones, como en la version 11
+{
+  const FORBIDDEN: [string, RegExp][] = [
+    ['certificate', /\bcertificates?\b/i],
+    ['certificado (sustantivo)', /\bcertificados?\b/i],
+    ['certificat', /\bcertificats?\b/i],
+    ['transfer code', /transfer code/i],
+    ['MMS only', /MMS only/i],
+    ['private key', /private key|clave privada|llave privada|chave privada|clé privée/i],
+    ['nunca en pantalla', /never (shown|displayed) on screen/i],
+  ]
+  for (let f = 0; f < FILES.length; f++) {
+    const text = read(FILES[f])
+    for (let i = 0; i < FORBIDDEN.length; i++) {
+      const [name, re] = FORBIDDEN[i]
+      const found = hits(text, re)
+      ok(`${FILES[f]}: sin «${name}»`, found.length === 0, found.slice(0, 3).join(', '))
+    }
+  }
+
+  ok('roast: sin MMS', hits(read('src/lib/roast-content.ts'), /\bmms\b/i).length === 0)
+  ok('asistente: sin MMS, tampoco como termino de busqueda', hits(read('src/lib/assistant/knowledge.ts'), /\bmms\b/i).length === 0)
+  const legal = read('src/lib/legal-content.ts')
+  ok(
+    'legal: el unico MMS es el de Transb.it en «About»',
+    hits(legal, /\bMMS\b/).length === 1 && legal.includes('SMS/MMS interactions'),
+    'lo conserva la version 11: describe a la empresa, no la entrega del titulo'
+  )
+}
+
+// ---- la regalia se bifurca una vez, y la del creador no se reescribe
+{
+  const text = read('src/lib/roast-content.ts')
+  ok('«registrant royalty» aparece una sola vez', hits(text, /registrant royalty/).length === 1)
+
+  const article = ROAST_ARTICLES.find((a) => a.id === 'set-royalty')
+  const body = article ? article.body : []
+  const last = body.slice(-2).map((b) => (b.kind === 'p' ? b.html : '')).join(' ')
+  ok('y es al final del articulo de la regalia', last.includes('registrant royalty') && last.includes('redirected'))
+  ok(
+    'las filas «Royalty to creator» siguen siendo tres',
+    hits(text, /"Royalty to creator"/).length === 3,
+    'en una obra de creador sigue siendo una regalia de creador'
+  )
+}
+
+// ---- el asistente encuentra el titulo en los cuatro idiomas
+{
+  ok('el documento se llama title_delivery', KNOWLEDGE.some((d) => d.id === 'title_delivery'))
+  ok('y no queda el viejo', !KNOWLEDGE.some((d) => d.id === 'certificate_delivery'))
+
+  const ASKS: [Locale, string][] = [
+    ['en', 'Where is my title?'],
+    ['es', '¿Dónde está mi título?'],
+    ['pt', 'Onde está meu título?'],
+    ['fr', 'Où est mon titre ?'],
+  ]
+  for (let i = 0; i < ASKS.length; i++) {
+    const [locale, q] = ASKS[i]
+    const first = retrieve(q, locale)[0]
+    ok(`${locale}: «${q}» recupera el titulo`, first?.id === 'title_delivery', first?.id ?? 'nada')
+  }
+  const phone = retrieve('I lost my phone', 'en')[0]
+  ok('«I lost my phone» sigue siendo autenticacion', phone?.id === 'authentication', phone?.id ?? 'nada')
+}
+
+// ---- el correo, mientras llega el de la Stage 5
+{
+  const email = read('src/app/api/send-email/route.ts')
+  ok('TBT no se expande como «Token Basado en Trabajo»', !email.includes('Token Basado en Trabajo'))
+  ok('se expande como Transferable Billable Token', hits(email, /TBT - Transferable Billable Token/).length === 2)
+  ok(
+    'el boton no promete un certificado',
+    !/Ver (mi|tu) certificado TBT/i.test(email),
+    'el enlace lleva a la pagina de la obra, no a un titulo'
+  )
+  ok('sin «ID de Certificación» ni «DETALLES DE TU CERTIFICACIÓN»', !email.includes('ID de Certificación') && !email.includes('DETALLES DE TU CERTIFICACIÓN'))
+}
+
+console.log(bad === 0 ? '\ntodo en orden' : `\n${bad} fallo(s)`)
+process.exit(bad === 0 ? 0 : 1)
