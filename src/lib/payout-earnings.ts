@@ -1,5 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { royaltyAmountOf, royaltyPayout, type Royalty } from '@/lib/fees'
+import { notify } from '@/lib/notify'
 
 /**
  * Escritura del libro de ganancias — Backend Spec 01 §1.3 y §4.
@@ -64,7 +65,7 @@ export async function recordRoyaltyEarning(
   try {
     const { data: work } = await admin
       .from('works')
-      .select('creator_id, commerce:work_commerce(royalty_type, royalty_value)')
+      .select('creator_id, title, commerce:work_commerce(royalty_type, royalty_value)')
       .eq('id', workId)
       .single()
 
@@ -103,7 +104,7 @@ export async function recordRoyaltyEarning(
           ).data
         : null
 
-    const { error } = await admin.from('payout_earnings').insert({
+    const { data: saved, error } = await admin.from('payout_earnings').insert({
       user_id: work.creator_id,
       source: 'royalty',
       work_id: workId,
@@ -113,12 +114,30 @@ export async function recordRoyaltyEarning(
       releases_at: releasesAt,
       hold_reason: release === 'timer' ? 'settlement_window' : null,
       released_at: release === 'event' ? new Date().toISOString() : null,
-    })
+    }).select('id').single()
 
     // 23505 es el índice único: ya se escribió en una pasada anterior. Es el
     // resultado que se busca, no un fallo.
     if (error && error.code !== '23505') {
       console.error('[payout-earnings] could not record the royalty:', error)
+    }
+
+    /*
+     * Solo la que llega ya disponible, y solo cuando ESTA pasada la escribió.
+     * Un reintento choca con el índice y no trae fila: su aviso salió la primera
+     * vez. La de una compra entra pendiente y se avisa al liberarse, no aquí.
+     */
+    if (release === 'event' && !error && saved) {
+      await notify(admin, {
+        userId: work.creator_id,
+        eventKey: 'payout_available',
+        dedupeKey: saved.id,
+        data: {
+          amount: net.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
+          title: work.title ?? '',
+        },
+        href: '/history/payouts',
+      })
     }
   } catch (error) {
     /**
