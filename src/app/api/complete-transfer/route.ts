@@ -3,10 +3,8 @@ import { createAdminClient } from '@/lib/supabase-admin'
 import { recordRoyaltyEarning } from '@/lib/payout-earnings'
 import { stripe } from '@/lib/stripe'
 import { getExplorerUrl } from '@/lib/solana/config'
-import { generateTransferCode } from '@/lib/transfer-code'
 import { isProduction, assertServerEnv } from '@/lib/app-env'
 import { authenticate } from '@/lib/route-auth'
-import { createHash } from 'crypto'
 
 /**
  * Esta ruta mueve el NFT en cadena: inicializa Irys, consulta precio, transfiere fondos en
@@ -188,21 +186,14 @@ export async function POST(request: NextRequest) {
       throw updateError
     }
 
-    // Generate new transfer code for the new owner
-    const newTransferCode = generateTransferCode()
-
-    const { error: codeUpdateError } = await serviceClient
+    // The work is transferable again, now by its new owner.
+    const { error: reopenError } = await serviceClient
       .from('works')
-      .update({
-        // Solo el hash. El codigo en si viaja por MMS y no vuelve a existir en
-        // ningun sitio nuestro: ni en la base, ni en pantalla, ni en cadena.
-        transfer_code_hash: createHash('sha256').update(newTransferCode).digest('hex'),
-        transfer_status: 'active',
-      })
+      .update({ transfer_status: 'active' })
       .eq('id', transfer.work_id)
 
-    if (codeUpdateError) {
-      console.error('Error setting new transfer code:', codeUpdateError)
+    if (reopenError) {
+      console.error('Error reopening the work for transfer:', reopenError)
     }
 
     // Get the current sequence number for this work

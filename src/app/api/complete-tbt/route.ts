@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase-admin'
-import { generateTransferCode } from '@/lib/transfer-code'
 import { isProduction, assertServerEnv } from '@/lib/app-env'
 import { wasDelivered } from '@/lib/notification-outcome'
 import { stripe } from '@/lib/stripe'
@@ -9,7 +8,6 @@ import { fileSystemTicket } from '@/lib/system-tickets'
 import { notify } from '@/lib/notify'
 import { recordProviderEvent } from '@/lib/provider-events'
 import { authenticate } from '@/lib/route-auth'
-import { createHash } from 'crypto'
 
 /**
  * Esta ruta certifica y mintea: inicializa Irys, consulta precio, transfiere fondos en
@@ -183,8 +181,7 @@ export async function POST(request: NextRequest) {
       console.warn('Profile update error:', profileError)
     }
 
-    // Generate transfer code and update work to certified
-    const transferCode = generateTransferCode()
+    // Update work to certified
     
     const { error: workUpdateError } = await supabase
       .from('works')
@@ -203,9 +200,6 @@ export async function POST(request: NextRequest) {
          * dejo en 'completed' y no hay que pisarlo.
          */
         ...(coveredReason ? { payment_status: 'covered' } : {}),
-        // Solo el hash. El codigo en si viaja por MMS y no vuelve a existir en
-        // ningun sitio nuestro: ni en la base, ni en pantalla, ni en cadena.
-        transfer_code_hash: createHash('sha256').update(transferCode).digest('hex'),
         transfer_status: 'active',
         context_summary: contextData.userEditedSummary || contextData.aiSummary || null,
         context_signed_at: contextData.isSigned ? new Date().toISOString() : null,
