@@ -182,7 +182,6 @@ create table if not exists public.works (
   nft_status text default 'pending'::text,
   series_id uuid,
   is_featured boolean default false not null,
-  transfer_code_hash text,
   content_hash text,
   registration_record_uri text,
   registration_record_hash text,
@@ -193,8 +192,6 @@ create table if not exists public.works (
 
 comment on column public.works.mint_address is
   'La direccion del NFT. La migracion 031 quito su gemela muerta nft_mint_address.';
-comment on column public.works.transfer_code is
-  'Resto anterior al hash. El codigo es un secreto al portador y se guarda en transfer_code_hash; nada lee esta columna.';
 
 create table if not exists public.work_commerce (
   id uuid default extensions.uuid_generate_v4() not null,
@@ -926,7 +923,6 @@ create index if not exists idx_works_is_published ON public.works USING btree (i
 create index if not exists works_series_id_idx ON public.works USING btree (series_id);
 create index if not exists works_featured_idx ON public.works USING btree (creator_id) WHERE is_featured;
 create index if not exists idx_works_mint_address ON public.works USING btree (mint_address) WHERE (mint_address IS NOT NULL);
-create index if not exists works_transfer_code_hash_idx ON public.works USING btree (transfer_code_hash) WHERE (transfer_code_hash IS NOT NULL);
 create index if not exists works_registration_record_idx ON public.works USING btree (registration_record_uri) WHERE (registration_record_uri IS NOT NULL);
 create index if not exists works_content_hash_idx ON public.works USING btree (content_hash) WHERE (content_hash IS NOT NULL);
 create index if not exists works_payment_intent_idx ON public.works USING btree (payment_intent_id) WHERE (payment_intent_id IS NOT NULL);
@@ -1069,12 +1065,6 @@ create policy "Creadores pueden gestionar commerce" on public.work_commerce for 
 
 create policy "Titulos son publicos" on public.titles for select using (true);
 create policy "Creador o dueño puede emitir titulos" on public.titles for insert with check ((EXISTS ( SELECT 1 FROM works w WHERE ((w.id = titles.work_id) AND ((w.creator_id = ( SELECT auth.uid() AS uid)) OR (w.current_owner_id = ( SELECT auth.uid() AS uid)))))));
-
--- Transicion de la migracion 045: el nombre viejo, como vista, para el codigo que
--- todavia no se ha desplegado. La siguiente migracion la quita.
-create or replace view public.certificates with (security_invoker = on) as
-  select id, work_id, owner_id, title_url, qr_code_data, version, generated_at, valid_until
-    from public.titles;
 
 create policy "Context snapshots are viewable for certified works" on public.context_snapshots for select using ((EXISTS ( SELECT 1 FROM works w WHERE ((w.id = context_snapshots.work_id) AND ((w.status = 'certified'::work_status) OR (w.creator_id = auth.uid()))))));
 create policy "Creators can manage their context snapshots" on public.context_snapshots for all using ((EXISTS ( SELECT 1 FROM works w WHERE ((w.id = context_snapshots.work_id) AND (w.creator_id = auth.uid())))));
