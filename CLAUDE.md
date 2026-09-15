@@ -70,7 +70,7 @@ npm run check:payoutnotice # a payout destination change always reaches the owne
 npm run check:payoutoutcome # a payout's outcome is told once, and only when the ledger moved
 npm run check:transfernotice # both sides of a sale or transfer hear what happened, once, with no HTML smuggled into the email
 npm run check:earningnotice # a royalty that lands available is told once; a pending one is not called ready
-npm run check:sweeps      # what is due is released, and an unanswered transfer lapses on its own, hold first
+npm run check:sweeps      # the release and lapse sweeps release the hold first, and stay unscheduled until Work Order 02
 ```
 
 Each guard is a plain script under `scripts/`, written BEFORE the module it
