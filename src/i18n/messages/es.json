@@ -989,7 +989,7 @@
       "surge": "La atención sobre una obra se está acelerando.",
       "new_from_followed": "Alguien que sigues registró una obra nueva.",
       "payout_available": "Tienes una regalía de {amount} USD de «{title}» lista para cobrar.",
-      "payout_released": "Se liberaron fondos que estaban pendientes.",
+      "payout_released": "{amount} USD de «{title}» terminaron su espera y están listos para cobrar.",
       "payout_completed": "Tu cobro de {amount} USD se completó.",
       "payout_failed": "No pudimos completar un cobro de {amount} USD.",
       "payout_destination": "Cambió el destino de tus cobros a {to}."

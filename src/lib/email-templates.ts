@@ -294,6 +294,38 @@ const payout_available: Template = {
 }
 
 /**
+ * Una ganancia que terminó su ventana de liquidación. La avisa el barrido
+ * diario (`payout-release.ts`), no la escritura: cuando se escribió estaba
+ * pendiente y no se podía cobrar. El importe es el neto.
+ */
+const payout_released: Template = {
+  en: (p) => ({
+    subject: `${p.amount} USD is ready to collect`,
+    heading: 'The wait is over',
+    body: `The settlement window on “${p.title}” has closed, and ${p.amount} USD is available now. Collect it from Payouts whenever you choose.`,
+    cta: 'Go to Payouts',
+  }),
+  es: (p) => ({
+    subject: `Ya puedes cobrar ${p.amount} USD`,
+    heading: 'Terminó la espera',
+    body: `Se cerró la ventana de liquidación de «${p.title}» y ${p.amount} USD ya están disponibles. Cóbralos desde Cobros cuando quieras.`,
+    cta: 'Ir a Cobros',
+  }),
+  pt: (p) => ({
+    subject: `${p.amount} USD já podem ser recebidos`,
+    heading: 'A espera terminou',
+    body: `A janela de liquidação de “${p.title}” terminou e ${p.amount} USD já estão disponíveis. Receba em Saques quando quiser.`,
+    cta: 'Ir para Saques',
+  }),
+  fr: (p) => ({
+    subject: `${p.amount} USD sont prêts à être perçus`,
+    heading: "L'attente est terminée",
+    body: `La période de règlement pour « ${p.title} » est terminée et ${p.amount} USD sont disponibles. Percevez-les depuis Versements quand vous le souhaitez.`,
+    cta: 'Aller aux versements',
+  }),
+}
+
+/**
  * Solo los eventos con plantilla completa en los cuatro idiomas. Añadir uno
  * aquí sin sus cuatro traducciones es lo que el spec prohíbe.
  */
@@ -307,6 +339,7 @@ const TEMPLATES: Record<string, Template> = {
   purchases,
   transfers,
   payout_available,
+  payout_released,
 }
 
 export function emailCopyFor(

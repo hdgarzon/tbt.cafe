@@ -989,7 +989,7 @@
       "surge": "A atenção sobre uma obra está acelerando.",
       "new_from_followed": "Alguém que você segue registrou uma nova obra.",
       "payout_available": "Um royalty de {amount} USD de “{title}” está pronto para receber.",
-      "payout_released": "Fundos pendentes foram liberados.",
+      "payout_released": "{amount} USD de “{title}” terminaram a espera e estão prontos para receber.",
       "payout_completed": "Seu recebimento de {amount} USD foi concluído.",
       "payout_failed": "Não conseguimos concluir um recebimento de {amount} USD.",
       "payout_destination": "O destino dos seus recebimentos mudou para {to}."

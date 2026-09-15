@@ -989,7 +989,7 @@
       "surge": "L'attention sur une œuvre s'accélère.",
       "new_from_followed": "Une personne que vous suivez a enregistré une œuvre.",
       "payout_available": "Une redevance de {amount} USD pour « {title} » est prête à être perçue.",
-      "payout_released": "Des fonds en attente ont été libérés.",
+      "payout_released": "{amount} USD pour « {title} » ont terminé leur période d'attente et sont prêts à être perçus.",
       "payout_completed": "Votre perception de {amount} USD est terminée.",
       "payout_failed": "Un versement de {amount} USD n'a pas pu être effectué.",
       "payout_destination": "La destination de vos versements a changé pour {to}."

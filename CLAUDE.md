@@ -70,6 +70,7 @@ npm run check:payoutnotice # a payout destination change always reaches the owne
 npm run check:payoutoutcome # a payout's outcome is told once, and only when the ledger moved
 npm run check:transfernotice # both sides of a sale or transfer hear what happened, once, with no HTML smuggled into the email
 npm run check:earningnotice # a royalty that lands available is told once; a pending one is not called ready
+npm run check:sweeps      # what is due is released, and an unanswered transfer lapses on its own, hold first
 ```
 
 Each guard is a plain script under `scripts/`, written BEFORE the module it
@@ -233,7 +234,7 @@ level.
 
 ### The cron is daily because the account is Hobby
 
-`vercel.json` declares one job. **A Hobby account allows one run per day, and
+`vercel.json` declares daily jobs only. **A Hobby account allows one run per day, and
 Vercel does not warn — it rejects the whole deployment.** An hourly expression
 blocked every build, preview and production, for fifteen hours, with the reason
 visible only inside the build detail:
