@@ -3,6 +3,14 @@
     {
       "path": "/api/cron/anchor-upgrade",
       "schedule": "0 6 * * *"
+    },
+    {
+      "path": "/api/cron/payout-release",
+      "schedule": "0 7 * * *"
+    },
+    {
+      "path": "/api/cron/transfer-lapse",
+      "schedule": "0 8 * * *"
     }
   ]
 }
