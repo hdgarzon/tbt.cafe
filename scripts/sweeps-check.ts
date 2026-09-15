@@ -35,8 +35,14 @@ const count = (s: string, needle: string) => s.split(needle).length - 1
   const jobs: { path?: string; schedule?: string }[] = vercel.crons ?? []
   const paths = jobs.map((j) => j.path)
 
-  ok('declara el barrido de ganancias', paths.indexOf('/api/cron/payout-release') > -1)
-  ok('declara el de transferencias', paths.indexOf('/api/cron/transfer-lapse') > -1)
+  /*
+   * Sin programar, a propósito. Update Package 01 deja el programador de tareas
+   * para la Work Order 02, en Supabase Cron, y el barrido de transferencias
+   * vencidas con él. Las rutas existen y rechazan toda llamada sin CRON_SECRET;
+   * volver a programarlas es una decisión del arquitecto, no de un despliegue.
+   */
+  ok('el barrido de ganancias no está programado', paths.indexOf('/api/cron/payout-release') === -1, 'el programador es de la Work Order 02')
+  ok('el de transferencias tampoco', paths.indexOf('/api/cron/transfer-lapse') === -1, 'el programador es de la Work Order 02')
   ok(
     'ningún cron corre más de una vez al día',
     jobs.length > 0 && jobs.every((j) => /^\d+ \d+ \* \* \*$/.test(j.schedule ?? '')),
