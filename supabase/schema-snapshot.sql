@@ -1122,5 +1122,5 @@ create policy "write own curation" on public.curations for all using ((auth.uid(
 create policy "offer parties read" on public.offers for select using (((auth.uid() = from_user) OR (auth.uid() = ( SELECT w.current_owner_id FROM works w WHERE (w.id = offers.work_id)))));
 create policy "offerer writes" on public.offers for insert with check ((auth.uid() = from_user));
 create policy "roast questions readable" on public.roast_questions for select using ((NOT hidden));
-create policy "own roast questions insertable" on public.roast_questions for insert with check ((( SELECT auth.uid() AS uid) = user_id));
+-- roast_questions no tiene politica de insercion desde la 048: el envio esta apagado hasta que exista moderacion.
 

@@ -41,6 +41,7 @@
     "check:sweeps": "npx --yes tsx scripts/sweeps-check.ts",
     "check:scan": "npx --yes tsx scripts/scan-check.ts",
     "check:imageindex": "npx --yes tsx scripts/image-index-check.ts",
+    "check:roastquestions": "npx --yes tsx scripts/roast-questions-check.ts",
     "check:stealth": "npx --yes tsx scripts/stealth-check.ts"
   },
   "dependencies": {
