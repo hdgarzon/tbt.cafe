@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react'
 import { useLocale } from '@/i18n/LocaleProvider'
+import { useShell } from '@/components/AppShell'
 import { BrewChrome, BrewButton } from '@/components/brew/BrewChrome'
 import { ContextEditor } from '@/components/brew/ContextEditor'
 import { runSimilarityScan, describeImage, extractFields, generateContext } from '@/lib/brew-data'
@@ -71,6 +72,7 @@ export function EspressoFlow({
   onBack,
   onClose,
   onComplete,
+  onScanUnavailable,
   creatorAlias,
   creatorBio,
   creatorType,
@@ -79,6 +81,8 @@ export function EspressoFlow({
   onBack: () => void
   onClose: () => void
   onComplete: (r: EspressoResult) => void
+  /** El escaneo no pudo correr: el asistente pausa el registro (N9 d). */
+  onScanUnavailable: () => void
   /** generate-context exige alias, título y categoría: sin ellos responde 400. */
   creatorAlias: string
   creatorBio?: string
@@ -87,6 +91,7 @@ export function EspressoFlow({
 }) {
   const { t, locale } = useLocale()
   const e = t.espresso
+  const { openAuth } = useShell()
 
   const [stage, setStage] = useState<Stage>('image')
   const [turns, setTurns] = useState<Turn[]>([{ from: 'bot', text: e.askImage }])
@@ -156,8 +161,20 @@ export function EspressoFlow({
     if (!imageFile) return
     setBusy(true)
     const r = await runSimilarityScan(imageFile)
+    // Un escaneo que no corrió no es limpio (N9 b): se sale del flujo antes de
+    // crear nada (N9 d).
+    if (r.status === 'unavailable') {
+      onScanUnavailable()
+      return
+    }
+    // Sin sesión no es una caída: se pide autenticar y el escaneo se repite.
+    if (r.status === 'unauthenticated') {
+      setBusy(false)
+      openAuth()
+      return
+    }
     const score = 'score' in r && r.score != null ? Math.round(r.score * 100) : 0
-    const st = r.status === 'skipped' ? 'clear' : r.status
+    const st = r.status
     setScanScore(score)
     setScanState(st)
     setBusy(false)

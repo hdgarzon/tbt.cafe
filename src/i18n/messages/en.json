@@ -826,6 +826,8 @@
     "scanWarnBody": "Found a work at {score}% similarity, over the pass line. Often fine — tell us the relationship.",
     "scanBlockTitle": "This can't be certified yet",
     "scanBlockBody": "Your image is a {score}% match to a registered work. Certification is paused.",
+    "scanPausedNotice": "Registration is paused while our originality check is unavailable. Everything else works as usual.",
+    "scanPausedMidBrew": "We couldn’t check originality just now, so registration is paused. Please come back a little later.",
     "declareRelationship": "Declare the relationship",
     "declareOriginal": "Ownership affirmation",
     "declareOriginalSub": "I'm the original creator of this work.",
