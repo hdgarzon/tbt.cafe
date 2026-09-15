@@ -826,6 +826,8 @@
     "scanWarnBody": "Encontramos uma obra com {score}% de similaridade, acima do limite. Geralmente está tudo bem — conte-nos a relação.",
     "scanBlockTitle": "Isso ainda não pode ser certificado",
     "scanBlockBody": "Sua imagem tem {score}% de correspondência com uma obra registrada. A certificação está pausada.",
+    "scanPausedNotice": "O registro está pausado enquanto nossa verificação de originalidade está indisponível. Todo o resto funciona normalmente.",
+    "scanPausedMidBrew": "Não conseguimos verificar a originalidade agora, por isso o registro está pausado. Volte um pouco mais tarde.",
     "declareRelationship": "Declare a relação",
     "declareOriginal": "Afirmação de propriedade",
     "declareOriginalSub": "Sou o criador original desta obra.",

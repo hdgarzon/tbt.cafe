@@ -34,7 +34,7 @@ const SolanaMark = () => (
  * producto, va antes que la protección (cambió tarde en el prototipo, fácil
  * de invertir por error).
  */
-export function InfoTab({ work }: { work: WorkFull }) {
+export function InfoTab({ work, scannedAt = null }: { work: WorkFull; scannedAt?: string | null }) {
   const { t } = useLocale()
   const c = work.commerce!
   const price = c.initial_price != null ? `${money(c.initial_price)} USD` : '—'
@@ -116,24 +116,19 @@ export function InfoTab({ work }: { work: WorkFull }) {
         </div>
       </div>
 
-      <div>
-        <div className="text-[9.5px] tracking-[0.16em] uppercase text-placeholder">{t.info.protection}</div>
-        <div className="flex items-start gap-2.5 mt-2.5">
-          <span className="mt-0.5 shrink-0 w-4 h-4 rounded-full bg-t-green/15 text-t-green flex items-center justify-center">
-            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-              <path d="M5 13l4 4L19 7" />
-            </svg>
-          </span>
-          <span className="text-[13px] text-ink">
-            <b className="font-medium">{t.info.scanPassed}</b>
-            <span className="block text-[12px] text-ink-soft mt-0.5">{t.info.scanDetail}</span>
-          </span>
+      {/*
+        Solo con un escaneo guardado (N9 g). Antes afirmaba «Protection scan
+        passed» y mostraba como huella un trozo del id de la obra, en todas y
+        sin que ningún escaneo quedara escrito en ningún sitio.
+      */}
+      {scannedAt && (
+        <div>
+          <div className="text-[9.5px] tracking-[0.16em] uppercase text-placeholder">{t.info.protection}</div>
+          <div className="flex flex-col divide-y divide-hairline mt-2.5">
+            <Row k={t.info.scanned} v={new Date(scannedAt).toLocaleDateString()} />
+          </div>
         </div>
-        <div className="flex flex-col divide-y divide-hairline mt-2.5">
-          <Row k={t.info.imageFingerprint} v={<span className="font-mono">{work.id.slice(0, 4)}…{work.id.slice(-4)}</span>} />
-          <Row k={t.info.scanned} v={work.certified_at ? new Date(work.certified_at).toLocaleDateString() : '—'} />
-        </div>
-      </div>
+      )}
     </div>
   )
 }

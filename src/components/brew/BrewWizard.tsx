@@ -19,6 +19,7 @@ import {
   isCreatorProfileComplete,
   fetchSeriesOptions,
   runSimilarityScan,
+  checkScanService,
   generateContext,
   createDraftWork,
   startRegistration,
@@ -41,6 +42,8 @@ import {
 
 type Step =
   | 'loading'
+  | 'paused'
+  | 'pausedMidBrew'
   | 'gate'
   | 'chooser'
   | 'espresso'
@@ -60,6 +63,8 @@ type Step =
 // sub-paso avanza sub/(n+1) dentro de su cuarto — nunca arranca en cero.
 const STEP_PROGRESS: Record<Step, number> = {
   loading: 0,
+  paused: 0,
+  pausedMidBrew: 0,
   gate: 0,
   chooser: 0,
   espresso: 25,
@@ -233,6 +238,14 @@ export function BrewWizard() {
         return
       }
 
+      // Sin escaneo no hay registro (N9 c). Se pregunta aquí: después de atender
+      // el regreso de Stripe —ese pago ya se hizo y su registro sigue— y antes
+      // de abrir cualquier paso del flujo.
+      if (!(await checkScanService())) {
+        setStep('paused')
+        return
+      }
+
       const p = await fetchCreatorProfile(user.id)
       setProfile(p)
       if (!isCreatorProfileComplete(p)) {
@@ -248,6 +261,17 @@ export function BrewWizard() {
   useEffect(() => {
     return () => URL.revokeObjectURL(imagePreview)
   }, [imagePreview])
+
+  // La pausa se va sola (N9 e): cuando el procesador vuelve a responder, Brew
+  // se reabre desde el principio. La de a mitad de flujo no: ese cierre ya dijo
+  // que se vuelva más tarde.
+  useEffect(() => {
+    if (step !== 'paused') return
+    const iv = setInterval(async () => {
+      if (await checkScanService()) window.location.reload()
+    }, 30_000)
+    return () => clearInterval(iv)
+  }, [step])
 
   useEffect(() => {
     if (step !== 'payment' || payDeadline == null) return
@@ -384,8 +408,20 @@ export function BrewWizard() {
     setScanState('scanning')
     setScanAnim(0)
     const result = await runSimilarityScan(imageFile)
+    // Un escaneo que no corrió no es limpio (N9 b). Todavía no hay borrador, así
+    // que cerrar aquí no deja nada a medias ni consume nada (N9 d).
+    if (result.status === 'unavailable') {
+      setStep('pausedMidBrew')
+      return
+    }
+    // Sin sesión no es una caída: se pide autenticar y el escaneo se repite.
+    if (result.status === 'unauthenticated') {
+      setScanState('idle')
+      openAuth()
+      return
+    }
     const score = 'score' in result && result.score != null ? Math.round(result.score * 100) : 0
-    const status = result.status === 'skipped' ? 'clear' : result.status
+    const status = result.status
     // El medidor sube hasta el puntaje real con la misma curva del prototipo
     // (ease-out ~1.4s). requestAnimationFrame NO corre con la pestaña en
     // segundo plano — y alguien que cambia de app mientras espera volvería a
@@ -642,6 +678,24 @@ export function BrewWizard() {
     return <div className="px-4 pt-8 text-[13px] text-ink-soft text-center">{t.work.loading}</div>
   }
 
+  if (step === 'paused' || step === 'pausedMidBrew') {
+    return (
+      <BrewChrome onClose={close} progressPct={undefined}>
+        <div className="text-center pt-4" role="status">
+          <div className="w-14 h-14 rounded-full bg-paper-warm border border-hairline flex items-center justify-center mx-auto mb-4 text-[24px]" aria-hidden="true">
+            🛡
+          </div>
+          <p className="text-[13px] leading-[1.6] text-ink-soft mt-2.5 px-2">
+            {step === 'paused' ? t.brew.scanPausedNotice : t.brew.scanPausedMidBrew}
+          </p>
+          <button type="button" onClick={close} className="w-full mt-6 py-3 text-[12px] text-ink-soft">
+            {t.creator.back}
+          </button>
+        </div>
+      </BrewChrome>
+    )
+  }
+
   if (step === 'gate') {
     return (
       <BrewChrome onClose={close} progressPct={undefined}>
@@ -712,6 +766,7 @@ export function BrewWizard() {
       <EspressoFlow
         onBack={backTo('chooser')}
         onClose={close}
+        onScanUnavailable={() => setStep('pausedMidBrew')}
         creatorAlias={profile?.public_alias || profile?.legal_name || ''}
         creatorBio={profile?.bio ?? undefined}
         creatorType={profile?.creator_type ?? 'individual'}

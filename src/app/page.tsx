@@ -5,6 +5,7 @@ import { SearchIcon, CloseIcon } from '@/components/Brand'
 import { useShell } from '@/components/AppShell'
 import { useLocale } from '@/i18n/LocaleProvider'
 import { searchCatalog, type SearchHit } from '@/lib/creator-data'
+import { checkScanService } from '@/lib/brew-data'
 
 /**
  * Home (Build Spec 01, ÍTEMS 1 y 4).
@@ -23,6 +24,7 @@ export default function HomePage() {
   const [welcomeDismissed, setWelcomeDismissed] = useState(false)
   const [hits, setHits] = useState<SearchHit[]>([])
   const [searching, setSearching] = useState(false)
+  const [scanPaused, setScanPaused] = useState(false)
   const { connected } = useShell()
   const { t } = useLocale()
 
@@ -48,6 +50,26 @@ export default function HomePage() {
     }, 250)
     return () => clearTimeout(id)
   }, [query])
+
+  // Sin escaneo de originalidad no hay registro (N9 c). El aviso se va solo
+  // cuando el procesador vuelve (N9 e): se pregunta al cargar, al recuperar el
+  // foco y cada minuto.
+  useEffect(() => {
+    let alive = true
+    const check = () => {
+      checkScanService().then((available) => {
+        if (alive) setScanPaused(!available)
+      })
+    }
+    check()
+    window.addEventListener('focus', check)
+    const iv = setInterval(check, 60_000)
+    return () => {
+      alive = false
+      window.removeEventListener('focus', check)
+      clearInterval(iv)
+    }
+  }, [])
 
   // El banner sólo aplica al usuario recién autenticado
   const showWelcome = connected && !welcomeDismissed
@@ -96,6 +118,11 @@ export default function HomePage() {
           </div>
         )}
 
+        {scanPaused && (
+          <p role="status" className="mb-3 rounded-xl border border-hairline bg-paper-warm px-4 py-3 text-[12.5px] leading-[1.55] text-ink-soft">
+            {t.brew.scanPausedNotice}
+          </p>
+        )}
         {/* Roast · Grind · Brew. NO son tres cajas iguales: Brew va en tinta
             con vapor animado, y es lo único de color pleno de la pantalla. Es
             lo que marca cuál es la acción principal — las otras dos son
@@ -105,6 +132,8 @@ export default function HomePage() {
             <a
               key={b.key}
               href={b.href}
+              onClick={(e) => { if (b.key === 'brew' && scanPaused) e.preventDefault() }}
+              aria-disabled={b.key === 'brew' && scanPaused ? true : undefined}
               className={`relative flex-1 h-24 rounded-xl border flex flex-col items-center justify-center gap-[5px] px-1.5 py-2.5 text-center transition-[border-color,transform,background] duration-[180ms] hover:-translate-y-0.5 ${
                 b.key === 'brew'
                   ? 'overflow-hidden border-[#1a1a1a] bg-[#1a1a1a] hover:border-black hover:bg-black'

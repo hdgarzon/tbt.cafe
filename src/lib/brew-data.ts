@@ -191,8 +191,12 @@ async function uploadWorksMedia(
 }
 
 export type SimilarityResult =
-  | { status: 'skipped' | 'clear'; score?: number }
+  | { status: 'clear'; score?: number }
   | { status: 'warning' | 'blocked'; score: number; matches: unknown[] }
+  /** El escaneo no corrió: el procesador está caído o mal configurado. Nunca es limpio. */
+  | { status: 'unavailable' }
+  /** Sin sesión. No es una caída: se pide autenticar y se repite. */
+  | { status: 'unauthenticated' }
 
 /**
  * Escaneo de originalidad (fase Protección).
@@ -202,25 +206,43 @@ export type SimilarityResult =
  * encontrara— y el wizard ya garantiza sesión: sin usuario abre la
  * autenticación y no continúa.
  *
- * `skipped` significa "el procesador no contestó", y con eso la certificación
- * sigue adelante. Un 401 NO es eso: es que no nos autenticamos, y silenciarlo
- * apagaría la detección de plagio sin que nadie se entere. Se distingue.
+ * Un escaneo que no corrió NO es limpio (Update Package 01, N9). Antes salía
+ * como `skipped` y el asistente lo pintaba como sin conflictos; ahora es
+ * `unavailable` y el registro se pausa. Un 401 tampoco es eso: es falta de
+ * sesión, se pide autenticar y se repite.
  */
 export async function runSimilarityScan(file: File): Promise<SimilarityResult> {
   const form = new FormData()
   form.append('file', file)
   const auth = await authHeader()
-  const res = await fetch('/api/tbt-image/similarity', {
-    method: 'POST',
-    headers: { ...(auth ?? {}) },
-    body: form,
-  })
-  if (res.status === 401) {
-    console.error('[similarity] sin sesión: no se comprobó plagio')
-    return { status: 'skipped' }
+  try {
+    const res = await fetch('/api/tbt-image/similarity', {
+      method: 'POST',
+      headers: { ...(auth ?? {}) },
+      body: form,
+    })
+    if (res.status === 401) return { status: 'unauthenticated' }
+    if (!res.ok) return { status: 'unavailable' }
+    return res.json()
+  } catch {
+    return { status: 'unavailable' }
   }
-  if (!res.ok) return { status: 'skipped' }
-  return res.json()
+}
+
+/**
+ * ¿Se puede registrar ahora? — N9 (c). Brew y el inicio preguntan antes de abrir
+ * el flujo. Si la consulta misma falla la respuesta es no: sin escaneo no hay
+ * registro.
+ */
+export async function checkScanService(): Promise<boolean> {
+  try {
+    const res = await fetch('/api/tbt-image/health', { cache: 'no-store' })
+    if (!res.ok) return false
+    const body = (await res.json()) as { available?: boolean }
+    return body.available === true
+  } catch {
+    return false
+  }
 }
 
 export type ContextResult = { location: string; weather: string; summary: string; generatedAt: string }
