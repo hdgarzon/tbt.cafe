@@ -27,6 +27,7 @@ export type SystemEventCode =
   | 'solana_registration_failed'
   | 'payment_capture_failed'
   | 'payout_failed'
+  | 'image_index_failed'
 
 type Locale = 'en' | 'es' | 'pt' | 'fr'
 
@@ -109,6 +110,35 @@ const TEMPLATES: Record<SystemEventCode, Template> = {
       fr: {
         subject: "Un paiement n'a pas pu être finalisé",
         body: "Un de vos paiements n'a pas abouti. Aucun montant n'a été prélevé. Répondez ici et nous réglerons cela avec vous.",
+      },
+    },
+  },
+
+  /**
+   * La obra está registrada; lo que no terminó es añadirla al índice de
+   * originalidad, contra el que se comparan las subidas posteriores. No cambia
+   * nada para el creador, pero sin ese paso su obra no queda protegida frente a
+   * copias, y eso es asunto nuestro, no suyo.
+   */
+  image_index_failed: {
+    category: 'registration',
+    severity: 'secondary',
+    copy: {
+      en: {
+        subject: 'Your work is registered; we are finishing one check',
+        body: 'Your work was registered and nothing about it has changed. Adding it to our originality index, which stops later uploads from copying it, did not complete. We are on it, and you do not need to do anything.',
+      },
+      es: {
+        subject: 'Tu obra está registrada; estamos terminando una comprobación',
+        body: 'Tu obra quedó registrada y nada de ella ha cambiado. No se completó su incorporación a nuestro índice de originalidad, que impide que subidas posteriores la copien. Ya estamos en ello y no tienes que hacer nada.',
+      },
+      pt: {
+        subject: 'Sua obra está registrada; estamos concluindo uma verificação',
+        body: 'Sua obra foi registrada e nada nela mudou. A inclusão no nosso índice de originalidade, que impede que envios posteriores a copiem, não foi concluída. Já estamos cuidando disso e você não precisa fazer nada.',
+      },
+      fr: {
+        subject: 'Votre œuvre est enregistrée ; nous terminons une vérification',
+        body: "Votre œuvre a bien été enregistrée et rien n'a changé pour elle. Son ajout à notre index d'originalité, qui empêche les envois ultérieurs de la copier, n'a pas abouti. Nous nous en occupons et vous n'avez rien à faire.",
       },
     },
   },
