@@ -73,6 +73,7 @@ npm run check:earningnotice # a royalty that lands available is told once; a pen
 npm run check:sweeps      # the release and lapse sweeps release the hold first, and stay unscheduled until Work Order 02
 npm run check:scan        # a scan that did not run is never clear; with the processor down, registration pauses
 npm run check:imageindex  # indexing a certified image is awaited, recorded either way, and a failure opens a ticket
+npm run check:roastquestions # nobody can post a Roast question until moderation exists; reading stays open
 ```
 
 Each guard is a plain script under `scripts/`, written BEFORE the module it
