@@ -26,6 +26,10 @@ export const metadata: Metadata = {
   title: "tbt.cafe",
   description:
     "Títulos de autoría y propiedad para obra creativa. Transbit × BROCHA.",
+  // Modo sigiloso (Update Package 01, N1): cada página hereda noindex, junto a
+  // src/app/robots.ts. Ninguna página declara su propio `robots`, que lo
+  // sustituiría. Quitarlo es un punto de la lista de lanzamiento.
+  robots: { index: false, follow: false },
 };
 
 export default function RootLayout({
