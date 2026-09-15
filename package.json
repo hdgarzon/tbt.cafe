@@ -38,7 +38,8 @@
     "check:payoutoutcome": "npx --yes tsx scripts/payout-outcome-check.ts",
     "check:transfernotice": "npx --yes tsx scripts/transfer-notice-check.ts",
     "check:earningnotice": "npx --yes tsx scripts/earning-notice-check.ts",
-    "check:sweeps": "npx --yes tsx scripts/sweeps-check.ts"
+    "check:sweeps": "npx --yes tsx scripts/sweeps-check.ts",
+    "check:imageindex": "npx --yes tsx scripts/image-index-check.ts"
   },
   "dependencies": {
     "@aws-sdk/client-sns": "^3.1130.0",
