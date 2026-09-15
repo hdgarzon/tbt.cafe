@@ -1,5 +1,6 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextRequest, NextResponse, after } from 'next/server'
 import { createAdminClient } from '@/lib/supabase-admin'
+import { indexCertifiedImage } from '@/lib/image-index'
 import { isProduction, assertServerEnv } from '@/lib/app-env'
 import { wasDelivered } from '@/lib/notification-outcome'
 import { stripe } from '@/lib/stripe'
@@ -705,36 +706,16 @@ export async function POST(request: NextRequest) {
 
     console.log('TBT completion finished successfully')
 
-    // Register image in vector DB for future plagiarism checks (non-blocking)
+    /*
+     * La imagen entra al índice de originalidad DESPUÉS de responder, en
+     * `after()`: el creador no espera a que el procesador calcule el embedding,
+     * y el despliegue sí espera a que termine. Antes era un `fetch` suelto que
+     * serverless podía cortar y cuyo fallo solo quedaba en un log. Ahora cada
+     * desenlace queda registrado y un fallo abre un ticket (N10 b).
+     */
     if (work.media_url) {
-      try {
-        // `media_url` la escribe el navegador al crear el borrador, y aqui la
-        // lee el SERVIDOR. Sin comprobar el origen, una llamada preparada a
-        // mano haria que pidieramos una direccion interna y le pasaramos la
-        // respuesta al procesador de imagenes. La misma guarda que la de
-        // publicar (Item 10), por el mismo motivo.
-        const { assertPublishableSource } = await import('@/lib/chain/publish-image')
-        assertPublishableSource(work.media_url)
-
-        const imageRes = await fetch(work.media_url)
-        if (imageRes.ok) {
-          const blob = await imageRes.blob()
-          const imageForm = new FormData()
-          const fileName = work.media_url.split('/').pop() || 'image.jpg'
-          imageForm.append('file', blob, fileName)
-          const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
-          fetch(`${appUrl}/api/tbt-image/register`, {
-            method: 'POST',
-            // El token de quien llamo, como en las otras dos llamadas internas
-            // de esta ruta. Sin el, register es un endpoint abierto que
-            // cualquiera puede usar para envenenar el indice de similitud.
-            headers: { Authorization: `Bearer ${token}` },
-            body: imageForm,
-          }).catch((err) => console.warn('[tbt-image/register] background error:', err))
-        }
-      } catch (err) {
-        console.warn('[tbt-image/register] Could not fetch media_url:', err)
-      }
+      const mediaUrl: string = work.media_url
+      after(() => indexCertifiedImage({ workId: work.id, creatorId: work.creator_id, mediaUrl }))
     }
 
     return NextResponse.json({

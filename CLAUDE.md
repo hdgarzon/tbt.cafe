@@ -72,6 +72,7 @@ npm run check:transfernotice # both sides of a sale or transfer hear what happen
 npm run check:earningnotice # a royalty that lands available is told once; a pending one is not called ready
 npm run check:sweeps      # the release and lapse sweeps release the hold first, and stay unscheduled until Work Order 02
 npm run check:scan        # a scan that did not run is never clear; with the processor down, registration pauses
+npm run check:imageindex  # indexing a certified image is awaited, recorded either way, and a failure opens a ticket
 ```
 
 Each guard is a plain script under `scripts/`, written BEFORE the module it
