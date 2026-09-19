@@ -12,6 +12,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { authenticate } from '@/lib/route-auth'
 import { createAdminClient } from '@/lib/supabase-admin'
 import { loadAdmin, can, hasValidStepUp, STEP_UP_HEADER } from '@/lib/admin/guard'
+import { getImageIndexHealth } from '@/lib/image-index-health'
 
 
 export async function GET(request: NextRequest) {
@@ -46,7 +47,7 @@ export async function GET(request: NextRequest) {
      * ruta, ni el admin, ni una notificacion. La fila existia y aun asi nadie
      * se enteraba, que es la misma forma de fallo que el MMS.
      */
-    const [failures, recent, chainPending, mmsFailed, mmsUnknown, disputesOpen, disputesLost, disputesUnlinked, refundsTotal] = await Promise.all([
+    const [failures, recent, chainPending, mmsFailed, mmsUnknown, disputesOpen, disputesLost, disputesUnlinked, refundsTotal, imageIndex] = await Promise.all([
       supabase.rpc('provider_failure_summary', { window_hours: hours }),
       supabase
         .from('provider_events')
@@ -99,6 +100,11 @@ export async function GET(request: NextRequest) {
         .from('payment_disputes')
         .select('provider_ref', { count: 'exact', head: true })
         .eq('kind', 'refund'),
+
+      // El indice de originalidad — N10 (c). Una obra certificada con media y
+      // sin fila en image_vectors es un scan que no ha corrido, y un scan que
+      // no ha corrido no es un scan limpio.
+      getImageIndexHealth(supabase),
     ])
 
     // Latencia y tasa de éxito por proveedor, calculadas de la muestra traída.
@@ -140,6 +146,7 @@ export async function GET(request: NextRequest) {
         // mezclarlas es cómo un panel acaba diciendo que todo va bien.
         certificateDeliveriesUnknown: mmsUnknown.count ?? 0,
       },
+      imageIndex,
       // Se nombra lo que aún no se observa, para que un panel vacío no se lea
       // como "todo bien".
       notInstrumentedYet: ['arweave', 'opentimestamps', 'queue depths'],

@@ -335,12 +335,15 @@ const read = (p: string) => readFileSync(join(process.cwd(), p), 'utf8')
      route.includes('workWithCreator.chain_image_uri &&'))
   ok('el fallo de la imagen no tumba el registro',
      route.includes("console.error('[chain] no se pudo publicar la imagen:'"))
-  // La indexación salió de complete-tbt a image-index.ts (N10 b); la regla va con ella.
+  // La indexación salió de complete-tbt a image-index.ts (N10 b); la 049
+  // sacó la lectura de los bytes a un helper compartido que la corre por él.
   const indexer = read('src/lib/image-index.ts')
-  ok('el registro de imágenes también comprueba el origen antes de traerla',
-     indexer.indexOf('assertPublishableSource(params.mediaUrl)') > 0 &&
-     indexer.indexOf('assertPublishableSource(params.mediaUrl)') < indexer.indexOf('await fetch(params.mediaUrl'),
-     'esa lectura ya existía y no lo hacía')
+  ok('el registro de imágenes trae los bytes por el helper compartido',
+     indexer.includes("fetchStoredImageBytes(params.mediaUrl)"),
+     'assertPublishableSource vive dentro del helper — image-vectors-check lo pin')
+  ok('y llama al procesador después de haberlos leído',
+     indexer.indexOf('fetchStoredImageBytes(params.mediaUrl)') > 0 &&
+     indexer.indexOf('fetchStoredImageBytes(params.mediaUrl)') < indexer.indexOf('/embed'))
 }
 
 {
