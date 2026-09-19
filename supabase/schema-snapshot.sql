@@ -486,7 +486,8 @@ create table if not exists public.platform_config (
   settlement_high_threshold numeric(12,2) default 1000 not null,
   payout_platform_pct numeric(6,4) default 0.0230 not null,
   biometric_threshold numeric(12,2) default 500 not null,
-  three_ds_threshold numeric(12,2) default 1000 not null
+  three_ds_threshold numeric(12,2) default 1000 not null,
+  tbt_id_blocklist text[] not null default '{}'
 );
 
 create table if not exists public.covered_registrations (
@@ -765,7 +766,7 @@ alter table public.profiles add constraint profiles_id_fkey FOREIGN KEY (id) REF
 
 alter table public.works add constraint works_pkey PRIMARY KEY (id);
 alter table public.works add constraint works_tbt_id_key UNIQUE (tbt_id);
-alter table public.works add constraint valid_tbt_id CHECK ((tbt_id ~ '^TBT-[0-9]{4}-[A-Z0-9]{6}$'::text));
+alter table public.works add constraint valid_tbt_id CHECK ((tbt_id ~ '^[A-Z]{3}[0-9]{4}$'::text) OR (tbt_id = (id)::text));
 alter table public.works add constraint works_owner_index_check CHECK ((owner_index >= 1));
 alter table public.works add constraint works_creator_status_check CHECK ((creator_status = ANY (ARRAY['living'::text, 'deceased'::text, 'unknown'::text])));
 alter table public.works add constraint works_provenance_hash_check CHECK (((provenance_hash IS NULL) OR (provenance_hash ~ '^sha256:[0-9a-f]{64}$'::text)));
