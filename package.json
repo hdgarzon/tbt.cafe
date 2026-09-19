@@ -42,7 +42,9 @@
     "check:scan": "npx --yes tsx scripts/scan-check.ts",
     "check:imageindex": "npx --yes tsx scripts/image-index-check.ts",
     "check:roastquestions": "npx --yes tsx scripts/roast-questions-check.ts",
-    "check:stealth": "npx --yes tsx scripts/stealth-check.ts"
+    "check:stealth": "npx --yes tsx scripts/stealth-check.ts",
+    "check:imagevectors": "npx --yes tsx scripts/image-vectors-check.ts",
+    "reindex:images": "npx --yes tsx scripts/reindex-images.ts"
   },
   "dependencies": {
     "@aws-sdk/client-sns": "^3.1130.0",
