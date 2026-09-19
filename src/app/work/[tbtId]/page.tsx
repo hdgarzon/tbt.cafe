@@ -10,12 +10,26 @@
  * Toda la interfaz sigue en WorkClient; aquí solo se generan las etiquetas.
  */
 import { headers } from 'next/headers'
+import { permanentRedirect } from 'next/navigation'
 import type { Metadata } from 'next'
 import { createClient } from '@supabase/supabase-js'
 import { OG_LOCALE, localeFromAcceptLanguage, ogTitle, ogDescription, ogImageAlt } from '@/lib/og-copy'
 import WorkClient from './WorkClient'
 
 const SITE = 'https://tbt.cafe'
+
+/**
+ * El ID canonico es en mayusculas. Un enlace escrito a mano en minusculas
+ * (tbt.cafe/work/rro5501) se acepta y se redirige — Update Package 01, §3.
+ * El 308 conserva el metodo y le dice al buscador que la direccion definitiva
+ * es la otra, para que todo lo compartido se consolide en una sola.
+ */
+const SHORT_ID_LOWERCASE = /^[a-z]{3}[0-9]{4}$/
+function redirectToCanonicalCase(tbtId: string) {
+  if (SHORT_ID_LOWERCASE.test(tbtId)) {
+    permanentRedirect(`/work/${tbtId.toUpperCase()}`)
+  }
+}
 
 /** Cliente anónimo: la página de la obra es pública y el rastreador no trae sesión. */
 function publicClient() {
@@ -27,6 +41,7 @@ function publicClient() {
 
 export async function generateMetadata(props: { params: Promise<{ tbtId: string }> }): Promise<Metadata> {
   const params = await props.params;
+  redirectToCanonicalCase(params.tbtId)
   const locale = localeFromAcceptLanguage((await headers()).get('accept-language'))
   const canonical = `${SITE}/work/${params.tbtId}`
 
@@ -75,5 +90,6 @@ export async function generateMetadata(props: { params: Promise<{ tbtId: string 
 
 export default async function Page(props: { params: Promise<{ tbtId: string }> }) {
   const params = await props.params;
+  redirectToCanonicalCase(params.tbtId)
   return <WorkClient params={params} />
 }
