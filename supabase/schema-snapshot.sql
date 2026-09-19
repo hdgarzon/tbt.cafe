@@ -185,7 +185,6 @@ create table if not exists public.works (
   content_hash text,
   registration_record_uri text,
   registration_record_hash text,
-  owner_index integer default 1 not null,
   creator_status text default 'living'::text not null,
   provenance_hash text
 );
@@ -743,7 +742,6 @@ alter table public.profiles add constraint profiles_id_fkey FOREIGN KEY (id) REF
 alter table public.works add constraint works_pkey PRIMARY KEY (id);
 alter table public.works add constraint works_tbt_id_key UNIQUE (tbt_id);
 alter table public.works add constraint valid_tbt_id CHECK ((tbt_id ~ '^TBT-[0-9]{4}-[A-Z0-9]{6}$'::text));
-alter table public.works add constraint works_owner_index_check CHECK ((owner_index >= 1));
 alter table public.works add constraint works_creator_status_check CHECK ((creator_status = ANY (ARRAY['living'::text, 'deceased'::text, 'unknown'::text])));
 alter table public.works add constraint works_provenance_hash_check CHECK (((provenance_hash IS NULL) OR (provenance_hash ~ '^sha256:[0-9a-f]{64}$'::text)));
 alter table public.works add constraint works_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES profiles(id) ON DELETE RESTRICT;

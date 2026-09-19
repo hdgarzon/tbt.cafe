@@ -42,7 +42,7 @@ const sqlOf = (p: string) => read(p).split('\n').filter((l) => !l.trim().startsW
 
   const COLS = [
     ['titles', 'supersedes'], ['titles', 'kind'], ['titles', 'delivery_state'],
-    ['works', 'owner_index'], ['works', 'creator_status'], ['works', 'provenance_hash'],
+    ['works', 'creator_status'], ['works', 'provenance_hash'],
   ]
   for (let i = 0; i < COLS.length; i++) {
     const [t, c] = COLS[i]
@@ -52,11 +52,26 @@ const sqlOf = (p: string) => read(p).split('\n').filter((l) => !l.trim().startsW
   ok('delivery_state: pending, sent o failed', m.includes("check (delivery_state in ('pending', 'sent', 'failed'))"))
   ok('creator_status: living, deceased o unknown', m.includes("check (creator_status in ('living', 'deceased', 'unknown'))"))
   ok('provenance_hash con el formato de content_hash', m.includes("provenance_hash ~ '^sha256:[0-9a-f]{64}$'"))
-  ok(
-    'owner_index no se recalcula una vez avanzado',
-    /and w\.owner_index = 1/.test(m),
-    'forma parte del numero del titulo: reasignarlo rompe los ya emitidos'
-  )
+}
+
+// ---- owner_index se retira; ownership_history.sequence_number cubre lo mismo
+// — Update Package 01, Step 8 (correccion).
+{
+  const drop = readFileSync(join(root, 'supabase/migrations/051_drop_works_owner_index.sql'), 'utf8')
+  ok('051 dropea la columna', /drop column if exists owner_index/.test(drop))
+  ok('051 dropea su constraint', /drop constraint if exists works_owner_index_check/.test(drop))
+
+  const hits: string[] = []
+  const walk = (dir: string) => {
+    const names = readdirSync(join(root, dir))
+    for (let i = 0; i < names.length; i++) {
+      const rel = join(dir, names[i])
+      if (statSync(join(root, rel)).isDirectory()) walk(rel)
+      else if (/\.(ts|tsx)$/.test(rel) && /\bowner_index\b/.test(read(rel))) hits.push(rel)
+    }
+  }
+  walk('src')
+  ok('nadie bajo src lee owner_index', hits.length === 0, hits.join(', '))
 }
 
 // ---- ningun codigo escribe ya en la tabla vieja
@@ -83,7 +98,7 @@ const sqlOf = (p: string) => read(p).split('\n').filter((l) => !l.trim().startsW
   ok('snapshot: la tabla titles', snap.includes('create table if not exists public.titles ('))
   ok('snapshot: sin la tabla vieja', !snap.includes('create table if not exists public.certificates ('))
   ok('snapshot: la vista de transicion ya no esta', !/create (or replace )?view public\.certificates/.test(snap))
-  ok('snapshot: owner_index', snap.includes('owner_index integer default 1 not null'))
+  ok('snapshot: owner_index se retiro', !/owner_index/.test(snap), '051 lo dropeo; ownership_history.sequence_number cubre lo mismo')
   ok('snapshot: kind y delivery_state', snap.includes("kind text default 'standard'::text not null") && snap.includes("delivery_state text default 'pending'::text not null"))
 }
 
