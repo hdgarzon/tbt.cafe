@@ -61,16 +61,39 @@ const FILES = ['src/lib/roast-content.ts', 'src/lib/legal-content.ts', 'src/lib/
 // ---- la regalia se bifurca una vez, y la del creador no se reescribe
 {
   const text = read('src/lib/roast-content.ts')
-  ok('«registrant royalty» aparece una sola vez', hits(text, /registrant royalty/).length === 1)
+
+  // Con el articulo Bonded portado (Update Package 01, Step 11) el termino
+  // aparece dos veces: en el articulo dedicado y al final del articulo de la
+  // regalia general. La regla es que no se cuele en las tablas ni en las
+  // filas «Royalty to creator», que son la regalia del creador.
+  ok('«registrant royalty» aparece dos veces', hits(text, /registrant royalty/).length === 2)
+
+  const bonded = ROAST_ARTICLES.find((a) => a.id === 'bonded')
+  const bondedBody = bonded ? bonded.body : []
+  const bondedText = bondedBody.map((b) => (b.kind === 'p' ? b.html : '')).join(' ')
+  ok('y una es en el articulo Bonded', bondedText.includes('registrant royalty'))
 
   const article = ROAST_ARTICLES.find((a) => a.id === 'set-royalty')
   const body = article ? article.body : []
   const last = body.slice(-2).map((b) => (b.kind === 'p' ? b.html : '')).join(' ')
-  ok('y es al final del articulo de la regalia', last.includes('registrant royalty') && last.includes('redirected'))
+  ok('y la otra al final del articulo de la regalia', last.includes('registrant royalty') && last.includes('redirected'))
   ok(
     'las filas «Royalty to creator» siguen siendo tres',
     hits(text, /"Royalty to creator"/).length === 3,
     'en una obra de creador sigue siendo una regalia de creador'
+  )
+
+  // Companion 1.4: la frase con «locked at the first sale» queda retirada del
+  // articulo Bonded. La version corta —«it is locked, as every royalty is»—
+  // es correcta a ambos lados del cambio de disparador que llega en WO2.
+  ok(
+    'la frase vieja de la regalia no queda en Bonded',
+    !bondedText.includes('locked at the first sale'),
+    'companion 1.4: la version corta cubre el caso, y sobrevive al cambio de disparador de Work Order 02'
+  )
+  ok(
+    'y la nueva sustituye a la vieja',
+    bondedText.includes('it is locked, as every royalty is')
   )
 }
 
@@ -112,7 +135,16 @@ const FILES = ['src/lib/roast-content.ts', 'src/lib/legal-content.ts', 'src/lib/
 // Los tickets de sistema, la notificacion de registro, la tarjeta OG, la
 // descripcion del sitio y el panel. La notificacion prometia ademas una llave de
 // transferencia en el telefono: la llave no existe desde la migracion 046.
+//
+// Step 10 extiende el barrido — Update Package 01, §2: cubre las cabeceras de
+// los componentes de Brew, el correo, y suma `NFT` y `Token Basado` a lo que
+// no debe leerse en ningun sitio user-facing. La unica excepcion es el arreglo
+// de terminos de busqueda del asistente en knowledge.ts, que ya se cubre en su
+// propio bloque de arriba.
 {
+  // send-email/route.ts y send-sms/route.ts se reemplazan enteros en Stage 5
+  // (Addendum A, Steps 15 y 16) — no se barren aqui: cualquier texto que llevan
+  // hoy queda retirado por esa reescritura, no por este sweep.
   const MORE = [
     'src/lib/system-tickets.ts',
     'src/lib/email-templates.ts',
@@ -120,11 +152,17 @@ const FILES = ['src/lib/roast-content.ts', 'src/lib/legal-content.ts', 'src/lib/
     'src/app/layout.tsx',
     'src/app/admin/page.tsx',
     'src/lib/solana/config.ts',
+    'src/components/brew/EspressoFlow.tsx',
+    'src/components/brew/BrewWizard.tsx',
   ]
   const NOUN = /\bcertificates?\b|\bcertificats?\b|\bcertificados?\b/i
+  const NFT_TOKEN = /\bNFT\b|Token Basado/
   for (let f = 0; f < MORE.length; f++) {
-    const found = hits(read(MORE[f]), NOUN)
-    ok(`${MORE[f]}: sin «certificate»`, found.length === 0, found.slice(0, 3).join(', '))
+    const text = read(MORE[f])
+    const foundNoun = hits(text, NOUN)
+    ok(`${MORE[f]}: sin «certificate»`, foundNoun.length === 0, foundNoun.slice(0, 3).join(', '))
+    const foundNft = hits(text, NFT_TOKEN)
+    ok(`${MORE[f]}: sin «NFT» ni «Token Basado»`, foundNft.length === 0, foundNft.slice(0, 3).join(', '))
   }
 
   const templates = read('src/lib/email-templates.ts')
