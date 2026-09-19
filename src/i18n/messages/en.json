@@ -30,7 +30,7 @@
   "sections": {
     "roastTitle": "Roast",
     "roastSub": "TBT 101",
-    "roastNote": "Roast — learn everything about TBTs. What a Transferable Billable Token is, how registration works, royalties, and verification. The onboarding surface, in the spirit of an “NFT 101.”",
+    "roastNote": "Roast — learn everything about TBTs: what a Transferable Billable Token is, how registration works, royalties, and verification.",
     "grindTitle": "Grind",
     "grindSub": "Discover · Curate · Share · Compare",
     "grindNote": "Grind — the discovery floor. Browse, curate, share, and compare TBTs. (The Charts live here.)",
@@ -124,7 +124,7 @@
     "always": "always",
     "occasional": "occasionally",
     "privateCodeHint": "Asked in addition to the SMS code, per the frequency you choose.",
-    "biometricSignIn": "Biometric sign-in",
+    "biometricSignIn": "Biometric authentication",
     "biometricHint": "Adds to the SMS code; never replaces it. Per device.",
     "addDevice": "Add device",
     "activeDevices": "Active · {n} device",
@@ -170,12 +170,12 @@
     }
   },
   "biometric": {
-    "title": "Biometric sign-in",
+    "title": "Biometric authentication",
     "description": "Register this device with your fingerprint or face. Biometrics never leave the device — we only store a public key. It adds to the SMS code, never replaces it as your identity.",
     "setUp": "Set up",
     "prompting": "Follow your device's prompt…",
     "chooseMode": "How do you want to use biometrics on this device?",
-    "quickTitle": "Quick sign-in",
+    "quickTitle": "Quick authentication",
     "quickDesc": "One touch identifies you, no SMS code on this device.",
     "extraTitle": "Extra security layer",
     "extraDesc": "Biometrics required in addition to the SMS code.",
@@ -189,10 +189,10 @@
     },
     "chooseSave": "Save",
     "doneQuick": "On this device, a touch signs you in.",
-    "doneExtra": "Biometric will be required in addition to your login code."
+    "doneExtra": "Biometric will be required in addition to your verification code."
   },
   "biometricSignIn": {
-    "title": "Quick sign-in",
+    "title": "Quick authentication",
     "description": "Enter your phone to locate your registered device.",
     "continue": "Continue",
     "starting": "Starting…",
@@ -523,7 +523,7 @@
     "cancelDesc": "No charge was made.",
     "missingTransferId": "Missing transferId in the return URL.",
     "errors": {
-      "sessionExpired": "Session expired — sign in again.",
+      "sessionExpired": "Session expired — please authenticate again.",
       "completeFailed": "We couldn't complete the purchase"
     }
   },
@@ -623,7 +623,9 @@
     "curationsCount": "{n} curation",
     "curationsCountPlural": "{n} curations",
     "share": "Share",
-    "shareCopied": "Link copied"
+    "shareCopied": "Link copied",
+    "shareFailed": "Couldn’t copy",
+    "shareSelect": "Select and copy"
   },
   "curation": {
     "kicker": "Curations · this {what}",
@@ -763,7 +765,6 @@
       "printmaking": "Printmaking",
       "ceramics": "Ceramics",
       "textile": "Textile",
-      "nft": "NFT",
       "other": "Other"
     },
     "gateTitle": "Set up your profile first",
@@ -828,6 +829,7 @@
     "scanBlockBody": "Your image is a {score}% match to a registered work. Certification is paused.",
     "scanPausedNotice": "Registration is paused while our originality check is unavailable. Everything else works as usual.",
     "scanPausedMidBrew": "We couldn’t check originality just now, so registration is paused. Please come back a little later.",
+    "imageAlreadyRegistered": "This image is already registered on tbt.cafe by another creator.",
     "declareRelationship": "Declare the relationship",
     "declareOriginal": "Ownership affirmation",
     "declareOriginalSub": "I'm the original creator of this work.",
@@ -984,7 +986,7 @@
       "offer_expiring": "An offer is about to expire.",
       "new_location": "Authentication from a new location.",
       "new_device": "Authentication from a new device.",
-      "suspicious": "Suspicious activity on your account.",
+      "suspicious": "Suspicious activity detected.",
       "views_created": "A work you created is getting attention.",
       "views_collection": "A work in your collection is getting attention.",
       "favorites": "Activity on one of your favourites.",
