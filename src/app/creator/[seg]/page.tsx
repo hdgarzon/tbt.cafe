@@ -198,13 +198,15 @@ export default function CreatorPage(props: { params: Promise<{ seg: string }> })
           {
             key: 'featured',
             label: t.personal.tabFeatured,
+            // Sparkle relleno reemplaza al guante estirado — Update Package
+            // 01, N4. El guante se leia como "handling" a 22 px, y la pestaña
+            // significa "put forward". Un sparkle en trazo se vuelve espigado
+            // a este tamaño; relleno mantiene su chasquido.
             iconOnly: (
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.35" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                <path d="M9.6 12.6V5.9a1.15 1.15 0 0 1 2.3 0v5.8" />
-                <path d="M11.9 11.7V5.1a1.15 1.15 0 0 1 2.3 0v6.6" />
-                <path d="M14.2 11.7V6.1a1.15 1.15 0 0 1 2.3 0v6.9" />
-                <path d="M9.6 12.1L8.2 10.7a1.2 1.2 0 0 0-1.75 1.62l3.05 3.6v1.9h7.0v-4.9" />
-                <rect x="6.5" y="18.6" width="10.8" height="2.6" rx=".6" />
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                <path d="M10 3.8Q10 12.2 18.4 12.2Q10 12.2 10 20.6Q10 12.2 1.6 12.2Q10 12.2 10 3.8Z" />
+                <path d="M18.3 1.2Q18.3 5.1 22.2 5.1Q18.3 5.1 18.3 9Q18.3 5.1 14.4 5.1Q18.3 5.1 18.3 1.2Z" />
+                <path d="M18.3 14.5Q18.3 18.4 22.2 18.4Q18.3 18.4 18.3 22.3Q18.3 18.4 14.4 18.4Q18.3 18.4 18.3 14.5Z" />
               </svg>
             ),
           },
