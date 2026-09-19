@@ -53,7 +53,7 @@ export const getExplorerUrl = (address: string, type: 'address' | 'tx' = 'addres
   return `${baseUrl}/account/${address}${cluster}`
 }
 
-// NFT Collection info
+// Token collection info
 export const TBT_COLLECTION = {
   name: 'TBT Titles',
   symbol: 'TBT',

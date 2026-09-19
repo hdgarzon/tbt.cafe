@@ -887,7 +887,7 @@ export default function AdminPage() {
                 <div className="text-[11px] font-medium tracking-[0.16em] uppercase text-ink-soft mb-2">Chain</div>
                 <Row k="Network" v={work.chain.network ?? '—'} />
                 <Row k="Mint" v={work.chain.mintAddress ?? 'not written'} />
-                <Row k="NFT status" v={work.chain.nftStatus ?? '—'} />
+                <Row k="Token status" v={work.chain.nftStatus ?? '—'} />
                 {work.chain.explorerUrl && (
                   <a href={work.chain.explorerUrl} target="_blank" rel="noreferrer" className="text-[11px] text-ink-soft underline">
                     Open in explorer

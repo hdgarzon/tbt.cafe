@@ -188,14 +188,14 @@ export function BrewWizard() {
   const resolvedRef = useRef(false)
   const resumedRef = useRef(false)
   /**
-   * Certificar es caro y NO es idempotente: mintea, envía el certificado,
+   * Certificar es caro y NO es idempotente: mintea, emite el título,
    * descuenta la asignación cubierta y notifica. Se dispara una sola vez por
    * obra.
    *
    * Hace falta aquí y no en el efecto porque la guarda de aquel se pone después
    * de un `await`: cuando `connected` pasa de false a true el efecto vuelve a
    * correr, y las dos invocaciones pasan el control antes de que ninguna lo
-   * marque. Eso mandaba dos certificados y dos avisos por un solo registro.
+   * marque. Eso mandaba dos títulos y dos avisos por un solo registro.
    */
   const mintingRef = useRef<string | null>(null)
 
@@ -1273,7 +1273,7 @@ export function BrewWizard() {
             </div>
             {/* Titulares y Mercados: el prototipo los marca "live soon" — no hay
                 feed conectado. Van vacíos y editables en vez de con el texto de
-                ejemplo del demo: esto se sella en un certificado permanente y
+                ejemplo del demo: esto se sella en un registro permanente y
                 no vamos a inventar noticias en el registro de nadie. */}
             {(
               [
