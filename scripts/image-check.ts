@@ -231,7 +231,7 @@ const IMG_HASH = 'sha256:' + 'b'.repeat(64)
 const AR = 'https://arweave.net/8Kf2QpX'
 
 const base = {
-  tbtId: 'TBT-2026-ABC123',
+  tbtId: 'RRO5501',
   sequence: 1,
   contentHash: HASH,
   creator: { name: 'Sara Alarcón', id: 'cr_8812', type: 'individual' as const },
