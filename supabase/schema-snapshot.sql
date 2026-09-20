@@ -55,6 +55,7 @@
 
 create extension if not exists "uuid-ossp" with schema extensions;
 create extension if not exists pgcrypto with schema extensions;
+create extension if not exists vector with schema extensions;
 
 -- ── Secuencias ──────────────────────────────────────────────────────────────
 
@@ -187,11 +188,33 @@ create table if not exists public.works (
   registration_record_hash text,
   owner_index integer default 1 not null,
   creator_status text default 'living'::text not null,
-  provenance_hash text
+  provenance_hash text,
+  image_sha256 text
 );
 
 comment on column public.works.mint_address is
   'La direccion del NFT. La migracion 031 quito su gemela muerta nft_mint_address.';
+
+comment on column public.works.image_sha256 is
+  'SHA-256 (hex, sin prefijo) de los bytes tal como quedaron en works-media, calculado en el servidor. Federico condicion #3. Atrapa solo copias byte-identicas — una reencodificacion no. No es content_hash: aquel es el archivo de origen que solo tiene el creador, este es lo que nuestro almacen ve.';
+
+create index if not exists works_image_sha256_idx
+  on public.works (image_sha256) where image_sha256 is not null;
+
+create table if not exists public.image_vectors (
+  work_id uuid primary key references public.works(id) on delete cascade,
+  embedding extensions.vector(768) not null,
+  created_at timestamptz not null default now()
+);
+
+comment on table public.image_vectors is
+  'Embedding SigLIP de cada obra certificada. Solo el service role puede tocarla: un embedding es una representacion real de la imagen. Federico condicion #2.';
+
+comment on column public.image_vectors.embedding is
+  'SigLIP base (google/siglip-base-patch16-224), 768 dimensiones, L2-normalizadas por el procesador. Cambiar de modelo pide reconstruir la tabla.';
+
+create index if not exists image_vectors_embedding_idx
+  on public.image_vectors using hnsw (embedding extensions.vector_cosine_ops);
 
 create table if not exists public.work_commerce (
   id uuid default extensions.uuid_generate_v4() not null,
@@ -1051,6 +1074,7 @@ alter table public.curations enable row level security;
 alter table public.offers enable row level security;
 alter table public.roast_questions enable row level security;
 alter table public.plagiarism_scans enable row level security;
+alter table public.image_vectors enable row level security;
 
 -- ── Politicas ───────────────────────────────────────────────────────────────
 

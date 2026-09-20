@@ -3,6 +3,9 @@ import { createCheckoutSession, stripe, type CheckoutType } from '@/lib/stripe'
 import { SERVICE_FEE_CENTS, royaltyAmountOf, type RoyaltyType } from '@/lib/fees'
 import { trackProvider } from '@/lib/provider-events'
 import { authenticate } from '@/lib/route-auth'
+import { createAdminClient } from '@/lib/supabase-admin'
+import { fetchStoredImageBytes, computeImageSha256Hex } from '@/lib/image-bytes'
+import { findExactDuplicateByAnotherCreator } from '@/lib/image-dedup'
 
 
 export async function POST(request: NextRequest) {
@@ -53,7 +56,7 @@ export async function POST(request: NextRequest) {
     if (type === 'tbt_creation') {
       const { data: work, error: workError } = await supabase
         .from('works')
-        .select('id, creator_id, context_data')
+        .select('id, creator_id, context_data, media_url')
         .eq('id', workId)
         .single()
 
@@ -80,6 +83,41 @@ export async function POST(request: NextRequest) {
           { error: 'payment_window_expired', message: 'El sello venció. Vuelve a sellar la obra para registrarla.' },
           { status: 409 }
         )
+      }
+
+      /**
+       * El filtro exacto — Update Package 01, N10, Federico condicion #3.
+       *
+       * Se corre AQUI, antes de crear la sesion de Stripe: bloquear despues
+       * costaria un reembolso. La sha256 se calcula en el servidor desde los
+       * bytes de works-media, nunca desde nada que declare el navegador. Si
+       * otro creador ya certifico este mismo archivo, se rechaza.
+       *
+       * El propio creador puede volver a subir su archivo: la consulta filtra
+       * por `creator_id != user.id`. Solo la busqueda de similitud (image_vectors)
+       * cubre reencodificaciones — este filtro atrapa solo la copia byte-identica.
+       */
+      if (work.media_url) {
+        try {
+          const { bytes } = await fetchStoredImageBytes(work.media_url as string)
+          const imageSha256 = computeImageSha256Hex(bytes)
+          const dup = await findExactDuplicateByAnotherCreator(createAdminClient(), {
+            imageSha256,
+            currentCreatorId: user.id,
+          })
+          if (dup) {
+            return NextResponse.json(
+              { error: 'image_duplicate', tbtId: dup.tbtId },
+              { status: 409 }
+            )
+          }
+        } catch (dupError) {
+          // No es prudente cobrar cuando el filtro exacto no pudo correr. El
+          // creador vera un fallo generico; el operador lo vera en el log de
+          // esta ruta y podra decidir. Preferible a certificar sin filtro.
+          console.error('[create-checkout] dedup check failed:', dupError)
+          return NextResponse.json({ error: 'dedup_check_failed' }, { status: 503 })
+        }
       }
     } else if (type === 'transfer') {
       if (!transferId) {
