@@ -65,7 +65,7 @@ const OTHER = '7393fadd-77b1-4399-9bd9-2dee166b68be'
 // ---- los registros de verdad, ya seudonimizados
 {
   const reg = registrationRecord({
-    tbtId: 'TBT-2026-ABC123', sequence: 1,
+    tbtId: 'RRO5501', sequence: 1,
     contentHash: 'sha256:' + 'a'.repeat(64),
     creator: { name: 'Sara Alarcón', id: pseudonymFor(UUID), type: 'individual' },
     work: { title: 'Nocturno', year: 2026, originality: 'original' },
@@ -74,7 +74,7 @@ const OTHER = '7393fadd-77b1-4399-9bd9-2dee166b68be'
   ok('el registro de registración no lleva UUID', !UUID_RE.test(canonicalize(reg)))
 
   const prov = provenanceRecord({
-    tbtId: 'TBT-2026-ABC123', sequence: 2, event: 'sale',
+    tbtId: 'RRO5501', sequence: 2, event: 'sale',
     from: { name: 'Sara', id: pseudonymFor(UUID) },
     to: { name: 'Diego', id: pseudonymFor(OTHER) },
     occurredAt: new Date(Date.UTC(2026, 7, 27)),

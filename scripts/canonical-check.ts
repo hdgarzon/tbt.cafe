@@ -17,7 +17,7 @@ const throws = (label: string, fn: () => unknown) => {
   try { fn(); ok(label, false, 'no lanzo'); } catch { ok(label, true) }
 }
 
-const base = { schema: RECORD_SCHEMA, tbtId: 'TBT-2026-9FABA0' }
+const base = { schema: RECORD_SCHEMA, tbtId: 'RRO5501' }
 
 // ---- ida y vuelta: serializar, parsear, re-serializar, comparar bytes
 const roundTrip = (label: string, record: object) => {
