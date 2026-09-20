@@ -17,7 +17,7 @@ import { runSimilarityScan, describeImage, extractFields, generateContext } from
  * Las respuestas libres se estructuran en /api/espresso/extract (Gemini). Si
  * la extracción falla, los campos quedan VACÍOS y el creador los escribe: la
  * pantalla de revisión —no la transcripción— es la fuente de verdad, y esto
- * termina en un certificado permanente.
+ * termina en un registro permanente.
  */
 
 export type EspressoResult = {

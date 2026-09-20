@@ -128,6 +128,29 @@ export const ROAST_ARTICLES: RoastArticle[] = [
     ]
   },
   {
+    "id": "bonded",
+    "title": "Registering a work you did not make",
+    "minutes": 4,
+    "summary": "What a bonded title is, why the word is there, and how it comes off.",
+    "body": [
+      { "kind": "p", "html": "Most works are registered by the person who made them. Some are not. A painting bought at an estate sale, a piece inherited from a grandparent, a canvas whose artist died decades ago — these have owners, and they deserve a record, but nobody can ask the maker to confirm it." },
+      { "kind": "p", "html": "So tbt.cafe lets a <b>collector</b> register a work. What it issues is a <b>bonded title</b>." },
+      { "kind": "mark", "which": "transbit", "caption": "Why the word is there" },
+      { "kind": "p", "html": "A bonded title is a real title. It is valid, it transfers, it carries the same royalty machinery as any other. What the word marks is where the information came from: <b>the holder’s account of it, rather than the maker’s.</b>" },
+      { "kind": "p", "html": "This is borrowed from vehicle titles, where a car with an incomplete paper trail gets a bonded title rather than none at all. It is not a lesser document. It is an honest one, and the honesty is on its face where anyone can see it: the word <b>Bonded</b> sits before the word <b>Title</b> at the top." },
+      { "kind": "p", "html": "When you register someone else’s work you are asked what you know about them — whether they are living, where they worked, what they were known for, and how the work came to you. If nobody knows who made it, the creator is recorded as <b>Unattributed</b>, which is a real answer rather than a blank." },
+      { "kind": "p", "html": "None of that is verified at registration. That is precisely what the word admits." },
+      { "kind": "mark", "which": "brocha", "caption": "How the word comes off" },
+      { "kind": "p", "html": "A bonded title can become an ordinary one. tbt.cafe works with <b>certified authentication partners</b> — the local firms whose job is establishing whether a work is what it is claimed to be. They examine the piece, trace the creator or their estate, and obtain a sign-off." },
+      { "kind": "p", "html": "<b>If the creator is alive, they must sign off themselves.</b> Nobody can authenticate a living artist’s work over their head." },
+      { "kind": "p", "html": "When authentication succeeds a <b>new title is issued without the word Bonded</b>, and the old one is superseded — the same way a new title is issued every time a work changes hands." },
+      { "kind": "mark", "which": "transbit", "caption": "Where the royalty goes" },
+      { "kind": "p", "html": "On a bonded title the royalty accrues to the <b>collector who registered the work</b>. They bought it, held it, and did the work of bringing it onto the record. It is a <b>registrant royalty</b> rather than a creator royalty, and the platform names it that way so nobody is misled about whose it is." },
+      { "kind": "p", "html": "If authentication later finds the creator or their estate, the collector may <b>redirect</b> that royalty to them. The percentage itself does not change — it is locked, as every royalty is. What moves is where it is paid." },
+      { "kind": "p", "html": "And if a living creator finds their work registered by someone else, there is a way to say so. Every work page carries a route to <b>file a claim</b>, and a person reads it." }
+    ]
+  },
+  {
     "id": "set-royalty",
     "title": "Setting your royalty",
     "minutes": 3,
