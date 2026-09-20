@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useLocale } from '@/i18n/LocaleProvider'
 import { useShell } from '@/components/AppShell'
 import { HeartIcon, CurateIcon, ShareIcon } from '@/components/Brand'
@@ -34,7 +34,19 @@ export function WorkActions({
   const [saved, setSaved] = useState(false)
   const [curationCount, setCurationCount] = useState(0)
   const [curating, setCurating] = useState(false)
-  const [shareMsg, setShareMsg] = useState(false)
+  /**
+   * Estados del share, honestos — Update Package 01, N7.
+   *  · idle: sin mensaje.
+   *  · copied: el portapapeles acepto, se muestra "Link copied".
+   *  · failed: la API existe pero rechazo, se muestra "Couldn't copy" con
+   *    estilo distinto (no un exito con otro texto).
+   *  · select: no hay clipboard API — se pinta un input readonly con la URL
+   *    seleccionada y la instruccion "Select and copy". El usuario copia a mano.
+   * Todo revierte a idle a los 1.8 s salvo `select`, que se queda hasta que
+   * el usuario cierre el modo tocando fuera o volviendo a pulsar Share.
+   */
+  const [shareState, setShareState] = useState<'idle' | 'copied' | 'failed' | 'select'>('idle')
+  const selectRef = useRef<HTMLInputElement | null>(null)
 
   useEffect(() => {
     if (favorite) isFavorited(favorite.type, favorite.id).then(setSaved)
@@ -61,7 +73,16 @@ export function WorkActions({
     setSaved(result)
   }
 
+  function flash(state: 'copied' | 'failed') {
+    setShareState(state)
+    setTimeout(() => setShareState((s) => (s === state ? 'idle' : s)), 1800)
+  }
+
   async function onShare() {
+    if (shareState === 'select') {
+      setShareState('idle')
+      return
+    }
     if (navigator.share) {
       try {
         await navigator.share({ title: shareLabel, url: shareUrl })
@@ -70,19 +91,33 @@ export function WorkActions({
         // user cancelled the native sheet — fall through to clipboard
       }
     }
+    if (!navigator.clipboard) {
+      // Sin API — se muestra el enlace en un input y se selecciona todo.
+      // El foco y el select van en un useEffect al montar el input.
+      setShareState('select')
+      return
+    }
     try {
       await navigator.clipboard.writeText(shareUrl)
-      setShareMsg(true)
-      setTimeout(() => setShareMsg(false), 1600)
+      flash('copied')
     } catch {
-      // clipboard unavailable — nothing more we can do silently
+      // Existe la API pero fue rechazada — permission denied, iframe, o
+      // contexto no-seguro. Se dice, no se traga.
+      flash('failed')
     }
   }
+
+  useEffect(() => {
+    if (shareState === 'select' && selectRef.current) {
+      selectRef.current.focus()
+      selectRef.current.select()
+    }
+  }, [shareState])
 
   const curationTarget: CurationTarget = { type: curate.type, id: curate.id, label: curate.label }
 
   return (
-    <div className="flex items-center gap-1.5">
+    <div className="relative flex items-center gap-1.5">
       {favorite && (
         <button
           type="button"
@@ -113,15 +148,57 @@ export function WorkActions({
         )}
       </button>
 
-      <button
-        type="button"
-        onClick={onShare}
-        title={shareMsg ? t.actions.shareCopied : t.actions.share}
-        aria-label={t.actions.share}
-        className="w-8 h-8 flex items-center justify-center rounded-lg text-ink-soft hover:text-ink transition-colors"
-      >
-        <ShareIcon />
-      </button>
+      <div className="relative">
+        <button
+          type="button"
+          onClick={onShare}
+          title={
+            shareState === 'copied'
+              ? t.actions.shareCopied
+              : shareState === 'failed'
+                ? t.actions.shareFailed
+                : t.actions.share
+          }
+          aria-label={t.actions.share}
+          className="w-8 h-8 flex items-center justify-center rounded-lg text-ink-soft hover:text-ink transition-colors"
+        >
+          <ShareIcon />
+        </button>
+
+        {/* Toast breve para copied / failed. Estilos distintos: el exito
+            hereda tinta suave; el rechazo va en magenta para leerse como algo
+            que no salio. */}
+        {(shareState === 'copied' || shareState === 'failed') && (
+          <span
+            role="status"
+            className={`absolute top-full right-0 mt-1.5 whitespace-nowrap rounded-md border px-2 py-1 text-[10.5px] font-medium tracking-[0.04em] ${
+              shareState === 'copied'
+                ? 'border-hairline bg-paper-warm text-ink'
+                : 'border-t-magenta bg-paper text-t-magenta'
+            }`}
+          >
+            {shareState === 'copied' ? t.actions.shareCopied : t.actions.shareFailed}
+          </span>
+        )}
+      </div>
+
+      {/* Modo "seleccionar y copiar" — sin clipboard API, se muestra la URL
+          en un input readonly ya seleccionado, con la instruccion en voz alta. */}
+      {shareState === 'select' && (
+        <div className="absolute inset-x-0 top-full mt-2 z-10 mx-4 rounded-lg border border-hairline bg-paper p-2.5 shadow-sm">
+          <div className="mb-1.5 text-[10.5px] font-medium tracking-[0.14em] uppercase text-ink-soft">
+            {t.actions.shareSelect}
+          </div>
+          <input
+            ref={selectRef}
+            type="text"
+            readOnly
+            value={shareUrl}
+            onFocus={(e) => e.currentTarget.select()}
+            className="w-full rounded-md border border-hairline bg-paper-warm px-2.5 py-2 text-[12px] text-ink outline-none focus:border-ink"
+          />
+        </div>
+      )}
 
       <CurationModal
         open={curating}

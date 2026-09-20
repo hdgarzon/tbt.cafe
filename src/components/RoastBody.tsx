@@ -43,17 +43,25 @@ export function RoastBody({ body }: { body: RoastBlock[] }) {
 
         if (block.kind === 'triad') {
           return (
-            <div key={i} className="flex flex-col gap-3 my-1">
-              {block.rows.map((row) => (
-                <div key={row.chain} className="flex gap-3 border-t border-hairline pt-3">
-                  <div className="w-[68px] shrink-0 font-display text-[15px] leading-[1.2] text-ink">
+            <div
+              key={i}
+              className="my-5 overflow-hidden rounded-xl border border-hairline bg-paper-warm"
+            >
+              {block.rows.map((row, j) => (
+                <div
+                  key={row.chain}
+                  className={`flex gap-3.5 bg-paper px-4 py-3.5 ${
+                    j < block.rows.length - 1 ? 'border-b border-hairline' : ''
+                  }`}
+                >
+                  <div className="w-[62px] shrink-0 pt-px text-[11px] font-semibold tracking-[0.02em] text-ink">
                     {row.chain}
                   </div>
                   <div className="min-w-0 flex-1">
-                    <div className="text-[10px] tracking-[0.16em] uppercase text-placeholder">
+                    <div className="text-[9.5px] font-medium tracking-[0.16em] uppercase text-t-magenta">
                       {row.role}
                     </div>
-                    <div className="mt-1 text-[12.5px] leading-[1.6] text-ink-soft">
+                    <div className="mt-1 text-[11.5px] leading-[1.6] text-ink-soft">
                       {row.detail}
                     </div>
                   </div>

@@ -63,25 +63,28 @@ export function CurationModal({
     setIsPublic(true)
     setMsg('')
     fetchCurations(target.type, target.id).then(setList)
-
     /*
-     * La puerta va AL ABRIR, no al publicar — Gating Spec 01, ítem 4.
-     *
-     * Antes se comprobaba dentro del envío: la persona puntuaba técnica, color
-     * y significado, escribía su curación, elegía pública o privada, pulsaba
-     * Publicar, y SOLO ENTONCES se le pedía entrar. Todo lo escrito seguía en
-     * pantalla y nada se había guardado.
-     *
-     * El sheet se abre ENCIMA y el modal no se cierra: al terminar, las notas y
-     * el texto siguen ahí. Cerrarlo obligaría a hacer el trabajo dos veces, que
-     * es peor que el defecto.
+     * Leer no pide sesion — Update Package 01, N6. Antes se pedia autenticacion
+     * AL ABRIR el modal, aunque el visitante solo quisiera leer lo que otros
+     * escribieron. Ahora la puerta va al pulsar "Add your curation" (mas abajo)
+     * y en `submit` como respaldo, para la sesion que caduca con el formulario
+     * abierto. `openAuth({ resume })` reanuda ESE envio con lo escrito.
      */
-    supabase.auth.getUser().then(({ data: { user } }) => {
-      if (!user) openAuth()
-    })
-    // `openAuth` es estable — cuelga del shell, no de este render.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, target])
+
+  /**
+   * Abrir el formulario. Si nadie firmo sesion, se pide primero y al volver
+   * se reabre con el form ya abierto — la nota del paquete es literal:
+   * "Ask at 'Add your curation', then reopen the panel with the writing form
+   * already open".
+   */
+  async function beginAdding() {
+    const {
+      data: { user },
+    } = await supabase.auth.getUser()
+    if (!user) return openAuth({ resume: () => setAdding(true) })
+    setAdding(true)
+  }
 
   if (!open || !target) return null
 
@@ -180,7 +183,7 @@ export function CurationModal({
         {!adding && (
           <button
             type="button"
-            onClick={() => setAdding(true)}
+            onClick={beginAdding}
             className="w-full mt-2 py-3.5 text-[12px] font-semibold tracking-[0.14em] uppercase border border-hairline rounded-xl text-ink hover:border-ink transition-colors"
           >
             {t.curation.addYours}

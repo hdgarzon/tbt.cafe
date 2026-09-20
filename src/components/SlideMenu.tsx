@@ -25,13 +25,16 @@ import { CloseIcon, CaretIcon } from '@/components/Brand'
  * misma lista mirada desde los dos lados, y partirla en dos rutas habría
  * duplicado la consulta para cambiar un `where`.
  *
- * Language sigue siendo un selector INLINE dentro de Settings, con
- * confirmación antes de aplicar (Master Handoff §6). locale/setLocale vienen
- * del LocaleProvider compartido, no de props.
+ * Language vive fuera de Settings — Update Package 01, N5. Un visitante sin
+ * sesion no puede expandir Settings (auth-gated), y meter alli el selector
+ * dejaba a alguien que llega en frances viendo el menu en ingles sin manera
+ * de cambiarlo. Ahora es una fila propia debajo de los cinco grupos, con la
+ * misma confirmacion antes de aplicar (Master Handoff §6). locale/setLocale
+ * vienen del LocaleProvider compartido, no de props.
  */
 
 type Child = { label: string; href: string; count?: number; accent?: boolean }
-type Group = { key: string; label: string; children: Child[]; hasLanguage?: boolean; count?: number }
+type Group = { key: string; label: string; children: Child[]; count?: number }
 
 /**
  * Píldora de conteo. En cero no se pinta: una píldora permanente con un número
@@ -178,7 +181,6 @@ export function SlideMenu({ open, onClose }: { open: boolean; onClose: () => voi
     {
       key: 'settings',
       label: t.menu.settings,
-      hasLanguage: true,
       // Orden del prototipo. Help no está en su menú —cuelga del icono de
       // notificaciones— pero se conserva: es la única puerta con URL propia.
       children: [
@@ -275,37 +277,41 @@ export function SlideMenu({ open, onClose }: { open: boolean; onClose: () => voi
                       </span>
                     </a>
                   ))}
-
-                  {group.hasLanguage && (
-                    <div className={`${subItemClass} border-t border-hairline flex items-center justify-between cursor-default`}>
-                      <span>{t.menu.language}</span>
-                      <div className="relative flex items-center gap-1.5 px-[9px] py-[5px] border border-hairline rounded-lg bg-paper cursor-pointer hover:border-ink transition-colors">
-                        <span className="text-[15px] leading-none" aria-hidden="true">
-                          {localeMeta[locale].flag}
-                        </span>
-                        <span className="text-[11px] font-semibold tracking-[0.1em] text-ink">{localeMeta[locale].code}</span>
-                        <span className="text-ink-soft shrink-0">
-                          <CaretIcon />
-                        </span>
-                        <select
-                          value={locale}
-                          onChange={(e) => handleLocaleChange(e.target.value as Locale)}
-                          aria-label={t.menu.language}
-                          className="absolute inset-0 w-full h-full opacity-0 cursor-pointer text-base"
-                        >
-                          {locales.map((l) => (
-                            <option key={l} value={l}>
-                              {localeMeta[l].flag} {localeMeta[l].code}
-                            </option>
-                          ))}
-                        </select>
-                      </div>
-                    </div>
-                  )}
                 </div>
               </div>
             )
           })}
+
+          {/* Selector de idioma — Update Package 01, N5. Fuera del acordeon
+              de Settings, para que un visitante sin sesion pueda cambiarlo. */}
+          <div className="flex items-center justify-between border-b border-hairline px-[22px] py-4">
+            <span className="text-[13px] font-medium tracking-[0.18em] uppercase text-ink">
+              {t.menu.language}
+            </span>
+            <div className="relative flex items-center gap-1.5 px-[9px] py-[5px] border border-hairline rounded-lg bg-paper cursor-pointer hover:border-ink transition-colors">
+              <span className="text-[15px] leading-none" aria-hidden="true">
+                {localeMeta[locale].flag}
+              </span>
+              <span className="text-[11px] font-semibold tracking-[0.1em] text-ink">
+                {localeMeta[locale].code}
+              </span>
+              <span className="text-ink-soft shrink-0">
+                <CaretIcon />
+              </span>
+              <select
+                value={locale}
+                onChange={(e) => handleLocaleChange(e.target.value as Locale)}
+                aria-label={t.menu.language}
+                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer text-base"
+              >
+                {locales.map((l) => (
+                  <option key={l} value={l}>
+                    {localeMeta[l].flag} {localeMeta[l].code}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
         </div>
       </nav>
     </>
