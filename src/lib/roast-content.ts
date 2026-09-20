@@ -37,118 +37,37 @@ export const ROAST_ARTICLES: RoastArticle[] = [
     "id": "what-is-a-tbt",
     "title": "What a TBT is",
     "minutes": 4,
-    "summary": "Transferable Billable Token — anchored on Bitcoin, sailing on Solana, engraved in Arweave.",
+    "summary": "Transferable Billable Token — anchored on Bitcoin, sailing on Solana, treasured in Arweave.",
     "body": [
-      {
-        "kind": "p",
-        "html": "<b>TBT</b> stands for <b>Transferable Billable Token</b>. Each of those three words is doing work, and the last one is the noun."
-      },
-      {
-        "kind": "p",
-        "html": "A TBT <b>is a token</b>. Not a document describing a token, and not a receipt for one held elsewhere. It is an object that exists on-chain, that you hold, that moves when you move it, and that anyone can verify without asking us."
-      },
-      {
-        "kind": "p",
-        "html": "It lives across three blockchains at once — <b>anchored on Bitcoin, sailing on Solana, engraved in Arweave</b>. Each one does something the others cannot."
-      },
+      { "kind": "p", "html": "<b>TBT</b> stands for <b>Transferable Billable Token</b>." },
+      { "kind": "p", "html": "It lives across three blockchains at once — <b>anchored on Bitcoin, sailing on Solana, treasured in Arweave</b>. Each one does something the others cannot." },
       {
         "kind": "triad",
         "rows": [
-          {
-            "chain": "Bitcoin",
-            "role": "Anchored",
-            "detail": "A fingerprint of the record is timestamped to the most durable chain there is. It proves the record existed when we say it did, and has not been altered since — including by us."
-          },
-          {
-            "chain": "Solana",
-            "role": "Sailing",
-            "detail": "The token itself lives here, and moves here. Fast enough that a transfer completes while you are still looking at the screen, and public enough that anyone can check who holds it."
-          },
-          {
-            "chain": "Arweave",
-            "role": "Engraved",
-            "detail": "The record itself — title, creator, year, the statement made at registration — stored permanently, paid once, with no subscription keeping it alive."
-          }
+          { "chain": "Bitcoin", "role": "Anchor", "detail": "An anchor is dropped at the moments that matter — registration, and every change of ownership. Each one timestamps a fingerprint of the record to the most durable chain there is, proving it existed when we say it did and has not been altered since — including by us." },
+          { "chain": "Solana", "role": "Sailing", "detail": "The token is minted here when a work is registered. It is public, so anyone can confirm the registration without asking us." },
+          { "chain": "Arweave", "role": "Treasured", "detail": "The record itself — title, creator, year, the statement made at registration — and, where the creator chooses to publish it, an image of the work. Stored permanently, paid once, with no subscription keeping it alive." }
         ]
       },
-      {
-        "kind": "p",
-        "html": "Using all three together is <b>the first of its kind</b>. Most systems pick one chain and accept its weaknesses. A TBT takes what each does best: Bitcoin’s permanence, Solana’s speed, Arweave’s storage. The result is a record that is fast to move, cheap to keep, and effectively impossible to falsify."
-      },
-      {
-        "kind": "p",
-        "html": "What the token carries is the point:"
-      },
-      {
-        "kind": "p",
-        "html": "<b>Authorship.</b> Who made the work, and when. Sealed at registration and never rewritten — the title of authorship lives inside the token."
-      },
-      {
-        "kind": "p",
-        "html": "<b>Ownership.</b> Who holds it now. Not our word for it: the asset sits in a wallet, and an ordinary blockchain explorer will tell you whose."
-      },
-      {
-        "kind": "p",
-        "html": "<b>History.</b> Every hand it has passed through, in order, with dates and values. Provenance that accumulates rather than resets."
-      },
-      {
-        "kind": "p",
-        "html": "<b>Commercial terms.</b> Its price, its availability, and the creator’s royalty — which travels with the token permanently and pays out on every future sale. This is the <b>billable</b> part, and it is what a title alone could never do."
-      },
-      {
-        "kind": "p",
-        "html": "So a title of authorship is one of the things a TBT holds. It is not the whole of what a TBT is."
-      },
-      {
-        "kind": "p",
-        "html": "<b>Transferable</b> means it moves, and the moving is recorded. Sell it, gift it, pass it to an institution — each movement is written to the chain and joins the history. Ownership genuinely changes hands rather than being noted in someone’s database."
-      },
-      {
-        "kind": "p",
-        "html": "<b>Billable</b> means it carries money. A price when it is for sale. A royalty that returns to the creator on every resale, <b>enforced at settlement</b> rather than left to the goodwill of whoever handles the next transaction. A work that keeps earning for the person who made it."
-      },
-      {
-        "kind": "mark",
-        "which": "transbit",
-        "caption": "Where the TBT comes from"
-      },
-      {
-        "kind": "p",
-        "html": "The TBT was not invented for art. It came from <b>finance</b>, and it is still used there."
-      },
-      {
-        "kind": "p",
-        "html": "<b>Transb.it</b> built the TBT to manage transfers — value arriving in one form, such as a card payment or cash, and moving to another. The token manages the movement itself: what was paid, what is owed, where it is going, and what happens at each step. It is in use today with <b>banks, credit unions and cooperatives</b>."
-      },
-      {
-        "kind": "p",
-        "html": "That is why it works for art. The problem an artist has — proving what is theirs, moving it safely, and being paid every time it changes hands — is a transfer problem. It had already been solved somewhere more demanding."
-      },
-      {
-        "kind": "mark",
-        "which": "brocha",
-        "caption": "The cultural half"
-      },
-      {
-        "kind": "p",
-        "html": "<b>BROCHA</b> — the <i>Bella Orden Rebelde de Campeones por el Arte Elevado</i> — is a decentralised collective and creative movement founded by the painter <b>Sara Alarcón</b> in Medellín. BROCHA leads the cultural side of this work and curates the first TBT-certified collection."
-      },
-      {
-        "kind": "p",
-        "html": "Sara’s leadership is the reason this is built the way it is: for the <b>artist with a phone</b>, without wallets, without jargon, without asking anyone to learn a new vocabulary in order to keep what is already theirs."
-      },
-      {
-        "kind": "p",
-        "html": "<i>“TBTs aren’t about technology. They’re about dignity. It’s about making sure a girl drawing in a village has the same global power as someone in New York or London.”</i> — Sara Alarcón"
-      },
-      {
-        "kind": "p",
-        "html": "The <b>Transferable Billable Token</b> was invented by <b>Federico Lara</b>, a futurist and technologist, and founder of Transb.it. tbt.cafe is the collaboration between Transb.it and BROCHA."
-      },
-      {
-        "kind": "p",
-        "html": "One last thing, and it is the reason for all three chains: <b>none of this depends on tbt.cafe continuing to exist.</b> The token is on Solana, the record is engraved in Arweave, the timestamp is anchored to Bitcoin. If we disappear tomorrow, what you hold survives."
-      }
+      { "kind": "p", "html": "Using all three together is <b>the first of its kind</b>. Most systems pick one chain and accept its weaknesses. A TBT takes what each does best: Bitcoin’s permanence, Solana’s speed, Arweave’s storage. The result is a record that is fast to move, cheap to keep, and effectively impossible to falsify." },
+      { "kind": "p", "html": "What the token carries is the point:" },
+      { "kind": "p", "html": "<b>Authorship.</b> Who made the work, and when. Sealed at registration and never rewritten — the title of authorship lives inside the token." },
+      { "kind": "p", "html": "<b>Ownership.</b> Who holds it now, and everyone who held it before. Each change is recorded and published to the permanent record, where it cannot be quietly rewritten." },
+      { "kind": "p", "html": "<b>History.</b> Every hand it has passed through, in order, with dates and values. Provenance that accumulates rather than resets." },
+      { "kind": "p", "html": "<b>Commercial terms.</b> Its price, its availability, and the creator’s royalty — which travels with the token permanently and pays out on every future sale. This is the <b>billable</b> part, and it is what a title alone could never do." },
+      { "kind": "p", "html": "So a title of authorship is one of the things a TBT holds. It is not the whole of what a TBT is." },
+      { "kind": "p", "html": "<b>Transferable</b> means it moves, and the moving is recorded. Sell it, gift it, pass it to an institution — each movement joins the history, is published to the permanent record, and is anchored to Bitcoin." },
+      { "kind": "p", "html": "<b>Billable</b> means it carries money. A price when it is for sale. A royalty that returns to the creator on every resale, <b>enforced at settlement</b> rather than left to the goodwill of whoever handles the next transaction. A work that keeps earning for the person who made it." },
+      { "kind": "mark", "which": "transbit", "caption": "Creator of the TBT" },
+      { "kind": "p", "html": "The TBT was not invented for art. It came from <b>finance</b>, and it is still used there." },
+      { "kind": "p", "html": "<b>Transb.it</b> built the TBT to manage transfers — value arriving in one form, such as a card payment or cash, and moving to another. The token manages the movement itself: what was paid, what is owed, where it is going, and what happens at each step. It is in use today with <b>banks, credit unions and cooperatives</b>." },
+      { "kind": "p", "html": "That is why it works for art. An artist can finally prove what is theirs, move ownership safely, and get paid every time it changes hands." },
+      { "kind": "mark", "which": "brocha", "caption": "The Artist Collective" },
+      { "kind": "p", "html": "<b>BROCHA</b> — the <i>Beautiful Rebellious Order of Champions for the Arts</i> — is a decentralised collective and creative movement founded by the painter <b>Sara Alarcón</b> in Medellín. BROCHA leads the cultural side of this work and curates the first TBT-certified collection." },
+      { "kind": "p", "html": "Sara’s leadership is the reason this is built the way it is: for the <b>artist with a phone</b>, without wallets, without jargon, without asking anyone to learn a new vocabulary in order to keep what is already theirs." },
+      { "kind": "p", "html": "<i>“TBTs aren’t about technology. They’re about dignity. It’s about making sure a girl drawing in a village has the same global power as someone in New York or London.”</i> — Sara Alarcón" },
+      { "kind": "p", "html": "The <b>Transferable Billable Token</b> was invented by <b>Federico Lara</b>, a futurist and technologist, and founder of Transb.it. tbt.cafe is the collaboration between Transb.it and BROCHA." },
+      { "kind": "p", "html": "One last thing, and it is the reason for all three chains: <b>none of this depends on tbt.cafe continuing to exist.</b> The token is on Solana, the record is treasured in Arweave, the timestamp is anchored to Bitcoin. If we disappear tomorrow, the record of what you hold survives." }
     ]
   },
   {
@@ -630,7 +549,7 @@ export const ROAST_ARTICLES: RoastArticle[] = [
       },
       {
         "kind": "p",
-        "html": "Your <b>ownership record</b> is on Solana. Anyone with an ordinary blockchain explorer can look up the asset and see who holds it. No involvement from us is required."
+        "html": "Your work’s <b>registration</b> is a token on Solana, which anyone can look up without asking us. Every change of ownership since is published to the permanent record and anchored to Bitcoin."
       },
       {
         "kind": "p",

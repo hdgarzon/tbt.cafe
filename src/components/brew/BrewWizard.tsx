@@ -83,7 +83,7 @@ const STEP_PROGRESS: Record<Step, number> = {
 
 const CATEGORY_KEYS = [
   'painting', 'sculpture', 'digitalArt', 'photography', 'illustration', 'script',
-  'music', 'video', 'mixedMedia', 'printmaking', 'ceramics', 'textile', 'nft', 'other',
+  'music', 'video', 'mixedMedia', 'printmaking', 'ceramics', 'textile', 'other',
 ] as const
 
 const CURRENCIES = ['USD', 'EUR', 'COP', 'MXN']

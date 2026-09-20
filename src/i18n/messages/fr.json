@@ -30,7 +30,7 @@
   "sections": {
     "roastTitle": "Roast",
     "roastSub": "TBT 101",
-    "roastNote": "Roast — apprenez tout sur les TBT. Ce qu’est un Token Transférable Facturable, comment fonctionne l’enregistrement, les redevances et la vérification. La surface d’intégration, dans l’esprit d’un « NFT 101 ».",
+    "roastNote": "Roast — apprenez tout sur les TBT : ce qu’est un Token Transférable Facturable, le fonctionnement de l’enregistrement, les redevances et la vérification.",
     "grindTitle": "Grind",
     "grindSub": "Découvrir · Curation · Partager · Comparer",
     "grindNote": "Grind — l’étage de la découverte. Parcourez, faites la curation, partagez et comparez les TBT. (Les Classements vivent ici.)",
@@ -124,7 +124,7 @@
     "always": "toujours",
     "occasional": "occasionnel",
     "privateCodeHint": "Demandé en plus du code SMS, selon la fréquence choisie.",
-    "biometricSignIn": "Connexion biométrique",
+    "biometricSignIn": "Authentification biométrique",
     "biometricHint": "S'ajoute au code SMS ; ne le remplace jamais. Par appareil.",
     "addDevice": "Ajouter un appareil",
     "activeDevices": "Actif · {n} appareil",
@@ -170,12 +170,12 @@
     }
   },
   "biometric": {
-    "title": "Connexion biométrique",
+    "title": "Authentification biométrique",
     "description": "Enregistrez cet appareil avec votre empreinte ou votre visage. La biométrie ne quitte jamais l'appareil — nous ne stockons qu'une clé publique. S'ajoute au code SMS, ne le remplace jamais comme identité.",
     "setUp": "Configurer",
     "prompting": "Suivez l'indication de votre appareil…",
     "chooseMode": "Comment voulez-vous utiliser la biométrie sur cet appareil ?",
-    "quickTitle": "Connexion rapide",
+    "quickTitle": "Authentification rapide",
     "quickDesc": "Un contact vous identifie, sans code SMS sur cet appareil.",
     "extraTitle": "Couche de sécurité supplémentaire",
     "extraDesc": "La biométrie est requise en plus du code SMS.",
@@ -189,10 +189,10 @@
     },
     "chooseSave": "Enregistrer",
     "doneQuick": "Sur cet appareil, un contact vous connecte.",
-    "doneExtra": "La biométrie sera exigée en plus de votre code de connexion."
+    "doneExtra": "La biométrie sera demandée en plus de votre code de vérification."
   },
   "biometricSignIn": {
-    "title": "Connexion rapide",
+    "title": "Authentification rapide",
     "description": "Entrez votre téléphone pour localiser votre appareil enregistré.",
     "continue": "Continuer",
     "starting": "Démarrage…",
@@ -523,7 +523,7 @@
     "cancelDesc": "Aucun montant n'a été débité.",
     "missingTransferId": "transferId manquant dans l'URL de retour.",
     "errors": {
-      "sessionExpired": "Session expirée — reconnectez-vous.",
+      "sessionExpired": "Session expirée — veuillez vous authentifier à nouveau.",
       "completeFailed": "Nous n'avons pas pu finaliser l'achat"
     }
   },
@@ -623,7 +623,9 @@
     "curationsCount": "{n} curation",
     "curationsCountPlural": "{n} curations",
     "share": "Partager",
-    "shareCopied": "Lien copié"
+    "shareCopied": "Lien copié",
+    "shareFailed": "Copie impossible",
+    "shareSelect": "Sélectionnez et copiez"
   },
   "curation": {
     "kicker": "Curations · cette {what}",
@@ -763,7 +765,6 @@
       "printmaking": "Gravure",
       "ceramics": "Céramique",
       "textile": "Textile",
-      "nft": "NFT",
       "other": "Autre"
     },
     "gateTitle": "Configurez d'abord votre profil",
@@ -828,6 +829,7 @@
     "scanBlockBody": "Votre image correspond à {score}% à une œuvre enregistrée. La certification est suspendue.",
     "scanPausedNotice": "L’enregistrement est suspendu tant que notre vérification d’originalité est indisponible. Tout le reste fonctionne normalement.",
     "scanPausedMidBrew": "Nous n’avons pas pu vérifier l’originalité pour le moment, l’enregistrement est donc suspendu. Revenez un peu plus tard.",
+    "imageAlreadyRegistered": "Cette image est déjà enregistrée sur tbt.cafe par un autre créateur.",
     "declareRelationship": "Déclarez la relation",
     "declareOriginal": "Affirmation de propriété",
     "declareOriginalSub": "Je suis le créateur original de cette œuvre.",
@@ -984,7 +986,7 @@
       "offer_expiring": "Une offre va bientôt expirer.",
       "new_location": "Authentification depuis un nouveau lieu.",
       "new_device": "Authentification depuis un nouvel appareil.",
-      "suspicious": "Activité suspecte sur votre compte.",
+      "suspicious": "Activité suspecte détectée.",
       "views_created": "Une de vos œuvres attire l'attention.",
       "views_collection": "Une œuvre de votre collection attire l'attention.",
       "favorites": "Activité sur l'un de vos favoris.",

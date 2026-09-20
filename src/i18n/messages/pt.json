@@ -30,7 +30,7 @@
   "sections": {
     "roastTitle": "Roast",
     "roastSub": "TBT 101",
-    "roastNote": "Roast — aprenda tudo sobre os TBT. O que é um Token Transferível Faturável, como funciona o registro, os direitos autorais e a verificação. A superfície de integração, no espírito de um “NFT 101”.",
+    "roastNote": "Roast — aprenda tudo sobre os TBT: o que é um Token Transferível Faturável, como funciona o registro, os royalties e a verificação.",
     "grindTitle": "Grind",
     "grindSub": "Descobrir · Curar · Partilhar · Comparar",
     "grindNote": "Grind — o piso de descoberta. Explore, cure, partilhe e compare TBT. (As Listas vivem aqui.)",
@@ -124,7 +124,7 @@
     "always": "sempre",
     "occasional": "ocasional",
     "privateCodeHint": "Solicitado além do código SMS, conforme a frequência escolhida.",
-    "biometricSignIn": "Entrada biométrica",
+    "biometricSignIn": "Autenticação biométrica",
     "biometricHint": "Soma-se ao código SMS; nunca o substitui. Por dispositivo.",
     "addDevice": "Adicionar dispositivo",
     "activeDevices": "Ativo · {n} dispositivo",
@@ -170,12 +170,12 @@
     }
   },
   "biometric": {
-    "title": "Entrada biométrica",
+    "title": "Autenticação biométrica",
     "description": "Registre este dispositivo com sua digital ou rosto. A biometria nunca sai do dispositivo — guardamos apenas uma chave pública. Soma-se ao código SMS, nunca o substitui como sua identidade.",
     "setUp": "Configurar",
     "prompting": "Siga a indicação do seu dispositivo…",
     "chooseMode": "Como você quer usar a biometria neste dispositivo?",
-    "quickTitle": "Entrada rápida",
+    "quickTitle": "Autenticação rápida",
     "quickDesc": "Um toque te identifica, sem código SMS neste dispositivo.",
     "extraTitle": "Camada extra de segurança",
     "extraDesc": "A biometria é exigida além do código SMS.",
@@ -189,10 +189,10 @@
     },
     "chooseSave": "Guardar",
     "doneQuick": "Neste dispositivo, um toque dá-lhe acesso.",
-    "doneExtra": "Será exigida biometria além do seu código de acesso."
+    "doneExtra": "Será pedida biometria além do seu código de verificação."
   },
   "biometricSignIn": {
-    "title": "Entrada rápida",
+    "title": "Autenticação rápida",
     "description": "Digite seu celular para localizar o dispositivo registrado.",
     "continue": "Continuar",
     "starting": "Iniciando…",
@@ -523,7 +523,7 @@
     "cancelDesc": "Nenhuma cobrança foi feita.",
     "missingTransferId": "Falta transferId na URL de retorno.",
     "errors": {
-      "sessionExpired": "Sessão expirada — entre novamente.",
+      "sessionExpired": "A sessão expirou — autentique-se novamente.",
       "completeFailed": "Não conseguimos concluir a compra"
     }
   },
@@ -623,7 +623,9 @@
     "curationsCount": "{n} curadoria",
     "curationsCountPlural": "{n} curadorias",
     "share": "Compartilhar",
-    "shareCopied": "Link copiado"
+    "shareCopied": "Link copiado",
+    "shareFailed": "Não foi possível copiar",
+    "shareSelect": "Selecione e copie"
   },
   "curation": {
     "kicker": "Curadorias · esta {what}",
@@ -763,7 +765,6 @@
       "printmaking": "Gravura",
       "ceramics": "Cerâmica",
       "textile": "Têxtil",
-      "nft": "NFT",
       "other": "Outra"
     },
     "gateTitle": "Configure seu perfil primeiro",
@@ -828,6 +829,7 @@
     "scanBlockBody": "Sua imagem tem {score}% de correspondência com uma obra registrada. A certificação está pausada.",
     "scanPausedNotice": "O registro está pausado enquanto nossa verificação de originalidade está indisponível. Todo o resto funciona normalmente.",
     "scanPausedMidBrew": "Não conseguimos verificar a originalidade agora, por isso o registro está pausado. Volte um pouco mais tarde.",
+    "imageAlreadyRegistered": "Esta imagem já está registrada no tbt.cafe por outro criador.",
     "declareRelationship": "Declare a relação",
     "declareOriginal": "Afirmação de propriedade",
     "declareOriginalSub": "Sou o criador original desta obra.",
@@ -984,7 +986,7 @@
       "offer_expiring": "Uma oferta está prestes a vencer.",
       "new_location": "Autenticação de um novo local.",
       "new_device": "Autenticação de um novo dispositivo.",
-      "suspicious": "Atividade suspeita na sua conta.",
+      "suspicious": "Atividade suspeita detectada.",
       "views_created": "Uma obra sua está chamando atenção.",
       "views_collection": "Uma obra da sua coleção está chamando atenção.",
       "favorites": "Atividade em um dos seus favoritos.",

@@ -50,7 +50,7 @@ export const LEGAL_DOCS: LegalDoc[] = [
       },
       {
         "kind": "p",
-        "html": "<b>BROCHA</b> — <i>Bella Orden Rebelde de Campeones por el Arte Elevado</i> — is a decentralised collective and creative movement founded by the painter <b>Sara Alarcón</b> in Medellín, dedicated to elevating art through collaboration, cultural rebellion and education. BROCHA curates the first TBT-certified collection and leads the cultural side of the work."
+        "html": "<b>BROCHA</b> — <i>Beautiful Rebellious Order of Champions for the Arts</i> — is a decentralised collective and creative movement founded by the painter <b>Sara Alarcón</b> in Medellín, dedicated to elevating art through collaboration, cultural rebellion and education. BROCHA curates the first TBT-certified collection and leads the cultural side of the work."
       },
       {
         "kind": "p",
@@ -357,7 +357,7 @@ export const LEGAL_DOCS: LegalDoc[] = [
       },
       {
         "kind": "p",
-        "html": "Ownership is written to <b>Solana</b>. The record is stored permanently on <b>Arweave</b>. A fingerprint of it is <b>anchored to Bitcoin</b>, which proves the record existed when we say it did and has not been altered since — including by us."
+        "html": "Registration is written to <b>Solana</b>. The record of the work, and of every change of ownership, is stored permanently on <b>Arweave</b>. A fingerprint of each record is <b>anchored to Bitcoin</b>, which proves the record existed when we say it did and has not been altered since — including by us."
       },
       {
         "kind": "p",
@@ -437,8 +437,10 @@ export const LEGAL_DOCS: LegalDoc[] = [
         "kind": "ul",
         "items": [
           "<b>Stripe</b> — to take payments and make payouts.",
-          "<b>Twilio</b> — to send verification codes and delivery confirmations by SMS.",
-          "<b>SendGrid</b> — to send email notifications.",
+          "<b>Supabase</b> — to store platform data and to run authentication, including sending verification codes.",
+          "<b>Amazon Web Services</b> — to send text messages, and to run the originality check on registered images.",
+          "<b>Twilio</b> — to deliver verification codes by text message.",
+          "<b>Resend</b> — to send e-Mail.",
           "<b>Public blockchains</b> — Solana, Arweave and Bitcoin, for the records described above.",
           "<b>Our AI provider</b> — to operate the assistant.",
           "<b>Authorities</b> — where we are legally required."
