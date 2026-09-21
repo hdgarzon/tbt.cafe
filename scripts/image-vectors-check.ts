@@ -133,7 +133,7 @@ for (const lang of ['en', 'es', 'pt', 'fr'] as const) {
 
   ok('lee certificadas con media', /\.eq\('status', 'certified'\)[\s\S]{0,200}\.not\('media_url', 'is', null\)/.test(src))
   ok('reusa indexCertifiedImage', /indexCertifiedImage\(\{/.test(src))
-  ok('rechaza correr sin URL del procesador', /if \(!process\.env\.TBT_IMAGE_PROCESSOR_URL\)[\s\S]{0,300}return 1/.test(src))
+  ok('rechaza correr sin HF_TOKEN', /if \(!process\.env\.HF_TOKEN\)[\s\S]{0,300}return 1/.test(src))
 }
 
 // ---- npm script

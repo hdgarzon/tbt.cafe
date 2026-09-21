@@ -52,22 +52,27 @@ ok(
   'era un endpoint con sesion que podia alimentar el indice y ocultaba cada fallo',
 )
 
-// ---- image-index
+// ---- image-index (pivotado a HF Inference API — sin procesador propio)
 {
   const src = code(readIf('src/lib/image-index.ts'))
 
   ok('existe indexCertifiedImage', /export async function indexCertifiedImage\(/.test(src))
-  ok('lee la URL dentro de la funcion, no al importar', /function indexCertifiedImage[\s\S]*process\.env\.TBT_IMAGE_PROCESSOR_URL/.test(src))
+  ok('lee el token dentro de la funcion, no al importar', /function indexCertifiedImage[\s\S]*process\.env\.HF_TOKEN/.test(src))
   ok('trae los bytes con la guarda de origen compartida', src.includes("fetchStoredImageBytes(params.mediaUrl)"))
   ok('importa el helper de bytes', /from '@\/lib\/image-bytes'/.test(src))
   ok('calcula la sha256 en el servidor', src.includes("computeImageSha256Hex(bytes)"))
-  ok('llama al procesador en /embed', /fetch\(`\$\{url\}\/embed`/.test(src))
-  ok('ya no llama al viejo /images del procesador', !/`\$\{url\}\/images`/.test(src))
-  ok('manda la clave del procesador', src.includes("'X-API-Key': key"))
+  // El `code()` de arriba borra los comentarios de linea, y una URL `https://`
+  // parece un comentario. Buscamos sobre la fuente cruda.
+  const raw = readIf('src/lib/image-index.ts')
+  ok('llama al Inference API de HuggingFace', /api-inference\.huggingface\.co\/models\//.test(raw))
+  ok('apunta al modelo SigLIP base', /google\/siglip-base-patch16-224/.test(raw))
+  ok('ya no llama al viejo /embed del procesador propio', !/`\$\{url\}\/embed`/.test(src) && !/`\$\{url\}\/images`/.test(src))
+  ok('manda el bearer token', /Authorization: `Bearer \$\{token\}`/.test(src))
+  ok('pide que HF espere el modelo en frio', /'X-Wait-For-Model': 'true'/.test(src))
 
-  ok('valida que la respuesta trae 768 numeros', /payload\.embedding[\s\S]{0,120}length !== EXPECTED_EMBEDDING_DIM/.test(src))
-  ok('valida el dim declarado', /payload\.dim !== EXPECTED_EMBEDDING_DIM/.test(src))
-  ok('valida el modelo esperado', /payload\.model[\s\S]{0,120}startsWith\(EXPECTED_MODEL_PREFIX\)/.test(src))
+  ok('valida que la respuesta trae 768 numeros', /flat\.length !== EXPECTED_EMBEDDING_DIM/.test(src))
+  ok('acepta tanto number\\[\\] como number\\[\\]\\[\\]', /Array\.isArray\(payload\[0\]\)/.test(src), 'HF puede devolver batch de uno o vector plano — ambos ok, otras formas fallan')
+  ok('rechaza valores no finitos', /Number\.isFinite/.test(src))
 
   ok('sube el vector a image_vectors por upsert', /from\('image_vectors'\)[\s\S]{0,200}\.upsert\(\{[\s\S]{0,200}onConflict: 'work_id'/.test(src))
   ok('escribe la sha256 sobre works.image_sha256', /from\('works'\)[\s\S]{0,200}\.update\(\{ image_sha256: imageSha256/.test(src))
@@ -80,8 +85,8 @@ ok(
 
   ok('un fallo abre un ticket de sistema', src.includes("eventCode: 'image_index_failed'"))
   ok('el ticket es sobre la obra y su creador', /fileSystemTicket\([^)]*\{[\s\S]{0,200}userId: params\.creatorId,[\s\S]{0,120}entityType: 'work',[\s\S]{0,80}entityId: params\.workId/.test(src))
-  ok('sin URL configurada tambien es un fallo, no un silencio', /if \(!url\) \{[\s\S]{0,400}return fail\(/.test(src))
-  ok('una respuesta no-ok del procesador es un fallo', /if \(!response\.ok\) \{?[\s\S]{0,300}return fail\(/.test(src))
+  ok('sin token configurado es un fallo, no un silencio', /if \(!token\) \{[\s\S]{0,400}return fail\(/.test(src))
+  ok('una respuesta no-ok de HF es un fallo', /if \(!response\.ok\) \{?[\s\S]{0,300}return fail\(/.test(src))
   ok('un upsert fallido de image_vectors es un fallo', /image_vectors_upsert_failed/.test(src))
   ok('un update fallido de image_sha256 es un fallo', /works_image_sha256_write_failed/.test(src))
   ok('nunca lanza', /export async function indexCertifiedImage[\s\S]*try \{[\s\S]*\} catch \(error\) \{[\s\S]*return fail\(/.test(src))
