@@ -154,6 +154,11 @@ const FILES = ['src/lib/roast-content.ts', 'src/lib/legal-content.ts', 'src/lib/
     'src/lib/solana/config.ts',
     'src/components/brew/EspressoFlow.tsx',
     'src/components/brew/BrewWizard.tsx',
+    // La cabecera de esta ruta describia el modelo antiguo (certificado + llave
+    // privada por MMS). La llave se retiro con la 046, el certificado paso a
+    // titulo con la 045, y el envio pasa a link en Stage 5. El comentario se
+    // acompaña al codigo.
+    'src/app/transfer/accept/[transferId]/page.tsx',
   ]
   const NOUN = /\bcertificates?\b|\bcertificats?\b|\bcertificados?\b/i
   const NFT_TOKEN = /\bNFT\b|Token Basado/
