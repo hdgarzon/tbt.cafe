@@ -12,12 +12,12 @@ import { recordProviderEvent } from '@/lib/provider-events'
  * Solo dice sí o no, y si la causa es configuración o caída; nada del
  * proveedor sale de aquí.
  *
- * PIVOTADO A HF INFERENCE API (21 sept 2026, sin presupuesto para procesador
- * propio). En vez de pingar `${TBT_IMAGE_PROCESSOR_URL}/health`, se pregunta a
- * HF por el estado del modelo con `GET /status/{model_id}`. HF distingue
- * `loaded` (respuesta inmediata) de `preloading` (cold; primer request se
- * demora) — cualquiera de los dos deja el registro abierto porque la ruta de
- * similarity ya pide `X-Wait-For-Model`.
+ * PIVOTADO A HF ROUTER (22 sept 2026). HuggingFace retiro el dominio
+ * `api-inference.huggingface.co` y su endpoint `/status/{model}`. El health
+ * ahora hace un GET ligero al pipeline de feature-extraction con el token: HF
+ * responde 4xx o 5xx segun el problema (401/403 = token rechazado, 5xx =
+ * caida). Un 405 (GET no permitido, la ruta espera POST) es tambien una
+ * confirmacion de que HF esta arriba — la contamos como disponible.
  *
  * La respuesta se guarda 30 s en memoria: el inicio la consulta al cargar, al
  * recuperar el foco y cada minuto, y no hace falta molestar a HF en cada una.
@@ -26,11 +26,11 @@ import { recordProviderEvent } from '@/lib/provider-events'
  */
 export const dynamic = 'force-dynamic'
 
-const TIMEOUT_MS = 5_000
+const TIMEOUT_MS = 8_000
 const CACHE_MS = 30_000
 
 const HF_MODEL = 'google/siglip-base-patch16-224'
-const HF_STATUS_URL = `https://api-inference.huggingface.co/status/${HF_MODEL}`
+const HF_PROBE_URL = `https://router.huggingface.co/hf-inference/models/${HF_MODEL}/pipeline/feature-extraction`
 
 type Health = { available: true } | { available: false; reason: 'setup' | 'outage' }
 
@@ -59,18 +59,21 @@ async function probe(): Promise<Health> {
   if (!token) return down('setup', 'token_unset')
 
   try {
-    const response = await fetch(HF_STATUS_URL, {
+    // GET sobre una ruta POST-only responde 405 con token valido, o 401/403
+    // con token invalido. Cualquiera de las dos dice "HF esta arriba". Un 5xx
+    // o un fetch failed dicen que no.
+    const response = await fetch(HF_PROBE_URL, {
+      method: 'GET',
       headers: { Authorization: `Bearer ${token}` },
       cache: 'no-store',
       signal: AbortSignal.timeout(TIMEOUT_MS),
     })
     if (response.status === 401 || response.status === 403) return down('setup', 'token_rejected')
-    if (!response.ok) return down('outage', `http_${response.status}`)
-
-    // `state` puede ser 'Loadable' (cold, se levanta al primer request) o
-    // 'Loaded' (warm). Ambos son "disponible" para nosotros — similarity envia
-    // X-Wait-For-Model y espera. Solo un 4xx/5xx aqui es motivo de pausa.
-    return { available: true }
+    // 405 Method Not Allowed es la respuesta esperada del pipeline con GET —
+    // confirma que la ruta existe y el token es aceptado. Cualquier 4xx no
+    // relacionada a auth cuenta como caida; los 5xx tambien.
+    if (response.status === 405 || response.ok) return { available: true }
+    return down('outage', `http_${response.status}`)
   } catch (error) {
     return down('outage', 'unreachable', error)
   }
