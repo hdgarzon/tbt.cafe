@@ -64,7 +64,7 @@ ok(
   // El `code()` de arriba borra los comentarios de linea, y una URL `https://`
   // parece un comentario. Buscamos sobre la fuente cruda.
   const raw = readIf('src/lib/image-index.ts')
-  ok('llama al Inference API de HuggingFace', /api-inference\.huggingface\.co\/models\//.test(raw))
+  ok('llama al router de HuggingFace', /router\.huggingface\.co\/hf-inference\/models\//.test(raw))
   ok('apunta al modelo SigLIP base', /google\/siglip-base-patch16-224/.test(raw))
   ok('ya no llama al viejo /embed del procesador propio', !/`\$\{url\}\/embed`/.test(src) && !/`\$\{url\}\/images`/.test(src))
   ok('manda el bearer token', /Authorization: `Bearer \$\{token\}`/.test(src))

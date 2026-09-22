@@ -36,7 +36,9 @@ const THRESHOLD_BLOCK = 0.9
 const THRESHOLD_WARN = 0.75
 
 const HF_MODEL = 'google/siglip-base-patch16-224'
-const HF_INFERENCE_URL = `https://api-inference.huggingface.co/models/${HF_MODEL}`
+// HuggingFace retiro `api-inference.huggingface.co` — todo el trafico va por
+// el router con rutas por pipeline.
+const HF_INFERENCE_URL = `https://router.huggingface.co/hf-inference/models/${HF_MODEL}/pipeline/feature-extraction`
 const EXPECTED_EMBEDDING_DIM = 768
 
 /** HF Inference: 30 s con warm, hasta 90 s con cold. 120 s de margen. */

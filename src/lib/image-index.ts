@@ -48,7 +48,10 @@ export type IndexOutcome = 'indexed' | 'failed'
 /** El modelo publico de HF. Cambiarlo pide reconstruir la tabla entera —
  *  la columna es `vector(768)` y otro modelo puede tener otra dimension. */
 const HF_MODEL = 'google/siglip-base-patch16-224'
-const HF_INFERENCE_URL = `https://api-inference.huggingface.co/models/${HF_MODEL}`
+// HuggingFace retiro `api-inference.huggingface.co` en 2026 y migro todo a
+// `router.huggingface.co` con rutas por pipeline. Feature-extraction devuelve
+// el mismo shape (`number[]` o `number[][]`) que la API antigua.
+const HF_INFERENCE_URL = `https://router.huggingface.co/hf-inference/models/${HF_MODEL}/pipeline/feature-extraction`
 
 /** SigLIP base — la unica dimension que la columna `vector(768)` acepta. */
 const EXPECTED_EMBEDDING_DIM = 768

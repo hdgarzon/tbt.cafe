@@ -18,7 +18,9 @@ import { authenticate } from '@/lib/route-auth'
  */
 
 const BLIP_MODEL = 'Salesforce/blip-image-captioning-large'
-const HF_INFERENCE_URL = `https://api-inference.huggingface.co/models/${BLIP_MODEL}`
+// HuggingFace retiro `api-inference.huggingface.co` — todo el trafico va por
+// el router con rutas por pipeline. BLIP entra por image-to-text.
+const HF_INFERENCE_URL = `https://router.huggingface.co/hf-inference/models/${BLIP_MODEL}/pipeline/image-to-text`
 const TIMEOUT_MS = 60_000
 
 const STOP_WORDS = new Set([
