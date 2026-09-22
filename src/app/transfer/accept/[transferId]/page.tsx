@@ -9,10 +9,13 @@ import { fetchTransferForAccept, respondTransfer, type TransferForAccept } from 
 /**
  * /transfer/accept/[transferId] — el lado del RECIPIENTE (Transfer & Commerce
  * Companion). Llega por link de SMS; puede no tener cuenta todavía, así que
- * esta vista crea autenticación inline antes de aceptar/rechazar. El
- * certificado y la llave privada se entregan por MMS al aceptar — NUNCA en
- * pantalla (screenshot risk), así que esta pantalla solo confirma que se
- * envió, no lo muestra.
+ * esta vista crea autenticación inline antes de aceptar/rechazar. Un título
+ * nuevo se emite al aceptar y llega como enlace por SMS —y por e-Mail si hay
+ * dirección—; esta pantalla solo confirma que se envió, no muestra el título.
+ *
+ * El modelo antiguo (documento + llave por MMS) queda retirado: la llave se
+ * fue con la 046, el documento pasó a título con la 045, y el envío pasa a
+ * link en Stage 5.
  */
 export default function TransferAcceptPage(props: { params: Promise<{ transferId: string }> }) {
   const params = use(props.params);
