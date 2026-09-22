@@ -10,21 +10,27 @@ import { recordProviderEvent } from '@/lib/provider-events'
  *
  * SIN SESIÓN, a propósito: el aviso se ve en el inicio antes de autenticar.
  * Solo dice sí o no, y si la causa es configuración o caída; nada del
- * procesador sale de aquí.
+ * proveedor sale de aquí.
  *
- * Pregunta dos cosas. `/health` es público y dice si el servicio responde,
- * pero no pide la clave; una clave rechazada también deja el registro sin
- * escaneo, así que se hace además una lectura mínima con ella.
+ * PIVOTADO A HF INFERENCE API (21 sept 2026, sin presupuesto para procesador
+ * propio). En vez de pingar `${TBT_IMAGE_PROCESSOR_URL}/health`, se pregunta a
+ * HF por el estado del modelo con `GET /status/{model_id}`. HF distingue
+ * `loaded` (respuesta inmediata) de `preloading` (cold; primer request se
+ * demora) — cualquiera de los dos deja el registro abierto porque la ruta de
+ * similarity ya pide `X-Wait-For-Model`.
  *
  * La respuesta se guarda 30 s en memoria: el inicio la consulta al cargar, al
- * recuperar el foco y cada minuto, y no hace falta molestar al procesador en
- * cada una. Solo se registra el fallo: un sondeo que va bien cada minuto
- * llenaría provider_events de filas que no dicen nada.
+ * recuperar el foco y cada minuto, y no hace falta molestar a HF en cada una.
+ * Solo se registra el fallo: un sondeo que va bien cada minuto llenaría
+ * provider_events de filas que no dicen nada.
  */
 export const dynamic = 'force-dynamic'
 
 const TIMEOUT_MS = 5_000
 const CACHE_MS = 30_000
+
+const HF_MODEL = 'google/siglip-base-patch16-224'
+const HF_STATUS_URL = `https://api-inference.huggingface.co/status/${HF_MODEL}`
 
 type Health = { available: true } | { available: false; reason: 'setup' | 'outage' }
 
@@ -42,8 +48,7 @@ function reply(value: Health) {
 }
 
 async function probe(): Promise<Health> {
-  const url = process.env.TBT_IMAGE_PROCESSOR_URL
-  const key = process.env.TBT_IMAGE_PROCESSOR_API_KEY
+  const token = process.env.HF_TOKEN
   const started = Date.now()
 
   async function down(reason: 'setup' | 'outage', code: string, error?: unknown): Promise<Health> {
@@ -51,21 +56,20 @@ async function probe(): Promise<Health> {
     return reason === 'setup' ? { available: false, reason: 'setup' } : { available: false, reason: 'outage' }
   }
 
-  if (!url) return down('setup', 'url_unset')
-  if (!key) return down('setup', 'key_missing')
+  if (!token) return down('setup', 'token_unset')
 
   try {
-    const health = await fetch(`${url}/health`, { cache: 'no-store', signal: AbortSignal.timeout(TIMEOUT_MS) })
-    if (!health.ok) return down('outage', `http_${health.status}`)
-
-    const keyed = await fetch(`${url}/images?limit=1`, {
-      headers: { 'X-API-Key': key },
+    const response = await fetch(HF_STATUS_URL, {
+      headers: { Authorization: `Bearer ${token}` },
       cache: 'no-store',
       signal: AbortSignal.timeout(TIMEOUT_MS),
     })
-    if (keyed.status === 401 || keyed.status === 403) return down('setup', 'key_rejected')
-    if (!keyed.ok) return down('outage', `http_${keyed.status}`)
+    if (response.status === 401 || response.status === 403) return down('setup', 'token_rejected')
+    if (!response.ok) return down('outage', `http_${response.status}`)
 
+    // `state` puede ser 'Loadable' (cold, se levanta al primer request) o
+    // 'Loaded' (warm). Ambos son "disponible" para nosotros — similarity envia
+    // X-Wait-For-Model y espera. Solo un 4xx/5xx aqui es motivo de pausa.
     return { available: true }
   } catch (error) {
     return down('outage', 'unreachable', error)

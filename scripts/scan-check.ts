@@ -51,25 +51,33 @@ const INFO = code(read('src/components/work/InfoTab.tsx'))
 }
 
 // ---- (f) la ruta del escaneo distingue configuración de caída, y lo registra
+//
+// Update Package 01, N9. Pivotado a HF Inference API (21 sept 2026): sin
+// procesador propio, el embedding va a HF y la busqueda es contra
+// `image_vectors` (pgvector). El shape de fallos y provider_events se mantiene
+// — el nombre del proveedor sigue siendo `image_processor` para conservar la
+// serie temporal en la vista de observabilidad.
 {
-  ok('lee la configuración al atender, no al importar', /export async function POST[\s\S]*process\.env\.TBT_IMAGE_PROCESSOR_URL/.test(SIMILARITY))
-  ok('sin URL: configuración', /if \(!url\) return unavailable\('setup', 'url_unset'\)/.test(SIMILARITY))
-  ok('sin clave: configuración', /if \(!key\) return unavailable\('setup', 'key_missing'\)/.test(SIMILARITY))
-  ok('clave rechazada: configuración', /response\.status === 401 \|\| response\.status === 403\) return unavailable\('setup', 'key_rejected'\)/.test(SIMILARITY))
-  ok('otra respuesta no-ok: caída', /if \(!response\.ok\) return unavailable\('outage', `http_\$\{response\.status\}`\)/.test(SIMILARITY))
+  ok('lee la configuración al atender, no al importar', /export async function POST[\s\S]*process\.env\.HF_TOKEN/.test(SIMILARITY))
+  ok('sin token: configuración', /if \(!token\) return unavailable\('setup', 'token_unset'\)/.test(SIMILARITY))
+  ok('token rechazado: configuración', /embedResponse\.status === 401 \|\| embedResponse\.status === 403\) return unavailable\('setup', 'token_rejected'\)/.test(SIMILARITY))
+  ok('otra respuesta no-ok: caída', /if \(!embedResponse\.ok\) return unavailable\('outage', `http_\$\{embedResponse\.status\}`\)/.test(SIMILARITY))
   ok('una excepción: caída', /catch \(error\) \{\s*return unavailable\('outage', 'unreachable', error\)/.test(SIMILARITY))
   ok('no disponible responde 503', SIMILARITY.includes("NextResponse.json({ status: 'unavailable', reason }, { status: 503 })"))
   ok('el fallo queda en provider_events', /recordProviderEvent\(\{ provider: 'image_processor', operation: 'search_images', ok: false/.test(SIMILARITY))
   ok('y el escaneo que sí corrió también', /recordProviderEvent\(\{ provider: 'image_processor', operation: 'search_images', ok: true/.test(SIMILARITY))
+  ok('llama al Inference API de HuggingFace', /api-inference\.huggingface\.co\/models\//.test(read('src/app/api/tbt-image/similarity/route.ts')))
+  ok('busca en image_vectors', /from\('image_vectors'\)/.test(SIMILARITY))
 }
 
 // ---- (c, e) comprobación previa: /health
 {
+  const HEALTH_RAW = readIf('src/app/api/tbt-image/health/route.ts')
   ok('existe la ruta de estado', HEALTH.length > 0)
   ok('no pide sesión: el aviso lo ve cualquiera en el inicio', !HEALTH.includes('authenticate('))
   ok('es dinámica', HEALTH.includes("export const dynamic = 'force-dynamic'"))
-  ok('pregunta al /health del procesador', HEALTH.includes('`${url}/health`'))
-  ok('y prueba la clave, que /health no pide', HEALTH.includes('`${url}/images?limit=1`') && HEALTH.includes("'X-API-Key': key"))
+  ok('pregunta al status de HuggingFace', /api-inference\.huggingface\.co\/status\//.test(HEALTH_RAW))
+  ok('con el bearer token', /Authorization: `Bearer \$\{token\}`/.test(HEALTH))
   ok('distingue configuración', /available: false, reason: 'setup'/.test(HEALTH))
   ok('de caída', /available: false, reason: 'outage'/.test(HEALTH))
   ok('no se cachea en el navegador', HEALTH.includes("'Cache-Control': 'no-store'"))
