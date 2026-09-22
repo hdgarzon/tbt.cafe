@@ -50,15 +50,22 @@ const curation = read('src/components/CurationModal.tsx')
      actions.includes('openAuth({ resume: onFavorite })'))
 }
 
-// ---- curación: la puerta va al abrir
+// ---- curacion: leer no pide sesion, el boton "Add your curation" si
+//
+// Update Package 01, N6 (ya aplicado en PR #112). Antes la puerta iba al
+// abrir el modal — un visitante bloqueado sin haber leido nada. Ahora la
+// lectura queda abierta y `beginAdding` es la que pide autenticacion, con
+// resume para reabrir el form ya listo para escribir.
 {
   const effect = curation.slice(curation.indexOf('useEffect(() => {'), curation.indexOf('if (!open || !target) return null'))
-  ok('se comprueba la sesión AL ABRIR', effect.includes('openAuth()'),
-     'comprobarlo al publicar tira el trabajo ya escrito')
-  ok('y el envío conserva su respaldo, con reanudación',
-     curation.includes('openAuth({ resume: submit })'))
-  ok('el modal no se cierra al pedir sesión', !effect.includes('onClose()'),
-     'el sheet se abre encima; cerrarlo obligaría a escribirlo todo otra vez')
+  ok('leer no pide sesion al abrir el modal', !effect.includes('openAuth()'),
+     'Federico N6: reading is open, the door goes on "Add your curation"')
+  ok('el boton "Add your curation" es la puerta', curation.includes("openAuth({ resume: () => setAdding(true) })"),
+     'y al volver reabre el form ya abierto, sin exigir buscar la obra otra vez')
+  ok('el envio conserva su respaldo, con reanudacion', curation.includes('openAuth({ resume: submit })'),
+     'sesion que caduca con el formulario abierto: se retoma con lo escrito')
+  ok('el modal no se cierra al pedir sesion', !effect.includes('onClose()'),
+     'el sheet se abre encima; cerrarlo obligaria a escribirlo todo otra vez')
 }
 
 // ---- la puerta compartida
