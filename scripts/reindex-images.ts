@@ -28,12 +28,12 @@ import { indexCertifiedImage } from '@/lib/image-index'
  *
  * Requiere las mismas variables que la ruta del embedder:
  *   NEXT_PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY
- *   HF_TOKEN
+ *   TBT_IMAGE_PROCESSOR_URL, TBT_IMAGE_PROCESSOR_API_KEY
  */
 
 async function main(): Promise<number> {
-  if (!process.env.HF_TOKEN) {
-    console.error('reindex: HF_TOKEN no esta configurado. Nada que hacer.')
+  if (!process.env.TBT_IMAGE_PROCESSOR_URL) {
+    console.error('reindex: TBT_IMAGE_PROCESSOR_URL no esta configurada. Nada que hacer.')
     return 1
   }
 

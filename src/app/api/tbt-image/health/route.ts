@@ -10,27 +10,23 @@ import { recordProviderEvent } from '@/lib/provider-events'
  *
  * SIN SESIÓN, a propósito: el aviso se ve en el inicio antes de autenticar.
  * Solo dice sí o no, y si la causa es configuración o caída; nada del
- * proveedor sale de aquí.
+ * procesador sale de aquí.
  *
- * PIVOTADO A HF ROUTER (22 sept 2026). HuggingFace retiro el dominio
- * `api-inference.huggingface.co` y su endpoint `/status/{model}`. El health
- * ahora hace un GET ligero al pipeline de feature-extraction con el token: HF
- * responde 4xx o 5xx segun el problema (401/403 = token rechazado, 5xx =
- * caida). Un 405 (GET no permitido, la ruta espera POST) es tambien una
- * confirmacion de que HF esta arriba — la contamos como disponible.
+ * Pregunta dos cosas. `/health` es público y dice si el servicio responde,
+ * pero no pide la clave; una clave rechazada también deja el registro sin
+ * escaneo, así que se hace además una llamada mínima con ella contra `/embed`.
+ * Un 405 o un 422 de esa llamada confirman que la ruta existe y la clave pasó
+ * — lo único que nos interesa aquí. Un 401 o 403 dicen lo contrario.
  *
  * La respuesta se guarda 30 s en memoria: el inicio la consulta al cargar, al
- * recuperar el foco y cada minuto, y no hace falta molestar a HF en cada una.
- * Solo se registra el fallo: un sondeo que va bien cada minuto llenaría
- * provider_events de filas que no dicen nada.
+ * recuperar el foco y cada minuto, y no hace falta molestar al procesador en
+ * cada una. Solo se registra el fallo: un sondeo que va bien cada minuto
+ * llenaría provider_events de filas que no dicen nada.
  */
 export const dynamic = 'force-dynamic'
 
 const TIMEOUT_MS = 8_000
 const CACHE_MS = 30_000
-
-const HF_MODEL = 'google/siglip-base-patch16-224'
-const HF_PROBE_URL = `https://router.huggingface.co/hf-inference/models/${HF_MODEL}/pipeline/feature-extraction`
 
 type Health = { available: true } | { available: false; reason: 'setup' | 'outage' }
 
@@ -48,7 +44,8 @@ function reply(value: Health) {
 }
 
 async function probe(): Promise<Health> {
-  const token = process.env.HF_TOKEN
+  const url = process.env.TBT_IMAGE_PROCESSOR_URL
+  const key = process.env.TBT_IMAGE_PROCESSOR_API_KEY
   const started = Date.now()
 
   async function down(reason: 'setup' | 'outage', code: string, error?: unknown): Promise<Health> {
@@ -56,24 +53,28 @@ async function probe(): Promise<Health> {
     return reason === 'setup' ? { available: false, reason: 'setup' } : { available: false, reason: 'outage' }
   }
 
-  if (!token) return down('setup', 'token_unset')
+  if (!url) return down('setup', 'url_unset')
+  if (!key) return down('setup', 'key_missing')
 
   try {
-    // GET sobre una ruta POST-only responde 405 con token valido, o 401/403
-    // con token invalido. Cualquiera de las dos dice "HF esta arriba". Un 5xx
-    // o un fetch failed dicen que no.
-    const response = await fetch(HF_PROBE_URL, {
+    const health = await fetch(`${url}/health`, { cache: 'no-store', signal: AbortSignal.timeout(TIMEOUT_MS) })
+    if (!health.ok) return down('outage', `http_${health.status}`)
+
+    // La clave no la pide `/health`, asi que se prueba contra `/embed` con un
+    // GET: la ruta es POST-only, de modo que con clave valida responde 405 y
+    // con clave rechazada responde 401 o 403. No se manda ninguna imagen.
+    const keyed = await fetch(`${url}/embed`, {
       method: 'GET',
-      headers: { Authorization: `Bearer ${token}` },
+      headers: { 'X-API-Key': key },
       cache: 'no-store',
       signal: AbortSignal.timeout(TIMEOUT_MS),
     })
-    if (response.status === 401 || response.status === 403) return down('setup', 'token_rejected')
-    // 405 Method Not Allowed es la respuesta esperada del pipeline con GET —
-    // confirma que la ruta existe y el token es aceptado. Cualquier 4xx no
-    // relacionada a auth cuenta como caida; los 5xx tambien.
-    if (response.status === 405 || response.ok) return { available: true }
-    return down('outage', `http_${response.status}`)
+    if (keyed.status === 401 || keyed.status === 403) return down('setup', 'key_rejected')
+    if (keyed.status !== 405 && keyed.status !== 422 && !keyed.ok) {
+      return down('outage', `http_${keyed.status}`)
+    }
+
+    return { available: true }
   } catch (error) {
     return down('outage', 'unreachable', error)
   }

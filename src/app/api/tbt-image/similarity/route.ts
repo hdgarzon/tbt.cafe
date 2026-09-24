@@ -20,12 +20,11 @@ import { createAdminClient } from '@/lib/supabase-admin'
  * exige sesion antes de llegar aqui. Un 401 de esta ruta es falta de sesion,
  * no una caida, y el asistente lo trata aparte.
  *
- * PIVOTADO A HF + PGVECTOR (21 sept 2026, sin presupuesto para procesador
- * propio). El embedding se calcula en HF Inference API contra el mismo modelo
- * que iba a correr en el procesador (`google/siglip-base-patch16-224`), y la
- * busqueda de similitud se hace en Supabase pgvector contra `image_vectors`
- * con el operador `<=>` de distancia coseno. Federico condicion #1 se mantiene:
- * la comparacion vive en tbt.cafe.
+ * LA COMPARACION VIVE AQUI, NO EN EL PROCESADOR (Update Package 01, N10,
+ * opcion C). El procesador solo devuelve el vector de la imagen entrante; la
+ * busqueda contra el corpus se hace sobre `image_vectors` en Supabase, que es
+ * donde el indice persiste. Eso es lo que hace que un redespliegue del
+ * procesador no vacie el indice — el fallo original de N10.
  *
  * TAMBIEN GUARDA EL ESCANEO (Update Package 01, N9 a): cada resultado — clear,
  * warning, blocked — queda en `plagiarism_scans` para que la vista de trabajo
@@ -35,22 +34,20 @@ import { createAdminClient } from '@/lib/supabase-admin'
 const THRESHOLD_BLOCK = 0.9
 const THRESHOLD_WARN = 0.75
 
-const HF_MODEL = 'google/siglip-base-patch16-224'
-// HuggingFace retiro `api-inference.huggingface.co` — todo el trafico va por
-// el router con rutas por pipeline.
-const HF_INFERENCE_URL = `https://router.huggingface.co/hf-inference/models/${HF_MODEL}/pipeline/feature-extraction`
 const EXPECTED_EMBEDDING_DIM = 768
 
-/** HF Inference: 30 s con warm, hasta 90 s con cold. 120 s de margen. */
+/** El procesador calcula el embedding en CPU; en frio carga los pesos primero. */
 const TIMEOUT_MS = 120_000
 
 type Hit = { work_id: string; score: number }
+type EmbedResponse = { embedding: number[]; dim: number; model: string }
 
 export async function POST(req: NextRequest) {
   const auth = await authenticate(req)
   if (!auth.ok) return NextResponse.json(auth.body, { status: auth.status })
 
-  const token = process.env.HF_TOKEN
+  const url = process.env.TBT_IMAGE_PROCESSOR_URL
+  const key = process.env.TBT_IMAGE_PROCESSOR_API_KEY
   const started = Date.now()
 
   async function unavailable(reason: 'setup' | 'outage', code: string, error?: unknown) {
@@ -58,7 +55,8 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ status: 'unavailable', reason }, { status: 503 })
   }
 
-  if (!token) return unavailable('setup', 'token_unset')
+  if (!url) return unavailable('setup', 'url_unset')
+  if (!key) return unavailable('setup', 'key_missing')
 
   const formData = await req.formData()
   const file = formData.get('file')
@@ -68,36 +66,29 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    // 1. Embed via HF Inference API.
-    const bytes = new Uint8Array(await file.arrayBuffer())
-    const embedResponse = await fetch(HF_INFERENCE_URL, {
+    // 1. El vector de la imagen entrante, del procesador.
+    const upstream = new FormData()
+    upstream.append('file', file, 'query.jpg')
+
+    const embedResponse = await fetch(`${url}/embed`, {
       method: 'POST',
-      headers: {
-        Authorization: `Bearer ${token}`,
-        'Content-Type': file.type || 'application/octet-stream',
-        'X-Wait-For-Model': 'true',
-      },
-      body: new Blob([bytes as BlobPart], { type: file.type || 'application/octet-stream' }),
+      headers: { 'X-API-Key': key },
+      body: upstream,
       signal: AbortSignal.timeout(TIMEOUT_MS),
     })
 
-    if (embedResponse.status === 401 || embedResponse.status === 403) return unavailable('setup', 'token_rejected')
+    if (embedResponse.status === 401 || embedResponse.status === 403) return unavailable('setup', 'key_rejected')
     if (!embedResponse.ok) return unavailable('outage', `http_${embedResponse.status}`)
 
-    // Feature-extraction devuelve `number[]` o `number[][]` (batch de uno).
-    const payload = (await embedResponse.json()) as unknown
-    const flat: unknown[] =
-      Array.isArray(payload) && payload.length > 0 && Array.isArray(payload[0])
-        ? (payload[0] as unknown[])
-        : (payload as unknown[])
+    const payload = (await embedResponse.json()) as Partial<EmbedResponse>
     if (
-      !Array.isArray(flat) ||
-      flat.length !== EXPECTED_EMBEDDING_DIM ||
-      !flat.every((v) => typeof v === 'number' && Number.isFinite(v))
+      !Array.isArray(payload.embedding) ||
+      payload.embedding.length !== EXPECTED_EMBEDDING_DIM ||
+      payload.dim !== EXPECTED_EMBEDDING_DIM
     ) {
       return unavailable('outage', 'bad_embedding_shape')
     }
-    const embedding = flat as number[]
+    const embedding = payload.embedding
 
     // 2. Comparar contra image_vectors. A la escala actual (decenas a bajos
     // miles de obras) traer todas las filas y hacer el coseno en JS es
