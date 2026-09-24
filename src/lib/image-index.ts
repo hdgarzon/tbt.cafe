@@ -5,34 +5,26 @@ import { fetchStoredImageBytes, computeImageSha256Hex } from '@/lib/image-bytes'
 
 /**
  * Anadir la imagen recien certificada al indice de originalidad — Update
- * Package 01, N10 (opcion C aprobada 17 sept 2026), PIVOTADO a HuggingFace
- * Inference API por restriccion de presupuesto (21 sept 2026).
+ * Package 01, N10, opcion C.
  *
- * FEDERICO APROBO un procesador propio embed-only sobre pgvector en Supabase.
- * Sin presupuesto para hostearlo (Fly y Cloud Run exigen tarjeta antes de la
- * primera invocacion; HF Spaces con Docker SDK es de pago para nuestra cuenta),
- * eliminamos el paso del procesador propio y llamamos directo al Inference API
- * publico de HF contra el mismo modelo — `google/siglip-base-patch16-224` —
- * que iba a correr en nuestro servicio. Federico debe saber el pivot; queda
- * declarado como desviacion en el proximo reporte del §7.
+ * El indice nunca guardo nada y nadie se entero: `complete-tbt` mandaba la
+ * imagen con un `fetch` sin esperar, a una ruta propia que respondia 200
+ * aunque el procesador la rechazara, y el fallo acababa en una linea de log
+ * que caduca. La 049 movio el indice a `image_vectors` en Supabase; aqui se
+ * escribe.
  *
- * Consecuencias que persisten y que Federico conocera:
- *   · La imagen del creador viaja a servidores de HF para calcular el vector.
- *     Cada obra publicada llega a Solana/Arweave, asi que el creador ya
- *     autorizo publicacion; enviarla a HF a computar un embedding no expone
- *     nada nuevo — pero es un tercero mas en la lista de Privacy.
- *   · Rate limit del tier gratuito: ~1000 req/hora. A 50 req/dia estamos
- *     dos ordenes por debajo, sobra margen.
- *   · Sin control sobre la version del modelo. Un cambio de pesos en HF haria
- *     que los vectores nuevos no comparen con los ya guardados; el
- *     reconstructor (npm run reindex:images) es el remedio.
+ * El procesador solo devuelve un vector: sin SQLite, sin Qdrant, sin imagenes
+ * en disco, y sin credenciales de Supabase del otro lado. El conteo del indice
+ * cabe en una consulta contra `works` (N10 c). Federico condicion #1.
  *
- * Federico condiciones #1, #2 y #3 se mantienen:
- *   #1 — tbt.cafe es dueño de la escritura a `image_vectors`, de la consulta
- *        de similitud y del reconstructor. HF solo devuelve un vector.
- *   #2 — `image_vectors` sigue siendo service-role only.
- *   #3 — la sha256 se calcula en el servidor sobre los bytes guardados;
- *        nada de esto cambia con el pivot.
+ * Como el indice vive en Supabase y no en el disco del procesador, un
+ * redespliegue del procesador NO lo pierde. Ese era el fallo original.
+ *
+ * En la misma llamada se calcula `image_sha256` de los bytes guardados, en el
+ * servidor, y se escribe sobre la obra. Federico condicion #3: nunca sobre lo
+ * que declara el navegador. Es el filtro exacto que se corre antes de cobrar
+ * en la proxima subida; atrapa solo copias byte-identicas — una reencodificacion
+ * pasa por el, y solo la busqueda de similitud (image_vectors) la ve.
  *
  * Cada desenlace queda en `provider_events`, que la vista de observabilidad
  * ya lee, y un fallo abre un ticket de sistema sobre la obra. Quien llama lo
@@ -45,20 +37,20 @@ import { fetchStoredImageBytes, computeImageSha256Hex } from '@/lib/image-bytes'
 
 export type IndexOutcome = 'indexed' | 'failed'
 
-/** El modelo publico de HF. Cambiarlo pide reconstruir la tabla entera —
- *  la columna es `vector(768)` y otro modelo puede tener otra dimension. */
-const HF_MODEL = 'google/siglip-base-patch16-224'
-// HuggingFace retiro `api-inference.huggingface.co` en 2026 y migro todo a
-// `router.huggingface.co` con rutas por pipeline. Feature-extraction devuelve
-// el mismo shape (`number[]` o `number[][]`) que la API antigua.
-const HF_INFERENCE_URL = `https://router.huggingface.co/hf-inference/models/${HF_MODEL}/pipeline/feature-extraction`
-
-/** SigLIP base — la unica dimension que la columna `vector(768)` acepta. */
+/** SigLIP base — la unica dimension que la columna `vector(768)` acepta.
+ *  Cambiar de modelo pide reconstruir la tabla entera. */
 const EXPECTED_EMBEDDING_DIM = 768
+const EXPECTED_MODEL_PREFIX = 'google/siglip-base'
 
-/** HF Inference: 30 s con warm model, hasta 90 s con cold (primer request del
- *  dia). Damos 120 s de margen. */
-const HF_TIMEOUT_MS = 120_000
+/** El procesador calcula el embedding en CPU; mas que esto es un procesador
+ *  colgado. En frio carga los pesos de SigLIP primero, de ahi el margen. */
+const PROCESSOR_TIMEOUT_MS = 120_000
+
+type EmbedResponse = {
+  embedding: number[]
+  dim: number
+  model: string
+}
 
 export async function indexCertifiedImage(params: {
   workId: string
@@ -85,9 +77,13 @@ export async function indexCertifiedImage(params: {
   }
 
   try {
-    const token = process.env.HF_TOKEN
-    if (!token) {
-      return fail({ code: 'token_unset', message: 'HF_TOKEN is not set' })
+    const url = process.env.TBT_IMAGE_PROCESSOR_URL
+    const key = process.env.TBT_IMAGE_PROCESSOR_API_KEY ?? ''
+
+    // Sin URL no se indexa nada, en ninguna obra. Es un fallo de configuracion,
+    // y callarlo es exactamente como el indice se quedo vacio.
+    if (!url) {
+      return fail({ code: 'url_unset', message: 'TBT_IMAGE_PROCESSOR_URL is not set' })
     }
 
     // Los bytes se traen UNA vez y se usan dos: para la sha256 servidor-side, y
@@ -96,40 +92,36 @@ export async function indexCertifiedImage(params: {
     const { bytes, contentType } = await fetchStoredImageBytes(params.mediaUrl)
     const imageSha256 = computeImageSha256Hex(bytes)
 
-    // HF Inference API para modelos de vision con feature-extraction: se envia
-    // el binario de la imagen con el Content-Type real, y devuelve un array de
-    // numeros. `X-Wait-For-Model` evita el 503 cuando el modelo esta frio; HF
-    // espera a levantarlo (hasta ~60 s la primera vez) en vez de rebotar.
-    const response = await fetch(HF_INFERENCE_URL, {
+    const form = new FormData()
+    form.append(
+      'file',
+      new Blob([bytes as BlobPart], { type: contentType }),
+      params.mediaUrl.split('/').pop() || 'image.jpg',
+    )
+
+    const response = await fetch(`${url}/embed`, {
       method: 'POST',
-      headers: {
-        Authorization: `Bearer ${token}`,
-        'Content-Type': contentType,
-        'X-Wait-For-Model': 'true',
-      },
-      body: new Blob([bytes as BlobPart], { type: contentType }),
-      signal: AbortSignal.timeout(HF_TIMEOUT_MS),
+      headers: { 'X-API-Key': key },
+      body: form,
+      signal: AbortSignal.timeout(PROCESSOR_TIMEOUT_MS),
     })
     if (!response.ok) {
       return fail({ code: `http_${response.status}`, status: response.status, body: (await response.text()).slice(0, 300) })
     }
 
-    // Feature-extraction devuelve `number[]` (plano) o `number[][]` (batch de
-    // uno). Aplanamos y validamos contra la dimension esperada. Cualquier otra
-    // forma es un fallo — no acumulamos filas mal formadas en `image_vectors`.
-    const payload = (await response.json()) as unknown
-    const flat: unknown[] =
-      Array.isArray(payload) && payload.length > 0 && Array.isArray(payload[0])
-        ? (payload[0] as unknown[])
-        : (payload as unknown[])
-    if (
-      !Array.isArray(flat) ||
-      flat.length !== EXPECTED_EMBEDDING_DIM ||
-      !flat.every((v) => typeof v === 'number' && Number.isFinite(v))
-    ) {
-      return fail({ code: 'bad_embedding_shape', got: Array.isArray(flat) ? flat.length : typeof flat, expected: EXPECTED_EMBEDDING_DIM })
+    // El procesador declara dim y model junto al vector. Se validan los tres:
+    // una fila mal formada en `image_vectors` envenena cada comparacion futura.
+    const payload = (await response.json()) as Partial<EmbedResponse>
+    if (!Array.isArray(payload.embedding) || payload.embedding.length !== EXPECTED_EMBEDDING_DIM) {
+      return fail({ code: 'bad_embedding_shape', got: payload.embedding?.length, expected: EXPECTED_EMBEDDING_DIM })
     }
-    const embedding = flat as number[]
+    if (payload.dim !== EXPECTED_EMBEDDING_DIM) {
+      return fail({ code: 'bad_embedding_dim', got: payload.dim, expected: EXPECTED_EMBEDDING_DIM })
+    }
+    if (typeof payload.model !== 'string' || !payload.model.startsWith(EXPECTED_MODEL_PREFIX)) {
+      return fail({ code: 'unexpected_model', model: payload.model, expected: `${EXPECTED_MODEL_PREFIX}*` })
+    }
+    const embedding = payload.embedding
 
     const admin = createAdminClient()
 
