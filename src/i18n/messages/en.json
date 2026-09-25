@@ -199,7 +199,8 @@
     "errors": {
       "cancelled": "You cancelled the verification.",
       "needSignIn": "We couldn't start the verification",
-      "failed": "We couldn't verify the device"
+      "failed": "We couldn't verify the device",
+      "noEmail": "Quick authentication needs an email on your account. For now, sign in with the SMS code."
     }
   },
   "profile": {

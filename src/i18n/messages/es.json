@@ -199,7 +199,8 @@
     "errors": {
       "cancelled": "Cancelaste la verificación.",
       "needSignIn": "No pudimos iniciar la verificación",
-      "failed": "No pudimos verificar el dispositivo"
+      "failed": "No pudimos verificar el dispositivo",
+      "noEmail": "La autenticación rápida necesita un correo en tu cuenta. Por ahora, entra con el código SMS."
     }
   },
   "profile": {

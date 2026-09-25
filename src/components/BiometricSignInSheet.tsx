@@ -72,7 +72,10 @@ export function BiometricSignInSheet({
         body: JSON.stringify({ userId: beginBody.userId, credential }),
       })
       const finishBody = await finish.json()
-      if (!finish.ok) throw new Error(finishBody.error ?? t.biometricSignIn.errors.failed)
+      if (!finish.ok) {
+        if (finishBody.code === 'no_email') throw new Error(t.biometricSignIn.errors.noEmail)
+        throw new Error(finishBody.error ?? t.biometricSignIn.errors.failed)
+      }
 
       // Adoptar la sesión acuñada por el servidor
       const { error: setErr } = await supabase.auth.setSession({
