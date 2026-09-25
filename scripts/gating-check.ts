@@ -66,6 +66,18 @@ const curation = read('src/components/CurationModal.tsx')
      'sesion que caduca con el formulario abierto: se retoma con lo escrito')
   ok('el modal no se cierra al pedir sesion', !effect.includes('onClose()'),
      'el sheet se abre encima; cerrarlo obligaria a escribirlo todo otra vez')
+
+  // "Se abre encima" solo es cierto si la capa lo dice. El login (Sheet) iba
+  // en z-[70] y el panel de curacion (StandingSheet) en z-[80]: el visitante
+  // tocaba "Add your curation" y el login quedaba detras, sin poder usarse.
+  const sheetSrc = read('src/components/Sheet.tsx')
+  const layer = (fn: string) => {
+    const body = sheetSrc.slice(sheetSrc.indexOf(`export function ${fn}(`))
+    const m = body.match(/className=\{?[`"]fixed inset-0 z-\[(\d+)\]/)
+    return m ? Number(m[1]) : NaN
+  };
+  ok('el login queda por encima del panel que lo pide', layer('Sheet') > layer('StandingSheet'),
+     `Sheet z-[${layer('Sheet')}] vs StandingSheet z-[${layer('StandingSheet')}]`)
 }
 
 // ---- la puerta compartida

@@ -72,7 +72,12 @@ export function Sheet({
       // .col-locked, que mide 390px y crece con el contenido — en escritorio
       // el velo oscurecía solo la columna, y en una página larga con scroll el
       // sheet aterrizaba al final del documento en vez de al pie de la pantalla.
-      className={`fixed inset-0 z-[70] transition-opacity duration-[260ms] ease-out ${
+      //
+      // z-[90], por encima del StandingSheet (z-[80]). Todo Sheet es un paso de
+      // autenticacion, y se abre DESDE un panel: "Add your curation" o el
+      // asistente piden sesion con el panel abierto. En z-[70] el login quedaba
+      // detras del panel que lo pidio, y el visitante no podia completarlo.
+      className={`fixed inset-0 z-[90] transition-opacity duration-[260ms] ease-out ${
         entered ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
       }`}
       style={{ backgroundColor: 'rgba(20,20,20,0.32)' }}
