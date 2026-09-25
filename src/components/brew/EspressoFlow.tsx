@@ -34,6 +34,7 @@ export type EspressoResult = {
   royaltyValue: string
   scanState: 'clear' | 'warning' | 'blocked'
   scanScore: number
+  scanId: string | null
   location: string
   weather: string
   aiSummary: string
@@ -106,6 +107,7 @@ export function EspressoFlow({
   const [material, setMaterial] = useState<string | null>(null)
   const [scanState, setScanState] = useState<EspressoResult['scanState']>('clear')
   const [scanScore, setScanScore] = useState(0)
+  const [scanId, setScanId] = useState<string | null>(null)
 
   const [work, setWork] = useState({ title: '', aboutWork: '', createdDate: '', assetLinks: [] as string[] })
   const [location, setLocation] = useState('')
@@ -177,6 +179,7 @@ export function EspressoFlow({
     const st = r.status
     setScanScore(score)
     setScanState(st)
+    setScanId(r.scanId ?? null)
     setBusy(false)
     if (st === 'blocked') {
       say(t.brew.scanBlockBody.replace('{score}', String(score)))
@@ -451,6 +454,7 @@ export function EspressoFlow({
                   royaltyValue: value.royaltyValue,
                   scanState,
                   scanScore,
+                  scanId,
                   location,
                   weather,
                   aiSummary: contextText,

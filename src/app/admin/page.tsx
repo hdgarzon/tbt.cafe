@@ -1101,6 +1101,42 @@ export default function AdminPage() {
         <section className="mt-5">
           <div className="text-[11px] text-placeholder mb-3">Last {obs.windowHours} hours.</div>
 
+          {/* N9 (f): una alerta por caida del escaneo, urgente si la causa es
+              de configuracion. Va primero: con ella abierta, nadie registra. */}
+          <div className="text-[11px] font-medium tracking-[0.16em] uppercase text-ink-soft mb-2">
+            Scan service
+          </div>
+          {(obs.scanOutages ?? []).length === 0 ? (
+            <p className="text-[12px] text-placeholder mb-6">No outages in this window.</p>
+          ) : (
+            <div className="mb-6">
+              {(obs.scanOutages ?? []).map((o: any) => (
+                <div
+                  key={o.startedAt}
+                  className={`border rounded-xl p-3.5 mb-2 ${o.endedAt ? 'border-hairline' : 'border-t-red'}`}
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="text-[12.5px] font-medium text-ink">
+                      {o.endedAt ? 'Outage resolved' : 'Registration paused'}
+                    </span>
+                    {o.urgent && (
+                      <span className="text-[10.5px] font-medium tracking-[0.08em] uppercase text-t-red">
+                        Urgent · setup
+                      </span>
+                    )}
+                  </div>
+                  <div className="text-[11px] text-ink-soft mt-1 break-all">
+                    {(o.codes ?? []).join(', ') || 'unknown'} · {o.attempts} failed checks
+                  </div>
+                  <div className="text-[10.5px] text-placeholder mt-1">
+                    since {new Date(o.startedAt).toLocaleString()}
+                    {o.endedAt ? ` · until ${new Date(o.endedAt).toLocaleString()}` : ' · still open'}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
           <div className="text-[11px] font-medium tracking-[0.16em] uppercase text-ink-soft mb-2">
             Grouped failures
           </div>

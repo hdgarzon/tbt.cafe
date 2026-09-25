@@ -217,6 +217,23 @@ export async function POST(request: NextRequest) {
 
     console.log('Work updated to certified')
 
+    // El escaneo de la fase Proteccion se guardo sin obra (052). Se enlaza
+    // aqui, y solo si es del mismo creador y no pertenece ya a otra obra: el
+    // id lo escribio el navegador en el borrador y no se le cree por si solo.
+    // Idempotente — un segundo paso no encuentra fila con work_id nulo.
+    if (work.plagiarism_scan_id) {
+      const { data: linked, error: scanLinkError } = await createAdminClient()
+        .from('plagiarism_scans')
+        .update({ work_id: workId })
+        .eq('id', work.plagiarism_scan_id)
+        .eq('user_id', user.id)
+        .is('work_id', null)
+        .select('id')
+      if (scanLinkError || !linked?.length) {
+        await recordProviderEvent({ provider: 'image_processor', operation: 'link_scan', ok: false, entityType: 'work', entityId: workId, error: { code: scanLinkError?.code ?? 'not_linked', detail: scanLinkError?.message ?? null } })
+      }
+    }
+
     // Create work_commerce record
     const { error: commerceError } = await supabase
       .from('work_commerce')

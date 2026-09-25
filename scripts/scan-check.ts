@@ -73,6 +73,86 @@ const INFO = code(read('src/components/work/InfoTab.tsx'))
   ok('guarda el escaneo en plagiarism_scans', /from\('plagiarism_scans'\)/.test(SIMILARITY))
 }
 
+// ---- (a) el escaneo se guarda de verdad, y llega a la obra — §6 "Scan stored"
+//
+// persistScan escribia `user_id`, `status`, `top_score` y `matches` en una
+// tabla que no tenia tres de esas columnas y exigia `work_id`. supabase-js
+// devuelve el error en vez de lanzarlo, el try/catch no lo vio, y la tabla
+// quedo vacia mientras la interfaz decia que el escaneo se guardaba.
+{
+  const COMPLETE = code(read('src/app/api/complete-tbt/route.ts'))
+  const WORK_PAGE = code(read('src/app/work/[tbtId]/page.tsx'))
+  const WORK_CLIENT = code(read('src/app/work/[tbtId]/WorkClient.tsx'))
+  const M052 = readIf('supabase/migrations/052_plagiarism_scans_writer.sql')
+
+  // Las columnas que existen: el esquema base (schema-snapshot) mas la 052.
+  const COLUMNS = ['id', 'work_id', 'scan_result', 'similarity_score', 'flagged_items', 'is_original', 'scanned_at', 'user_id']
+  const insert = SIMILARITY.match(/from\('plagiarism_scans'\)\s*\.insert\(\{([\s\S]*?)\}\)/)
+  const keys = insert ? Array.from(insert[1].matchAll(/^\s*([a-z_]+)\s*(?::|,|$)/gm), (m) => m[1]) : []
+  ok('persistScan inserta en plagiarism_scans', keys.length > 0)
+  const unknown = keys.filter((k) => COLUMNS.indexOf(k) === -1)
+  ok('y solo en columnas que existen', unknown.length === 0, `desconocidas: ${unknown.join(', ')}`)
+  ok('lee el error que supabase-js devuelve, no espera una excepción', /const \{ data, error \} = await admin\s*\.from\('plagiarism_scans'\)/.test(SIMILARITY))
+  ok('un fallo al guardar queda en provider_events', /operation: 'persist_scan', ok: false/.test(SIMILARITY))
+  ok('la respuesta lleva el id del escaneo', (SIMILARITY.match(/scanId \}\)/g) ?? []).length === 3)
+
+  ok('la 052 deja work_id opcional', /alter column work_id drop not null/.test(M052), 'el escaneo corre antes de que exista la obra')
+  ok('y añade user_id y works.plagiarism_scan_id', /add column if not exists user_id/.test(M052) && /add column if not exists plagiarism_scan_id/.test(M052))
+  ok('la 052 no abre politicas en plagiarism_scans', !/create policy/i.test(M052))
+
+  ok('Cold Brew guarda el id que devolvió el escaneo', WIZARD.includes('setScanId(result.scanId ?? null)'))
+  ok('un escaneo nuevo olvida el anterior', /setScanState\('scanning'\)\s*setScanId\(null\)/.test(WIZARD))
+  ok('Espresso lo entrega al asistente', ESPRESSO.includes('setScanId(r.scanId ?? null)') && WIZARD.includes('setScanId(r.scanId)'))
+  ok('el borrador lo guarda', BREW_DATA.includes('plagiarism_scan_id: input.scanId'))
+
+  ok('complete-tbt enlaza el escaneo a la obra', /from\('plagiarism_scans'\)\s*\.update\(\{ work_id: workId \}\)/.test(COMPLETE))
+  ok('solo si es del mismo creador', /\.eq\('id', work\.plagiarism_scan_id\)\s*\.eq\('user_id', user\.id\)/.test(COMPLETE))
+  ok('y no estaba enlazado a otra obra', /\.eq\('user_id', user\.id\)\s*\.is\('work_id', null\)/.test(COMPLETE))
+
+  ok('la página de la obra lee la fecha en el servidor', /from\('plagiarism_scans'\)\s*\.select\('scanned_at'\)/.test(WORK_PAGE))
+  ok('solo para una obra visible sin sesión', /const \{ data: visible \} = await publicClient\(\)/.test(WORK_PAGE))
+  ok('y la pasa a la pestaña Info', WORK_CLIENT.includes('<InfoTab work={work} scannedAt={scannedAt} />'))
+}
+
+// ---- (f) una alerta de operador por caída, urgente si es de configuración
+//
+// fileSystemTicket abre contra una persona y una caída no es de nadie: la
+// alerta sale de provider_events y se ve en observabilidad. Faltaba entera —
+// el sondeo escribía fallos y nadie los leía como caída.
+{
+  const OUTAGES = code(readIf('src/lib/scan-outages.ts'))
+  const OBS = code(read('src/app/api/admin/observability/route.ts'))
+  const ADMIN = code(read('src/app/admin/page.tsx'))
+
+  ok('existe el agrupador de caídas', OUTAGES.includes('export function groupOutages('))
+  ok('lee las columnas reales de provider_events', OUTAGES.includes(".select('ok, error_code, error_detail, created_at')"))
+  ok('solo el sondeo de health', /\.eq\('provider', 'image_processor'\)\s*\.eq\('operation', 'health'\)/.test(OUTAGES))
+  ok('el sondeo escribe el éxito que cierra una caída', /if \(await outageIsOpen\(createAdminClient\(\)\)\) \{\s*await recordProviderEvent\(\{ provider: 'image_processor', operation: 'health', ok: true/.test(HEALTH))
+  ok('y solo ese: el éxito normal no se escribe', (HEALTH.match(/operation: 'health', ok: true/g) ?? []).length === 1)
+  ok('observabilidad devuelve las caídas', OBS.includes('getScanOutages(supabase, sinceIso)') && /\n\s*scanOutages,\n/.test(OBS))
+  ok('el panel las muestra', ADMIN.includes('(obs.scanOutages ?? []).map('))
+  ok('y marca la urgente', /o\.urgent && \(/.test(ADMIN))
+}
+
+// La lógica, contra datos: cien fallos seguidos son una alerta, no cien.
+async function outageLogic() {
+  const mod = await import('../src/lib/scan-outages')
+  const fail = (at: string, reason: string, code: string) => ({ ok: false, error_code: code, error_detail: { code, reason }, created_at: at })
+  const pass = (at: string) => ({ ok: true, error_code: null, error_detail: null, created_at: at })
+
+  const one = mod.groupOutages([fail('t1', 'setup', 'url_unset'), fail('t2', 'setup', 'url_unset'), fail('t3', 'setup', 'url_unset')])
+  ok('fallos seguidos son UNA alerta', one.length === 1 && one[0].attempts === 3)
+  ok('abierta mientras no haya un éxito', one[0].endedAt === null)
+  ok('urgente cuando la causa es de configuración', one[0].urgent === true)
+
+  const two = mod.groupOutages([fail('t1', 'outage', 'unreachable'), pass('t2'), fail('t3', 'setup', 'key_rejected')])
+  ok('un éxito en medio separa dos caídas', two.length === 2)
+  ok('la más reciente primero, y abierta', two[0].startedAt === 't3' && two[0].endedAt === null)
+  ok('la anterior quedó cerrada', two[1].endedAt === 't2')
+  ok('una caída del servicio no es urgente', two[1].urgent === false)
+  ok('sin fallos no hay alerta', mod.groupOutages([pass('t1'), pass('t2')]).length === 0)
+}
+
 // ---- (c, e) comprobación previa: /health
 {
   ok('existe la ruta de estado', HEALTH.length > 0)
@@ -159,5 +239,11 @@ const INFO = code(read('src/components/work/InfoTab.tsx'))
   }
 }
 
-console.log(bad === 0 ? '\ntodo en orden' : `\n${bad} fallo(s)`)
-process.exit(bad === 0 ? 0 : 1)
+async function main() {
+  await outageLogic()
+}
+
+main().then(() => {
+  console.log(bad === 0 ? '\ntodo en orden' : `\n${bad} fallo(s)`)
+  process.exit(bad === 0 ? 0 : 1)
+});

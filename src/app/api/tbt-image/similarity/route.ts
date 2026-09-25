@@ -120,30 +120,28 @@ export async function POST(req: NextRequest) {
     await recordProviderEvent({ provider: 'image_processor', operation: 'search_images', ok: true, latencyMs: Date.now() - started })
 
     // 3. Decidir clear / warning / blocked por umbrales.
-    if (hits.length === 0) {
-      await persistScan(admin, auth.user.id, 'clear', 0, [])
-      return NextResponse.json({ status: 'clear' })
-    }
+    const topScore = hits.length ? hits[0].score : 0
+    const status: 'clear' | 'warning' | 'blocked' =
+      topScore >= THRESHOLD_BLOCK ? 'blocked' : topScore >= THRESHOLD_WARN ? 'warning' : 'clear'
+    const matches = status === 'clear' ? [] : hits.slice(0, 3)
+    const scanId = await persistScan(admin, auth.user.id, status, topScore, matches)
 
-    const topScore = hits[0].score
-    if (topScore >= THRESHOLD_BLOCK) {
-      await persistScan(admin, auth.user.id, 'blocked', topScore, hits.slice(0, 3))
-      return NextResponse.json({ status: 'blocked', score: topScore, matches: hits.slice(0, 3) })
-    }
-    if (topScore >= THRESHOLD_WARN) {
-      await persistScan(admin, auth.user.id, 'warning', topScore, hits.slice(0, 3))
-      return NextResponse.json({ status: 'warning', score: topScore, matches: hits.slice(0, 3) })
-    }
-    await persistScan(admin, auth.user.id, 'clear', topScore, [])
-    return NextResponse.json({ status: 'clear', score: topScore })
+    if (hits.length === 0) return NextResponse.json({ status, scanId })
+    if (status === 'clear') return NextResponse.json({ status, score: topScore, scanId })
+    return NextResponse.json({ status, score: topScore, matches, scanId })
   } catch (error) {
     return unavailable('outage', 'unreachable', error)
   }
 }
 
 /**
- * N9 (a): un rastro persistente por escaneo. Si el insert falla, no se
- * arrastra: el flujo del usuario no depende de esto, es telemetria.
+ * N9 (a): un rastro persistente por escaneo, todavia sin obra — el borrador
+ * aun no existe. complete-tbt le pone `work_id` al certificar (052).
+ *
+ * supabase-js DEVUELVE el error, no lo lanza: un insert contra columnas que no
+ * existen dejo la tabla vacia sin que nadie lo viera. Se lee `error` y se deja
+ * en provider_events. No corta el flujo del usuario: sin id, la obra se
+ * certifica igual y la pagina no dira "Scanned" — nunca lo afirmara sin fila.
  */
 async function persistScan(
   admin: ReturnType<typeof createAdminClient>,
@@ -151,15 +149,20 @@ async function persistScan(
   status: 'clear' | 'warning' | 'blocked',
   topScore: number,
   matches: Hit[],
-) {
-  try {
-    await admin.from('plagiarism_scans').insert({
+): Promise<string | null> {
+  const { data, error } = await admin
+    .from('plagiarism_scans')
+    .insert({
       user_id: userId,
-      status,
-      top_score: topScore,
-      matches,
+      scan_result: { status, matches },
+      similarity_score: Math.round(topScore * 10000) / 100,
+      is_original: status === 'clear',
     })
-  } catch (err) {
-    console.error('[similarity] persistScan failed:', err)
+    .select('id')
+    .single()
+  if (error || !data) {
+    await recordProviderEvent({ provider: 'image_processor', operation: 'persist_scan', ok: false, error: { code: error?.code ?? 'no_row', detail: error?.message ?? null } })
+    return null
   }
+  return data.id as string
 }
