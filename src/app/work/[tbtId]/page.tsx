@@ -13,6 +13,7 @@ import { headers } from 'next/headers'
 import { permanentRedirect } from 'next/navigation'
 import type { Metadata } from 'next'
 import { createClient } from '@supabase/supabase-js'
+import { createAdminClient } from '@/lib/supabase-admin'
 import { OG_LOCALE, localeFromAcceptLanguage, ogTitle, ogDescription, ogImageAlt } from '@/lib/og-copy'
 import WorkClient from './WorkClient'
 
@@ -88,8 +89,35 @@ export async function generateMetadata(props: { params: Promise<{ tbtId: string 
   }
 }
 
+/**
+ * Fecha del escaneo de originalidad — §6 "Scan stored".
+ *
+ * plagiarism_scans es solo del service role (lleva las coincidencias contra
+ * otras obras), asi que la fecha se lee aqui y baja como prop. Primero se
+ * pregunta con el cliente anonimo: si la obra no es visible para cualquiera,
+ * no se consulta nada con la clave que salta RLS. Un preview no tiene esa
+ * clave: la pagina se sirve igual, sin la fila "Scanned".
+ */
+async function scannedAtFor(tbtId: string): Promise<string | null> {
+  try {
+    const { data: visible } = await publicClient().from('works').select('id').eq('tbt_id', tbtId).maybeSingle()
+    if (!visible) return null
+    const { data: scan } = await createAdminClient()
+      .from('plagiarism_scans')
+      .select('scanned_at')
+      .eq('work_id', visible.id)
+      .order('scanned_at', { ascending: false })
+      .limit(1)
+      .maybeSingle()
+    return (scan?.scanned_at as string | undefined) ?? null
+  } catch {
+    return null
+  }
+}
+
 export default async function Page(props: { params: Promise<{ tbtId: string }> }) {
   const params = await props.params;
   redirectToCanonicalCase(params.tbtId)
-  return <WorkClient params={params} />
+  const scannedAt = await scannedAtFor(params.tbtId)
+  return <WorkClient params={params} scannedAt={scannedAt} />
 }

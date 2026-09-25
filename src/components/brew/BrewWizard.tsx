@@ -153,6 +153,8 @@ export function BrewWizard() {
   // Protection
   const [scanState, setScanState] = useState<ScanState>('idle')
   const [scanScore, setScanScore] = useState(0)
+  /** La fila guardada del escaneo; viaja en el borrador para que complete-tbt la enlace. */
+  const [scanId, setScanId] = useState<string | null>(null)
   /** Valor que sube en el medidor mientras aterriza el resultado real. */
   const [scanAnim, setScanAnim] = useState(0)
   const [declaration, setDeclaration] = useState<Declaration>('original')
@@ -406,6 +408,7 @@ export function BrewWizard() {
   async function runScan() {
     if (!imageFile) return
     setScanState('scanning')
+    setScanId(null)
     setScanAnim(0)
     const result = await runSimilarityScan(imageFile)
     // Un escaneo que no corrió no es limpio (N9 b). Todavía no hay borrador, así
@@ -449,6 +452,7 @@ export function BrewWizard() {
     })
     setScanScore(score)
     setScanState(status)
+    setScanId(result.scanId ?? null)
   }
 
   function submitComm2() {
@@ -546,6 +550,7 @@ export function BrewWizard() {
       createdDate,
       isPublished,
       chainImage: chainImageChoice,
+      scanId,
       seriesId: seriesChoice === '__new' ? null : seriesChoice,
       newSeriesName: seriesChoice === '__new' ? newSeriesName || 'Series 1' : null,
       imageFile,
@@ -786,6 +791,7 @@ export function BrewWizard() {
           setRoyaltyValue(r.royaltyValue)
           setScanState(r.scanState)
           setScanScore(r.scanScore)
+          setScanId(r.scanId)
           if (r.material) setMaterial(r.material)
           // Espresso ya redactó el Contexto en el hilo, así que entrega en el
           // Seal, como en el prototipo (CB.toSeal), sin repetir esas pantallas.

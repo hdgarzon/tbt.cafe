@@ -34,7 +34,7 @@ const TAB_KEY: Record<'profile' | 'info' | 'history', 'tabProfile' | 'tabInfo' |
   history: 'tabHistory',
 }
 
-export default function WorkPage({ params }: { params: { tbtId: string } }) {
+export default function WorkPage({ params, scannedAt = null }: { params: { tbtId: string }; scannedAt?: string | null }) {
   const { t } = useLocale()
   const { connected, openAuth } = useShell()
 
@@ -245,7 +245,7 @@ export default function WorkPage({ params }: { params: { tbtId: string } }) {
 
       <div className="mt-5 pb-8">
         {tab === 'profile' && <ProfileTab work={work} canEdit={!!role} heroControl={heroControl} onSaved={load} />}
-        {tab === 'info' && <InfoTab work={work} />}
+        {tab === 'info' && <InfoTab work={work} scannedAt={scannedAt} />}
         {tab === 'history' && <HistoryTab workId={work.id} tbtId={work.tbt_id} />}
         {tab === 'action' && role && userId && <ActionTab work={work} role={role} userId={userId} onChanged={load} />}
       </div>

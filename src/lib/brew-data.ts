@@ -191,8 +191,8 @@ async function uploadWorksMedia(
 }
 
 export type SimilarityResult =
-  | { status: 'clear'; score?: number }
-  | { status: 'warning' | 'blocked'; score: number; matches: unknown[] }
+  | { status: 'clear'; score?: number; scanId?: string | null }
+  | { status: 'warning' | 'blocked'; score: number; matches: unknown[]; scanId?: string | null }
   /** El escaneo no corrió: el procesador está caído o mal configurado. Nunca es limpio. */
   | { status: 'unavailable' }
   /** Sin sesión. No es una caída: se pide autenticar y se repite. */
@@ -337,6 +337,8 @@ export type DraftInput = {
   derivativeReference: string | null
   /** Que copia de la obra llega a Arweave, elegida en el Sello (Item 10). */
   chainImage: ChainImageChoice
+  /** La fila de plagiarism_scans de la fase Proteccion; complete-tbt la enlaza a la obra. */
+  scanId: string | null
   // Context
   location: string | null
   coordinates: { lat: number; lng: number } | null
@@ -463,6 +465,7 @@ export async function createDraftWork(
       royalty_type: input.royaltyType === 'none' ? 'none' : input.royaltyType,
       royalty_value: input.royaltyType !== 'none' ? input.royaltyValue : null,
       series_id: seriesId,
+      plagiarism_scan_id: input.scanId,
       context_data: contextData,
     })
     .select('id')

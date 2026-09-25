@@ -188,7 +188,8 @@ create table if not exists public.works (
   registration_record_hash text,
   creator_status text default 'living'::text not null,
   provenance_hash text,
-  image_sha256 text
+  image_sha256 text,
+  plagiarism_scan_id uuid
 );
 
 comment on column public.works.mint_address is
@@ -199,6 +200,9 @@ comment on column public.works.image_sha256 is
 
 create index if not exists works_image_sha256_idx
   on public.works (image_sha256) where image_sha256 is not null;
+
+comment on column public.works.plagiarism_scan_id is
+  'El escaneo de la fase Proteccion. Lo escribe el borrador; complete-tbt lo verifica contra el creador antes de enlazarlo. No es prueba por si solo: la fila enlazada lo es.';
 
 create table if not exists public.image_vectors (
   work_id uuid primary key references public.works(id) on delete cascade,
@@ -728,9 +732,9 @@ create table if not exists public.roast_questions (
 -- work_views, plagiarism_checks y alerts, todas restos de disenos que algo mas
 -- reemplazo.
 --
--- Queda una, y no por descuido: `plagiarism_scans` tampoco tiene escritor, pero
--- la migracion 003 la designo canonica. Quitarla seria deshacer una decision de
--- diseno en vez de limpiar un resto.
+-- `plagiarism_scans` quedo, y no por descuido: la migracion 003 la designo
+-- canonica. Desde la 052 tiene escritor — /api/tbt-image/similarity — y ya no
+-- pertenece a esta seccion; se deja aqui para no mover el orden del archivo.
 -- ============================================================================
 
 comment on table public.email_deliveries is
@@ -741,16 +745,23 @@ comment on table public.alerts is
 
 create table if not exists public.plagiarism_scans (
   id uuid default extensions.uuid_generate_v4() not null,
-  work_id uuid not null,
+  work_id uuid,
   scan_result jsonb,
   similarity_score numeric(5,2),
   flagged_items jsonb[],
   is_original boolean default true,
-  scanned_at timestamp with time zone default now()
+  scanned_at timestamp with time zone default now(),
+  user_id uuid
 );
 
 comment on table public.plagiarism_scans is
-  'Canonica, pero todavia sin escritor: las rutas de tbt-image reenvian al procesador y no guardan el resultado.';
+  'Un escaneo de originalidad por fila. Lo escribe /api/tbt-image/similarity sin obra; complete-tbt pone work_id al certificar. Solo service role.';
+comment on column public.plagiarism_scans.user_id is
+  'Quien pidio el escaneo. complete-tbt solo enlaza un escaneo cuyo user_id es el creador de la obra.';
+comment on column public.plagiarism_scans.similarity_score is
+  'Coincidencia mas alta contra image_vectors, en porcentaje (0-100).';
+comment on column public.plagiarism_scans.scan_result is
+  '{ status: clear | warning | blocked, matches: [{ work_id, score }] }';
 
 -- ============================================================================
 -- CLAVES Y RESTRICCIONES
@@ -932,6 +943,8 @@ alter table public.roast_questions add constraint roast_questions_body_check CHE
 
 alter table public.plagiarism_scans add constraint plagiarism_scans_pkey PRIMARY KEY (id);
 alter table public.plagiarism_scans add constraint plagiarism_scans_work_id_fkey FOREIGN KEY (work_id) REFERENCES works(id) ON DELETE CASCADE;
+alter table public.plagiarism_scans add constraint plagiarism_scans_user_id_fkey FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE SET NULL;
+alter table public.works add constraint works_plagiarism_scan_id_fkey FOREIGN KEY (plagiarism_scan_id) REFERENCES plagiarism_scans(id) ON DELETE SET NULL;
 
 -- ============================================================================
 -- INDICES
@@ -1023,6 +1036,7 @@ create index if not exists curations_target_idx ON public.curations USING btree 
 create index if not exists roast_questions_article_idx ON public.roast_questions USING btree (article_id, created_at DESC) WHERE (NOT hidden);
 create index if not exists roast_questions_user_idx ON public.roast_questions USING btree (user_id);
 create index if not exists idx_plagiarism_scans_work_id ON public.plagiarism_scans USING btree (work_id);
+create index if not exists idx_plagiarism_scans_user_id ON public.plagiarism_scans USING btree (user_id) WHERE (work_id IS NULL);
 
 -- ============================================================================
 -- SEGURIDAD A NIVEL DE FILA
