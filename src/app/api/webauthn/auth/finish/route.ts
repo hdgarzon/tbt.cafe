@@ -137,13 +137,14 @@ export async function POST(request: NextRequest) {
   }
 
   const email = userRow.user.email
+  // Una cuenta que entra solo por teléfono no tiene email en auth.users, y
+  // generateLink lo exige (ver la nota al final). Se responde con un código
+  // que el cliente traduce: el texto de antes era para desarrolladores y
+  // llegaba tal cual a la persona. El aviso va aquí y no en begin a propósito:
+  // allí distinguiría números registrados; aquí la persona ya probó el dispositivo.
   if (!email) {
     return NextResponse.json(
-      {
-        error:
-          'Este usuario no tiene email registrado; el sign-in biométrico requiere uno ' +
-          '(ver nota de despliegue en auth/finish/route.ts).',
-      },
+      { error: 'Este usuario no tiene email registrado', code: 'no_email' },
       { status: 501 }
     )
   }

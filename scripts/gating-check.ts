@@ -80,6 +80,22 @@ const curation = read('src/components/CurationModal.tsx')
      `Sheet z-[${layer('Sheet')}] vs StandingSheet z-[${layer('StandingSheet')}]`)
 }
 
+// ---- el sign-in biométrico no le muestra a nadie un texto de desarrollador
+//
+// Una cuenta que entra solo por teléfono no tiene email en auth.users y el
+// sign-in biométrico lo necesita. La respuesta decía "(ver nota de despliegue
+// en auth/finish/route.ts)" y el cliente la pintaba tal cual.
+{
+  const finish = read('src/app/api/webauthn/auth/finish/route.ts')
+  const sheet = read('src/components/BiometricSignInSheet.tsx')
+  ok('finish responde un código, no una nota de despliegue', finish.includes("code: 'no_email'") && !finish.includes("'(ver nota de despliegue"))
+  ok('el cliente lo traduce', sheet.includes("if (finishBody.code === 'no_email') throw new Error(t.biometricSignIn.errors.noEmail)"))
+  for (const l of ['en', 'es', 'pt', 'fr']) {
+    const m = JSON.parse(read(`src/i18n/messages/${l}.json`))
+    ok(`${l}: biometricSignIn.errors.noEmail existe`, typeof m.biometricSignIn?.errors?.noEmail === 'string' && m.biometricSignIn.errors.noEmail.length > 0)
+  }
+}
+
 // ---- la puerta compartida
 {
   ok('la puerta lleva botón', gate.includes('openAuth({ resume })'))
