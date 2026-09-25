@@ -1,5 +1,7 @@
 import { NextResponse } from 'next/server'
 import { recordProviderEvent } from '@/lib/provider-events'
+import { createAdminClient } from '@/lib/supabase-admin'
+import { outageIsOpen } from '@/lib/scan-outages'
 
 /**
  * ¿Se puede registrar ahora? — Update Package 01, N9 (c, e).
@@ -74,8 +76,25 @@ async function probe(): Promise<Health> {
       return down('outage', `http_${keyed.status}`)
     }
 
+    await closeOutage(started)
     return { available: true }
   } catch (error) {
     return down('outage', 'unreachable', error)
+  }
+}
+
+/**
+ * Un exito solo se escribe cuando cierra una caida — N9 (f). La alerta de
+ * operador es la racha de fallos de `health` en provider_events; sin este
+ * cierre, una caida ya resuelta seguiria abierta en la vista. Un exito que no
+ * cierra nada no se escribe: seria una fila por minuto que no dice nada.
+ */
+async function closeOutage(started: number) {
+  try {
+    if (await outageIsOpen(createAdminClient())) {
+      await recordProviderEvent({ provider: 'image_processor', operation: 'health', ok: true, latencyMs: Date.now() - started })
+    }
+  } catch {
+    // Sin clave de servidor (preview) no hay a quien cerrarle nada.
   }
 }

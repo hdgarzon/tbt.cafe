@@ -114,6 +114,45 @@ const INFO = code(read('src/components/work/InfoTab.tsx'))
   ok('y la pasa a la pestaña Info', WORK_CLIENT.includes('<InfoTab work={work} scannedAt={scannedAt} />'))
 }
 
+// ---- (f) una alerta de operador por caída, urgente si es de configuración
+//
+// fileSystemTicket abre contra una persona y una caída no es de nadie: la
+// alerta sale de provider_events y se ve en observabilidad. Faltaba entera —
+// el sondeo escribía fallos y nadie los leía como caída.
+{
+  const OUTAGES = code(readIf('src/lib/scan-outages.ts'))
+  const OBS = code(read('src/app/api/admin/observability/route.ts'))
+  const ADMIN = code(read('src/app/admin/page.tsx'))
+
+  ok('existe el agrupador de caídas', OUTAGES.includes('export function groupOutages('))
+  ok('lee las columnas reales de provider_events', OUTAGES.includes(".select('ok, error_code, error_detail, created_at')"))
+  ok('solo el sondeo de health', /\.eq\('provider', 'image_processor'\)\s*\.eq\('operation', 'health'\)/.test(OUTAGES))
+  ok('el sondeo escribe el éxito que cierra una caída', /if \(await outageIsOpen\(createAdminClient\(\)\)\) \{\s*await recordProviderEvent\(\{ provider: 'image_processor', operation: 'health', ok: true/.test(HEALTH))
+  ok('y solo ese: el éxito normal no se escribe', (HEALTH.match(/operation: 'health', ok: true/g) ?? []).length === 1)
+  ok('observabilidad devuelve las caídas', OBS.includes('getScanOutages(supabase, sinceIso)') && /\n\s*scanOutages,\n/.test(OBS))
+  ok('el panel las muestra', ADMIN.includes('(obs.scanOutages ?? []).map('))
+  ok('y marca la urgente', /o\.urgent && \(/.test(ADMIN))
+}
+
+// La lógica, contra datos: cien fallos seguidos son una alerta, no cien.
+async function outageLogic() {
+  const mod = await import('../src/lib/scan-outages')
+  const fail = (at: string, reason: string, code: string) => ({ ok: false, error_code: code, error_detail: { code, reason }, created_at: at })
+  const pass = (at: string) => ({ ok: true, error_code: null, error_detail: null, created_at: at })
+
+  const one = mod.groupOutages([fail('t1', 'setup', 'url_unset'), fail('t2', 'setup', 'url_unset'), fail('t3', 'setup', 'url_unset')])
+  ok('fallos seguidos son UNA alerta', one.length === 1 && one[0].attempts === 3)
+  ok('abierta mientras no haya un éxito', one[0].endedAt === null)
+  ok('urgente cuando la causa es de configuración', one[0].urgent === true)
+
+  const two = mod.groupOutages([fail('t1', 'outage', 'unreachable'), pass('t2'), fail('t3', 'setup', 'key_rejected')])
+  ok('un éxito en medio separa dos caídas', two.length === 2)
+  ok('la más reciente primero, y abierta', two[0].startedAt === 't3' && two[0].endedAt === null)
+  ok('la anterior quedó cerrada', two[1].endedAt === 't2')
+  ok('una caída del servicio no es urgente', two[1].urgent === false)
+  ok('sin fallos no hay alerta', mod.groupOutages([pass('t1'), pass('t2')]).length === 0)
+}
+
 // ---- (c, e) comprobación previa: /health
 {
   ok('existe la ruta de estado', HEALTH.length > 0)
@@ -200,5 +239,11 @@ const INFO = code(read('src/components/work/InfoTab.tsx'))
   }
 }
 
-console.log(bad === 0 ? '\ntodo en orden' : `\n${bad} fallo(s)`)
-process.exit(bad === 0 ? 0 : 1)
+async function main() {
+  await outageLogic()
+}
+
+main().then(() => {
+  console.log(bad === 0 ? '\ntodo en orden' : `\n${bad} fallo(s)`)
+  process.exit(bad === 0 ? 0 : 1)
+});

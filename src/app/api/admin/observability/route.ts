@@ -13,6 +13,7 @@ import { authenticate } from '@/lib/route-auth'
 import { createAdminClient } from '@/lib/supabase-admin'
 import { loadAdmin, can, hasValidStepUp, STEP_UP_HEADER } from '@/lib/admin/guard'
 import { getImageIndexHealth } from '@/lib/image-index-health'
+import { getScanOutages } from '@/lib/scan-outages'
 
 
 export async function GET(request: NextRequest) {
@@ -47,7 +48,7 @@ export async function GET(request: NextRequest) {
      * ruta, ni el admin, ni una notificacion. La fila existia y aun asi nadie
      * se enteraba, que es la misma forma de fallo que el MMS.
      */
-    const [failures, recent, chainPending, mmsFailed, mmsUnknown, disputesOpen, disputesLost, disputesUnlinked, refundsTotal, imageIndex] = await Promise.all([
+    const [failures, recent, chainPending, mmsFailed, mmsUnknown, disputesOpen, disputesLost, disputesUnlinked, refundsTotal, imageIndex, scanOutages] = await Promise.all([
       supabase.rpc('provider_failure_summary', { window_hours: hours }),
       supabase
         .from('provider_events')
@@ -105,6 +106,10 @@ export async function GET(request: NextRequest) {
       // sin fila en image_vectors es un scan que no ha corrido, y un scan que
       // no ha corrido no es un scan limpio.
       getImageIndexHealth(supabase),
+
+      // N9 (f): una alerta por caida del servicio de escaneo, urgente si la
+      // causa es de configuracion. Sale de provider_events, no de un ticket.
+      getScanOutages(supabase, sinceIso),
     ])
 
     // Latencia y tasa de éxito por proveedor, calculadas de la muestra traída.
@@ -147,6 +152,7 @@ export async function GET(request: NextRequest) {
         certificateDeliveriesUnknown: mmsUnknown.count ?? 0,
       },
       imageIndex,
+      scanOutages,
       // Se nombra lo que aún no se observa, para que un panel vacío no se lea
       // como "todo bien".
       notInstrumentedYet: ['arweave', 'opentimestamps', 'queue depths'],
