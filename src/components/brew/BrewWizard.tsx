@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react'
 import { ClaimForm } from '@/components/brew/ClaimForm'
+import { CollectorCreatorStep, CollectorProvenanceStep, EMPTY_BONDED, type BondedInput } from '@/components/brew/CollectorSteps'
 import { useSearchParams } from 'next/navigation'
 import { useLocale } from '@/i18n/LocaleProvider'
 import { useShell } from '@/components/AppShell'
@@ -26,6 +27,7 @@ import {
   startRegistration,
   completeTbt,
   validateCoupon,
+  saveBondedDetails,
   type CreatorProfileRow,
   type RoyaltyChoice,
 } from '@/lib/brew-data'
@@ -46,7 +48,10 @@ type Step =
   | 'paused'
   | 'pausedMidBrew'
   | 'gate'
+  | 'who'
   | 'chooser'
+  | 'creator'
+  | 'provenance'
   | 'espresso'
   | 'work1'
   | 'work2'
@@ -67,7 +72,10 @@ const STEP_PROGRESS: Record<Step, number> = {
   paused: 0,
   pausedMidBrew: 0,
   gate: 0,
+  who: 0,
   chooser: 0,
+  creator: 3,
+  provenance: 5,
   espresso: 25,
   work1: 6,
   work2: 13,
@@ -102,6 +110,11 @@ export function BrewWizard() {
   const params = useSearchParams()
 
   const [step, setStep] = useState<Step>('loading')
+  // Step 20: quién registra. Un coleccionista registra una obra que no hizo y
+  // recibe un título bonded; lo que declara del creador va en `bonded`.
+  const [brewAs, setBrewAs] = useState<'creator' | 'collector'>('creator')
+  const [bonded, setBonded] = useState<BondedInput>(EMPTY_BONDED)
+  const [bondedDoc, setBondedDoc] = useState<File | null>(null)
   const [userId, setUserId] = useState<string | null>(null)
   const [profile, setProfile] = useState<CreatorProfileRow | null>(null)
   const [series, setSeries] = useState<SeriesWithCount[]>([])
@@ -256,7 +269,7 @@ export function BrewWizard() {
         return
       }
       setSeries(await fetchSeriesOptions(user.id))
-      setStep('chooser')
+      setStep('who')
     })()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [connected])
@@ -573,11 +586,21 @@ export function BrewWizard() {
       aiSummary,
       userEditedSummary: editedSummary !== aiSummary ? editedSummary : null,
     })
-    setBusy(false)
     if (error || !id) {
+      setBusy(false)
       setMsg(t.brew.errors.draftFailed)
       return
     }
+    // Step 20: lo declarado del creador se guarda en el servidor antes del pago.
+    if (brewAs === 'collector') {
+      const saved = await saveBondedDetails(id, bonded, bondedDoc)
+      if (!saved.ok) {
+        setBusy(false)
+        setMsg(t.collector.saveFailed)
+        return
+      }
+    }
+    setBusy(false)
     setWorkId(id)
     setPayDeadline(Date.now() + 10 * 60 * 1000)
     setStep('payment')
@@ -722,15 +745,49 @@ export function BrewWizard() {
     )
   }
 
-  if (step === 'chooser') {
+  // Step 20: quién registra, antes de elegir cómo — cambia lo que el flujo pide.
+  if (step === 'who') {
+    const card = (as: 'creator' | 'collector', name: string, badge: string, sub: string) => (
+      <button
+        type="button"
+        onClick={() => {
+          setBrewAs(as)
+          setStep('chooser')
+        }}
+        className="block w-full text-left border border-hairline rounded-2xl p-4 mt-3 hover:border-ink transition-colors"
+      >
+        <div className="flex items-center justify-between">
+          <span className="font-display text-[19px] text-ink">{name}</span>
+          <span className="text-[10px] font-semibold uppercase tracking-[0.1em] border border-hairline rounded-full px-2.5 py-1 text-ink-soft">
+            {badge}
+          </span>
+        </div>
+        <p className="text-[12.5px] text-ink-soft mt-1">{sub}</p>
+      </button>
+    )
     return (
       <BrewChrome onClose={close} progressPct={undefined}>
-        <div className="font-display font-medium text-[24px] text-ink">{t.brew.chooserTitle}</div>
-        <p className="text-[13px] text-ink-soft mt-1.5">{t.brew.chooserSub}</p>
+        <div className="font-display font-medium text-[24px] text-ink">{t.collector.whoTitle}</div>
+        <p className="text-[13px] text-ink-soft mt-1.5">{t.collector.whoSub}</p>
+        <div className="mt-2">
+          {card('creator', t.collector.madeIt, t.collector.madeItBadge, t.collector.madeItSub)}
+          {card('collector', t.collector.ownIt, t.collector.ownItBadge, t.collector.ownItSub)}
+        </div>
+        <p className="text-[12px] leading-[1.55] text-ink-soft bg-paper-warm border border-hairline rounded-xl p-3 mt-4">{t.collector.whoNote}</p>
+      </BrewChrome>
+    )
+  }
+
+  if (step === 'chooser') {
+    const asCollector = brewAs === 'collector'
+    return (
+      <BrewChrome onBack={() => setStep('who')} backLabel={t.creator.back} onClose={close} progressPct={undefined}>
+        <div className="font-display font-medium text-[24px] text-ink">{asCollector ? t.collector.chooserTitle : t.brew.chooserTitle}</div>
+        <p className="text-[13px] text-ink-soft mt-1.5">{asCollector ? t.collector.chooserSub : t.brew.chooserSub}</p>
 
         <button
           type="button"
-          onClick={() => setStep('work1')}
+          onClick={() => setStep(asCollector ? 'creator' : 'work1')}
           className="block w-full text-left border border-hairline rounded-2xl p-4 mt-5 hover:border-ink transition-colors"
         >
           <div className="flex items-center justify-between">
@@ -742,18 +799,23 @@ export function BrewWizard() {
           <p className="text-[12.5px] text-ink-soft mt-1">{t.brew.coldBrewSub}</p>
         </button>
 
+        {/* Un coleccionista ve Espresso deshabilitado, con la razón: hay demasiado que registrar de la obra de otro. */}
         <button
           type="button"
           onClick={() => setStep('espresso')}
-          className="block w-full text-left border border-hairline rounded-2xl p-4 mt-3 hover:border-ink transition-colors"
+          disabled={asCollector}
+          aria-disabled={asCollector}
+          className={`block w-full text-left border border-hairline rounded-2xl p-4 mt-3 transition-colors ${
+            asCollector ? 'opacity-45 cursor-not-allowed' : 'hover:border-ink'
+          }`}
         >
           <div className="flex items-center justify-between">
             <span className="font-display text-[19px] text-ink">{t.brew.espressoName}</span>
             <span className="text-[10px] font-semibold uppercase tracking-[0.1em] border border-hairline rounded-full px-2.5 py-1 text-ink-soft">
-              {t.brew.espressoBadge}
+              {asCollector ? t.collector.espressoUnavailable : t.brew.espressoBadge}
             </span>
           </div>
-          <p className="text-[12.5px] text-ink-soft mt-1">{t.brew.espressoSub}</p>
+          <p className="text-[12.5px] text-ink-soft mt-1">{asCollector ? t.collector.espressoReason : t.brew.espressoSub}</p>
         </button>
 
         {msg && <p className="text-[12px] text-ink-soft text-center mt-4">{msg}</p>}
@@ -806,9 +868,37 @@ export function BrewWizard() {
     )
   }
 
+  if (step === 'creator') {
+    return (
+      <CollectorCreatorStep
+        value={bonded}
+        onChange={setBonded}
+        onBack={backTo('chooser')}
+        onNext={() => setStep('provenance')}
+        onClose={close}
+        progressPct={STEP_PROGRESS[step]}
+      />
+    )
+  }
+
+  if (step === 'provenance') {
+    return (
+      <CollectorProvenanceStep
+        value={bonded}
+        onChange={setBonded}
+        document={bondedDoc}
+        onDocument={setBondedDoc}
+        onBack={backTo('creator')}
+        onNext={() => setStep('work1')}
+        onClose={close}
+        progressPct={STEP_PROGRESS[step]}
+      />
+    )
+  }
+
   if (step === 'work1') {
     return (
-      <BrewChrome onBack={backTo('chooser')} backLabel={t.creator.back} onClose={close} progressPct={STEP_PROGRESS[step]} dock={<BrewButton onClick={submitWork1}>{t.brew.next}</BrewButton>}>
+      <BrewChrome onBack={backTo(brewAs === 'collector' ? 'provenance' : 'chooser')} backLabel={t.creator.back} onClose={close} progressPct={STEP_PROGRESS[step]} dock={<BrewButton onClick={submitWork1}>{t.brew.next}</BrewButton>}>
         <BrewTitle required>{t.brew.workTitle}</BrewTitle>
 
         <div className="mt-4">
@@ -1388,7 +1478,15 @@ export function BrewWizard() {
 
         <div className="border border-hairline rounded-2xl p-3.5 mt-4">
           {[
-            [t.brew.sealCreator, profile?.public_alias || profile?.legal_name || ''],
+            // En un título bonded el creador es el que se declaró, o "Sin atribuir"; nunca quien registra.
+            [
+              t.brew.sealCreator,
+              brewAs === 'collector'
+                ? bonded.unattributed
+                  ? t.collector.unattributed
+                  : bonded.name
+                : profile?.public_alias || profile?.legal_name || '',
+            ],
             [t.brew.sealWork, title],
             [
               t.brew.sealValue,
@@ -1677,6 +1775,9 @@ export function BrewWizard() {
             ✓
           </div>
           <div className="font-display font-medium text-[26px] leading-[1.08] text-ink">{t.brew.registeredTitle}</div>
+          {brewAs === 'collector' && (
+            <div className="text-[10.5px] font-semibold uppercase tracking-[0.12em] text-t-magenta mt-1.5">{t.collector.bondedIssued}</div>
+          )}
           <p className="text-[12px] leading-[1.62] text-ink-soft mt-2 px-1.5">{t.brew.registeredBodyFull}</p>
         </div>
 

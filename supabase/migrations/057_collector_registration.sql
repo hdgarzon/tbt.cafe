@@ -105,3 +105,10 @@ comment on table public.contact_suppressions is
 
 alter table public.contact_suppressions enable row level security;
 revoke all on public.contact_suppressions from anon, authenticated;
+
+-- ─── 5. El documento de procedencia, en un bucket privado ────────────────────
+-- Un recibo lleva vendedor, dirección y precio, y Arweave no se puede retirar:
+-- a la cadena va solo el hash (works.provenance_hash); el archivo, aquí.
+insert into storage.buckets (id, name, public)
+values ('provenance', 'provenance', false)
+on conflict (id) do update set public = false;

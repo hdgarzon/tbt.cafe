@@ -66,5 +66,36 @@ const WIZARD = code(read('src/components/brew/BrewWizard.tsx'))
   ok('y es solo del servidor', /alter table public\.contact_suppressions enable row level security/.test(M) && /revoke all on public\.contact_suppressions from anon, authenticated/.test(M))
 }
 
+// ---- el flujo del coleccionista (prototipo v11, phase 2)
+{
+  const ROUTE = code(read('src/app/api/brew/bonded/route.ts'))
+  const STEPS = code(read('src/components/brew/CollectorSteps.tsx'))
+  const SUPP = code(read('src/lib/contact-suppression.ts'))
+  const WORKDATA = code(read('src/lib/work-data.ts'))
+  const CREATORS = code(read('src/lib/creator-data.ts'))
+  const WCLIENT = code(read('src/app/work/[tbtId]/WorkClient.tsx'))
+  ok('quién registra va antes de elegir cómo', WIZARD.includes("setStep('who')") && /if \(step === 'who'\)/.test(WIZARD))
+  ok('Espresso deshabilitado para el coleccionista, con la razón', WIZARD.includes('disabled={asCollector}') && WIZARD.includes('t.collector.espressoReason'))
+  ok('el coleccionista pasa por el creador y la procedencia', WIZARD.includes("setStep(asCollector ? 'creator' : 'work1')") && WIZARD.includes("onNext={() => setStep('provenance')}"))
+  ok('lo declarado se guarda en el servidor antes del pago', /if \(brewAs === 'collector'\) \{\s*const saved = await saveBondedDetails\(id, bonded, bondedDoc\)/.test(WIZARD))
+  ok('el sello nombra al creador declarado, no a quien registra', WIZARD.includes("brewAs === 'collector'") && WIZARD.includes('t.collector.unattributed'))
+  ok('la ruta solo acepta el borrador de quien llama', ROUTE.includes('work.creator_id !== auth.user.id') && ROUTE.includes("work.status !== 'draft'"))
+  ok('un contacto suprimido no se guarda', /await keepContact\(admin, c\.contact\)/.test(ROUTE) && /await keepContact\(admin, c\.estateContact\)/.test(ROUTE) &&
+     SUPP.includes(".from('contact_suppressions')"))
+  ok('el contacto se compara por hash', SUPP.includes('contactHash(n.value)'))
+  ok('el contacto del creador solo si está vivo y se le puede contactar', ROUTE.includes("status === 'living' && c.reachable === 'yes'"))
+  ok('el documento va al bucket privado y a la obra solo su hash', ROUTE.includes(".from('provenance')") && ROUTE.includes('provenance_hash: provenanceHash') && ROUTE.includes('`sha256:${hex}`'))
+  ok('la pantalla no pide dirección', !/address/i.test(STEPS))
+  ok('la página de la obra nombra al creador declarado', WORKDATA.includes('bonded:bonded_creators(name, unattributed, alias, city, status)') && WCLIENT.includes("work.registered_as === 'collector'"))
+  ok('una obra registrada como coleccionista no aparece como propia del que la registró', CREATORS.includes(".eq('registered_as', 'creator')"))
+  const locales = ['en', 'es', 'pt', 'fr']
+  const keys = Object.keys(JSON.parse(read('src/i18n/messages/en.json')).collector ?? {}).sort().join(',')
+  for (let i = 0; i < locales.length; i++) {
+    const m = JSON.parse(read(`src/i18n/messages/${locales[i]}.json`))
+    ok(`${locales[i]}: collector tiene las mismas claves`, Object.keys(m.collector ?? {}).sort().join(',') === keys && keys.length > 0)
+  }
+  ok('"Gallery certificate" pasa a Gallery documentation', JSON.parse(read('src/i18n/messages/en.json')).collector?.docGallery === 'Gallery documentation')
+}
+
 console.log(bad === 0 ? '\ntodo en orden' : `\n${bad} fallo(s)`)
 process.exit(bad === 0 ? 0 : 1)

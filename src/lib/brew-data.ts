@@ -680,3 +680,30 @@ export async function fetchDraftForResume(workId: string): Promise<ResumedDraft 
     location: cd?.contextData?.location ?? '',
   }
 }
+
+/**
+ * Lo que un coleccionista declara de una obra que no hizo — Work Order 01 Step 20.
+ *
+ * Se envía con el borrador ya creado. Lo guarda el servidor: lo público en
+ * bonded_creators, lo privado en bonded_private, el documento en un bucket
+ * privado con solo su hash hacia la cadena.
+ */
+export async function saveBondedDetails(
+  workId: string,
+  creator: Record<string, unknown>,
+  document: File | null
+): Promise<{ ok: boolean; suppressed?: boolean }> {
+  const auth = await authHeader()
+  if (!auth) return { ok: false }
+  const form = new FormData()
+  form.append('workId', workId)
+  form.append('creator', JSON.stringify(creator))
+  if (document) form.append('document', document)
+  try {
+    const res = await fetch('/api/brew/bonded', { method: 'POST', headers: auth, body: form })
+    const json = (await res.json().catch(() => ({}))) as { suppressed?: boolean }
+    return { ok: res.ok, suppressed: json.suppressed }
+  } catch {
+    return { ok: false }
+  }
+}

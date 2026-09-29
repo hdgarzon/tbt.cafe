@@ -77,7 +77,13 @@ export default function WorkPage({ params, scannedAt = null }: { params: { tbtId
   }
 
   const role = ownerRole(work, userId)
-  const creatorName = work.creator?.public_alias || work.creator?.display_name || t.work.unknownArtist
+  // Una obra bonded nombra al creador declarado, nunca a quien la registró (Step 20).
+  const bonded = work.registered_as === 'collector'
+  const creatorName = bonded
+    ? work.bonded?.unattributed
+      ? t.collector.unattributed
+      : work.bonded?.name || t.work.unknownArtist
+    : work.creator?.public_alias || work.creator?.display_name || t.work.unknownArtist
   const c = work.commerce!
   const shareUrl = `https://tbt.cafe/work/${work.tbt_id}`
 
@@ -199,10 +205,14 @@ export default function WorkPage({ params, scannedAt = null }: { params: { tbtId
 
       <h1 className="page-title mt-3">{work.title}</h1>
       <div className="page-sub normal-case tracking-normal text-[12px] mt-1">
-        <a href={`/creator/${work.creator_id}`} className="hover:underline">
-          {creatorName}
-        </a>
-        {work.series && (
+        {bonded ? (
+          <span>{creatorName}</span>
+        ) : (
+          <a href={`/creator/${work.creator_id}`} className="hover:underline">
+            {creatorName}
+          </a>
+        )}
+        {work.series && !bonded && (
           <>
             {' · '}
             <a href={`/creator/${work.creator_id}`} className="hover:underline">
