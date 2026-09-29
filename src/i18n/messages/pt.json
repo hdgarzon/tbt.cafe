@@ -881,7 +881,14 @@
       "needSignIn": "Autentique-se para continuar",
       "imageRequired": "Adicione uma imagem para continuar",
       "titleRequired": "Dê um título à obra",
-      "categoryRequired": "Escolha uma categoria"
+      "categoryRequired": "Escolha uma categoria",
+      "linkHasIdentifier": "O link {n} contém {what}, que não pode ir para o registro permanente. Altere ou remova-o.",
+      "linkIdentifierKinds": {
+        "email": "um e-mail",
+        "phone": "um número de telefone",
+        "coordinates": "coordenadas de mapa",
+        "uuid": "um identificador interno"
+      }
     },
     "coveredByTbt": "Coberto pela tbt.cafe",
     "coveredNote": "Esta é por nossa conta — restam {n} registros gratuitos.",
