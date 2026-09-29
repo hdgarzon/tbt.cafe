@@ -843,6 +843,7 @@
     "chainImageNoteNone": "El registro nombra la obra y prueba qué archivo era. No se publica nada más.",
     "chainImageNoteThumbnail": "Una copia reducida viaja con el registro para poder reconocerlo. Tu archivo se queda contigo.",
     "chainImageNoteFull": "La imagen se publica a tamaño completo y no se puede retirar. Antes se le quitan la ubicación y los datos de la cámara.",
+    "chainImageNoteCeiling": "Los archivos muy grandes se publican como una copia de alta calidad de menos de 8 MB.",
     "holdToSeal": "Mantén presionado para sellar",
     "sealed": "Sellado",
     "sealedHint": "Bloqueado y listo para registrar",

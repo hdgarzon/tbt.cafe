@@ -15,7 +15,7 @@ import { RECORD_SCHEMA } from '@/lib/chain/serialize'
  */
 
 export type CreatorType = 'individual' | 'group' | 'corporation'
-export type ImageKind = 'thumbnail' | 'full'
+export type ImageKind = 'thumbnail' | 'full' | 'reduced'
 export type Originality = 'original' | 'derivative' | 'authorized_edition'
 export type ProvenanceEvent = 'creation' | 'sale' | 'transfer' | 'gift'
 export type AmendmentClass = 'minor' | 'authorship'
@@ -49,7 +49,7 @@ function assertSequence(n: number): void {
   }
 }
 
-const KINDS: ImageKind[] = ['thumbnail', 'full']
+const KINDS: ImageKind[] = ['thumbnail', 'full', 'reduced']
 
 /**
  * La imagen publicada — Item 10.

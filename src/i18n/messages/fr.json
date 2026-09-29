@@ -843,6 +843,7 @@
     "chainImageNoteNone": "Le registre nomme l'œuvre et prouve quel fichier c'était. Rien d'autre n'est publié.",
     "chainImageNoteThumbnail": "Une copie réduite accompagne le registre pour qu'il soit reconnaissable. Votre fichier reste chez vous.",
     "chainImageNoteFull": "L'image est publiée en pleine résolution et ne peut pas être retirée. La localisation et les données de l'appareil sont supprimées au préalable.",
+    "chainImageNoteCeiling": "Les fichiers très volumineux sont publiés sous forme de copie haute qualité de moins de 8 Mo.",
     "holdToSeal": "Maintenez pour sceller",
     "sealed": "Scellée",
     "sealedHint": "Verrouillée et prête à être enregistrée",
