@@ -8,6 +8,7 @@ import { maskEmail, maskPhoneE164 } from '@/lib/masking'
 import { PrivateCodeSheet } from '@/components/PrivateCodeSheet'
 import { SecBlock } from '@/components/FormBits'
 import { RecoveryEmailSheet } from '@/components/RecoveryEmailSheet'
+import { fetchMyPrivateProfile, type MyPrivateProfile } from '@/lib/my-profile'
 import { BiometricSheet } from '@/components/BiometricSheet'
 import { SignInGate } from '@/components/SignInGate'
 
@@ -17,12 +18,7 @@ import { SignInGate } from '@/components/SignInGate'
  * Página dedicada, visible solo con sesión iniciada.
  */
 
-type Profile = {
-  recovery_email: string | null
-  recovery_email_verified: boolean
-  private_code_hash: string | null
-  private_code_freq: string | null
-}
+type Profile = Pick<MyPrivateProfile, 'recovery_email' | 'recovery_email_verified' | 'has_private_code' | 'private_code_freq'>
 
 export default function AuthHubPage() {
   const { t } = useLocale()
@@ -44,13 +40,9 @@ export default function AuthHubPage() {
     }
     setPhone(user.phone ?? null)
 
-    const { data } = await supabase
-      .from('profiles')
-      .select('recovery_email, recovery_email_verified, private_code_hash, private_code_freq')
-      .eq('id', user.id)
-      .single()
-
-    setProfile(data as Profile | null)
+    // Las columnas privadas ya no se leen de la tabla (053): la función
+    // responde solo por quien llama y dice si hay código, no su hash.
+    setProfile(await fetchMyPrivateProfile())
 
     // Dispositivos biométricos registrados (RLS: solo los propios)
     const { count } = await supabase
@@ -86,7 +78,7 @@ export default function AuthHubPage() {
     return <SignInGate message={t.authHub.needSignIn} />
   }
 
-  const hasCode = !!profile?.private_code_hash
+  const hasCode = !!profile?.has_private_code
   const emailVerified = !!profile?.recovery_email_verified
 
   return (

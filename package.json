@@ -45,7 +45,8 @@
     "check:stealth": "npx --yes tsx scripts/stealth-check.ts",
     "check:imagevectors": "npx --yes tsx scripts/image-vectors-check.ts",
     "reindex:images": "npx --yes tsx scripts/reindex-images.ts",
-    "check:tbtid": "npx --yes tsx scripts/tbt-id-check.ts"
+    "check:tbtid": "npx --yes tsx scripts/tbt-id-check.ts",
+    "check:profileprivacy": "npx --yes tsx scripts/profile-privacy-check.ts"
   },
   "dependencies": {
     "@aws-sdk/client-sns": "^3.1134.0",

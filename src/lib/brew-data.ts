@@ -1,4 +1,5 @@
 import { supabase } from '@/lib/supabase'
+import { fetchMyPrivateProfile } from '@/lib/my-profile'
 import { normalizeImage } from '@/lib/normalize-image'
 import { contentHash } from '@/lib/chain/content-hash'
 import { stripMetadata, jpegOrientation } from '@/lib/chain/strip-metadata'
@@ -51,14 +52,26 @@ export type CreatorProfileRow = {
 
 /** ¿El usuario ya tiene un perfil de creador configurado? (el "gate" del chooser). */
 export async function fetchCreatorProfile(userId: string): Promise<CreatorProfileRow | null> {
-  const { data } = await supabase
-    .from('profiles')
-    .select(
-      'creator_type, legal_name, public_alias, collective_name, lead_representative, entity_name, tax_id, credentials, social_linkedin, social_website, social_instagram, bio, email, phone'
-    )
-    .eq('id', userId)
-    .maybeSingle()
-  return data
+  // Lo público de la tabla; lo privado (nombre legal, documento, e-Mail,
+  // teléfono) por my_profile_private(), que responde solo por quien llama (053).
+  const [{ data }, mine] = await Promise.all([
+    supabase
+      .from('profiles')
+      .select(
+        'creator_type, public_alias, collective_name, lead_representative, entity_name, credentials, social_linkedin, social_website, social_instagram, bio'
+      )
+      .eq('id', userId)
+      .maybeSingle(),
+    fetchMyPrivateProfile(),
+  ])
+  if (!data) return null
+  return {
+    ...data,
+    legal_name: mine?.legal_name ?? null,
+    tax_id: mine?.tax_id ?? null,
+    email: mine?.email ?? null,
+    phone: mine?.phone ?? null,
+  } as CreatorProfileRow
 }
 
 export function isCreatorProfileComplete(p: CreatorProfileRow | null): boolean {

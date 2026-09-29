@@ -13,6 +13,7 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 import { Resend } from 'resend'
 import { emailCopyFor, renderEmail, type Locale } from '@/lib/email-templates'
 import { recordProviderEvent } from '@/lib/provider-events'
+import { createAdminClient } from '@/lib/supabase-admin'
 
 const LOCALES: Locale[] = ['en', 'es', 'pt', 'fr']
 const SITE = 'https://tbt.cafe'
@@ -42,7 +43,9 @@ export async function sendNotificationEmail(
       return
     }
 
-    const { data: profile } = await supabase
+    // El e-Mail es columna privada (053): se lee con el service role, sea cual
+    // sea el cliente con que se llamó a notify().
+    const { data: profile } = await createAdminClient()
       .from('profiles')
       .select('email, language_override')
       .eq('id', params.userId)
