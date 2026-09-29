@@ -1090,5 +1090,21 @@
     "askPlaceholder": "Ask a question about this article",
     "postFailed": "That could not be posted.",
     "someone": "Someone"
+  },
+  "titleLink": {
+    "kicker": "Your title",
+    "loading": "Loading your title…",
+    "needAuth": "Authenticate to open your title.",
+    "notFound": "There is no title with this number under your authentication.",
+    "error": "We couldn't open your title just now. Please try again.",
+    "number": "Title No. {number}",
+    "superseded": "A later title, No. {number}, has been issued for this work. This one remains a true record of the holder it names.",
+    "expired": "This link has closed: title links stay open for 30 days. The record of your work is unchanged. To receive the title again, open a help request.",
+    "rendering": "Your title is being prepared. Come back in a minute.",
+    "alt": "Animated title No. {number}",
+    "downloadGif": "Download the title (GIF)",
+    "downloadPng": "Download the still (PNG)",
+    "availableUntil": "This link stays open until {date}.",
+    "workPage": "See the work's page"
   }
 }

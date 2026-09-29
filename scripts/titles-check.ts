@@ -67,11 +67,14 @@ const sqlOf = (p: string) => read(p).split('\n').filter((l) => !l.trim().startsW
     for (let i = 0; i < names.length; i++) {
       const rel = join(dir, names[i])
       if (statSync(join(root, rel)).isDirectory()) walk(rel)
-      else if (/\.(ts|tsx)$/.test(rel) && /\bowner_index\b/.test(read(rel))) hits.push(rel)
+      // La columna retirada es la de works. El índice sigue existiendo como dato
+      // del título —el renderer lo imprime y va congelado en titles.facts—, así
+      // que se busca la lectura desde works, no la palabra.
+      else if (/\.(ts|tsx)$/.test(rel) && /from\('works'\)\s*\.select\([^)]*\bowner_index\b/.test(read(rel))) hits.push(rel)
     }
   }
   walk('src')
-  ok('nadie bajo src lee owner_index', hits.length === 0, hits.join(', '))
+  ok('nadie bajo src lee works.owner_index', hits.length === 0, hits.join(', '))
 }
 
 // ---- ningun codigo escribe ya en la tabla vieja
@@ -87,8 +90,10 @@ const sqlOf = (p: string) => read(p).split('\n').filter((l) => !l.trim().startsW
   }
   walk('src')
   ok('src no nombra la tabla vieja', hits.length === 0, hits.join(', '))
-  ok('complete-tbt emite en titles', /\.from\('titles'\)\s*\.insert\(/.test(read('src/app/api/complete-tbt/route.ts')))
-  ok('complete-transfer emite en titles', /\.from\('titles'\)\s*\.insert\(/.test(read('src/app/api/complete-transfer/route.ts')))
+  // Desde Stage 5 las dos rutas emiten por issueTitle, que escribe en titles.
+  ok('complete-tbt emite el título', read('src/app/api/complete-tbt/route.ts').includes('issueTitle(createAdminClient(), {'))
+  ok('complete-transfer emite el título', read('src/app/api/complete-transfer/route.ts').includes('issueTitle(serviceClient, {'))
+  ok('issueTitle escribe en titles', /\.from\('titles'\)\s*\.insert\(/.test(read('src/lib/titles/issue.ts')))
   ok('administracion lee titles', /\.from\('titles'\)/.test(read('src/app/api/admin/works/route.ts')))
 }
 

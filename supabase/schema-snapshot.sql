@@ -134,7 +134,8 @@ create table if not exists public.profiles (
   collector_about text,
   collector_website text,
   covered_registrations_granted integer default 0 not null,
-  payout_country text
+  payout_country text,
+  signature_strokes jsonb
 );
 
 create table if not exists public.works (
@@ -189,7 +190,8 @@ create table if not exists public.works (
   creator_status text default 'living'::text not null,
   provenance_hash text,
   image_sha256 text,
-  plagiarism_scan_id uuid
+  plagiarism_scan_id uuid,
+  signature_strokes jsonb
 );
 
 comment on column public.works.mint_address is
@@ -245,7 +247,27 @@ create table if not exists public.titles (
   valid_until timestamp with time zone,
   supersedes uuid,
   kind text default 'standard'::text not null,
-  delivery_state text default 'pending'::text not null
+  delivery_state text default 'pending'::text not null,
+  title_number text,
+  event text,
+  event_date date,
+  facts jsonb,
+  source_key text,
+  issued_at timestamp with time zone default now(),
+  link_expires_at timestamp with time zone
+);
+
+create table if not exists public.title_files (
+  title_id uuid not null,
+  gif_path text not null,
+  png_path text not null,
+  webp_path text not null,
+  gif_sha256 text not null,
+  png_sha256 text not null,
+  webp_sha256 text not null,
+  render_ms integer,
+  rendered_at timestamp with time zone default now() not null,
+  files_deleted_at timestamp with time zone
 );
 
 create table if not exists public.context_snapshots (
@@ -797,6 +819,11 @@ alter table public.titles add constraint titles_supersedes_fkey FOREIGN KEY (sup
 alter table public.titles add constraint titles_not_self_superseding CHECK (((supersedes IS NULL) OR (supersedes <> id)));
 alter table public.titles add constraint titles_kind_check CHECK ((kind = ANY (ARRAY['standard'::text, 'bonded'::text])));
 alter table public.titles add constraint titles_delivery_state_check CHECK ((delivery_state = ANY (ARRAY['pending'::text, 'sent'::text, 'failed'::text])));
+alter table public.titles add constraint titles_event_check CHECK (((event IS NULL) OR (event = ANY (ARRAY['REGISTERED'::text, 'PURCHASED'::text, 'TRANSFERRED'::text, 'AUTHENTICATED'::text]))));
+alter table public.title_files add constraint title_files_pkey PRIMARY KEY (title_id);
+alter table public.title_files add constraint title_files_title_id_fkey FOREIGN KEY (title_id) REFERENCES titles(id) ON DELETE CASCADE;
+alter table public.profiles add constraint profiles_signature_strokes_array CHECK (((signature_strokes IS NULL) OR (jsonb_typeof(signature_strokes) = 'array'::text)));
+alter table public.works add constraint works_signature_strokes_array CHECK (((signature_strokes IS NULL) OR (jsonb_typeof(signature_strokes) = 'array'::text)));
 
 alter table public.context_snapshots add constraint context_snapshots_pkey PRIMARY KEY (id);
 alter table public.context_snapshots add constraint context_snapshots_work_id_fkey FOREIGN KEY (work_id) REFERENCES works(id) ON DELETE CASCADE;
@@ -969,6 +996,9 @@ create index if not exists idx_profiles_display_name ON public.profiles USING bt
 create index if not exists idx_titles_work_id ON public.titles USING btree (work_id);
 create index if not exists idx_titles_owner_id ON public.titles USING btree (owner_id);
 create index if not exists idx_titles_supersedes ON public.titles USING btree (supersedes) WHERE (supersedes IS NOT NULL);
+create unique index if not exists titles_source_key_key ON public.titles USING btree (source_key) WHERE (source_key IS NOT NULL);
+create unique index if not exists titles_work_version_key ON public.titles USING btree (work_id, version) WHERE (title_number IS NOT NULL);
+create index if not exists titles_owner_number_idx ON public.titles USING btree (owner_id, title_number);
 create index if not exists idx_context_snapshots_elaboration_type ON public.context_snapshots USING btree (elaboration_type);
 create index if not exists idx_ownership_history_work_id ON public.ownership_history USING btree (work_id);
 create index if not exists idx_ownership_history_owner_user_id ON public.ownership_history USING btree (owner_user_id);
@@ -1052,6 +1082,7 @@ alter table public.works enable row level security;
 alter table public.profiles enable row level security;
 alter table public.work_commerce enable row level security;
 alter table public.titles enable row level security;
+alter table public.title_files enable row level security;
 alter table public.context_snapshots enable row level security;
 alter table public.ownership_history enable row level security;
 alter table public.transfers enable row level security;
@@ -1104,7 +1135,6 @@ create policy "Commerce visible para obras accesibles" on public.work_commerce f
 create policy "Creadores pueden gestionar commerce" on public.work_commerce for all using ((EXISTS ( SELECT 1 FROM works w WHERE ((w.id = work_commerce.work_id) AND (w.creator_id = auth.uid())))));
 
 create policy "Titulos son publicos" on public.titles for select using (true);
-create policy "Creador o dueño puede emitir titulos" on public.titles for insert with check ((EXISTS ( SELECT 1 FROM works w WHERE ((w.id = titles.work_id) AND ((w.creator_id = ( SELECT auth.uid() AS uid)) OR (w.current_owner_id = ( SELECT auth.uid() AS uid)))))));
 
 create policy "Context snapshots are viewable for certified works" on public.context_snapshots for select using ((EXISTS ( SELECT 1 FROM works w WHERE ((w.id = context_snapshots.work_id) AND ((w.status = 'certified'::work_status) OR (w.creator_id = auth.uid()))))));
 create policy "Creators can manage their context snapshots" on public.context_snapshots for all using ((EXISTS ( SELECT 1 FROM works w WHERE ((w.id = context_snapshots.work_id) AND (w.creator_id = auth.uid())))));

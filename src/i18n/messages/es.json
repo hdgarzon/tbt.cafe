@@ -1090,5 +1090,21 @@
     "askPlaceholder": "Haz una pregunta sobre este artículo",
     "postFailed": "No se pudo publicar.",
     "someone": "Alguien"
+  },
+  "titleLink": {
+    "kicker": "Tu título",
+    "loading": "Cargando tu título…",
+    "needAuth": "Autentícate para abrir tu título.",
+    "notFound": "No hay un título con este número bajo tu autenticación.",
+    "error": "No pudimos abrir tu título en este momento. Vuelve a intentarlo.",
+    "number": "Título No. {number}",
+    "superseded": "Ya se emitió un título posterior para esta obra, el No. {number}. Este sigue siendo un registro fiel del titular que nombra.",
+    "expired": "Este enlace ya cerró: los enlaces de título duran 30 días. El registro de tu obra no cambia. Para recibir el título de nuevo, abre una solicitud de ayuda.",
+    "rendering": "Estamos preparando tu título. Vuelve en un minuto.",
+    "alt": "Título animado No. {number}",
+    "downloadGif": "Descargar el título (GIF)",
+    "downloadPng": "Descargar la imagen fija (PNG)",
+    "availableUntil": "Este enlace está abierto hasta el {date}.",
+    "workPage": "Ver la página de la obra"
   }
 }
