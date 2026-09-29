@@ -1106,5 +1106,17 @@
     "downloadPng": "Télécharger l’image fixe (PNG)",
     "availableUntil": "Ce lien reste ouvert jusqu’au {date}.",
     "workPage": "Voir la page de l’œuvre"
+  },
+  "signature": {
+    "label": "Signature",
+    "title": "Votre signature",
+    "instruction": "Signez avec le doigt, ou avec une souris ou un pavé tactile. Elle figure sur les titres des œuvres que vous enregistrerez désormais.",
+    "none": "Pas encore de signature. Vos titres affichent votre nom seul.",
+    "draw": "Ajouter votre signature",
+    "redraw": "La redessiner",
+    "clear": "Effacer",
+    "done": "Terminé",
+    "hint": "Facultatif. Les œuvres déjà enregistrées gardent la signature avec laquelle elles ont été émises.",
+    "saveFailed": "Nous n’avons pas pu enregistrer votre signature. Réessayez."
   }
 }

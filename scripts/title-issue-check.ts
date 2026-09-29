@@ -74,6 +74,24 @@ const LINK = code(read('src/app/api/titles/[number]/route.ts'))
   ok('se congela al certificar, sin pisar una existente', /\.update\(\{ signature_strokes: signer\.signature_strokes \}\)\s*\.eq\('id', workId\)\s*\.is\('signature_strokes', null\)/.test(TBT))
 }
 
+// ---- el pad de firma (§5 a, b)
+{
+  const pad = code(read('src/components/SignaturePad.tsx'))
+  const page = code(read('src/app/profile/creator/page.tsx'))
+  ok('los trazos se normalizan a la caja 330 × 80', pad.includes('export const SIG_W = 330') && pad.includes('export const SIG_H = 80'))
+  ok('se guardan trazos, no una imagen', !/toDataURL\(/.test(pad) && !/toBlob\(/.test(pad))
+  ok('el creador guarda la suya en su perfil', /\.update\(\{ signature_strokes: next \}\)\.eq\('id', user\.id\)/.test(page))
+  ok('y la lee por la función de lo propio', /setSignature\(mine\?\.signature_strokes/.test(page))
+  ok('la función la devuelve, solo a quien llama', /'signature_strokes', p\.signature_strokes/.test(M055) && /where p\.id = auth\.uid\(\)/.test(M055))
+  ok('el tamaño está acotado', /pg_column_size\(signature_strokes\) < 65536/.test(M055))
+  const locales = ['en', 'es', 'pt', 'fr']
+  const keys = Object.keys(JSON.parse(read('src/i18n/messages/en.json')).signature ?? {}).sort().join(',')
+  for (let i = 0; i < locales.length; i++) {
+    const m = JSON.parse(read(`src/i18n/messages/${locales[i]}.json`))
+    ok(`${locales[i]}: signature tiene las mismas claves`, Object.keys(m.signature ?? {}).sort().join(',') === keys && keys.length > 0)
+  }
+}
+
 // ---- la página del enlace (Step 17)
 {
   ok('pide sesión', LINK.includes('const auth = await authenticate(request)'))

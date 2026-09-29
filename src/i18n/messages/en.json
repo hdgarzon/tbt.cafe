@@ -1106,5 +1106,17 @@
     "downloadPng": "Download the still (PNG)",
     "availableUntil": "This link stays open until {date}.",
     "workPage": "See the work's page"
+  },
+  "signature": {
+    "label": "Signature",
+    "title": "Your signature",
+    "instruction": "Sign with your finger, or with a mouse or trackpad. It appears on the titles of the works you register from now on.",
+    "none": "No signature yet. Your titles show your name alone.",
+    "draw": "Add your signature",
+    "redraw": "Draw it again",
+    "clear": "Clear",
+    "done": "Done",
+    "hint": "Optional. Works already registered keep the signature they were issued with.",
+    "saveFailed": "We couldn't save your signature. Please try again."
   }
 }

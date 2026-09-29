@@ -1106,5 +1106,17 @@
     "downloadPng": "Descargar la imagen fija (PNG)",
     "availableUntil": "Este enlace está abierto hasta el {date}.",
     "workPage": "Ver la página de la obra"
+  },
+  "signature": {
+    "label": "Firma",
+    "title": "Tu firma",
+    "instruction": "Firma con el dedo, o con el mouse o el trackpad. Aparece en los títulos de las obras que registres de ahora en adelante.",
+    "none": "Todavía no tienes firma. Tus títulos muestran solo tu nombre.",
+    "draw": "Agregar tu firma",
+    "redraw": "Volver a dibujarla",
+    "clear": "Borrar",
+    "done": "Listo",
+    "hint": "Opcional. Las obras ya registradas conservan la firma con la que se emitieron.",
+    "saveFailed": "No pudimos guardar tu firma. Vuelve a intentarlo."
   }
 }

@@ -34,9 +34,12 @@ alter table public.profiles
 alter table public.works
   add column if not exists signature_strokes jsonb;
 
+-- La firma la escribe el propio creador desde el navegador (su fila, RLS de
+-- la 001). Se acota el tamaño: unos cientos de trazos son una firma; megabytes
+-- serían otra cosa.
 alter table public.profiles drop constraint if exists profiles_signature_strokes_array;
 alter table public.profiles add constraint profiles_signature_strokes_array
-  check (signature_strokes is null or jsonb_typeof(signature_strokes) = 'array');
+  check (signature_strokes is null or (jsonb_typeof(signature_strokes) = 'array' and pg_column_size(signature_strokes) < 65536));
 alter table public.works drop constraint if exists works_signature_strokes_array;
 alter table public.works add constraint works_signature_strokes_array
   check (signature_strokes is null or jsonb_typeof(signature_strokes) = 'array');
@@ -45,6 +48,35 @@ comment on column public.profiles.signature_strokes is
   'La firma actual del creador: arreglo de trazos, cada uno una lista de puntos [x, y] normalizados a 330 × 80. Opcional. Title Spec 02 §5.';
 comment on column public.works.signature_strokes is
   'Copia congelada de la firma del creador al certificar. Nunca cambia para esta obra aunque el creador redibuje la suya; el renderer lee solo esta. Title Spec 02 §5 c, f.';
+
+-- La 053 cerró al cliente toda columna de profiles que no esté en su lista, y
+-- esta también: el creador lee la suya por my_profile_private(), que se
+-- reescribe aquí para devolverla. Sigue respondiendo solo por auth.uid().
+create or replace function public.my_profile_private()
+returns jsonb
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  select jsonb_build_object(
+    'email', p.email,
+    'phone', p.phone,
+    'physical_address', p.physical_address,
+    'tax_id', p.tax_id,
+    'legal_name', p.legal_name,
+    'recovery_email', p.recovery_email,
+    'recovery_email_verified', p.recovery_email_verified,
+    'has_private_code', p.private_code_hash is not null,
+    'private_code_freq', p.private_code_freq,
+    'signature_strokes', p.signature_strokes
+  )
+  from public.profiles p
+  where p.id = auth.uid()
+$$;
+
+revoke execute on function public.my_profile_private() from public, anon, authenticated;
+grant execute on function public.my_profile_private() to authenticated;
 
 -- ─── Lo que el título imprime ────────────────────────────────────────────────
 alter table public.titles

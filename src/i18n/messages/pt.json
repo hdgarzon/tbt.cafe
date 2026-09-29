@@ -1106,5 +1106,17 @@
     "downloadPng": "Baixar a imagem fixa (PNG)",
     "availableUntil": "Este link fica aberto até {date}.",
     "workPage": "Ver a página da obra"
+  },
+  "signature": {
+    "label": "Assinatura",
+    "title": "Sua assinatura",
+    "instruction": "Assine com o dedo, ou com o mouse ou o trackpad. Ela aparece nos títulos das obras que você registrar daqui em diante.",
+    "none": "Você ainda não tem assinatura. Seus títulos mostram só o seu nome.",
+    "draw": "Adicionar sua assinatura",
+    "redraw": "Desenhar de novo",
+    "clear": "Apagar",
+    "done": "Pronto",
+    "hint": "Opcional. As obras já registradas mantêm a assinatura com que foram emitidas.",
+    "saveFailed": "Não conseguimos salvar sua assinatura. Tente novamente."
   }
 }
