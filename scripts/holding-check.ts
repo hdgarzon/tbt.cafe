@@ -57,8 +57,14 @@ async function main() {
   const tokenPath = join(root, 'src/lib/solana/token.ts')
   if (existsSync(tokenPath)) {
     const token = readFileSync(tokenPath, 'utf8')
-    ok('the mint owner is a holding address', /owner: holdingAddress\(/.test(token))
-    ok('no transfer to the payer', !/newOwner: [^,\n]*payer/i.test(token))
+    ok('the mint owner is a holding address', /owner: holding\(`\$\{work\.tbtId\}-1`\)/.test(token))
+    ok('a move goes to a holding address', /newOwner: holding\(toTitleNumber\)/.test(token))
+    ok('a move checks the asset sits at the previous holding', /asset\.owner !== holding\(fromTitleNumber\)/.test(token))
+    ok('the payer is never an owner', !/(newOwner|owner): [^,\n]*payer/i.test(token))
+    ok('the move is signed by the authority, not the owner', /transfer\(umi, \{[\s\S]{0,200}authority: auth/.test(token))
+    ok('the mint URI is the registration record', /uri: registrationRecordUri/.test(token))
+    ok('no legacy library in the new module', !token.includes("'@metaplex-foundation/js'"))
+    ok('the RPC is the guarded one', token.includes('createUmi(getRpcUrl())'))
   } else {
     console.log('skip mint/transfer owner checks — src/lib/solana/token.ts not yet written (Stage 4.1)')
   }
