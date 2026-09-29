@@ -1090,5 +1090,17 @@
     "askPlaceholder": "Ask a question about this article",
     "postFailed": "That could not be posted.",
     "someone": "Someone"
+  },
+  "claim": {
+    "file": "File a claim",
+    "sub": "This work is already registered. Tell us why it should be yours to register, and a person will read it.",
+    "bodyLabel": "What is your claim?",
+    "bodyPlaceholder": "How the work came to you, when, and anything that supports it — receipts, correspondence, provenance.",
+    "note": "It becomes a help request you can follow in your hub. The current holder is not contacted automatically — we read it first.",
+    "send": "Send claim",
+    "bodyRequired": "Tell us what your claim is.",
+    "failed": "We couldn't send your claim. Please try again.",
+    "sentTitle": "Claim sent",
+    "sentBody": "Reference {ref}. You can follow it in your help requests. We read claims in the order they arrive and reply to every one."
   }
 }

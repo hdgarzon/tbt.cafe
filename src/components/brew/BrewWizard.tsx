@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
+import { ClaimForm } from '@/components/brew/ClaimForm'
 import { useSearchParams } from 'next/navigation'
 import { useLocale } from '@/i18n/LocaleProvider'
 import { useShell } from '@/components/AppShell'
@@ -1208,6 +1209,8 @@ export function BrewWizard() {
               <p className="text-[12px] text-ink-soft mt-1.5 leading-[1.5]">
                 {(scanState === 'blocked' ? t.brew.scanBlockBody : t.brew.scanWarnBody).replace('{score}', String(scanScore))}
               </p>
+              {/* Step 20: el registro bloqueado ofrece reclamar la obra (ticket HR-#### de la categoría claim). */}
+              {scanState === 'blocked' && <ClaimForm scanId={scanId} />}
               {scanState === 'warning' && (
                 <div className="mt-4">
                   <div className="text-[11px] uppercase tracking-[0.1em] text-ink-soft mb-2">{t.brew.declareRelationship}</div>

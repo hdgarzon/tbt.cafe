@@ -1090,5 +1090,17 @@
     "askPlaceholder": "Posez une question sur cet article",
     "postFailed": "La publication n'a pas abouti.",
     "someone": "Quelqu'un"
+  },
+  "claim": {
+    "file": "Déposer une réclamation",
+    "sub": "Cette œuvre est déjà enregistrée. Expliquez-nous pourquoi il vous revient de l’enregistrer, et une personne la lira.",
+    "bodyLabel": "Quelle est votre réclamation ?",
+    "bodyPlaceholder": "Comment l’œuvre vous est parvenue, quand, et tout ce qui l’étaie : reçus, correspondance, provenance.",
+    "note": "Elle devient une demande d’aide que vous suivez dans votre espace. Le détenteur actuel n’est pas prévenu automatiquement : nous la lisons d’abord.",
+    "send": "Envoyer la réclamation",
+    "bodyRequired": "Dites-nous quelle est votre réclamation.",
+    "failed": "Nous n’avons pas pu envoyer votre réclamation. Réessayez.",
+    "sentTitle": "Réclamation envoyée",
+    "sentBody": "Référence {ref}. Vous pouvez la suivre dans vos demandes d’aide. Nous lisons les réclamations dans l’ordre d’arrivée et répondons à chacune."
   }
 }

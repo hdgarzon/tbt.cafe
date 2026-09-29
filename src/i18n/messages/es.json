@@ -1090,5 +1090,17 @@
     "askPlaceholder": "Haz una pregunta sobre este artículo",
     "postFailed": "No se pudo publicar.",
     "someone": "Alguien"
+  },
+  "claim": {
+    "file": "Presentar un reclamo",
+    "sub": "Esta obra ya está registrada. Cuéntanos por qué te corresponde registrarla y una persona lo leerá.",
+    "bodyLabel": "¿Cuál es tu reclamo?",
+    "bodyPlaceholder": "Cómo llegó a ti la obra, cuándo, y todo lo que lo respalde: recibos, correspondencia, procedencia.",
+    "note": "Se convierte en una solicitud de ayuda que puedes seguir en tu panel. No avisamos automáticamente al titular actual: primero lo leemos.",
+    "send": "Enviar reclamo",
+    "bodyRequired": "Cuéntanos cuál es tu reclamo.",
+    "failed": "No pudimos enviar tu reclamo. Vuelve a intentarlo.",
+    "sentTitle": "Reclamo enviado",
+    "sentBody": "Referencia {ref}. Puedes seguirlo en tus solicitudes de ayuda. Leemos los reclamos en el orden en que llegan y respondemos a todos."
   }
 }
