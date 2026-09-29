@@ -2,7 +2,7 @@
   "header": {
     "menu": "Menu",
     "favorites": "Favorites",
-    "signIn": "Sign in",
+    "signIn": "Authenticate",
     "signOut": "Sign out"
   },
   "home": {
@@ -64,7 +64,7 @@
     "royalties": "Royalties",
     "transfers": "Transfers",
     "sales": "Sales",
-    "needSignIn": "Sign in to open this section.",
+    "needSignIn": "Authenticate to open this section.",
     "lockedNote": "These are yours once you're signed in.",
     "lockedNoteBold": "Tap any of them to connect.",
     "footNote1": "tbt.cafe — Transbit × BROCHA",
@@ -84,7 +84,6 @@
     "privacyPolicy": "Privacy Policy",
     "sendCode": "Send code",
     "sending": "Sending…",
-    "bioInstead": "Sign in with biometrics instead",
     "codeSentTo": "Code sent to",
     "changeNumber": "change number",
     "resendCode": "resend code",
@@ -110,7 +109,7 @@
   },
   "authHub": {
     "loading": "Loading…",
-    "needSignIn": "Sign in to manage your authentication.",
+    "needSignIn": "Authenticate to manage your authentication.",
     "mobilePhone": "Mobile phone",
     "change": "Change",
     "recoveryEmail": "Recovery email",
@@ -174,11 +173,6 @@
     "description": "Register this device with your fingerprint or face. Biometrics never leave the device — we only store a public key. It adds to the SMS code, never replaces it as your identity.",
     "setUp": "Set up",
     "prompting": "Follow your device's prompt…",
-    "chooseMode": "How do you want to use biometrics on this device?",
-    "quickTitle": "Quick authentication",
-    "quickDesc": "One touch identifies you, no SMS code on this device.",
-    "extraTitle": "Extra security layer",
-    "extraDesc": "Biometrics required in addition to the SMS code.",
     "registered": "Device registered.",
     "registeredDesc": "You can now use biometrics on this device.",
     "done": "Done",
@@ -187,21 +181,7 @@
       "enrollFailed": "We couldn't register the device",
       "saveFailed": "We couldn't save the device"
     },
-    "chooseSave": "Save",
-    "doneQuick": "On this device, a touch signs you in.",
     "doneExtra": "Biometric will be required in addition to your verification code."
-  },
-  "biometricSignIn": {
-    "title": "Quick authentication",
-    "description": "Enter your phone to locate your registered device.",
-    "continue": "Continue",
-    "starting": "Starting…",
-    "errors": {
-      "cancelled": "You cancelled the verification.",
-      "needSignIn": "We couldn't start the verification",
-      "failed": "We couldn't verify the device",
-      "noEmail": "Quick authentication needs an email on your account. For now, sign in with the SMS code."
-    }
   },
   "profile": {
     "creatorFormSub": "Your identity as a maker",
@@ -213,7 +193,7 @@
     "creatorSub": "How you're credited as a maker.",
     "collectorTitle": "Collector profile",
     "collectorSub": "How you appear as an owner.",
-    "needSignIn": "Sign in to edit your profile.",
+    "needSignIn": "Authenticate to edit your profile.",
     "pageSub": "Set up how you appear on TBTs",
     "backMenu": "Menu",
     "statusSet": "Set up ✓"
@@ -252,7 +232,7 @@
     "save": "Save",
     "saving": "Saving…",
     "saved": "Saved ✓",
-    "needSignIn": "Sign in to edit your profile.",
+    "needSignIn": "Authenticate to edit your profile.",
     "errors": {
       "saveFailed": "We couldn't save the profile"
     },
@@ -277,14 +257,14 @@
     "save": "Save",
     "saving": "Saving…",
     "saved": "Saved ✓",
-    "needSignIn": "Sign in to edit your profile.",
+    "needSignIn": "Authenticate to edit your profile.",
     "errors": {
       "saveFailed": "We couldn't save the profile"
     }
   },
   "notifications": {
     "backLabel": "Notifications",
-    "needSignIn": "Sign in to manage your notifications.",
+    "needSignIn": "Authenticate to manage your notifications.",
     "categories": {
       "tbtActivity": "TBT activity",
       "security": "Security",
@@ -381,7 +361,7 @@
     "offerSent": "Your offer has been sent.",
     "permanentLink": "Permanent link",
     "errors": {
-      "needSignIn": "Sign in to buy this piece.",
+      "needSignIn": "Authenticate to buy this piece.",
       "buyFailed": "We couldn't start the purchase",
       "offerFailed": "We couldn't send the offer",
       "saveFailed": "We couldn't save the change",
@@ -479,7 +459,7 @@
     "recipient": "Recipient",
     "done": "Done",
     "errors": {
-      "needSignIn": "Sign in to transfer this work.",
+      "needSignIn": "Authenticate to transfer this work.",
       "transferFailed": "We couldn't start the transfer",
       "transferAlreadyPending": "There's already a transfer in progress for this work.",
       "cancelFailed": "We couldn't cancel the transfer",
@@ -507,7 +487,7 @@
     "lapsedBody": "It was not accepted within 24 hours. Ask the sender to send it again.",
     "alreadyResolvedTitle": "Already handled",
     "alreadyResolvedBody": "This transfer isn't waiting on a response anymore.",
-    "needSignInTitle": "Sign in to continue",
+    "needSignInTitle": "Authenticate to continue",
     "needSignInBody": "We need to confirm who you are before this work can move to you.",
     "done": "Done",
     "errors": {
@@ -602,7 +582,7 @@
     "offerStatusExpired": "expired",
     "transactionsSub": "Transfers you've sent or received",
     "transactionsEmpty": "No transactions yet.",
-    "needSignIn": "Sign in to see this.",
+    "needSignIn": "Authenticate to see this.",
     "statusDraft": "Draft",
     "statusCertified": "Certified",
     "statusTransferred": "Transferred",
@@ -657,7 +637,7 @@
     "rateFirst": "Rate all three first",
     "savedPrivately": "Curation saved privately",
     "posted": "Curation posted",
-    "needSignIn": "Sign in to leave a curation."
+    "needSignIn": "Authenticate to leave a curation."
   },
   "personal": {
     "seriesLabel": "Series",
@@ -898,7 +878,7 @@
       "checkoutFailed": "We couldn't start the payment",
       "completeFailed": "We couldn't finish registering the work",
       "contextFailed": "We couldn't generate the context",
-      "needSignIn": "Sign in to continue",
+      "needSignIn": "Authenticate to continue",
       "imageRequired": "Add an image to continue",
       "titleRequired": "Give the work a title",
       "categoryRequired": "Choose a category"

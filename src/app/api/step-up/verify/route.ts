@@ -9,9 +9,10 @@ import { rpFromRequest } from '@/lib/webauthn'
 /**
  * Verifica la aserción del step-up y emite la prueba biométrica.
  *
- * A diferencia de `/api/webauthn/auth/finish`, esta ruta NO emite sesión: quien
- * llega ya la tiene, y lo único que hace falta es demostrar presencia ahora
- * mismo. Emitir una sesión aquí sería un efecto secundario que nadie pidió.
+ * Esta ruta NO emite sesión: quien llega ya la tiene, y lo único que hace falta
+ * es demostrar presencia ahora mismo. El biométrico nunca emite una sesión: es
+ * un segundo factor que se suma al código SMS (lista maestra, D1), y el antiguo
+ * inicio de sesión biométrico —`/api/webauthn/auth/*`— se retiró.
  *
  * Esta es la única ruta que puede afirmar que el biométrico ocurrió para un
  * step-up, así que es la única que emite la prueba (Spec 07 §1.4).

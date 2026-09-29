@@ -37,7 +37,9 @@ ok('simulated con cualquier valor cierto', wasDelivered({ ok: true }, { simulate
   const sms = readFileSync(join(__dirname, '..', 'src/app/api/send-sms/route.ts'), 'utf8')
   const writes = sms.match(/from\('mms_deliveries'\)/g) ?? []
 
-  ok('hay al menos cuatro escrituras al libro', writes.length >= 4)
+  // Tres caminos, y cada uno deja fila: lo que Twilio respondió, que no haya
+  // proveedor, y el fallo. Eran cuatro con el respaldo por SNS (retirado, A2).
+  ok('hay al menos tres escrituras al libro', writes.length >= 3)
   ok(
     'ninguna usa el cliente del usuario',
     !sms.includes("supabase.from('mms_deliveries')"),
@@ -130,6 +132,22 @@ ok('simulated con cualquier valor cierto', wasDelivered({ ok: true }, { simulate
     /creator_id !== user\.id && owner\.current_owner_id !== user\.id/.test(sms),
     'un coleccionista que ya es dueño recibia un 403 al pedir lo suyo'
   )
+}
+
+// ---- un solo proveedor de SMS — lista maestra A2
+//
+// El respaldo por AWS SNS tenia las credenciales muertas: cada envio fallido
+// fallaba dos veces y el segundo fallo no decia nada nuevo. Se retiro en lugar
+// de repararlo.
+{
+  const root = join(__dirname, '..')
+  const sms = readFileSync(join(root, 'src/app/api/send-sms/route.ts'), 'utf8')
+  const pkg = JSON.parse(readFileSync(join(root, 'package.json'), 'utf8'))
+  ok('send-sms no importa el cliente de SNS', !sms.includes("from '@aws-sdk/client-sns'"))
+  ok('ni lo construye', !sms.includes('new SNSClient('))
+  ok('ni publica por SNS', !sms.includes('new PublishCommand('))
+  ok('la dependencia se fue de package.json',
+     !(pkg.dependencies && pkg.dependencies['@aws-sdk/client-sns']) && !(pkg.devDependencies && pkg.devDependencies['@aws-sdk/client-sns']))
 }
 
 console.log(bad === 0 ? '\ntodo en orden' : `\n${bad} fallo(s)`)

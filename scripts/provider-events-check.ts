@@ -69,7 +69,9 @@ const ok = (label: string, cond: boolean, detail = '') => {
   // separan el catch de la variable se rompe en cuanto crece el bloque.
   ok(
     'la respuesta del catch lleva el fallo de Twilio',
-    sms.includes('twilioErrorCode: twilioFailure?.code'),
+    // En el catch se lee como `failure` (A2): TypeScript no sigue la
+    // asignación de twilioFailure a través del throw.
+    sms.includes('const failure = twilioFailure as TwilioFailure | null') && sms.includes('twilioErrorCode: failure?.code'),
     'sin esto la causa se pierde y vuelve el "[object Object]"'
   )
   ok('complete-tbt reenvía el cuerpo entero', complete.includes('...smsBody'))

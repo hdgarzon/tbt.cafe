@@ -2,7 +2,7 @@
   "header": {
     "menu": "Menu",
     "favorites": "Favoris",
-    "signIn": "Se connecter",
+    "signIn": "S'authentifier",
     "signOut": "Se déconnecter"
   },
   "home": {
@@ -64,7 +64,7 @@
     "royalties": "Redevances",
     "transfers": "Transferts",
     "sales": "Ventes",
-    "needSignIn": "Connectez-vous pour ouvrir cette section.",
+    "needSignIn": "Authentifiez-vous pour ouvrir cette section.",
     "lockedNote": "Ces sections sont les vôtres une fois connecté.",
     "lockedNoteBold": "Touchez l'une d'elles pour vous connecter.",
     "footNote1": "tbt.cafe — Transbit × BROCHA",
@@ -84,7 +84,6 @@
     "privacyPolicy": "Politique de confidentialité",
     "sendCode": "Envoyer le code",
     "sending": "Envoi…",
-    "bioInstead": "Se connecter avec la biométrie à la place",
     "codeSentTo": "Code envoyé à",
     "changeNumber": "changer de numéro",
     "resendCode": "renvoyer le code",
@@ -110,7 +109,7 @@
   },
   "authHub": {
     "loading": "Chargement…",
-    "needSignIn": "Connectez-vous pour gérer votre authentification.",
+    "needSignIn": "Authentifiez-vous pour gérer votre authentification.",
     "mobilePhone": "Téléphone mobile",
     "change": "Modifier",
     "recoveryEmail": "Email de récupération",
@@ -174,11 +173,6 @@
     "description": "Enregistrez cet appareil avec votre empreinte ou votre visage. La biométrie ne quitte jamais l'appareil — nous ne stockons qu'une clé publique. S'ajoute au code SMS, ne le remplace jamais comme identité.",
     "setUp": "Configurer",
     "prompting": "Suivez l'indication de votre appareil…",
-    "chooseMode": "Comment voulez-vous utiliser la biométrie sur cet appareil ?",
-    "quickTitle": "Authentification rapide",
-    "quickDesc": "Un contact vous identifie, sans code SMS sur cet appareil.",
-    "extraTitle": "Couche de sécurité supplémentaire",
-    "extraDesc": "La biométrie est requise en plus du code SMS.",
     "registered": "Appareil enregistré.",
     "registeredDesc": "Vous pouvez désormais utiliser la biométrie sur cet appareil.",
     "done": "Terminé",
@@ -187,21 +181,7 @@
       "enrollFailed": "Nous n'avons pas pu enregistrer l'appareil",
       "saveFailed": "Nous n'avons pas pu enregistrer l'appareil"
     },
-    "chooseSave": "Enregistrer",
-    "doneQuick": "Sur cet appareil, un contact vous connecte.",
     "doneExtra": "La biométrie sera demandée en plus de votre code de vérification."
-  },
-  "biometricSignIn": {
-    "title": "Authentification rapide",
-    "description": "Entrez votre téléphone pour localiser votre appareil enregistré.",
-    "continue": "Continuer",
-    "starting": "Démarrage…",
-    "errors": {
-      "cancelled": "Vous avez annulé la vérification.",
-      "needSignIn": "Nous n'avons pas pu démarrer la vérification",
-      "failed": "Nous n'avons pas pu vérifier l'appareil",
-      "noEmail": "L’authentification rapide nécessite une adresse e-mail sur votre compte. Pour l’instant, connectez-vous avec le code SMS."
-    }
   },
   "profile": {
     "creatorFormSub": "Votre identité en tant qu’auteur",
@@ -213,7 +193,7 @@
     "creatorSub": "Comment vous êtes crédité en tant qu'auteur.",
     "collectorTitle": "Profil collectionneur",
     "collectorSub": "Comment vous apparaissez en tant que propriétaire.",
-    "needSignIn": "Connectez-vous pour modifier votre profil.",
+    "needSignIn": "Authentifiez-vous pour modifier votre profil.",
     "pageSub": "Configurez votre apparence sur les TBT",
     "backMenu": "Menu",
     "statusSet": "Configuré ✓"
@@ -252,7 +232,7 @@
     "save": "Enregistrer",
     "saving": "Enregistrement…",
     "saved": "Enregistré ✓",
-    "needSignIn": "Connectez-vous pour modifier votre profil.",
+    "needSignIn": "Authentifiez-vous pour modifier votre profil.",
     "errors": {
       "saveFailed": "Nous n'avons pas pu enregistrer le profil"
     },
@@ -277,14 +257,14 @@
     "save": "Enregistrer",
     "saving": "Enregistrement…",
     "saved": "Enregistré ✓",
-    "needSignIn": "Connectez-vous pour modifier votre profil.",
+    "needSignIn": "Authentifiez-vous pour modifier votre profil.",
     "errors": {
       "saveFailed": "Nous n'avons pas pu enregistrer le profil"
     }
   },
   "notifications": {
     "backLabel": "Notifications",
-    "needSignIn": "Connectez-vous pour gérer vos notifications.",
+    "needSignIn": "Authentifiez-vous pour gérer vos notifications.",
     "categories": {
       "tbtActivity": "Activité TBT",
       "security": "Sécurité",
@@ -381,7 +361,7 @@
     "offerSent": "Votre offre a été envoyée.",
     "permanentLink": "Lien permanent",
     "errors": {
-      "needSignIn": "Connectez-vous pour acheter cette œuvre.",
+      "needSignIn": "Authentifiez-vous pour acheter cette œuvre.",
       "buyFailed": "Nous n'avons pas pu démarrer l'achat",
       "offerFailed": "Nous n'avons pas pu envoyer l'offre",
       "saveFailed": "Nous n'avons pas pu enregistrer la modification",
@@ -479,7 +459,7 @@
     "recipient": "Destinataire",
     "done": "Terminé",
     "errors": {
-      "needSignIn": "Connectez-vous pour transférer cette œuvre.",
+      "needSignIn": "Authentifiez-vous pour transférer cette œuvre.",
       "transferFailed": "Nous n'avons pas pu démarrer le transfert",
       "transferAlreadyPending": "Un transfert est déjà en cours pour cette œuvre.",
       "cancelFailed": "Nous n'avons pas pu annuler le transfert",
@@ -507,7 +487,7 @@
     "lapsedBody": "Il n'a pas été accepté sous 24 heures. Demandez à l'expéditeur de le renvoyer.",
     "alreadyResolvedTitle": "Déjà traité",
     "alreadyResolvedBody": "Ce transfert n'attend plus de réponse.",
-    "needSignInTitle": "Connectez-vous pour continuer",
+    "needSignInTitle": "Authentifiez-vous pour continuer",
     "needSignInBody": "Nous devons confirmer qui vous êtes avant que cette œuvre puisse vous être transférée.",
     "done": "Terminé",
     "errors": {
@@ -602,7 +582,7 @@
     "offerStatusExpired": "expirée",
     "transactionsSub": "Transferts envoyés ou reçus",
     "transactionsEmpty": "Aucune transaction pour l'instant.",
-    "needSignIn": "Connectez-vous pour voir ceci.",
+    "needSignIn": "Authentifiez-vous pour voir ceci.",
     "statusDraft": "Brouillon",
     "statusCertified": "Certifié",
     "statusTransferred": "Transféré",
@@ -657,7 +637,7 @@
     "rateFirst": "Notez les trois axes d'abord",
     "savedPrivately": "Curation enregistrée en privé",
     "posted": "Curation publiée",
-    "needSignIn": "Connectez-vous pour laisser une curation."
+    "needSignIn": "Authentifiez-vous pour laisser une curation."
   },
   "personal": {
     "seriesLabel": "Série",
@@ -898,7 +878,7 @@
       "checkoutFailed": "Nous n'avons pas pu démarrer le paiement",
       "completeFailed": "Nous n'avons pas pu terminer l'enregistrement de l'œuvre",
       "contextFailed": "Nous n'avons pas pu générer le contexte",
-      "needSignIn": "Connectez-vous pour continuer",
+      "needSignIn": "Authentifiez-vous pour continuer",
       "imageRequired": "Ajoutez une image pour continuer",
       "titleRequired": "Donnez un titre à l'œuvre",
       "categoryRequired": "Choisissez une catégorie"

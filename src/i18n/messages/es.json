@@ -2,7 +2,7 @@
   "header": {
     "menu": "Menú",
     "favorites": "Favoritos",
-    "signIn": "Iniciar sesión",
+    "signIn": "Autentícate",
     "signOut": "Cerrar sesión"
   },
   "home": {
@@ -64,7 +64,7 @@
     "royalties": "Regalías",
     "transfers": "Transferencias",
     "sales": "Ventas",
-    "needSignIn": "Inicia sesión para abrir esta sección.",
+    "needSignIn": "Autentícate para abrir esta sección.",
     "lockedNote": "Estas secciones son tuyas una vez que inicies sesión.",
     "lockedNoteBold": "Toca cualquiera para conectarte.",
     "footNote1": "tbt.cafe — Transbit × BROCHA",
@@ -84,7 +84,6 @@
     "privacyPolicy": "Política de Privacidad",
     "sendCode": "Enviar código",
     "sending": "Enviando…",
-    "bioInstead": "Iniciar sesión con biométrico en su lugar",
     "codeSentTo": "Código enviado a",
     "changeNumber": "cambiar número",
     "resendCode": "reenviar código",
@@ -110,7 +109,7 @@
   },
   "authHub": {
     "loading": "Cargando…",
-    "needSignIn": "Inicia sesión para gestionar tu autenticación.",
+    "needSignIn": "Autentícate para gestionar tu autenticación.",
     "mobilePhone": "Móvil",
     "change": "Cambiar",
     "recoveryEmail": "Email de recuperación",
@@ -174,11 +173,6 @@
     "description": "Registra este dispositivo con tu huella o rostro. La biometría nunca sale del dispositivo — solo guardamos una clave pública. Se suma al código SMS, nunca lo reemplaza como tu identidad.",
     "setUp": "Configurar",
     "prompting": "Sigue la indicación de tu dispositivo…",
-    "chooseMode": "¿Cómo quieres usar el biométrico en este dispositivo?",
-    "quickTitle": "Autenticación rápida",
-    "quickDesc": "Una pulsación te identifica, sin código SMS en este dispositivo.",
-    "extraTitle": "Capa de seguridad extra",
-    "extraDesc": "Se pide el biométrico además del código SMS.",
     "registered": "Dispositivo registrado.",
     "registeredDesc": "Ya puedes usar el biométrico en este dispositivo.",
     "done": "Listo",
@@ -187,21 +181,7 @@
       "enrollFailed": "No pudimos registrar el dispositivo",
       "saveFailed": "No pudimos guardar el dispositivo"
     },
-    "chooseSave": "Guardar",
-    "doneQuick": "En este dispositivo, un toque te da acceso.",
     "doneExtra": "Se pedirá biometría además de tu código de verificación."
-  },
-  "biometricSignIn": {
-    "title": "Autenticación rápida",
-    "description": "Ingresa tu teléfono para ubicar el dispositivo registrado.",
-    "continue": "Continuar",
-    "starting": "Iniciando…",
-    "errors": {
-      "cancelled": "Cancelaste la verificación.",
-      "needSignIn": "No pudimos iniciar la verificación",
-      "failed": "No pudimos verificar el dispositivo",
-      "noEmail": "La autenticación rápida necesita un correo en tu cuenta. Por ahora, entra con el código SMS."
-    }
   },
   "profile": {
     "creatorFormSub": "Tu identidad como autor",
@@ -213,7 +193,7 @@
     "creatorSub": "Cómo se te acredita como autor.",
     "collectorTitle": "Perfil de Coleccionista",
     "collectorSub": "Cómo apareces como propietario.",
-    "needSignIn": "Inicia sesión para editar tu perfil.",
+    "needSignIn": "Autentícate para editar tu perfil.",
     "pageSub": "Configura cómo apareces en los TBT",
     "backMenu": "Menú",
     "statusSet": "Configurado ✓"
@@ -252,7 +232,7 @@
     "save": "Guardar",
     "saving": "Guardando…",
     "saved": "Guardado ✓",
-    "needSignIn": "Inicia sesión para editar tu perfil.",
+    "needSignIn": "Autentícate para editar tu perfil.",
     "errors": {
       "saveFailed": "No pudimos guardar el perfil"
     },
@@ -277,14 +257,14 @@
     "save": "Guardar",
     "saving": "Guardando…",
     "saved": "Guardado ✓",
-    "needSignIn": "Inicia sesión para editar tu perfil.",
+    "needSignIn": "Autentícate para editar tu perfil.",
     "errors": {
       "saveFailed": "No pudimos guardar el perfil"
     }
   },
   "notifications": {
     "backLabel": "Notificaciones",
-    "needSignIn": "Inicia sesión para gestionar tus notificaciones.",
+    "needSignIn": "Autentícate para gestionar tus notificaciones.",
     "categories": {
       "tbtActivity": "Actividad TBT",
       "security": "Seguridad",
@@ -381,7 +361,7 @@
     "offerSent": "Tu oferta ha sido enviada.",
     "permanentLink": "Enlace permanente",
     "errors": {
-      "needSignIn": "Inicia sesión para comprar esta obra.",
+      "needSignIn": "Autentícate para comprar esta obra.",
       "buyFailed": "No pudimos iniciar la compra",
       "offerFailed": "No pudimos enviar la oferta",
       "saveFailed": "No pudimos guardar el cambio",
@@ -479,7 +459,7 @@
     "recipient": "Destinatario",
     "done": "Listo",
     "errors": {
-      "needSignIn": "Inicia sesión para transferir esta obra.",
+      "needSignIn": "Autentícate para transferir esta obra.",
       "transferFailed": "No pudimos iniciar la transferencia",
       "transferAlreadyPending": "Ya hay una transferencia en curso para esta obra.",
       "cancelFailed": "No pudimos cancelar la transferencia",
@@ -507,7 +487,7 @@
     "lapsedBody": "No se aceptó dentro de las 24 horas. Pide al emisor que la envíe de nuevo.",
     "alreadyResolvedTitle": "Ya se resolvió",
     "alreadyResolvedBody": "Esta transferencia ya no está esperando una respuesta.",
-    "needSignInTitle": "Inicia sesión para continuar",
+    "needSignInTitle": "Autentícate para continuar",
     "needSignInBody": "Necesitamos confirmar quién eres antes de que esta obra pueda pasar a ti.",
     "done": "Listo",
     "errors": {
@@ -602,7 +582,7 @@
     "offerStatusExpired": "vencida",
     "transactionsSub": "Transferencias que has enviado o recibido",
     "transactionsEmpty": "Sin transacciones todavía.",
-    "needSignIn": "Inicia sesión para ver esto.",
+    "needSignIn": "Autentícate para ver esto.",
     "statusDraft": "Borrador",
     "statusCertified": "Certificado",
     "statusTransferred": "Transferido",
@@ -657,7 +637,7 @@
     "rateFirst": "Califica los tres ejes primero",
     "savedPrivately": "Curaduría guardada de forma privada",
     "posted": "Curaduría publicada",
-    "needSignIn": "Inicia sesión para dejar una curaduría."
+    "needSignIn": "Autentícate para dejar una curaduría."
   },
   "personal": {
     "seriesLabel": "Serie",
@@ -898,7 +878,7 @@
       "checkoutFailed": "No pudimos iniciar el pago",
       "completeFailed": "No pudimos terminar de registrar la obra",
       "contextFailed": "No pudimos generar el contexto",
-      "needSignIn": "Inicia sesión para continuar",
+      "needSignIn": "Autentícate para continuar",
       "imageRequired": "Agrega una imagen para continuar",
       "titleRequired": "Dale un título a la obra",
       "categoryRequired": "Elige una categoría"

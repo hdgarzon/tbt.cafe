@@ -1,4 +1,4 @@
-import { readFileSync, readdirSync, statSync } from 'fs'
+import { existsSync, readFileSync, readdirSync, statSync } from 'fs'
 import { join } from 'path'
 
 /**
@@ -35,8 +35,10 @@ const curation = read('src/components/CurationModal.tsx')
   ok('cancelar la descarta', shell.includes('onClose={() => closeAuth(false)}'),
      'una acción que sobrevive a un «no» se dispara sola la próxima vez')
   ok('el teléfono la reanuda', shell.includes('closeAuth(true)'))
-  ok('y el biométrico también', shell.split('closeAuth(true)').length - 1 >= 2,
-     'entrar con huella tiene que reanudar igual que entrar con código')
+  // Hubo una segunda entrada —el biométrico— que también reanudaba. Se retiró
+  // con D1: el biométrico ya no inicia sesión, así que el teléfono es la única.
+  ok('y es la única entrada', shell.split('closeAuth(true)').length - 1 === 1,
+     'el biométrico se suma al código, nunca abre sesión por su cuenta (D1)')
 }
 
 // ---- favoritos: informar, ofrecer, reanudar
@@ -80,19 +82,57 @@ const curation = read('src/components/CurationModal.tsx')
      `Sheet z-[${layer('Sheet')}] vs StandingSheet z-[${layer('StandingSheet')}]`)
 }
 
-// ---- el sign-in biométrico no le muestra a nadie un texto de desarrollador
+// ---- el biométrico es solo un segundo factor — lista maestra D1
 //
-// Una cuenta que entra solo por teléfono no tiene email en auth.users y el
-// sign-in biométrico lo necesita. La respuesta decía "(ver nota de despliegue
-// en auth/finish/route.ts)" y el cliente la pintaba tal cual.
+// Se suma al código SMS y nunca lo sustituye. El inicio de sesión rápido —un
+// toque en lugar del código— se retiró entero: su pantalla, sus dos rutas, sus
+// textos y el modo `quick` de la credencial.
 {
-  const finish = read('src/app/api/webauthn/auth/finish/route.ts')
-  const sheet = read('src/components/BiometricSignInSheet.tsx')
-  ok('finish responde un código, no una nota de despliegue', finish.includes("code: 'no_email'") && !finish.includes("'(ver nota de despliegue"))
-  ok('el cliente lo traduce', sheet.includes("if (finishBody.code === 'no_email') throw new Error(t.biometricSignIn.errors.noEmail)"))
+  const gone = [
+    'src/components/BiometricSignInSheet.tsx',
+    'src/app/api/webauthn/auth/begin/route.ts',
+    'src/app/api/webauthn/auth/finish/route.ts',
+  ]
+  for (const f of gone) ok(`no existe ${f}`, !existsSync(join(process.cwd(), f)))
+  const authSheet = read('src/components/AuthSheet.tsx')
+  const bioSheet = read('src/components/BiometricSheet.tsx')
+  const regFinish = read('src/app/api/webauthn/register/finish/route.ts')
+  ok('el login no ofrece entrar con biométrico', !authSheet.includes('onSwitchToBiometric') && !authSheet.includes('t.auth.bioInstead'))
+  ok('el alta del biométrico no ofrece modo quick', !bioSheet.includes("'quick'"))
+  ok('la credencial se guarda siempre como extra', regFinish.includes("bio_mode: 'extra'") && regFinish.includes('const { credential } = body'),
+     'el modo no se lee del cliente')
+  const m054 = read('supabase/migrations/054_biometric_second_factor_only.sql')
+  ok('la 054 prohíbe quick', m054.includes("check (bio_mode = 'extra')"))
   for (const l of ['en', 'es', 'pt', 'fr']) {
     const m = JSON.parse(read(`src/i18n/messages/${l}.json`))
-    ok(`${l}: biometricSignIn.errors.noEmail existe`, typeof m.biometricSignIn?.errors?.noEmail === 'string' && m.biometricSignIn.errors.noEmail.length > 0)
+    ok(`${l}: sin auth.bioInstead ni biometricSignIn`, m.auth?.bioInstead === undefined && m.biometricSignIn === undefined)
+  }
+}
+
+// ---- autenticación, nunca "sign in" — lista maestra D2, texto exacto
+{
+  const D2: Record<string, [string, string, string, string]> = {
+    'header.signIn': ['Authenticate', 'Autentícate', 'Autentique-se', "S'authentifier"],
+    'menu.needSignIn': ['Authenticate to open this section.', 'Autentícate para abrir esta sección.', 'Autentique-se para abrir esta seção.', 'Authentifiez-vous pour ouvrir cette section.'],
+    'authHub.needSignIn': ['Authenticate to manage your authentication.', 'Autentícate para gestionar tu autenticación.', 'Autentique-se para gerenciar sua autenticação.', 'Authentifiez-vous pour gérer votre authentification.'],
+    'profile.needSignIn': ['Authenticate to edit your profile.', 'Autentícate para editar tu perfil.', 'Autentique-se para editar seu perfil.', 'Authentifiez-vous pour modifier votre profil.'],
+    'profileCreator.needSignIn': ['Authenticate to edit your profile.', 'Autentícate para editar tu perfil.', 'Autentique-se para editar seu perfil.', 'Authentifiez-vous pour modifier votre profil.'],
+    'profileCollector.needSignIn': ['Authenticate to edit your profile.', 'Autentícate para editar tu perfil.', 'Autentique-se para editar seu perfil.', 'Authentifiez-vous pour modifier votre profil.'],
+    'notifications.needSignIn': ['Authenticate to manage your notifications.', 'Autentícate para gestionar tus notificaciones.', 'Autentique-se para gerenciar suas notificações.', 'Authentifiez-vous pour gérer vos notifications.'],
+    'work.errors.needSignIn': ['Authenticate to buy this piece.', 'Autentícate para comprar esta obra.', 'Autentique-se para comprar esta obra.', 'Authentifiez-vous pour acheter cette œuvre.'],
+    'transfer.errors.needSignIn': ['Authenticate to transfer this work.', 'Autentícate para transferir esta obra.', 'Autentique-se para transferir esta obra.', 'Authentifiez-vous pour transférer cette œuvre.'],
+    'transferAccept.needSignInTitle': ['Authenticate to continue', 'Autentícate para continuar', 'Autentique-se para continuar', 'Authentifiez-vous pour continuer'],
+    'brew.errors.needSignIn': ['Authenticate to continue', 'Autentícate para continuar', 'Autentique-se para continuar', 'Authentifiez-vous pour continuer'],
+    'myCollections.needSignIn': ['Authenticate to see this.', 'Autentícate para ver esto.', 'Autentique-se para ver isto.', 'Authentifiez-vous pour voir ceci.'],
+    'curation.needSignIn': ['Authenticate to leave a curation.', 'Autentícate para dejar una curaduría.', 'Autentique-se para deixar uma curadoria.', 'Authentifiez-vous pour laisser une curation.'],
+  }
+  const locales = ['en', 'es', 'pt', 'fr']
+  for (let i = 0; i < locales.length; i++) {
+    const m = JSON.parse(read(`src/i18n/messages/${locales[i]}.json`))
+    for (const key of Object.keys(D2)) {
+      const v = key.split('.').reduce((node: any, part) => (node ? node[part] : undefined), m)
+      ok(`${locales[i]}: ${key} es el texto de D2`, v === D2[key][i], `tiene ${JSON.stringify(v)}`)
+    }
   }
 }
 

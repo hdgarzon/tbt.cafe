@@ -5,8 +5,11 @@ import { requireUser, consumeChallenge, rpFromRequest, deviceLabel } from '@/lib
 
 /**
  * POST /api/webauthn/register/finish — companion doc §5.2 (SEAM 2).
- * Verifica la attestation y guarda la clave pública. bioMode (quick | extra)
- * viene de la elección del usuario en la UI.
+ * Verifica la attestation y guarda la clave pública.
+ *
+ * El biométrico es solo un segundo factor: se suma al código SMS y nunca lo
+ * sustituye (lista maestra, D1). No hay modo que elegir, así que la ruta ya no
+ * lee uno del cliente — escribe `extra` siempre.
  */
 export async function POST(request: NextRequest) {
   const auth = await requireUser(request)
@@ -17,10 +20,7 @@ export async function POST(request: NextRequest) {
   if (!rp) return NextResponse.json({ error: 'Origin faltante' }, { status: 400 })
 
   const body = await request.json()
-  const { credential, bioMode } = body
-  if (bioMode !== 'quick' && bioMode !== 'extra') {
-    return NextResponse.json({ error: 'bioMode inválido' }, { status: 400 })
-  }
+  const { credential } = body
 
   const expectedChallenge = await consumeChallenge(supabase, userId, 'registration')
   if (!expectedChallenge) {
@@ -56,7 +56,7 @@ export async function POST(request: NextRequest) {
     sign_count: cred.counter,
     transports: cred.transports ?? null,
     device_label: deviceLabel(request),
-    bio_mode: bioMode,
+    bio_mode: 'extra',
   })
 
   if (error) {
@@ -68,5 +68,5 @@ export async function POST(request: NextRequest) {
     )
   }
 
-  return NextResponse.json({ verified: true, device: deviceLabel(request), bioMode })
+  return NextResponse.json({ verified: true, device: deviceLabel(request), bioMode: 'extra' })
 }

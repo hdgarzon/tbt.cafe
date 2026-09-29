@@ -20,7 +20,7 @@ import { verifyCode } from '@/lib/private-code'
  * puesto como si lo puso mal, para no confirmar cuál de las dos cosas ocurre.
  *
  * El biométrico se comprueba consumiendo una prueba emitida por
- * /api/webauthn/auth/finish, que es la única ruta que verifica la aserción.
+ * /api/step-up/verify, que es la única ruta que verifica la aserción.
  * Antes esto era un booleano del cliente: quien hiciera un POST directo con
  * `biometric: true` se saltaba el sensor y dejaba el código de 3-5 caracteres
  * como único obstáculo. Una comprobación que el cliente puede afirmar por su

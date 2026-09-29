@@ -46,13 +46,10 @@ export function AuthSheet({
   open,
   onClose,
   onAuthenticated,
-  onSwitchToBiometric,
 }: {
   open: boolean
   onClose: () => void
   onAuthenticated: (phoneDigits: string, country: Country) => void
-  /** Ofrece "Sign in with biometrics" en el paso de teléfono, si el dispositivo lo soporta. */
-  onSwitchToBiometric?: () => void
 }) {
   const { t } = useLocale()
   const [step, setStep] = useState<Step>('phone')
@@ -63,15 +60,7 @@ export function AuthSheet({
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
   const [countdown, setCountdown] = useState(0)
-  const [bioAvailable, setBioAvailable] = useState(false)
   const otpRef = useRef<HTMLInputElement>(null)
-
-  useEffect(() => {
-    if (typeof PublicKeyCredential === 'undefined') return
-    PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable?.()
-      .then(setBioAvailable)
-      .catch(() => setBioAvailable(false))
-  }, [])
 
   // Reiniciar todo al cerrar
   useEffect(() => {
@@ -236,16 +225,6 @@ export function AuthSheet({
           <SheetButton onClick={sendOtp} disabled={!canSend}>
             {busy ? t.auth.sending : t.auth.sendCode}
           </SheetButton>
-
-          {bioAvailable && onSwitchToBiometric && (
-            <button
-              type="button"
-              onClick={onSwitchToBiometric}
-              className="w-full mt-3 py-1 text-[12px] text-ink-soft underline underline-offset-2 hover:text-ink transition-colors"
-            >
-              {t.auth.bioInstead}
-            </button>
-          )}
         </div>
       )}
 

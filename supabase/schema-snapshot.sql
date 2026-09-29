@@ -396,7 +396,7 @@ create table if not exists public.webauthn_credentials (
   sign_count bigint default 0 not null,
   transports text[],
   device_label text,
-  bio_mode text default 'quick'::text not null,
+  bio_mode text default 'extra'::text not null,
   created_at timestamp with time zone default now() not null,
   last_used_at timestamp with time zone
 );
@@ -838,6 +838,7 @@ alter table public.biometric_proofs add constraint biometric_proofs_user_id_fkey
 alter table public.webauthn_credentials add constraint webauthn_credentials_pkey PRIMARY KEY (id);
 alter table public.webauthn_credentials add constraint webauthn_credentials_credential_id_key UNIQUE (credential_id);
 alter table public.webauthn_credentials add constraint webauthn_credentials_user_id_fkey FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE;
+alter table public.webauthn_credentials add constraint webauthn_credentials_bio_mode_extra CHECK ((bio_mode = 'extra'::text));
 alter table public.webauthn_challenges add constraint webauthn_challenges_pkey PRIMARY KEY (id);
 alter table public.webauthn_challenges add constraint webauthn_challenges_user_id_fkey FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE;
 alter table public.private_code_attempts add constraint private_code_attempts_pkey PRIMARY KEY (user_id);

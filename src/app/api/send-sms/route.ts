@@ -1,12 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { SNSClient, PublishCommand } from '@aws-sdk/client-sns'
 import { createAdminClient } from '@/lib/supabase-admin'
 import { isProduction } from '@/lib/app-env'
 import { authenticate } from '@/lib/route-auth'
 import twilio from 'twilio'
 
 /**
- * Los dos clientes, construidos en el primer uso y no al importar.
+ * El cliente, construido en el primer uso y no al importar.
  *
  * `twilio(sid, token)` VALIDA el formato del SID al construir. Mientras la
  * variable no existia la condicion era falsa y esto devolvia null, asi que
@@ -20,19 +19,11 @@ import twilio from 'twilio'
  * `app-env.ts`. Un throw en el cuerpo de un modulo no rompe la llamada que
  * necesita la credencial: rompe el grafo, y con el el despliegue completo.
  *
- * El de SNS no valida al construir, asi que no habia dado guerra — pero es la
- * misma bomba con otra mecha, y va igual.
+ * Twilio es el unico proveedor. Hubo un respaldo por AWS SNS; sus credenciales
+ * estaban muertas y se retiro en lugar de repararlo (lista maestra, A2): un
+ * proveedor que funciona es mejor que uno que funciona mas otro roto, que solo
+ * añadia un segundo fallo silencioso a cada envio.
  */
-let sns: SNSClient | null = null
-function snsClient(): SNSClient {
-  return (sns ??= new SNSClient({
-    region: process.env.AWS_REGION || 'us-east-2',
-    credentials: {
-      accessKeyId: process.env.AWS_ACCESS_KEY_ID || '',
-      secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY || '',
-    },
-  }))
-}
 
 let twilioCached: ReturnType<typeof twilio> | null = null
 function twilioClient(): ReturnType<typeof twilio> | null {
@@ -45,7 +36,7 @@ function twilioClient(): ReturnType<typeof twilio> | null {
     return twilioCached
   } catch (error) {
     // Un SID mal formado es configuracion equivocada, no una peticion mala.
-    // Se registra y el MMS no sale; el SMS por SNS sigue su camino.
+    // Se registra y el mensaje no sale; la ruta lo dice como fallo.
     console.error('[send-sms] no se pudo construir el cliente de Twilio:', error)
     return null
   }
@@ -74,12 +65,11 @@ function toE164(raw: string): string {
 
 export async function POST(request: NextRequest) {
   /*
-   * Declarado FUERA del try a proposito: si el respaldo tambien falla, la
-   * excepcion sube hasta el catch de abajo, y alli este era el unico rastro
-   * de por que Twilio no pudo entregar. Dentro del bloque no estaba en
-   * alcance y se perdia.
+   * Declarado FUERA del try a proposito: el catch de abajo lo necesita para
+   * decir por que Twilio no pudo entregar.
    */
-  let twilioFailure: { code: number | string | null; message: string | null } | null = null
+  type TwilioFailure = { code: number | string | null; message: string | null }
+  let twilioFailure: TwilioFailure | null = null
 
   /*
    * Y lo mismo con a quien iba dirigido: sin esto el catch no puede escribir
@@ -251,111 +241,61 @@ export async function POST(request: NextRequest) {
         // se conserva para que quien llame pueda agruparlo.
         console.error('Twilio MMS error:', twilioError?.code, twilioError?.message)
         twilioFailure = { code: twilioError?.code ?? null, message: twilioError?.message ?? null }
-        // Fall through to SMS fallback
+        // Sin respaldo: el fallo sube al catch de abajo, que escribe la fila
+        // `failed` una sola vez y devuelve la causa.
+        throw twilioError
       }
     }
 
-    // Fallback: Check if AWS credentials are configured for simple SMS
-    if (!process.env.AWS_ACCESS_KEY_ID || !process.env.AWS_SECRET_ACCESS_KEY) {
-      console.log('⚠️ No messaging service configured. Message would be sent to:', phoneNumber)
-      console.log('Message:', mmsMessage)
-      console.log('Media URL:', mediaUrl)
-      
-      // Save to mms_deliveries with simulated status
-      const { error: simLedgerError } = await createAdminClient().from('mms_deliveries').insert({
-        work_id: workId,
-        user_id: userId,
-        phone_number: phoneNumber,
-        status: isProduction ? 'failed' : 'simulated',
-        certificate_url: certificateUrl,
-        gif_url: mediaUrl,
-      })
-      if (simLedgerError) console.error('[send-sms] no se pudo registrar la entrega:', simLedgerError)
+    // Sin Twilio configurado no hay proveedor.
+    console.log('⚠️ No messaging service configured. Message would be sent to:', phoneNumber)
+    console.log('Message:', mmsMessage)
+    console.log('Media URL:', mediaUrl)
 
-      /*
-       * Simular NO es entregar.
-       *
-       * Esta rama devolvía éxito, y como complete-tbt cuelga de esa respuesta
-       * su evento de observabilidad y su ticket de severidad financiera, el
-       * resultado era que nadie se enteraba de que el certificado —que es el
-       * producto— no había salido. Meses así.
-       *
-       * Fuera de producción sigue siendo útil para desarrollar sin credenciales,
-       * y se marca como simulado para que quien lo lea no lo confunda con una
-       * entrega.
-       */
-      if (isProduction) {
-        return NextResponse.json(
-          {
-            error: 'no_messaging_provider',
-            message: 'No messaging provider is configured, so the certificate was not delivered.',
-            twilioErrorCode: twilioFailure?.code ?? null,
-            twilioStatus: twilioFailure?.message ?? null,
-          },
-          { status: 502 }
-        )
-      }
-
-      return NextResponse.json({
-        success: true,
-        simulated: true,
-        message: 'MMS simulado (credenciales no configuradas)',
-        messageId: `sim_${Date.now()}`,
-        type: 'simulated',
-      })
-    }
-
-    // Fallback: Send SMS via AWS SNS (no image support)
-    const smsOnlyMessage = 
-      `🎨 ¡Tu TBT está certificado!\n\n` +
-      `"${work.title}" - ${creatorName || 'Artista'}\n` +
-      `ID: ${work.tbt_id}\n\n` +
-      `Ver la obra: ${certificateUrl}`
-
-    const command = new PublishCommand({
-      PhoneNumber: phoneNumber,
-      Message: smsOnlyMessage,
-      MessageAttributes: {
-        'AWS.SNS.SMS.SenderID': {
-          DataType: 'String',
-          StringValue: 'TBT',
-        },
-        'AWS.SNS.SMS.SMSType': {
-          DataType: 'String',
-          StringValue: 'Transactional',
-        },
-      },
-    })
-
-    const snsResponse = await snsClient().send(command)
-
-    /*
-     * Con el service role, como los otros dos sitios.
-     *
-     * Este se quedo con el cliente del usuario cuando se corrigieron los
-     * demas, y el comentario de mas arriba describe con exactitud lo que le
-     * pasaba: la RLS lo denegaba y el registro de entregas quedaba vacio. El
-     * `error` se lee, ademas, para que una denegacion no vuelva a ser muda.
-     */
-    const { error: snsLedgerError } = await createAdminClient().from('mms_deliveries').insert({
+    const { error: simLedgerError } = await createAdminClient().from('mms_deliveries').insert({
       work_id: workId,
       user_id: userId,
       phone_number: phoneNumber,
-      status: 'sent',
+      status: isProduction ? 'failed' : 'simulated',
       certificate_url: certificateUrl,
-      sent_at: new Date().toISOString(),
+      gif_url: mediaUrl,
     })
-    if (snsLedgerError) console.error('[send-sms] no se pudo registrar la entrega:', snsLedgerError)
+    if (simLedgerError) console.error('[send-sms] no se pudo registrar la entrega:', simLedgerError)
+
+    /*
+     * Simular NO es entregar.
+     *
+     * Esta rama devolvía éxito, y como complete-tbt cuelga de esa respuesta
+     * su evento de observabilidad y su ticket de severidad financiera, el
+     * resultado era que nadie se enteraba de que el certificado —que es el
+     * producto— no había salido. Meses así.
+     *
+     * Fuera de producción sigue siendo útil para desarrollar sin credenciales,
+     * y se marca como simulado para que quien lo lea no lo confunda con una
+     * entrega.
+     */
+    if (isProduction) {
+      return NextResponse.json(
+        {
+          error: 'no_messaging_provider',
+          message: 'No messaging provider is configured, so the certificate was not delivered.',
+        },
+        { status: 502 }
+      )
+    }
 
     return NextResponse.json({
       success: true,
-      messageId: snsResponse.MessageId,
-      message: 'SMS enviado exitosamente (sin imagen)',
-      type: 'sms',
+      simulated: true,
+      message: 'MMS simulado (credenciales no configuradas)',
+      messageId: `sim_${Date.now()}`,
+      type: 'simulated',
     })
 
   } catch (error: any) {
     console.error('Error sending message:', error)
+    // Asignado antes del `throw`; TypeScript no lo sigue por el salto.
+    const failure = twilioFailure as TwilioFailure | null
 
     /*
      * El libro de entregas tiene que saber decir que NO.
@@ -365,9 +305,8 @@ export async function POST(request: NextRequest) {
      * incapaz de responder que no. Por eso quedo a cero despues de un intento
      * real que fallo dos veces.
      *
-     * Se escribe aqui y no en el fallo de Twilio: ahi todavia queda el
-     * respaldo por intentar, y una fila por intento contaria dos veces la
-     * misma entrega.
+     * Se escribe aqui, una sola vez por envio, sea cual sea el punto en que
+     * fallo.
      */
     if (delivery) {
       const { error: failedLedgerError } = await createAdminClient().from('mms_deliveries').insert({
@@ -377,12 +316,9 @@ export async function POST(request: NextRequest) {
         status: 'failed',
         // La columna que la tabla tiene de verdad. `status: 'failed'` ya lo
         // usa la rama de "sin proveedor", asi que no es un valor nuevo.
-        error_message: [
-          twilioFailure?.code ? `twilio ${twilioFailure.code}: ${twilioFailure.message ?? ''}`.trim() : null,
-          error?.Code ?? error?.code ?? error?.name ?? null,
-        ]
-          .filter(Boolean)
-          .join(' | ') || null,
+        error_message: failure?.code
+          ? `twilio ${failure.code}: ${failure.message ?? ''}`.trim()
+          : (error?.code ?? error?.name ?? null),
       })
       if (failedLedgerError) console.error('[send-sms] no se pudo registrar el fallo:', failedLedgerError)
     }
@@ -392,7 +328,7 @@ export async function POST(request: NextRequest) {
      * `provider_events` se construye a partir de esta respuesta, el primer MMS
      * fallido quedo registrado como "[object Object]": hicieron falta los logs
      * del servidor para saber que eran DOS fallos, Twilio 21606 y unas
-     * credenciales de AWS invalidas.
+     * credenciales de AWS invalidas (ese respaldo ya no existe: A2).
      *
      * Van el codigo y el nombre del error, nunca su cuerpo: un mensaje de un
      * proveedor puede llevar dentro parte de la peticion.
@@ -400,10 +336,10 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(
       {
         error: 'delivery_failed',
-        provider: twilioFailure ? 'fallback' : 'twilio',
-        failureCode: error?.Code ?? error?.code ?? error?.name ?? null,
-        twilioErrorCode: twilioFailure?.code ?? null,
-        twilioStatus: twilioFailure?.message ?? null,
+        provider: 'twilio',
+        failureCode: error?.code ?? error?.name ?? null,
+        twilioErrorCode: failure?.code ?? null,
+        twilioStatus: failure?.message ?? null,
       },
       { status: 500 }
     )
