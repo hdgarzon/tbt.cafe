@@ -2,154 +2,16 @@ import { Keypair, PublicKey } from '@solana/web3.js'
 import { Metaplex, keypairIdentity, irysStorage } from '@metaplex-foundation/js'
 import { getConnection, SOLANA_NETWORK, TBT_COLLECTION } from './config'
 
-// Transfer history entry
-export interface TransferHistoryEntry {
-  type: 'creation' | 'transfer'
-  date: string
-  fromName?: string  // null for creation
-  toName: string
-  transferType?: 'sale' | 'gift' // for transfers only
-  price?: string     // for sales only
-  currency?: string  // for sales only
-}
-
-// Work data for NFT creation
-export interface WorkNftData {
+/**
+ * Lo unico que el mint necesita de la obra — Chains 01, Stage 1.1.
+ *
+ * Antes llevaba precio, regalia, lugar, clima e historial de duenos, y los
+ * subia como metadata aparte cuando el registro de registracion habia fallado.
+ * Ese camino ya no existe: la URI en cadena es la del registro, que pasa por
+ * assertNoIdentifiers, y nada mas se publica desde aqui.
+ */
+export interface TitleTokenInput {
   tbtId: string
-  title: string
-  description?: string
-  category?: string
-  technique?: string
-  creatorName: string
-  mediaUrl?: string
-  certifiedAt: string
-  // New fields for complete history
-  creationLocation?: string
-  creationWeather?: string
-  elaborationType?: string
-  marketPrice?: number
-  currency?: string
-  royaltyPercentage?: number
-  // Transfer history
-  transferHistory?: TransferHistoryEntry[]
-}
-
-/**
- * Generate NFT metadata from work data (Metaplex compatible)
- * Includes complete history and provenance tracking
- */
-/**
- * NUNCA anadir aqui el codigo de transferencia.
- *
- * Es la clave privada que autoriza una transferencia, y la regla de la
- * plataforma es que solo viaja por MMS y no se pinta en pantalla, porque una
- * captura basta para perderla. Estos atributos se suben por Irys y su URI se
- * acuna en cadena: escribirlo aqui lo publica en un almacen permanente y
- * publico, enlazado desde el activo. No hay forma de retirarlo.
- *
- * Por eso el campo ya no existe en `WorkNftData`: reintroducirlo desde un
- * llamador rompe la compilacion en vez de filtrar en silencio.
- */
-export function generateNftMetadata(work: WorkNftData) {
-  const externalUrl = `${process.env.NEXT_PUBLIC_APP_URL || 'https://tbt.cafe'}/work/${work.tbtId}`
-  
-  // Core attributes
-  const attributes: Array<{ trait_type: string; value: string | number }> = [
-    { trait_type: 'TBT ID', value: work.tbtId },
-    { trait_type: 'Creator', value: work.creatorName },
-    { trait_type: 'Certified Date', value: work.certifiedAt },
-  ]
-
-  // Category and technique
-  if (work.category) {
-    attributes.push({ trait_type: 'Category', value: work.category })
-  }
-  if (work.technique) {
-    attributes.push({ trait_type: 'Technique', value: work.technique })
-  }
-
-  // Context and provenance
-  if (work.creationLocation) {
-    attributes.push({ trait_type: 'Creation Location', value: work.creationLocation })
-  }
-  if (work.creationWeather) {
-    attributes.push({ trait_type: 'Creation Weather', value: work.creationWeather })
-  }
-  if (work.elaborationType) {
-    attributes.push({ trait_type: 'Elaboration Type', value: work.elaborationType })
-  }
-
-  // Commercial info
-  if (work.marketPrice !== undefined && work.currency) {
-    attributes.push({ trait_type: 'Initial Price', value: `${work.marketPrice} ${work.currency}` })
-  }
-  if (work.royaltyPercentage !== undefined) {
-    attributes.push({ trait_type: 'Artist Royalty', value: `${work.royaltyPercentage}%` })
-  }
-
-  // Transfer history - stored as attributes for on-chain provenance
-  // The history is immutable once recorded
-  const history = work.transferHistory || []
-  
-  // Always add creation as first history entry if not present
-  if (history.length === 0) {
-    history.push({
-      type: 'creation',
-      date: work.certifiedAt,
-      toName: work.creatorName,
-    })
-  }
-
-  // Add history entries as attributes (limited to prevent excessive metadata size)
-  attributes.push({ trait_type: 'Total Owners', value: history.length })
-  
-  // Add the last 10 history entries (most recent)
-  const recentHistory = history.slice(-10)
-  recentHistory.forEach((entry, index) => {
-    const historyIndex = history.length - recentHistory.length + index + 1
-    
-    if (entry.type === 'creation') {
-      attributes.push({ 
-        trait_type: `History ${historyIndex}`, 
-        value: `Created by ${entry.toName} on ${entry.date}` 
-      })
-    } else {
-      const transferInfo = entry.transferType === 'sale' && entry.price
-        ? `Sold for ${entry.price} ${entry.currency || 'USD'}`
-        : entry.transferType === 'gift' ? 'Gifted' : 'Transferred'
-      
-      attributes.push({ 
-        trait_type: `History ${historyIndex}`, 
-        value: `${transferInfo} from ${entry.fromName || 'Unknown'} to ${entry.toName} on ${entry.date}` 
-      })
-    }
-  })
-
-  // Add current owner (last in history)
-  const currentOwner = history[history.length - 1]
-  if (currentOwner) {
-    attributes.push({ trait_type: 'Current Owner', value: currentOwner.toName })
-  }
-
-  return {
-    name: work.title,
-    symbol: TBT_COLLECTION.symbol,
-    description: work.description || `Obra certificada: ${work.title} por ${work.creatorName}`,
-    image: work.mediaUrl || '',
-    external_url: externalUrl,
-    attributes,
-    properties: {
-      files: work.mediaUrl ? [{ uri: work.mediaUrl, type: 'image/jpeg' }] : [],
-      category: 'image',
-      // Store complete history in properties for full provenance
-      provenance: {
-        creator: work.creatorName,
-        createdAt: work.certifiedAt,
-        totalTransfers: Math.max(0, history.length - 1),
-        history: history,
-      }
-    }
-  }
 }
 
 /**
@@ -239,48 +101,28 @@ async function withRetry<T>(
 }
 
 /**
- * Mint a TBT NFT to the project's wallet (single-wallet hybrid model).
- * All NFTs are owned by the project wallet; ownership is tracked
- * off-chain in Supabase and on-chain via mutable metadata attributes.
+ * Acuna el token de un titulo — Chains 01, Stage 1.1.
+ *
+ * Exige la URI del registro de registracion ya publicado. Una obra sin
+ * registro no se acuna: espera al barrido de recuperacion (Stage 7). No hay
+ * camino alternativo que suba metadata propia.
  */
-export async function mintTBTNft(
-  work: WorkNftData,
-  /**
-   * La URI del registro de registracion, ya publicada en Arweave (Item 6
-   * paso 3). Cuando llega, ES lo que se escribe en cadena y no se sube
-   * metadata aparte: el activo apunta al registro canonico, no a una copia
-   * con otra forma.
-   *
-   * Opcional porque una obra sin `content_hash` no puede tener registro —
-   * `registrationRecord` lo exige— y son 46 de las 47 certificadas hasta hoy.
-   * Esas siguen por el camino de antes en vez de quedarse sin mintear.
-   */
-  registrationRecordUri?: string
+export async function mintTitleToken(
+  work: TitleTokenInput,
+  registrationRecordUri: string
 ): Promise<{ mintAddress: string; tokenUri: string; signature: string }> {
+  if (!registrationRecordUri) throw new Error('mintTitleToken: no registration record URI; the work waits for the sweep.')
+
   const payerKeypair = getPayerKeypair()
   const metaplex = getMetaplex(payerKeypair)
-  const metadata = generateNftMetadata(work)
+  const tokenUri = registrationRecordUri
 
-  console.log(`Minting NFT for TBT ${work.tbtId} to project wallet...`)
-
-  let tokenUri = registrationRecordUri ?? ''
-
-  if (!tokenUri) {
-    const uploaded = await withRetry(async () => {
-      console.log('Uploading metadata to Irys...')
-      return await metaplex.nfts().uploadMetadata(metadata as any)
-    }, 3, 3000)
-    tokenUri = uploaded.uri
-    console.log(`Metadata uploaded: ${tokenUri}`)
-    await sleep(2000)
-  } else {
-    console.log(`Using published registration record: ${tokenUri}`)
-  }
+  console.log(`Minting title token for ${work.tbtId} against ${tokenUri}`)
 
   const { nft, response } = await withRetry(async () => {
     console.log('Creating NFT on Solana...')
     return await metaplex.nfts().create({
-      uri: tokenUri,
+      uri: registrationRecordUri,
       /*
        * El TBT ID, no el titulo — Item 6, Change A.
        *
@@ -290,7 +132,7 @@ export async function mintTBTNft(
        * puede.
        */
       name: work.tbtId,
-      symbol: metadata.symbol,
+      symbol: TBT_COLLECTION.symbol,
       /*
        * Cero — Item 6, Change A.
        *

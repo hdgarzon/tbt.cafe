@@ -297,7 +297,7 @@ export async function POST(request: NextRequest) {
     let solscanUrl = ''
     
     try {
-      const { mintTBTNft } = await import('@/lib/solana/nft')
+      const { mintTitleToken } = await import('@/lib/solana/nft')
       const { getExplorerUrl } = await import('@/lib/solana/config')
       
       const { data: workWithCreator } = await supabase
@@ -305,8 +305,7 @@ export async function POST(request: NextRequest) {
         .select(`
           *,
           creator:profiles!works_creator_id_fkey(display_name, public_alias, creator_type),
-          context:context_snapshots(location_name, weather_data, elaboration_type),
-          commerce:work_commerce(initial_price, currency, royalty_type, royalty_value)
+          context:context_snapshots(location_name)
         `)
         .eq('id', workId)
         .single()
@@ -316,31 +315,10 @@ export async function POST(request: NextRequest) {
         const creatorName = creatorInfo?.public_alias || creatorInfo?.display_name || 'Unknown Artist'
         
         const ctxData = Array.isArray(workWithCreator.context) ? workWithCreator.context[0] : workWithCreator.context
-        const commData = Array.isArray(workWithCreator.commerce) ? workWithCreator.commerce[0] : workWithCreator.commerce
-        const weatherInfo = ctxData?.weather_data as any
         
-        const certDate = new Date(workWithCreator.certified_at || workWithCreator.created_at).toISOString().split('T')[0]
-        
+        // Solo el TBT ID: el mint ya no publica nada propio (Chains 01, 1.1).
         const workNftData = {
           tbtId: workWithCreator.tbt_id || updatedWork?.tbt_id,
-          title: workWithCreator.title,
-          description: workWithCreator.description,
-          category: workWithCreator.category,
-          technique: workWithCreator.technique,
-          creatorName,
-          mediaUrl: workWithCreator.media_url,
-          certifiedAt: certDate,
-          creationLocation: ctxData?.location_name,
-          creationWeather: weatherInfo?.conditions,
-          elaborationType: ctxData?.elaboration_type,
-          marketPrice: commData?.initial_price,
-          currency: commData?.currency || 'USD',
-          royaltyPercentage: commData?.royalty_type === 'percentage' ? commData?.royalty_value : undefined,
-          transferHistory: [{
-            type: 'creation' as const,
-            date: certDate,
-            toName: creatorName,
-          }]
         }
         
         /*
@@ -356,10 +334,10 @@ export async function POST(request: NextRequest) {
          * unica forma que este modelo no sabe expresar. Guardarla es lo que
          * permite reintentar el MINT contra ella.
          *
-         * Una obra sin `content_hash` no puede tener registro —
-         * `registrationRecord` lo exige— y son 46 de las 47 certificadas antes
-         * de que el hash existiera. Esas se mintean como siempre en vez de
-         * quedarse sin mintear: la cadena SUMA, no condiciona.
+         * Una obra sin registro publicado NO se acuna (Chains 01, 1.1): el
+         * camino que subia metadata propia publicaba precio, lugar y nombres
+         * sin pasar por assertNoIdentifiers. Espera al barrido de
+         * recuperacion (Stage 7), con su ticket de sistema.
          */
         let recordUri: string | undefined = workWithCreator.registration_record_uri ?? undefined
 
@@ -466,9 +444,9 @@ export async function POST(request: NextRequest) {
           }
         }
 
-        console.log('Minting NFT for TBT:', workNftData.tbtId)
+        if (!recordUri) throw new Error('No registration record published; the title token waits for the recovery sweep.')
 
-        const mintResult = await mintTBTNft(workNftData, recordUri)
+        const mintResult = await mintTitleToken(workNftData, recordUri)
         mintAddress = mintResult.mintAddress
         mintSignature = mintResult.signature
         solscanUrl = getExplorerUrl(mintAddress)
