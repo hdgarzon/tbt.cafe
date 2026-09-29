@@ -882,7 +882,14 @@
       "needSignIn": "Authenticate to continue",
       "imageRequired": "Add an image to continue",
       "titleRequired": "Give the work a title",
-      "categoryRequired": "Choose a category"
+      "categoryRequired": "Choose a category",
+      "linkHasIdentifier": "Link {n} contains {what}, which can't go on the permanent record. Change or remove it.",
+      "linkIdentifierKinds": {
+        "email": "an email address",
+        "phone": "a phone number",
+        "coordinates": "map coordinates",
+        "uuid": "an internal ID"
+      }
     },
     "coveredByTbt": "Covered by tbt.cafe",
     "coveredNote": "This one is on us — {n} free registrations remaining.",

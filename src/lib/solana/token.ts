@@ -20,6 +20,7 @@ import {
 } from '@metaplex-foundation/mpl-core'
 import { getRpcUrl } from './config'
 import { holdingAddress } from './holding'
+import { assertDistinctSecrets, assertPayerCanMint, readSecret } from './keys'
 
 /**
  * El token del titulo sobre Metaplex Core — Chains 01, Stage 4 (opcion C).
@@ -38,17 +39,6 @@ import { holdingAddress } from './holding'
  * solo es rechazado.
  */
 
-/** Acepta el arreglo JSON o base58, igual que la clave del payer de siempre. */
-function secretKeyFrom(name: string): Uint8Array {
-  const raw = process.env[name]
-  if (!raw) throw new Error(`${name} not configured`)
-  try {
-    return Uint8Array.from(JSON.parse(raw))
-  } catch {
-    return base58.serialize(raw)
-  }
-}
-
 function collectionAddress(): UmiPublicKey {
   const address = process.env.TBT_COLLECTION_ADDRESS
   if (!address) throw new Error('TBT_COLLECTION_ADDRESS not configured: create the collection first (Stage 4.2).')
@@ -61,9 +51,13 @@ function holding(titleNumber: string): UmiPublicKey {
 }
 
 function connect(): { umi: Umi; auth: Signer } {
+  const payer = readSecret('payer')
+  const authority = readSecret('authority')
+  assertDistinctSecrets({ payer, authority })
+
   const umi = createUmi(getRpcUrl()).use(mplCore())
-  umi.use(keypairIdentity(umi.eddsa.createKeypairFromSecretKey(secretKeyFrom('SOLANA_PAYER_PRIVATE_KEY'))))
-  const auth = createSignerFromKeypair(umi, umi.eddsa.createKeypairFromSecretKey(secretKeyFrom('SOLANA_AUTHORITY_PRIVATE_KEY')))
+  umi.use(keypairIdentity(umi.eddsa.createKeypairFromSecretKey(payer)))
+  const auth = createSignerFromKeypair(umi, umi.eddsa.createKeypairFromSecretKey(authority))
   return { umi, auth }
 }
 
@@ -102,6 +96,8 @@ export async function mintTitleToken(
   if (!registrationRecordUri) throw new Error('mintTitleToken: no registration record URI; the work waits for the sweep.')
 
   const { umi, auth } = connect()
+  assertPayerCanMint((await umi.rpc.getBalance(umi.identity.publicKey)).basisPoints)
+
   const asset = generateSigner(umi)
   const result = await create(umi, {
     asset,
