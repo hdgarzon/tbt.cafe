@@ -14,12 +14,11 @@ import { rpFromRequest, storeChallenge } from '@/lib/webauthn'
  * silencio. El step-up de administración —el que sí es privilegiado— sigue en
  * `/api/admin/step-up`.
  *
- * Existe aparte de `/api/webauthn/auth/begin` porque son cosas distintas y
- * confundirlas ya costó un 500 en producción:
- *
- *   login    — NO hay sesión. Identifica por teléfono y termina emitiendo una.
- *   step-up  — SÍ hay sesión. La identidad ya se conoce; solo hay que probar
- *              presencia, y no debe emitirse ninguna sesión nueva.
+ * Hubo un inicio de sesión biométrico aparte (`/api/webauthn/auth/begin`) que
+ * identificaba por teléfono y emitía una sesión; confundir las dos rutas ya
+ * costó un 500 en producción. Se retiró con D1: el biométrico solo se suma al
+ * código SMS. Aquí SÍ hay sesión, la identidad ya se conoce y solo hay que
+ * probar presencia; no debe emitirse ninguna sesión nueva.
  *
  * Aquí el usuario sale del token, así que no hace falta teléfono ni buscar a
  * nadie: se piden las credenciales de quien ya está autenticado.

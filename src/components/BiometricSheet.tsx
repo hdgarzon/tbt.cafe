@@ -14,7 +14,7 @@ import { Sheet, SheetButton, SheetSuccess } from '@/components/Sheet'
  * quick = una pulsación reemplaza el OTP en este dispositivo.
  * extra = se exige el biométrico ADEMÁS del OTP.
  */
-type Phase = 'idle' | 'prompting' | 'choose' | 'saving' | 'done'
+type Phase = 'idle' | 'prompting' | 'saving' | 'done'
 
 export function BiometricSheet({
   open,
@@ -27,17 +27,12 @@ export function BiometricSheet({
 }) {
   const { t } = useLocale()
   const [phase, setPhase] = useState<Phase>('idle')
-  const [mode, setMode] = useState<'quick' | 'extra'>('quick')
   const [error, setError] = useState('')
-  // El resultado de la ceremonia WebAuthn se guarda hasta que el usuario elige el modo
-  const [credential, setCredential] = useState<unknown>(null)
 
   useEffect(() => {
     if (!open) {
       setPhase('idle')
-      setMode('quick')
       setError('')
-      setCredential(null)
     }
   }, [open])
 
@@ -64,8 +59,7 @@ export function BiometricSheet({
 
       // Aquí el navegador invoca Touch ID / Face ID / Windows Hello
       const cred = await startRegistration({ optionsJSON: options })
-      setCredential(cred)
-      setPhase('choose') // ceremonia OK → elegir modo
+      await finishEnroll(cred)
     } catch (e) {
       const msg = e instanceof Error ? e.message : ''
       setError(
@@ -75,8 +69,12 @@ export function BiometricSheet({
     }
   }
 
-  // Paso 2: con el modo elegido, verificar y guardar en el servidor
-  async function finishEnroll() {
+  /*
+   * Paso 2: verificar y guardar. El biométrico es solo un segundo factor — se
+   * suma al código SMS y nunca lo sustituye (lista maestra, D1) — así que no
+   * hay modo que elegir.
+   */
+  async function finishEnroll(credential: unknown) {
     setError('')
     setPhase('saving')
     try {
@@ -84,20 +82,20 @@ export function BiometricSheet({
       const res = await fetch('/api/webauthn/register/finish', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ credential, bioMode: mode }),
+        body: JSON.stringify({ credential }),
       })
       const json = await res.json()
       if (!res.ok) throw new Error(json.error ?? t.biometric.errors.saveFailed)
       setPhase('done')
     } catch (e) {
       setError(e instanceof Error ? e.message : t.biometric.errors.saveFailed)
-      setPhase('choose')
+      setPhase('idle')
     }
   }
 
   return (
     <Sheet open={open} onClose={onClose} kicker={t.authHub.biometricSignIn} title={t.biometric.title}>
-      {(phase === 'idle' || phase === 'prompting') && (
+      {(phase === 'idle' || phase === 'prompting' || phase === 'saving') && (
         <div>
           <div className="text-center pt-2 pb-1">
             <div className="w-16 h-16 mx-auto mb-1 rounded-full border border-hairline bg-paper-warm text-ink flex items-center justify-center">
@@ -122,49 +120,13 @@ export function BiometricSheet({
           </div>
 
           <p className="text-[12.5px] leading-[1.6] tracking-[0.01em] text-ink-soft text-center">
-            {phase === 'prompting' ? t.biometric.prompting : t.biometric.description}
+            {phase === 'idle' ? t.biometric.description : t.biometric.prompting}
           </p>
 
           {error && <p className="text-[11.5px] leading-[1.5] text-t-red mt-3 text-center">{error}</p>}
 
-          <SheetButton onClick={startEnroll} disabled={phase === 'prompting'}>
+          <SheetButton onClick={startEnroll} disabled={phase !== 'idle'}>
             {t.biometric.setUp}
-          </SheetButton>
-        </div>
-      )}
-
-      {(phase === 'choose' || phase === 'saving') && (
-        <div>
-          <p className="text-[12.5px] leading-[1.6] tracking-[0.01em] text-ink-soft">
-            {t.biometric.chooseMode}
-          </p>
-
-          <div className="mt-[22px] flex flex-col gap-3">
-            {(
-              [
-                ['quick', t.biometric.quickTitle, t.biometric.quickDesc],
-                ['extra', t.biometric.extraTitle, t.biometric.extraDesc],
-              ] as const
-            ).map(([value, title, desc]) => (
-              <button
-                key={value}
-                type="button"
-                onClick={() => setMode(value)}
-                aria-pressed={mode === value}
-                className={`text-left rounded-xl border p-4 transition-colors ${
-                  mode === value ? 'border-ink bg-paper-warm' : 'border-hairline hover:border-ink'
-                }`}
-              >
-                <div className="text-[14px] font-semibold tracking-[0.01em] text-ink">{title}</div>
-                <div className="text-[12px] leading-[1.5] text-ink-soft mt-[5px]">{desc}</div>
-              </button>
-            ))}
-          </div>
-
-          {error && <p className="text-[11.5px] leading-[1.5] text-t-red mt-3">{error}</p>}
-
-          <SheetButton onClick={finishEnroll} disabled={phase === 'saving'}>
-            {t.biometric.chooseSave}
           </SheetButton>
         </div>
       )}
@@ -172,7 +134,7 @@ export function BiometricSheet({
       {phase === 'done' && (
         <SheetSuccess
           title={t.biometric.registered}
-          sub={mode === 'quick' ? t.biometric.doneQuick : t.biometric.doneExtra}
+          sub={t.biometric.doneExtra}
           buttonLabel={t.biometric.done}
           onDone={onSaved}
         />

@@ -8,7 +8,6 @@ import { StandingSheet } from '@/components/Sheet'
 import { SupportPanel } from '@/components/SupportPanel'
 import { fetchUnreadCount } from '@/lib/notifications-data'
 import { AuthSheet } from '@/components/AuthSheet'
-import { BiometricSignInSheet } from '@/components/BiometricSignInSheet'
 import { supabase } from '@/lib/supabase'
 import { maskPhone, type Country } from '@/lib/countries'
 import { maskPhoneE164 } from '@/lib/masking'
@@ -67,7 +66,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
    * sesión, que es exactamente lo que se está evitando.
    */
   const [resumeAfterAuth, setResumeAfterAuth] = useState<(() => void) | null>(null)
-  const [bioAuthOpen, setBioAuthOpen] = useState(false)
   const [notifOpen, setNotifOpen] = useState(false)
   const [unread, setUnread] = useState(0)
 
@@ -196,19 +194,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         open={authOpen}
         onClose={() => closeAuth(false)}
         onAuthenticated={handleAuthenticated}
-        onSwitchToBiometric={() => {
-          setAuthOpen(false)
-          setBioAuthOpen(true)
-        }}
-      />
-
-      <BiometricSignInSheet
-        open={bioAuthOpen}
-        onClose={() => setBioAuthOpen(false)}
-        onAuthenticated={() => {
-          setConnected(true)
-          closeAuth(true)
-        }}
       />
     </ShellContext.Provider>
   )
