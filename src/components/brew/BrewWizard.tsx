@@ -353,6 +353,9 @@ export function BrewWizard() {
     if (!file) return
     setImageFile(file)
     setImagePreview(URL.createObjectURL(file))
+    // N9 h: el escaneo corre en cuanto hay imagen, no al final. Quien sube una
+    // obra ya registrada se entera aquí, antes de llenar el resto del flujo.
+    void runScan(file)
   }
 
   // ---- The Work ----------------------------------------------------------
@@ -365,6 +368,7 @@ export function BrewWizard() {
 
   async function submitWork2() {
     if (!imageFile) return setMsg(t.brew.errors.imageRequired)
+    if (scanState === 'blocked') return
     setMsg('')
     setStep('work3')
   }
@@ -419,12 +423,12 @@ export function BrewWizard() {
     setStep('comm2')
   }
 
-  async function runScan() {
-    if (!imageFile) return
+  async function runScan(file: File | null = imageFile) {
+    if (!file) return
     setScanState('scanning')
     setScanId(null)
     setScanAnim(0)
-    const result = await runSimilarityScan(imageFile)
+    const result = await runSimilarityScan(file)
     // Un escaneo que no corrió no es limpio (N9 b). Todavía no hay borrador, así
     // que cerrar aquí no deja nada a medias ni consume nada (N9 d).
     if (result.status === 'unavailable') {
@@ -694,6 +698,16 @@ export function BrewWizard() {
           return
         }
         setResult({ tbtId: res.tbtId, title: res.workTitle, solscanUrl: res.solscanUrl })
+        // Al volver de Stripe la página se recarga y `brewAs` vuelve a su
+        // valor inicial: quién registró se lee de la obra (Step 20).
+        supabase
+          .from('works')
+          .select('registered_as')
+          .eq('id', id)
+          .maybeSingle()
+          .then(({ data }) => {
+            if (data?.registered_as === 'collector') setBrewAs('collector')
+          })
         setStep('registered')
       }, 500)
     })
@@ -974,10 +988,22 @@ export function BrewWizard() {
         backLabel={t.creator.back}
         onClose={close}
         progressPct={STEP_PROGRESS[step]}
-        dock={<BrewButton onClick={submitWork2}>{t.brew.next}</BrewButton>}
+        dock={<BrewButton onClick={submitWork2} disabled={scanState === 'blocked'}>{scanState === 'blocked' ? t.brew.blocked : t.brew.next}</BrewButton>}
       >
         <BrewTitle required>{t.brew.imageTitle}</BrewTitle>
         <p className="text-[12px] leading-[1.62] text-ink-soft mt-2">{t.brew.imageSub}</p>
+
+        {/* N9 h: el resultado del escaneo aparece aquí, con la imagen. */}
+        {imageFile && scanState === 'scanning' && (
+          <p className="text-[12px] text-ink-soft mt-3">{t.brew.scanning}</p>
+        )}
+        {imageFile && scanState === 'blocked' && (
+          <div className="animate-cb-fade border border-t-red/40 bg-t-red/5 rounded-2xl p-4 mt-3">
+            <div className="text-[13px] font-medium text-ink">{t.brew.scanBlockTitle}</div>
+            <p className="text-[12px] text-ink-soft mt-1.5 leading-[1.5]">{t.brew.scanBlockBody.replace('{score}', String(scanScore))}</p>
+            <ClaimForm scanId={scanId} />
+          </div>
+        )}
 
         {imagePreview ? (
           <div
@@ -1243,7 +1269,7 @@ export function BrewWizard() {
               <div className="h-5" />
               <button
                 type="button"
-                onClick={runScan}
+                onClick={() => runScan()}
                 className="inline-flex items-center justify-center px-[26px] py-3 bg-ink text-paper rounded-xl text-[12px] font-semibold tracking-[0.16em] uppercase enabled:hover:bg-black transition-opacity"
               >
                 {t.brew.runScan}

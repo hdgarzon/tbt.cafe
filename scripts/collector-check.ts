@@ -97,5 +97,12 @@ const WIZARD = code(read('src/components/brew/BrewWizard.tsx'))
   ok('"Gallery certificate" pasa a Gallery documentation', JSON.parse(read('src/i18n/messages/en.json')).collector?.docGallery === 'Gallery documentation')
 }
 
+// ---- N9 h: en Cold Brew el escaneo corre con la imagen, al principio
+{
+  ok('elegir la imagen dispara el escaneo', /setImagePreview\(URL\.createObjectURL\(file\)\)\s*void runScan\(file\)/.test(WIZARD))
+  ok('un bloqueo se ve y se reclama en el paso de la imagen', /imageFile && scanState === 'blocked'[\s\S]{0,700}<ClaimForm scanId=\{scanId\} \/>/.test(WIZARD))
+  ok('y no se puede seguir', /async function submitWork2\(\) \{[\s\S]{0,160}if \(scanState === 'blocked'\) return/.test(WIZARD))
+}
+
 console.log(bad === 0 ? '\ntodo en orden' : `\n${bad} fallo(s)`)
 process.exit(bad === 0 ? 0 : 1)
