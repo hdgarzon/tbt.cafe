@@ -566,8 +566,9 @@ export async function POST(request: NextRequest) {
       })
     }
 
-    // Get user contact info
-    const { data: profile } = await supabase
+    // Contacto de quien registra. Columnas privadas: el cliente del usuario ya
+    // no las lee (053); el servidor sí, y la fila es la de quien autenticó.
+    const { data: profile } = await createAdminClient()
       .from('profiles')
       .select('email, phone')
       .eq('id', user.id)

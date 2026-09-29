@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
+import { fetchMyPrivateProfile } from '@/lib/my-profile'
 import { useLocale } from '@/i18n/LocaleProvider'
 import { Field, TextArea, CategoryPicker, SaveBar, type Category } from '@/components/FormBits'
 import { SignInGate } from '@/components/SignInGate'
@@ -41,13 +42,21 @@ export default function CreatorProfilePage() {
         setLoading(false)
         return
       }
-      const { data } = await supabase
-        .from('profiles')
-        .select(
-          'creator_type, legal_name, collective_name, lead_representative, entity_name, tax_id, public_alias, bio, credentials, physical_address, social_linkedin, social_website, social_instagram'
-        )
-        .eq('id', user.id)
-        .single()
+      // Lo privado —nombre legal, documento, dirección— ya no se lee de la
+      // tabla (053); llega por my_profile_private(), solo para quien llama.
+      const [{ data: pub }, mine] = await Promise.all([
+        supabase
+          .from('profiles')
+          .select(
+            'creator_type, collective_name, lead_representative, entity_name, public_alias, bio, credentials, social_linkedin, social_website, social_instagram'
+          )
+          .eq('id', user.id)
+          .single(),
+        fetchMyPrivateProfile(),
+      ])
+      const data = pub
+        ? { ...pub, legal_name: mine?.legal_name ?? null, tax_id: mine?.tax_id ?? null, physical_address: mine?.physical_address ?? null }
+        : null
 
       if (data) {
         setCategory((data.creator_type as Category) ?? 'individual')

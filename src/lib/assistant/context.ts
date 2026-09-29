@@ -18,6 +18,7 @@
  * este usuario" se puede rodear conversando; el acotado en servidor no.
  */
 import type { SupabaseClient } from '@supabase/supabase-js'
+import { fetchMyPrivateProfile } from '@/lib/my-profile'
 
 export type PersonContext = {
   works: Array<{ tbtId: string; title: string; status: string; createdAt: string }>
@@ -73,7 +74,8 @@ export async function loadPersonContext(
       .order('severity', { ascending: true })
       .order('updated_at', { ascending: false })
       .limit(10),
-    supabase.from('profiles').select('email, private_code_hash').eq('id', userId).single(),
+    // Lo privado por la función de la 053: responde por quien llama, sin el hash.
+    fetchMyPrivateProfile(supabase).then((mine) => ({ data: mine })),
   ])
 
   return {
@@ -104,7 +106,7 @@ export async function loadPersonContext(
     authStatus: {
       hasEmail: !!profile.data?.email,
       // El estado, nunca el código. El propio valor va cifrado y no se recupera.
-      hasPrivateCode: !!profile.data?.private_code_hash,
+      hasPrivateCode: !!profile.data?.has_private_code,
     },
   }
 }
