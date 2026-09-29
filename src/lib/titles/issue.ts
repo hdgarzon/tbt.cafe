@@ -8,7 +8,7 @@ import { recordProviderEvent } from '@/lib/provider-events'
  *
  *   1. La fila. Se escribe primero, con lo que el título imprime congelado en
  *      `facts` y el hecho que lo emite en `source_key`. El índice único de la
- *      054 hace que un reintento —complete-tbt y complete-transfer se llaman
+ *      055 hace que un reintento —complete-tbt y complete-transfer se llaman
  *      más de una vez— encuentre la fila y no emita un segundo título.
  *   2. El render. El renderer en Fly devuelve el GIF, el PNG del cuadro cero y
  *      el WebP. Desde `facts` sale byte a byte igual cada vez (§4 a), así que

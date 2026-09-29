@@ -1,5 +1,5 @@
 -- ============================================================================
--- 054_title_issue.sql — El título se emite en el servidor, congelado y re-renderizable
+-- 055_title_issue.sql — El título se emite en el servidor, congelado y re-renderizable
 -- ============================================================================
 -- Work Order 01 Stage 5 (Steps 15–18), a Title Specification 02.
 --

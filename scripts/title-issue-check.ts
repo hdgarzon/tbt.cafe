@@ -26,7 +26,7 @@ const read = (p: string) => readFileSync(join(root, p), 'utf8')
 const code = (s: string) => s.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\{\/\*[\s\S]*?\*\/\}/g, '').replace(/\/\/.*$/gm, '')
 const sql = (p: string) => read(p).split('\n').filter((l) => !l.trim().startsWith('--')).join('\n')
 
-const M054 = sql('supabase/migrations/054_title_issue.sql')
+const M055 = sql('supabase/migrations/055_title_issue.sql')
 const ISSUE = code(read('src/lib/titles/issue.ts'))
 const TBT = code(read('src/app/api/complete-tbt/route.ts'))
 const TRANSFER = code(read('src/app/api/complete-transfer/route.ts'))
@@ -34,13 +34,13 @@ const LINK = code(read('src/app/api/titles/[number]/route.ts'))
 
 // ---- el servidor emite
 {
-  ok('la 054 cierra la inserción desde el cliente', M054.includes('drop policy if exists "Creador o dueño puede emitir titulos" on public.titles'))
-  ok('los archivos viven en una tabla solo del servidor', /alter table public\.title_files enable row level security/.test(M054) && /revoke all on public\.title_files from anon, authenticated/.test(M054))
-  ok('la 054 no abre políticas', !/create policy/i.test(M054))
-  ok('el bucket es privado', /values \('titles', 'titles', false\)/.test(M054))
+  ok('la 055 cierra la inserción desde el cliente', M055.includes('drop policy if exists "Creador o dueño puede emitir titulos" on public.titles'))
+  ok('los archivos viven en una tabla solo del servidor', /alter table public\.title_files enable row level security/.test(M055) && /revoke all on public\.title_files from anon, authenticated/.test(M055))
+  ok('la 055 no abre políticas', !/create policy/i.test(M055))
+  ok('el bucket es privado', /values \('titles', 'titles', false\)/.test(M055))
   // titles es legible por cualquiera; facts lleva la firma y la línea del titular.
-  ok('la lectura pública de titles se retira entera', /revoke select on public\.titles from anon, authenticated;/.test(M054))
-  const grant = (M054.match(/grant select \(([^)]*)\)\s*on public\.titles to anon, authenticated;/) ?? [])[1] ?? ''
+  ok('la lectura pública de titles se retira entera', /revoke select on public\.titles from anon, authenticated;/.test(M055))
+  const grant = (M055.match(/grant select \(([^)]*)\)\s*on public\.titles to anon, authenticated;/) ?? [])[1] ?? ''
   ok('y se devuelve columna por columna', grant.length > 0)
   ok('sin facts ni source_key', grant.length > 0 && !/\bfacts\b/.test(grant) && !/\bsource_key\b/.test(grant))
   ok('complete-tbt ya no inserta el título por su cuenta', !/\.from\('titles'\)\s*\.insert\(/.test(TBT))
@@ -49,7 +49,7 @@ const LINK = code(read('src/app/api/titles/[number]/route.ts'))
 
 // ---- una emisión por hecho
 {
-  ok('la clave del hecho es única', /create unique index if not exists titles_source_key_key/.test(M054))
+  ok('la clave del hecho es única', /create unique index if not exists titles_source_key_key/.test(M055))
   ok('el registro emite con su clave', TBT.includes('sourceKey: `registration:${workId}`'))
   ok('la transferencia emite con la suya', TRANSFER.includes('sourceKey: `transfer:${transfer.id}`'))
   ok('un reintento encuentra la fila', /\.eq\('source_key', input\.sourceKey\)/.test(ISSUE))
@@ -59,7 +59,7 @@ const LINK = code(read('src/app/api/titles/[number]/route.ts'))
 
 // ---- congelado y re-renderizable (§4 a)
 {
-  ok('la fila guarda lo que el título imprime', /facts,\n/.test(ISSUE) && M054.includes('add column if not exists facts jsonb'))
+  ok('la fila guarda lo que el título imprime', /facts,\n/.test(ISSUE) && M055.includes('add column if not exists facts jsonb'))
   ok('el render sale de la fila, no de la obra viva', ISSUE.includes('render(title.facts as TitleFacts, work.media_url)'))
   ok('la versión y supersedes salen del título anterior', ISSUE.includes('version: (previous?.version ?? 0) + 1') && ISSUE.includes('supersedes: previous?.id ?? null'))
   ok('el enlace dura 30 días desde la emisión', ISSUE.includes('export const TITLE_LINK_DAYS = 30') && ISSUE.includes('TITLE_LINK_DAYS * 86_400_000'))
