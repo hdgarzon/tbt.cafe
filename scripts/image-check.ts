@@ -374,7 +374,10 @@ const read = (p: string) => readFileSync(join(process.cwd(), p), 'utf8')
 {
   const wizard = read('src/components/brew/BrewWizard.tsx')
   ok('una obra privada no propone publicar nada',
-     wizard.includes("isPublished ? 'thumbnail' : 'none'"))
+     wizard.includes("isPublished ? 'full' : 'none'"))
+  ok('una obra publicada propone el tamaño completo (Chains 01, 5.3)',
+     !wizard.includes("isPublished ? 'thumbnail'"))
+  ok('la nota del techo se muestra con full', /chainImageNoteCeiling/.test(wizard))
   ok('el control vive en el Sello', wizard.includes('t.brew.chainImageLabel'))
 }
 
@@ -385,5 +388,47 @@ const read = (p: string) => readFileSync(join(process.cwd(), p), 'utf8')
   ok('y solo admite las tres', mig.includes("check (chain_image in ('none', 'thumbnail', 'full'))"))
 }
 
-console.log(bad === 0 ? '\nTodo en orden.' : `\n${bad} fallo(s).`)
-process.exit(bad === 0 ? 0 : 1)
+// ══ Chains 01, 5.4 — el techo produce una copia reducida, nunca nada ══════
+
+async function ceiling() {
+  const { reduceUnderCeiling, PUBLISH_CEILING_BYTES, REDUCE_QUALITY } = await import('../src/lib/chain/reduce-image')
+  ok('el techo es 8 MB', PUBLISH_CEILING_BYTES === 8 * 1024 * 1024)
+  ok('publish-image usa el mismo techo', read('src/lib/chain/publish-image.ts').includes('MAX_PUBLISH_BYTES = PUBLISH_CEILING_BYTES'))
+  ok('calidad 0.9', REDUCE_QUALITY === 0.9)
+
+  // Un codificador de mentira: el tamaño crece con el area, como un JPEG.
+  const edges: number[] = []
+  const fake = (bytesPerPixel: number, longEdge: number) => async (edge: number) => {
+    edges.push(edge)
+    const short = Math.round(edge * 0.75)
+    return { size: Math.round(edge * short * bytesPerPixel), edge, longEdge }
+  }
+
+  const small = await reduceUnderCeiling(5 * 1024 * 1024, 4032, fake(1, 4032))
+  ok('bajo el techo no se reduce nada', small === null && edges.length === 0)
+
+  const big = await reduceUnderCeiling(30 * 1024 * 1024, 12000, fake(1.2, 12000))
+  ok('sobre el techo sale una copia', big !== null)
+  ok('y queda bajo el techo', !!big && big.size < PUBLISH_CEILING_BYTES)
+  ok('el lado largo baja por pasos', edges.length > 1 && edges.every((e, i) => i === 0 || e < edges[i - 1]))
+  ok('nunca se codifica al tamaño original', edges.every((e) => e < 12000))
+
+  edges.length = 0
+  let threw = false
+  try { await reduceUnderCeiling(30 * 1024 * 1024, 12000, async () => null) } catch { threw = true }
+  ok('si el navegador no puede codificar, lanza (nunca devuelve el original)', threw)
+
+  const brew = read('src/lib/brew-data.ts')
+  ok('Brew reduce al subir, junto a la miniatura', /reduceUnderCeiling\(/.test(brew) && /'reduced_'/.test(brew))
+  ok('con full, el original sobre el techo no se publica', /chainImageUrl = \(await uploadWorksMedia\(userId, reduced, 'reduced_'\)\)/.test(brew))
+
+  const route = read('src/app/api/complete-tbt/route.ts')
+  ok('el servidor la llama reduced', /chain_image_url !== workWithCreator\.media_url \? 'reduced'/.test(route))
+  const records = read('src/lib/chain/records.ts')
+  ok('el registro admite reduced', /ImageKind = 'thumbnail' \| 'full' \| 'reduced'/.test(records))
+}
+
+ceiling().then(() => {
+  console.log(bad === 0 ? '\nTodo en orden.' : `\n${bad} fallo(s).`)
+  process.exit(bad === 0 ? 0 : 1)
+})

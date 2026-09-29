@@ -367,10 +367,13 @@ export async function POST(request: NextRequest) {
              * y sumarle algo despues seria una enmienda (Item 5), no un
              * reintento. Es el precio correcto — el registro no cambia.
              */
-            let image: { uri: string; hash: string; kind: 'thumbnail' | 'full' } | undefined
+            let image: { uri: string; hash: string; kind: 'thumbnail' | 'full' | 'reduced' } | undefined
             const choice = workWithCreator.chain_image as string | null
+            // Chains 01, 5.4: `full` cuya fuente no es el original es la copia bajo el techo.
+            const kind =
+              choice === 'full' && workWithCreator.chain_image_url && workWithCreator.chain_image_url !== workWithCreator.media_url ? 'reduced' : choice
 
-            if (choice === 'thumbnail' || choice === 'full') {
+            if (kind === 'thumbnail' || kind === 'full' || kind === 'reduced') {
               if (workWithCreator.chain_image_uri && workWithCreator.chain_image_hash) {
                 // Ya subida en un intento anterior. Se reutiliza, nunca se
                 // republica: dos copias de la misma obra en un almacen
@@ -378,14 +381,14 @@ export async function POST(request: NextRequest) {
                 image = {
                   uri: workWithCreator.chain_image_uri,
                   hash: workWithCreator.chain_image_hash,
-                  kind: choice,
+                  kind,
                 }
               } else if (workWithCreator.chain_image_url) {
                 try {
                   const { publishWorkImage } = await import('@/lib/chain/publish-image')
                   const pub = await publishWorkImage({
                     sourceUrl: workWithCreator.chain_image_url,
-                    kind: choice,
+                    kind,
                     tbtId: workNftData.tbtId,
                   })
 
@@ -394,7 +397,7 @@ export async function POST(request: NextRequest) {
                     .update({ chain_image_uri: pub.uri, chain_image_hash: pub.hash })
                     .eq('id', workId)
 
-                  image = { uri: pub.uri, hash: pub.hash, kind: choice }
+                  image = { uri: pub.uri, hash: pub.hash, kind }
                   console.log(`Work image published (${choice}): ${pub.uri}`)
                 } catch (imageError) {
                   console.error('[chain] no se pudo publicar la imagen:', imageError)

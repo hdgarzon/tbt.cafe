@@ -26,11 +26,13 @@ import { createHash } from 'crypto'
 import { toMetaplexFile } from '@metaplex-foundation/js'
 import { stripMetadata } from './strip-metadata'
 import { uploadToArweave } from './arweave'
+import { PUBLISH_CEILING_BYTES } from './reduce-image'
 
 /** Lo que un creador puede elegir. `none` es lo que vale cuando nadie eligio. */
 export const CHAIN_IMAGE_CHOICES = ['none', 'thumbnail', 'full'] as const
 export type ChainImageChoice = (typeof CHAIN_IMAGE_CHOICES)[number]
-export type ChainImageKind = Exclude<ChainImageChoice, 'none'>
+/** Lo que se publica: lo elegido, o `reduced` cuando `full` paso del techo (Chains 01, 5.4). */
+export type ChainImageKind = Exclude<ChainImageChoice, 'none'> | 'reduced'
 
 export const isChainImageChoice = (v: unknown): v is ChainImageChoice =>
   typeof v === 'string' && (CHAIN_IMAGE_CHOICES as readonly string[]).includes(v)
@@ -43,7 +45,7 @@ export const isChainImageChoice = (v: unknown): v is ChainImageChoice =>
  * anota y la obra se certifica igual. Es un limite, no un recorte — reescalar
  * por nuestra cuenta publicaria algo que el creador no eligio.
  */
-export const MAX_PUBLISH_BYTES = 8 * 1024 * 1024
+export const MAX_PUBLISH_BYTES = PUBLISH_CEILING_BYTES
 
 /** Etiquetas de la subida, en un sitio para que la prueba no diverja. */
 export const IMAGE_TAGS = {

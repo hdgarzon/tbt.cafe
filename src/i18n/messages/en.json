@@ -843,6 +843,7 @@
     "chainImageNoteNone": "The record names the work and proves which file it was. Nothing else is published.",
     "chainImageNoteThumbnail": "A reduced copy travels with the record so it can be recognised. Your file stays with you.",
     "chainImageNoteFull": "The image is published at full size and cannot be withdrawn. Location and camera data are removed first.",
+    "chainImageNoteCeiling": "Very large files are published as a high-quality copy under 8 MB.",
     "holdToSeal": "Hold to seal",
     "sealed": "Sealed",
     "sealedHint": "Locked and ready to register",

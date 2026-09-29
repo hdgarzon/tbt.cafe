@@ -125,7 +125,7 @@ export function BrewWizard() {
    * borrar. En cuanto la persona elige, su eleccion manda.
    */
   const [chainImage, setChainImage] = useState<ChainImageChoice | null>(null)
-  const chainImageChoice: ChainImageChoice = chainImage ?? (isPublished ? 'thumbnail' : 'none')
+  const chainImageChoice: ChainImageChoice = chainImage ?? (isPublished ? 'full' : 'none')
   const [seriesChoice, setSeriesChoice] = useState('__new')
   const [newSeriesName, setNewSeriesName] = useState('')
 
@@ -1433,6 +1433,9 @@ export function BrewWizard() {
                 ? t.brew.chainImageNoteThumbnail
                 : t.brew.chainImageNoteFull}
           </p>
+          {chainImageChoice === 'full' && (
+            <p className="text-[11.5px] leading-[1.55] text-ink-soft mt-1">{t.brew.chainImageNoteCeiling}</p>
+          )}
         </div>
 
         <div className="text-center mt-8">
