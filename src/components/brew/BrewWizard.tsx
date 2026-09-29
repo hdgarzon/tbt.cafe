@@ -13,6 +13,7 @@ import { EmbeddedCheckoutSheet } from '@/components/EmbeddedCheckoutSheet'
 import { money, FEE } from '@/lib/fees'
 import type { SeriesWithCount } from '@/lib/series-data'
 import type { ChainImageChoice } from '@/lib/chain/publish-image'
+import { linkIdentifierProblem } from '@/lib/chain/identifier-patterns'
 import {
   fetchDraftForResume,
   fetchCreatorProfile,
@@ -351,6 +352,17 @@ export function BrewWizard() {
 
   async function submitWork2() {
     if (!imageFile) return setMsg(t.brew.errors.imageRequired)
+    // Chains 01, 1.4: un enlace que la publicacion rechazaria se corrige aqui.
+    for (let i = 0; i < assetLinks.length; i++) {
+      const kind = linkIdentifierProblem(assetLinks[i].trim())
+      if (kind) {
+        return setMsg(
+          t.brew.errors.linkHasIdentifier
+            .replace('{n}', String(i + 1))
+            .replace('{what}', t.brew.errors.linkIdentifierKinds[kind])
+        )
+      }
+    }
     setMsg('')
     setStep('work3')
   }

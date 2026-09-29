@@ -881,7 +881,14 @@
       "needSignIn": "Authentifiez-vous pour continuer",
       "imageRequired": "Ajoutez une image pour continuer",
       "titleRequired": "Donnez un titre à l'œuvre",
-      "categoryRequired": "Choisissez une catégorie"
+      "categoryRequired": "Choisissez une catégorie",
+      "linkHasIdentifier": "Le lien {n} contient {what}, qui ne peut pas figurer dans le registre permanent. Modifiez-le ou supprimez-le.",
+      "linkIdentifierKinds": {
+        "email": "une adresse e-mail",
+        "phone": "un numéro de téléphone",
+        "coordinates": "des coordonnées",
+        "uuid": "un identifiant interne"
+      }
     },
     "coveredByTbt": "Offert par tbt.cafe",
     "coveredNote": "Celle-ci est pour nous — il vous reste {n} enregistrements gratuits.",
