@@ -112,11 +112,11 @@
     "needSignIn": "Autentique-se para gerenciar sua autenticação.",
     "mobilePhone": "Celular",
     "change": "Alterar",
-    "recoveryEmail": "Email de recuperação",
+    "recoveryEmail": "e-Mail",
     "add": "Adicionar",
     "notConfigured": "Não configurado",
     "unverified": "não verificado",
-    "recoveryHint": "Para recuperar a conta se você perder o celular.",
+    "recoveryHint": "Uma segunda cópia de cada link de título, e outra forma de falar com você.",
     "privateCode": "Código privado",
     "setUp": "Configurar",
     "active": "Ativo",
@@ -150,23 +150,32 @@
     "errors": {
       "saveFailed": "Não conseguimos salvar o código"
     },
-    "pcResetNote": "Esqueceu-se depois? Redefina-o com o seu email de recuperação.",
-    "pcResetNoteNoEmail": "Dica: adicione um email de recuperação para poder redefinir se esquecer.",
+    "pcResetNote": "Esqueceu depois? Abra uma solicitação de ajuda.",
+    "pcResetNoteNoEmail": "Esqueceu depois? Abra uma solicitação de ajuda.",
     "freqLabel": "Quando pedir"
   },
   "recoveryEmail": {
-    "title": "Email de recuperação",
-    "description": "Serve para recuperar a conta se você perder o celular, e como confirmação extra.",
+    "title": "e-Mail",
+    "description": "Recebe uma cópia de cada link de título e nos dá outra forma de falar com você. Opcional.",
     "emailLabel": "Email",
     "invalidEmail": "Email inválido.",
     "send": "Enviar confirmação",
     "sending": "Enviando…",
     "checkEmail": "Verifique seu email.",
-    "checkEmailDesc": "Enviamos um link de confirmação para {email}. Ao abri-lo, o email fica verificado e você poderá usá-lo para recuperar sua conta se perder o celular.",
+    "checkEmailDesc": "Enviamos um código para {email}. Digite-o para verificar o endereço.",
     "done": "Concluído",
     "errors": {
-      "sendFailed": "Não conseguimos enviar a confirmação"
-    }
+      "sendFailed": "Não conseguimos enviar a confirmação",
+      "invalidCode": "Esse código não está correto. Confira e tente novamente.",
+      "expired": "Esse código expirou. Peça um novo.",
+      "tooManyAttempts": "Tentativas demais. Peça um código novo.",
+      "tooMany": "Você pediu códigos demais. Tente novamente em uma hora."
+    },
+    "codeLabel": "Código",
+    "verify": "Verificar",
+    "verifying": "Verificando…",
+    "resend": "Enviar um código novo",
+    "verified": "E-mail verificado"
   },
   "biometric": {
     "title": "Autenticação biométrica",

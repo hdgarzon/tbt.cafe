@@ -112,11 +112,11 @@
     "needSignIn": "Authenticate to manage your authentication.",
     "mobilePhone": "Mobile phone",
     "change": "Change",
-    "recoveryEmail": "Recovery email",
+    "recoveryEmail": "e-Mail",
     "add": "Add",
     "notConfigured": "Not configured",
     "unverified": "unverified",
-    "recoveryHint": "To recover your account if you lose your phone.",
+    "recoveryHint": "A second copy of every title link, and a second way to reach you.",
     "privateCode": "Private code",
     "setUp": "Set up",
     "active": "Active",
@@ -150,23 +150,32 @@
     "errors": {
       "saveFailed": "We couldn't save the code"
     },
-    "pcResetNote": "Forgot it later? Reset it with your recovery email.",
-    "pcResetNoteNoEmail": "Tip: add a recovery email so you can reset this if forgotten.",
+    "pcResetNote": "Forgot it later? Open a help request.",
+    "pcResetNoteNoEmail": "Forgot it later? Open a help request.",
     "freqLabel": "When to ask"
   },
   "recoveryEmail": {
-    "title": "Recovery email",
-    "description": "Used to recover your account if you lose your phone, and as extra confirmation.",
+    "title": "e-Mail",
+    "description": "Receives a copy of every title link and gives us a second way to reach you. Optional.",
     "emailLabel": "Email",
     "invalidEmail": "Invalid email.",
     "send": "Send confirmation",
     "sending": "Sending…",
     "checkEmail": "Check your email.",
-    "checkEmailDesc": "We sent a confirmation link to {email}. Once you open it, the email is verified and you can use it to recover your account if you lose your phone.",
+    "checkEmailDesc": "We sent a code to {email}. Enter it to verify the address.",
     "done": "Done",
     "errors": {
-      "sendFailed": "We couldn't send the confirmation"
-    }
+      "sendFailed": "We couldn't send the confirmation",
+      "invalidCode": "That code is not right. Check it and try again.",
+      "expired": "That code has expired. Ask for a new one.",
+      "tooManyAttempts": "Too many attempts. Ask for a new code.",
+      "tooMany": "Too many codes requested. Try again in an hour."
+    },
+    "codeLabel": "Code",
+    "verify": "Verify",
+    "verifying": "Verifying…",
+    "resend": "Send a new code",
+    "verified": "e-Mail verified"
   },
   "biometric": {
     "title": "Biometric authentication",
