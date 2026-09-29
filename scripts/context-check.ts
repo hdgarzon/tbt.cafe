@@ -33,7 +33,7 @@ const nft = read('src/lib/solana/nft.ts')
 
 // ---- el final: lo que no hay, no se acuña
 {
-  ok('el NFT solo lleva el atributo si hay clima', /if \(work\.creationWeather\)/.test(nft))
+  ok('el token no lleva clima: su URI es el registro', !/creationWeather|Creation Weather/.test(nft))
 }
 
 console.log(bad === 0 ? '\ntodo en orden' : `\n${bad} fallo(s)`)
