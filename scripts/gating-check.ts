@@ -101,8 +101,8 @@ const curation = read('src/components/CurationModal.tsx')
   ok('el alta del biométrico no ofrece modo quick', !bioSheet.includes("'quick'"))
   ok('la credencial se guarda siempre como extra', regFinish.includes("bio_mode: 'extra'") && regFinish.includes('const { credential } = body'),
      'el modo no se lee del cliente')
-  const m053 = read('supabase/migrations/053_biometric_second_factor_only.sql')
-  ok('la 053 prohíbe quick', m053.includes("check (bio_mode = 'extra')"))
+  const m054 = read('supabase/migrations/054_biometric_second_factor_only.sql')
+  ok('la 054 prohíbe quick', m054.includes("check (bio_mode = 'extra')"))
   for (const l of ['en', 'es', 'pt', 'fr']) {
     const m = JSON.parse(read(`src/i18n/messages/${l}.json`))
     ok(`${l}: sin auth.bioInstead ni biometricSignIn`, m.auth?.bioInstead === undefined && m.biometricSignIn === undefined)
