@@ -53,6 +53,9 @@
   },
   "dependencies": {
     "@metaplex-foundation/js": "^0.20.1",
+    "@metaplex-foundation/mpl-core": "^1.10.0",
+    "@metaplex-foundation/umi": "^1.6.0",
+    "@metaplex-foundation/umi-bundle-defaults": "^1.6.0",
     "@simplewebauthn/browser": "^14.0.0",
     "@simplewebauthn/server": "^14.0.2",
     "@solana/web3.js": "^1.99.0",
