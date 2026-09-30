@@ -1107,5 +1107,33 @@
     "askPlaceholder": "Faça uma pergunta sobre este artigo",
     "postFailed": "Não foi possível publicar.",
     "someone": "Alguém"
+  },
+  "titleLink": {
+    "kicker": "Seu título",
+    "loading": "Carregando seu título…",
+    "needAuth": "Autentique-se para abrir seu título.",
+    "notFound": "Não há um título com este número na sua autenticação.",
+    "error": "Não conseguimos abrir seu título agora. Tente novamente.",
+    "number": "Título nº {number}",
+    "superseded": "Um título posterior, nº {number}, foi emitido para esta obra. Este continua sendo um registro fiel do titular que nomeia.",
+    "expired": "Este link foi encerrado: os links de título ficam abertos por 30 dias. O registro da sua obra não muda. Para receber o título novamente, abra uma solicitação de ajuda.",
+    "rendering": "Estamos preparando seu título. Volte em um minuto.",
+    "alt": "Título animado nº {number}",
+    "downloadGif": "Baixar o título (GIF)",
+    "downloadPng": "Baixar a imagem fixa (PNG)",
+    "availableUntil": "Este link fica aberto até {date}.",
+    "workPage": "Ver a página da obra"
+  },
+  "signature": {
+    "label": "Assinatura",
+    "title": "Sua assinatura",
+    "instruction": "Assine com o dedo, ou com o mouse ou o trackpad. Ela aparece nos títulos das obras que você registrar daqui em diante.",
+    "none": "Você ainda não tem assinatura. Seus títulos mostram só o seu nome.",
+    "draw": "Adicionar sua assinatura",
+    "redraw": "Desenhar de novo",
+    "clear": "Apagar",
+    "done": "Pronto",
+    "hint": "Opcional. As obras já registradas mantêm a assinatura com que foram emitidas.",
+    "saveFailed": "Não conseguimos salvar sua assinatura. Tente novamente."
   }
 }

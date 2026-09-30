@@ -6,6 +6,8 @@ import { fetchMyPrivateProfile } from '@/lib/my-profile'
 import { useLocale } from '@/i18n/LocaleProvider'
 import { Field, TextArea, CategoryPicker, SaveBar, type Category } from '@/components/FormBits'
 import { SignInGate } from '@/components/SignInGate'
+import { StandingSheet } from '@/components/Sheet'
+import { SignaturePad, SignaturePreview, type Strokes } from '@/components/SignaturePad'
 
 /**
  * Perfil de Creador — Master Handoff §11.1.
@@ -33,6 +35,13 @@ export default function CreatorProfilePage() {
   const [linkedin, setLinkedin] = useState('')
   const [website, setWebsite] = useState('')
   const [instagram, setInstagram] = useState('')
+  // La firma (Title Spec 02 §5): opcional; se guarda aparte del resto del perfil.
+  const [signature, setSignature] = useState<Strokes | null>(null)
+  const [signing, setSigning] = useState(false)
+  const [draft, setDraft] = useState<Strokes>([])
+  const [padKey, setPadKey] = useState(0)
+  const [sigBusy, setSigBusy] = useState(false)
+  const [sigError, setSigError] = useState('')
 
   useEffect(() => {
     ;(async () => {
@@ -54,6 +63,7 @@ export default function CreatorProfilePage() {
           .single(),
         fetchMyPrivateProfile(),
       ])
+      setSignature(mine?.signature_strokes?.length ? mine.signature_strokes : null)
       const data = pub
         ? { ...pub, legal_name: mine?.legal_name ?? null, tax_id: mine?.tax_id ?? null, physical_address: mine?.physical_address ?? null }
         : null
@@ -117,6 +127,31 @@ export default function CreatorProfilePage() {
     }
   }
 
+  /*
+   * Guardar la firma. Va sola, no con el botón de guardar del perfil: el pad
+   * termina con Done y eso ya es una decisión. La firma queda en el perfil y se
+   * copia a cada obra al certificarla; las obras ya certificadas no cambian.
+   */
+  async function saveSignature() {
+    setSigBusy(true)
+    setSigError('')
+    try {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser()
+      if (!user) throw new Error(t.profileCreator.errors.saveFailed)
+      const next = draft.length ? draft : null
+      const { error: err } = await supabase.from('profiles').update({ signature_strokes: next }).eq('id', user.id)
+      if (err) throw err
+      setSignature(next)
+      setSigning(false)
+    } catch {
+      setSigError(t.signature.saveFailed)
+    } finally {
+      setSigBusy(false)
+    }
+  }
+
   if (loading) return <div className="px-4 pt-6 text-[13px] text-ink-soft">{t.authHub.loading}</div>
   if (!signedIn) {
     return <SignInGate message={t.profileCreator.needSignIn} backHref="/profile" backLabel={t.profile.title} />
@@ -171,8 +206,56 @@ export default function CreatorProfilePage() {
 
         <TextArea label={t.profileCreator.about} value={about} onChange={setAbout} placeholder={t.profileCreator.aboutPlaceholder} />
 
+        <div className="label-caps">{t.signature.label}</div>
+        <div className="border border-hairline rounded-xl p-3">
+          {signature ? (
+            <SignaturePreview strokes={signature} className="w-full h-auto text-ink" />
+          ) : (
+            <p className="text-[12.5px] text-ink-soft">{t.signature.none}</p>
+          )}
+          <button
+            type="button"
+            onClick={() => {
+              setDraft(signature ?? [])
+              setPadKey((k) => k + 1)
+              setSigError('')
+              setSigning(true)
+            }}
+            className="mt-2 text-[12.5px] text-ink underline underline-offset-2"
+          >
+            {signature ? t.signature.redraw : t.signature.draw}
+          </button>
+        </div>
+        <p className="text-[11.5px] leading-[1.5] text-ink-soft -mt-2">{t.signature.hint}</p>
+
         <SaveBar onSave={save} busy={busy} saved={saved} error={error} />
       </div>
+
+      <StandingSheet open={signing} onClose={() => setSigning(false)} head={t.signature.title}>
+        <p className="text-[12.5px] leading-[1.55] text-ink-soft mb-3">{t.signature.instruction}</p>
+        <SignaturePad key={padKey} initial={draft} onChange={setDraft} />
+        {sigError && <p className="text-[11.5px] text-t-red mt-2">{sigError}</p>}
+        <div className="flex gap-2 mt-4">
+          <button
+            type="button"
+            onClick={() => {
+              setDraft([])
+              setPadKey((k) => k + 1)
+            }}
+            className="flex-1 rounded-xl border border-hairline py-3 text-[13px] text-ink"
+          >
+            {t.signature.clear}
+          </button>
+          <button
+            type="button"
+            onClick={saveSignature}
+            disabled={sigBusy}
+            className="flex-1 rounded-xl bg-ink text-paper py-3 text-[13px] font-medium disabled:opacity-50"
+          >
+            {t.signature.done}
+          </button>
+        </div>
+      </StandingSheet>
     </div>
   )
 }
