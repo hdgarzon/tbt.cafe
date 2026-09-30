@@ -76,6 +76,8 @@ const APPLY: Record<string, (a: Approval) => { url: string; body: Record<string,
     body: {
       action: (a.payload as { action?: string })?.action,
       value: (a.payload as { value?: unknown })?.value,
+      // Con `rule` (Work Order 02, 1.5): la columna aprobada, no otra.
+      column: (a.payload as { column?: string })?.column,
       reason: a.reason,
       approvalId: a.id,
     },

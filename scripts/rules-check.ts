@@ -122,5 +122,17 @@ const restated = apiFiles.filter((f) => {
 })
 ok('no file restates a fee constant', restated.length === 0, restated.map((f) => f.slice(root.length + 1)).join(', '))
 
+// ---- 1.5 operators
+const cfg = code('src/app/api/admin/config/route.ts')
+ok('the config route reads every rule, the scanner address included', /getRules\(\)/.test(cfg) && /RULE_AUTHORITY/.test(cfg))
+ok('an unknown column is refused', /!\(column in RULE_AUTHORITY\)[\s\S]{0,120}unknown_rule/.test(cfg))
+ok('a two-person column goes through the approvals',
+   /RULE_AUTHORITY\[column\] === 'two_person'[\s\S]{0,400}gateHighRisk\(/.test(cfg))
+ok('every rule change needs a reason', /body\.action === 'rule'[\s\S]{0,600}reason_required/.test(cfg))
+ok('every rule change is audited', /action: `config\.rule\.\$\{column\}`/.test(cfg))
+ok('the cache is dropped after a write', /forgetRules\(\)/.test(cfg))
+const page = code('src/app/admin/page.tsx')
+ok('the APPLY map forwards the column', /'config\.business_rules': \(a\) => \(\{[\s\S]{0,400}column: \(a\.payload as \{ column\?: string \}\)\?\.column/.test(page))
+
 console.log(bad === 0 ? '\nall good' : `\n${bad} failure(s)`)
 process.exit(bad === 0 ? 0 : 1)
