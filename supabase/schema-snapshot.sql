@@ -307,7 +307,13 @@ create table if not exists public.ownership_history (
   sequence_number integer default 1 not null,
   created_at timestamp with time zone default now() not null,
   record_uri text,
-  record_hash text
+  record_hash text,
+  -- 062 · Chains 01 Stage 3: a code per acquisition, the naming choice
+  holder_code integer not null check (holder_code between 10000 and 99999),
+  holder_named boolean not null default false,
+  holder_public_name text,
+  constraint holder_code_unique_in_work unique (work_id, holder_code),
+  constraint holder_named_has_name check (not holder_named or holder_public_name is not null)
 );
 
 create table if not exists public.transfers (

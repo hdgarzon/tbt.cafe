@@ -394,7 +394,8 @@
     "eventGift": "Offerte",
     "saleLocked": "La vente nécessite une approbation.",
     "saleLockedCta": "Aller à Vendre",
-    "frozen": "Une offre a été acceptée. Cette œuvre est en attente jusqu'au {date}."
+    "frozen": "Une offre a été acceptée. Cette œuvre est en attente jusqu'au {date}.",
+    "privateCollector": "Collectionneur privé · {code}"
   },
   "info": {
     "value": "Valeur",

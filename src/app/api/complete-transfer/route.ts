@@ -6,6 +6,7 @@ import { getExplorerUrl } from '@/lib/solana/config'
 import { isProduction, assertServerEnv } from '@/lib/app-env'
 import { authenticate } from '@/lib/route-auth'
 import { notify } from '@/lib/notify'
+import { holderLabel, type HolderFacts } from '@/lib/holder'
 import { issueTitle } from '@/lib/titles/issue'
 
 /**
@@ -206,9 +207,21 @@ export async function POST(request: NextRequest) {
 
     const sequenceNumber = (historyCount || 0) + 1
 
-    // Build the new owner name from the transfer form
-    const newOwnerName = transfer.new_owner_name || 'Unknown'
+    /*
+     * El nombre de quien recibe sale de SU perfil, nunca de lo que tecleo quien
+     * envio (Work Order 02 5.8, Chains 01 1.2): `new_owner_name` sirve para
+     * dirigir la transferencia y no llega a ningun registro. Si se nombra en el
+     * registro permanente lo decide la persona al aceptar (5.5); sin eleccion,
+     * no se nombra (Chains 01 3.3).
+     */
+    const { data: recipient } = await serviceClient
+      .from('profiles')
+      .select('public_alias, display_name')
+      .eq('id', transfer.to_owner_id)
+      .maybeSingle()
+    const newOwnerName = recipient?.public_alias || recipient?.display_name || 'Unknown'
     const previousOwnerName = transfer.from_owner_name || 'Unknown'
+    const holderNamed = (transfer as { holder_named?: boolean | null }).holder_named === true
 
     // Record in ownership_history.
     // Service-role write: ownership_history is the immutable provenance
@@ -225,8 +238,10 @@ export async function POST(request: NextRequest) {
         price: transfer.payment_amount || null,
         currency: transfer.payment_currency || 'USD',
         sequence_number: sequenceNumber,
+        holder_named: holderNamed,
+        holder_public_name: holderNamed ? newOwnerName : null,
       })
-      .select('id')
+      .select('id, holder_code, holder_named, holder_public_name')
       .single()
 
     /**
@@ -300,7 +315,7 @@ export async function POST(request: NextRequest) {
 
         const { data: priorLink } = await supabase
           .from('ownership_history')
-          .select('record_hash')
+          .select('record_hash, holder_code, holder_named, holder_public_name')
           .eq('work_id', transfer.work_id)
           .eq('sequence_number', sequenceNumber - 1)
           .maybeSingle()
@@ -315,8 +330,9 @@ export async function POST(request: NextRequest) {
               tbtId: transfer.work.tbt_id,
               sequence: sequenceNumber,
               event: transfer.transfer_type === 'gift' ? 'gift' : 'sale',
-              from: { name: previousOwnerName, id: pseudonymFor(transfer.from_owner_id) },
-              to: { name: newOwnerName, id: pseudonymFor(transfer.to_owner_id) },
+              // Cada lado como eligio en su adquisicion: nombre o codigo (Chains 01 3.2).
+              from: { name: holderLabel(priorLink as HolderFacts), id: pseudonymFor(transfer.from_owner_id) },
+              to: { name: holderLabel(historyRow as HolderFacts), id: pseudonymFor(transfer.to_owner_id) },
               occurredAt: new Date(),
               priorRecord: priorLink.record_hash,
               registrationRecord: chainSource.registration_record_uri,

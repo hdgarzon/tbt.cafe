@@ -109,9 +109,9 @@ export function HistoryTab({ workId, tbtId }: { workId: string; tbtId: string })
   const [ledger, setLedger] = useState<Ledger | null>(null)
 
   useEffect(() => {
-    fetchOwnershipHistory(workId).then(setEvents)
+    fetchOwnershipHistory(workId, t.work.privateCollector).then(setEvents)
     fetchLedger(tbtId).then(setLedger)
-  }, [workId, tbtId])
+  }, [workId, tbtId, t.work.privateCollector])
 
   if (events === null) return <p className="text-[13px] text-ink-soft py-2">{t.work.loading}</p>
   if (events.length === 0) return <p className="text-[13px] text-ink-soft py-2">{t.myCollections.activityEmpty}</p>

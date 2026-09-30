@@ -394,7 +394,8 @@
     "eventGift": "Doada",
     "saleLocked": "Vender requer aprovação.",
     "saleLockedCta": "Ir para Vender",
-    "frozen": "Uma oferta foi aceita. Esta obra está em espera até {date}."
+    "frozen": "Uma oferta foi aceita. Esta obra está em espera até {date}.",
+    "privateCollector": "Colecionador privado · {code}"
   },
   "info": {
     "value": "Valor",

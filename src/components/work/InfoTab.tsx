@@ -1,8 +1,9 @@
 'use client'
 
+import { useEffect, useState } from 'react'
 import { useLocale } from '@/i18n/LocaleProvider'
 import { money } from '@/lib/fees'
-import type { WorkFull } from '@/lib/work-data'
+import { fetchOwnershipHistory, type WorkFull } from '@/lib/work-data'
 
 const STATUS_LABEL_KEY = { for_sale: 'forSale', reserved: 'reserved', not_for_sale: 'notForSale' } as const
 const STATUS_DOT = { for_sale: 'bg-t-green', reserved: 'bg-t-yellow', not_for_sale: 'bg-ink-soft' } as const
@@ -36,6 +37,11 @@ const SolanaMark = () => (
  */
 export function InfoTab({ work, scannedAt = null }: { work: WorkFull; scannedAt?: string | null }) {
   const { t } = useLocale()
+  // Chains 01 3.5: el titular de hoy, no el creador, con la regla de 3.4.
+  const [currentHolder, setCurrentHolder] = useState<string | null>(null)
+  useEffect(() => {
+    fetchOwnershipHistory(work.id, t.work.privateCollector).then((rows) => setCurrentHolder(rows[0]?.actor_label ?? null))
+  }, [work.id, t.work.privateCollector])
   const c = work.commerce!
   const price = c.initial_price != null ? `${money(c.initial_price)} USD` : '—'
   /*
@@ -83,7 +89,7 @@ export function InfoTab({ work, scannedAt = null }: { work: WorkFull; scannedAt?
                   : `${c.royalty_value}% · ${t.info.deducted}`
             }
           />
-          <Row k={t.info.currentOwner} v={work.creator?.public_alias || work.creator?.display_name || t.work.unknownArtist} />
+          <Row k={t.info.currentOwner} v={currentHolder ?? t.work.unknownArtist} />
           <Row k={t.info.initialPrice} v={price} />
         </div>
       </div>

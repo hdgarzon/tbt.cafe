@@ -1,4 +1,5 @@
 import { supabase } from '@/lib/supabase'
+import { holderDisplay } from '@/lib/holder'
 import type { Royalty, RoyaltyType } from '@/lib/fees'
 
 /**
@@ -163,18 +164,34 @@ export async function fetchLedger(tbtId: string): Promise<Ledger | null> {
   }
 }
 
-/** Historial de propiedad, más reciente primero — alimenta la pestaña History. */
-export async function fetchOwnershipHistory(workId: string): Promise<OwnershipEvent[]> {
+/**
+ * Historial de propiedad, más reciente primero — alimenta la pestaña History.
+ *
+ * Quien sale en cada fila sigue su interruptor de coleccionista anonimo, en
+ * vivo (Chains 01 3.4): anonimo, «Private collector · <codigo de esa tenencia>»;
+ * si no, su perfil. El creador sale siempre nombrado. Lo publicado no cambia.
+ */
+export async function fetchOwnershipHistory(workId: string, privateLabel: string): Promise<OwnershipEvent[]> {
   const { data } = await supabase
     .from('ownership_history')
-    .select('id, event_type, owner_name, previous_owner_name, price, currency, created_at')
+    .select('id, event_type, owner_name, previous_owner_name, owner_user_id, holder_code, price, currency, created_at')
     .eq('work_id', workId)
     .order('sequence_number', { ascending: false })
 
-  return (data ?? []).map((e) => ({
+  const rows = data ?? []
+  const ids = Array.from(new Set(rows.map((e) => e.owner_user_id).filter(Boolean))) as string[]
+  const { data: profiles } = ids.length
+    ? await supabase.from('profiles').select('id, public_alias, display_name, collector_anonymous').in('id', ids)
+    : { data: [] as { id: string; public_alias: string | null; display_name: string | null; collector_anonymous: boolean | null }[] }
+  const profileOf = new Map((profiles ?? []).map((p) => [p.id, p]))
+
+  return rows.map((e) => ({
     id: e.id,
     event: e.event_type,
-    actor_label: e.owner_name ?? e.previous_owner_name ?? null,
+    actor_label:
+      (e.owner_user_id
+        ? holderDisplay(e, profileOf.get(e.owner_user_id) ?? null, privateLabel, e.event_type === 'creation')
+        : null) ?? e.previous_owner_name ?? null,
     amount: e.price,
     currency: e.currency,
     occurred_at: e.created_at,

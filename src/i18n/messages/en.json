@@ -394,7 +394,8 @@
     "eventGift": "Given",
     "saleLocked": "Selling needs approval.",
     "saleLockedCta": "Go to Selling",
-    "frozen": "An offer was accepted. This work is on hold until {date}."
+    "frozen": "An offer was accepted. This work is on hold until {date}.",
+    "privateCollector": "Private collector · {code}"
   },
   "info": {
     "value": "Value",

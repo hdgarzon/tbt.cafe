@@ -511,6 +511,10 @@ export async function POST(request: NextRequest) {
             owner_user_id: user.id,
             event_type: 'creation',
             sequence_number: 1,
+            // El creador es el primer titular y va nombrado: su autoria ya es
+            // publica (Chains 01 3.3). El codigo lo emite la base (062).
+            holder_named: true,
+            holder_public_name: creatorName,
           })
           .select('id')
           .single()
