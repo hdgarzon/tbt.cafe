@@ -5,7 +5,7 @@ import { lastRecordedValue, valueKindOf } from '@/lib/transfer-value'
 import { stripe } from '@/lib/stripe'
 import { transferQuote, type Royalty, type RoyaltyType } from '@/lib/fees'
 import { authenticate } from '@/lib/route-auth'
-import { getRules } from '@/lib/rules'
+import { getRules, assertNotPaused } from '@/lib/rules'
 
 /**
  * Fase 1 del transfer de dos fases (tbt.cafe Build Spec 02 / Transfer &
@@ -25,6 +25,12 @@ export async function POST(request: NextRequest) {
   try {
     const auth = await authenticate(request)
     if (!auth.ok) return NextResponse.json(auth.body, { status: auth.status })
+
+    // Stage 11: ninguna transferencia nueva; las pendientes se pueden aceptar igual.
+    {
+      const paused = await assertNotPaused('transfers')
+      if (paused) return NextResponse.json(paused, { status: 423 })
+    }
     const { user } = auth
 
     const body = await request.json()

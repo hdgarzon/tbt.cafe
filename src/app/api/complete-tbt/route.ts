@@ -6,7 +6,7 @@ import { isProduction, assertServerEnv } from '@/lib/app-env'
 import { wasDelivered } from '@/lib/notification-outcome'
 import { stripe } from '@/lib/stripe'
 import { resolveCoveredRegistration } from '@/lib/covered-registrations'
-import { getRules } from '@/lib/rules'
+import { getRules, assertNotPaused } from '@/lib/rules'
 import { minPriceFor } from '@/lib/fees'
 import { fileSystemTicket } from '@/lib/system-tickets'
 import { notify } from '@/lib/notify'
@@ -45,6 +45,13 @@ export async function POST(request: NextRequest) {
 
     const auth = await authenticate(request)
     if (!auth.ok) return NextResponse.json(auth.body, { status: auth.status })
+
+    // Stage 11: una registracion cubierta empieza aqui y se pausa aqui. Una ya
+    // pagada (con sesion) se completa siempre: pausar no deja a nadie pagado y sin registro.
+    if (!sessionId) {
+      const paused = await assertNotPaused('registration')
+      if (paused) return NextResponse.json(paused, { status: 423 })
+    }
     const { supabase, user, token } = auth
     console.log('Authenticated user:', user.id)
 

@@ -1,6 +1,6 @@
 import { createAdminClient } from '@/lib/supabase-admin'
 import { createClient } from '@supabase/supabase-js'
-import { rulesFromRow, publicRuleColumns, type Rules, type RulesRow } from '@/lib/rules-shape'
+import { rulesFromRow, publicRuleColumns, type Locale4, type PauseKey, type Rules, type RulesRow } from '@/lib/rules-shape'
 
 /**
  * Las reglas del negocio, leidas de `platform_config` — Work Order 02, Stage 1.2.
@@ -45,6 +45,19 @@ export async function getPublicRules(): Promise<Rules> {
   const { data, error } = await anon.from('platform_config').select(publicRuleColumns()).eq('id', true).single()
   if (error || !data) throw new Error(`rules: platform_config unreadable (${error?.message ?? 'no row'})`)
   return rulesFromRow(data as unknown as RulesRow)
+}
+
+/**
+ * Un interruptor de pausa — Work Order 02, Stage 11.
+ *
+ * Devuelve el cuerpo de la respuesta si esta encendido — con su mensaje en los
+ * cuatro idiomas, para que la pantalla lo diga donde se intento — o null. Toda
+ * ruta que registra, lista, oferta, transfiere, cobra o paga lo llama antes de
+ * hacer nada.
+ */
+export async function assertNotPaused(key: PauseKey): Promise<{ error: 'paused'; switch: PauseKey; message: Locale4 } | null> {
+  const { pauses } = await getRules()
+  return pauses[key].on ? { error: 'paused', switch: key, message: pauses[key].message } : null
 }
 
 /** Tras un cambio desde el panel, para que la siguiente lectura no espere a la cache. */

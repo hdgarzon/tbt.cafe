@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { verifyTwoFactors } from '@/lib/two-factor'
 import { disburseBlock } from '@/lib/payout-disburse'
 import { notifyPayoutDestinationChanged } from '@/lib/payout-destination-notice'
+import { assertNotPaused } from '@/lib/rules'
 
 /**
  * Cobro de un bloque de payout — Backend Spec 02 §4, y Spec 01 §5.1.
@@ -46,6 +47,12 @@ export async function POST(request: NextRequest) {
         destinationMasked?: string
         earningIds?: string[]
       }
+
+    // Stage 11: ningun cobro nuevo con los pagos en pausa; uno en curso termina.
+    {
+      const paused = await assertNotPaused('payouts')
+      if (paused) return NextResponse.json(paused, { status: 423 })
+    }
 
     if (typeof methodId !== 'string' || !methodId) {
       return NextResponse.json({ error: 'method_required' }, { status: 400 })

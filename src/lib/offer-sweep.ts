@@ -46,8 +46,29 @@ export async function sweepOffers(db: SupabaseClient, now = new Date()) {
     .order('expires_at', { ascending: true })
     .limit(BATCH)
 
-  const result = { reminded: 0, expired: 0, cancelled: 0 }
+  const result = { reminded: 0, expired: 0, cancelled: 0, paused: 0 }
   const iso = now.toISOString()
+
+  // Stage 11: con las ofertas en pausa, las vivas vencen y se avisa a los dos.
+  if (rules.pauses.offers.on) {
+    for (const o of ((data ?? []) as Live[]).filter((x) => x.status === 'open')) {
+      const work = Array.isArray(o.work) ? o.work[0] : o.work
+      if (!work) continue
+      const { data: changed } = await db
+        .from('offers')
+        .update({ status: 'expired', closed_at: iso, close_reason: 'offers_paused', suspended: false })
+        .eq('id', o.id)
+        .eq('status', 'open')
+        .select('id')
+      if (!changed?.length) continue
+      await db.from('offer_events').insert({ offer_id: o.id, event: 'expired', detail: { reason: 'offers_paused' } })
+      const people = [o.from_user, work.current_owner_id]
+      for (let i = 0; i < people.length; i++) {
+        await notify(db, { userId: people[i], eventKey: 'offer_expired', dedupeKey: `offer:${o.id}:expired:${i}`, data: { title: work.title ?? '', offerId: o.id }, href: sheetOf(o.id) })
+      }
+      result.paused++
+    }
+  }
 
   for (const o of (data ?? []) as Live[]) {
     const work = Array.isArray(o.work) ? o.work[0] : o.work

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { authenticate } from '@/lib/route-auth'
 import { actOnOffer, offerDetail, type OfferAction } from '@/lib/offers-server'
+import { assertNotPaused } from '@/lib/rules'
 
 /**
  * Responder a una oferta — Work Order 02, Stage 4.3, 4.4, 4.6 y 4.11.
@@ -26,6 +27,11 @@ export async function POST(request: NextRequest, props: { params: Promise<{ id: 
   const { id } = await props.params
   const body = (await request.json().catch(() => ({}))) as { action?: OfferAction; reply?: unknown; which?: 'message' | 'response' }
   if (!body.action || ACTIONS.indexOf(body.action) === -1) return NextResponse.json({ error: 'unknown_action' }, { status: 400 })
+  // Stage 11: con las ofertas en pausa no se acepta ninguna; rechazar y retirar siguen.
+  if (body.action === 'accept') {
+    const paused = await assertNotPaused('offers')
+    if (paused) return NextResponse.json(paused, { status: 423 })
+  }
 
   const result = await actOnOffer(auth.user.id, id, body.action, body.reply, body.which)
   if ('error' in result && result.error) {

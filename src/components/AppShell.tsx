@@ -2,6 +2,7 @@
 
 import { createContext, useContext, useEffect, useState } from 'react'
 import { OfferSheet } from '@/components/offers/OfferSheet'
+import { PauseBanner } from '@/components/PauseBanner'
 import { Header } from '@/components/Header'
 import { Footer } from '@/components/Footer'
 import { SlideMenu } from '@/components/SlideMenu'
@@ -202,6 +203,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
          */
         onNotifications={() => setNotifOpen(true)}
       />
+
+      <PauseBanner />
 
       {/* pb-[90px] libera el pie fijo de 30px con aire por debajo */}
       <main className="flex-1 pb-[90px]">{children}</main>

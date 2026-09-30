@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { authenticate } from '@/lib/route-auth'
 import { createAdminClient } from '@/lib/supabase-admin'
-import { getRules } from '@/lib/rules'
+import { getRules, assertNotPaused } from '@/lib/rules'
 import { planCommerce, type CommercePatch, type CommerceRow } from '@/lib/commerce'
 import type { SellerRow } from '@/lib/seller'
 
@@ -19,6 +19,11 @@ export async function POST(request: NextRequest) {
 
   const body = (await request.json().catch(() => ({}))) as { workId?: string } & CommercePatch
   if (!body.workId) return NextResponse.json({ error: 'workId_required' }, { status: 400 })
+  // Stage 11: poner en venta se pausa; quitar de la venta, nunca.
+  if (body.availability === 'for_sale') {
+    const paused = await assertNotPaused('selling')
+    if (paused) return NextResponse.json(paused, { status: 423 })
+  }
 
   const admin = createAdminClient()
   const [{ data: work }, { data: row }, { data: seller }, rules] = await Promise.all([

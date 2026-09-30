@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { authenticate } from '@/lib/route-auth'
 import { makeOffer, offerContext } from '@/lib/offers-server'
+import { assertNotPaused } from '@/lib/rules'
 
 /**
  * Ofertas — Work Order 02, Stage 4.2.
@@ -21,6 +22,9 @@ export async function POST(request: NextRequest) {
   if (!auth.ok) return NextResponse.json(auth.body, { status: auth.status })
   const body = (await request.json().catch(() => ({}))) as { workId?: string; amount?: unknown; durationHours?: unknown; message?: unknown }
   if (!body.workId) return NextResponse.json({ error: 'workId_required' }, { status: 400 })
+  // Stage 11: ninguna oferta nueva con las ofertas en pausa.
+  const paused = await assertNotPaused('offers')
+  if (paused) return NextResponse.json(paused, { status: 423 })
   const result = await makeOffer(auth.user.id, body.workId, { amount: body.amount, durationHours: body.durationHours, message: body.message })
   if ('error' in result && result.error) {
     return NextResponse.json(result, { status: result.error === 'not_found' ? 404 : result.error === 'offer_failed' ? 500 : 409 })
