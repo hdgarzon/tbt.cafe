@@ -1098,5 +1098,33 @@
     "askPlaceholder": "Ask a question about this article",
     "postFailed": "That could not be posted.",
     "someone": "Someone"
+  },
+  "titleLink": {
+    "kicker": "Your title",
+    "loading": "Loading your title…",
+    "needAuth": "Authenticate to open your title.",
+    "notFound": "There is no title with this number under your authentication.",
+    "error": "We couldn't open your title just now. Please try again.",
+    "number": "Title No. {number}",
+    "superseded": "A later title, No. {number}, has been issued for this work. This one remains a true record of the holder it names.",
+    "expired": "This link has closed: title links stay open for 30 days. The record of your work is unchanged. To receive the title again, open a help request.",
+    "rendering": "Your title is being prepared. Come back in a minute.",
+    "alt": "Animated title No. {number}",
+    "downloadGif": "Download the title (GIF)",
+    "downloadPng": "Download the still (PNG)",
+    "availableUntil": "This link stays open until {date}.",
+    "workPage": "See the work's page"
+  },
+  "signature": {
+    "label": "Signature",
+    "title": "Your signature",
+    "instruction": "Sign with your finger, or with a mouse or trackpad. It appears on the titles of the works you register from now on.",
+    "none": "No signature yet. Your titles show your name alone.",
+    "draw": "Add your signature",
+    "redraw": "Draw it again",
+    "clear": "Clear",
+    "done": "Done",
+    "hint": "Optional. Works already registered keep the signature they were issued with.",
+    "saveFailed": "We couldn't save your signature. Please try again."
   }
 }
