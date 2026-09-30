@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
-import { rulesFromRow, RULE_AUTHORITY, type Rules } from '@/lib/rules-shape'
+import { rulesFromRow, publicRuleColumns, type Rules } from '@/lib/rules-shape'
 
 /**
  * Las reglas, para el navegador — Work Order 02, Stage 1.2.
@@ -14,7 +14,7 @@ import { rulesFromRow, RULE_AUTHORITY, type Rules } from '@/lib/rules-shape'
  * partes a la vez.
  */
 
-const PUBLIC_COLUMNS = ['id', ...Object.keys(RULE_AUTHORITY).filter((c) => c !== 'scan_processor_url')].join(', ')
+const PUBLIC_COLUMNS = publicRuleColumns()
 
 const CACHE_MS = 60_000
 let cached: { at: number; rules: Rules } | null = null

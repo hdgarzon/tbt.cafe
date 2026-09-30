@@ -53,6 +53,14 @@ export type Rules = {
   covered: { enabled: boolean; count: number }
 }
 
+/**
+ * Las columnas que la clave publica puede leer (058): todas menos la direccion
+ * del escaner. Se piden por nombre; un `select('*')` fallaria entero.
+ */
+export function publicRuleColumns(): string {
+  return ['id', ...Object.keys(RULE_AUTHORITY).filter((c) => c !== 'scan_processor_url')].join(', ')
+}
+
 /** La ventana para aceptar una transferencia, en milisegundos (M13). */
 export function transferWindowMs(rules: Pick<Rules, 'transferWindowHours'>): number {
   return rules.transferWindowHours * 3_600_000

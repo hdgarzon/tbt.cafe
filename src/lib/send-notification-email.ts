@@ -14,6 +14,8 @@ import { Resend } from 'resend'
 import { emailCopyFor, renderEmail, type Locale } from '@/lib/email-templates'
 import { recordProviderEvent } from '@/lib/provider-events'
 import { createAdminClient } from '@/lib/supabase-admin'
+import { getRules } from '@/lib/rules'
+import { proseValues } from '@/lib/prose'
 
 const LOCALES: Locale[] = ['en', 'es', 'pt', 'fr']
 const SITE = 'https://tbt.cafe'
@@ -58,11 +60,12 @@ export async function sendNotificationEmail(
 
     const locale = (LOCALES.find((l) => l === profile?.language_override) ?? 'en') as Locale
 
-    const copy = emailCopyFor(
-      params.eventKey,
-      locale,
-      Object.fromEntries(Object.entries(params.data).map(([k, v]) => [k, String(v)]))
-    )
+    // Las cifras que un correo dice (la ventana de una transferencia) salen de
+    // configuracion (Work Order 02, 1.4); los datos del evento mandan encima.
+    const copy = emailCopyFor(params.eventKey, locale, {
+      ...proseValues(await getRules()),
+      ...Object.fromEntries(Object.entries(params.data).map(([k, v]) => [k, String(v)])),
+    })
     // Sin plantilla completa no se manda nada. Antes que caer al inglés para
     // alguien que lee en español, el spec prefiere no publicar.
     if (!copy) return

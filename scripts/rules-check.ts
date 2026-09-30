@@ -84,7 +84,10 @@ ok('rules.ts maps every column', missing.length === 0, missing.join(', '))
 
 const pub = existsSync(join(root, 'src/lib/rules-public.ts')) ? code('src/lib/rules-public.ts') : ''
 ok('a public reader for the browser exists', pub.length > 0)
-ok('it never asks for the scanner address', /filter\(\(c\) => c !== 'scan_processor_url'\)/.test(pub) && !/select\('\*'\)/.test(pub))
+const shape = code('src/lib/rules-shape.ts')
+ok('the public column list leaves out the scanner address', /export function publicRuleColumns[\s\S]{0,200}filter\(\(c\) => c !== 'scan_processor_url'\)/.test(shape))
+ok('the browser reader asks only for the public columns', /publicRuleColumns\(\)/.test(pub) && !/select\('\*'\)/.test(pub))
+ok('and so does the build-time reader', /getPublicRules[\s\S]{0,700}select\(publicRuleColumns\(\)\)/.test(rules))
 
 const clientImporters = apiFiles.filter((f) => {
   const s = readFileSync(f, 'utf8')

@@ -88,7 +88,7 @@ export function TransferPanel({
   }
 
   // Sin reglas todavia no se muestra un total: se espera, nunca se inventa.
-  if (!q) return null
+  if (!q || !rules) return null
 
   return (
     <div>
@@ -165,7 +165,7 @@ export function TransferPanel({
         </div>
       </div>
 
-      <p className="text-[10.5px] text-placeholder mt-2 leading-[1.6]">{t.transfer.authoriseNote}</p>
+      <p className="text-[10.5px] text-placeholder mt-2 leading-[1.6]">{t.transfer.authoriseNote.replace('{hours}', String(rules.transferWindowHours))}</p>
 
       {err && <p className="text-[12px] text-t-red text-center mt-3.5">{err}</p>}
 

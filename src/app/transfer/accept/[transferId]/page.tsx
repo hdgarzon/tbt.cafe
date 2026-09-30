@@ -5,6 +5,7 @@ import { useLocale } from '@/i18n/LocaleProvider'
 import { useShell } from '@/components/AppShell'
 import { money } from '@/lib/fees'
 import { fetchTransferForAccept, respondTransfer, type TransferForAccept } from '@/lib/transfer-data'
+import { useRules } from '@/lib/rules-public'
 
 /**
  * /transfer/accept/[transferId] — el lado del RECIPIENTE (Transfer & Commerce
@@ -20,6 +21,8 @@ import { fetchTransferForAccept, respondTransfer, type TransferForAccept } from 
 export default function TransferAcceptPage(props: { params: Promise<{ transferId: string }> }) {
   const params = use(props.params);
   const { t } = useLocale()
+  // La ventana es de configuracion (Work Order 02, 1.4).
+  const rules = useRules()
   const { connected, openAuth } = useShell()
 
   const [loading, setLoading] = useState(true)
@@ -88,7 +91,7 @@ export default function TransferAcceptPage(props: { params: Promise<{ transferId
     return (
       <div className="px-4 pt-10 text-center">
         <h1 className="font-display font-medium text-[24px] text-ink">{t.transferAccept.lapsedTitle}</h1>
-        <p className="text-[13px] leading-[1.6] text-ink-soft mt-3 px-4">{t.transferAccept.lapsedBody}</p>
+        <p className="text-[13px] leading-[1.6] text-ink-soft mt-3 px-4">{t.transferAccept.lapsedBody.replace('{hours}', rules ? String(rules.transferWindowHours) : '—')}</p>
       </div>
     )
   }
