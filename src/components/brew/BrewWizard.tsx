@@ -15,6 +15,7 @@ import { EmbeddedCheckoutSheet } from '@/components/EmbeddedCheckoutSheet'
 import { money, FEE } from '@/lib/fees'
 import type { SeriesWithCount } from '@/lib/series-data'
 import type { ChainImageChoice } from '@/lib/chain/publish-image'
+import { linkIdentifierProblem } from '@/lib/chain/identifier-patterns'
 import {
   fetchDraftForResume,
   fetchCreatorProfile,
@@ -138,7 +139,7 @@ export function BrewWizard() {
    * borrar. En cuanto la persona elige, su eleccion manda.
    */
   const [chainImage, setChainImage] = useState<ChainImageChoice | null>(null)
-  const chainImageChoice: ChainImageChoice = chainImage ?? (isPublished ? 'thumbnail' : 'none')
+  const chainImageChoice: ChainImageChoice = chainImage ?? (isPublished ? 'full' : 'none')
   const [seriesChoice, setSeriesChoice] = useState('__new')
   const [newSeriesName, setNewSeriesName] = useState('')
 
@@ -369,6 +370,17 @@ export function BrewWizard() {
   async function submitWork2() {
     if (!imageFile) return setMsg(t.brew.errors.imageRequired)
     if (scanState === 'blocked') return
+    // Chains 01, 1.4: un enlace que la publicacion rechazaria se corrige aqui.
+    for (let i = 0; i < assetLinks.length; i++) {
+      const kind = linkIdentifierProblem(assetLinks[i].trim())
+      if (kind) {
+        return setMsg(
+          t.brew.errors.linkHasIdentifier
+            .replace('{n}', String(i + 1))
+            .replace('{what}', t.brew.errors.linkIdentifierKinds[kind])
+        )
+      }
+    }
     setMsg('')
     setStep('work3')
   }
@@ -1548,6 +1560,9 @@ export function BrewWizard() {
                 ? t.brew.chainImageNoteThumbnail
                 : t.brew.chainImageNoteFull}
           </p>
+          {chainImageChoice === 'full' && (
+            <p className="text-[11.5px] leading-[1.55] text-ink-soft mt-1">{t.brew.chainImageNoteCeiling}</p>
+          )}
         </div>
 
         <div className="text-center mt-8">

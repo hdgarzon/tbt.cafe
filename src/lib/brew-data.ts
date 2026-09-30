@@ -4,6 +4,7 @@ import { normalizeImage } from '@/lib/normalize-image'
 import { contentHash } from '@/lib/chain/content-hash'
 import { stripMetadata, jpegOrientation } from '@/lib/chain/strip-metadata'
 import { makeThumbnail } from '@/lib/thumbnail'
+import { reduceUnderCeiling, REDUCE_QUALITY } from '@/lib/chain/reduce-image'
 import type { ChainImageChoice } from '@/lib/chain/publish-image'
 import type { SeriesWithCount } from '@/lib/series-data'
 
@@ -173,6 +174,32 @@ async function redraw(file: File): Promise<File | null> {
 }
 
 /**
+ * La copia bajo el techo, o `null` si la imagen limpia ya cabe — Chains 01, 5.4.
+ * JPEG a calidad 0.9, bajando el lado largo por pasos. Lanza si no se pudo.
+ */
+async function reducedCopy(clean: File): Promise<File | null> {
+  const bitmap = await createImageBitmap(clean)
+  try {
+    const longEdge = Math.max(bitmap.width, bitmap.height)
+    const base = clean.name.replace(/\.[^.]+$/, '') || 'work'
+    return await reduceUnderCeiling(clean.size, longEdge, async (edge) => {
+      const scale = edge / longEdge
+      const canvas = document.createElement('canvas')
+      canvas.width = Math.max(1, Math.round(bitmap.width * scale))
+      canvas.height = Math.max(1, Math.round(bitmap.height * scale))
+      const ctx = canvas.getContext('2d')
+      if (!ctx) return null
+      ctx.imageSmoothingQuality = 'high'
+      ctx.drawImage(bitmap, 0, 0, canvas.width, canvas.height)
+      const blob = await new Promise<Blob | null>((r) => canvas.toBlob(r, 'image/jpeg', REDUCE_QUALITY))
+      return blob ? new File([blob], `${base}.jpg`, { type: 'image/jpeg' }) : null
+    })
+  } finally {
+    bitmap.close()
+  }
+}
+
+/**
  * Sube un archivo a works-media y devuelve su URL pública y el hash de origen.
  *
  * El hash se toma del archivo tal como llegó, ANTES de `normalizeImage`. Esa es
@@ -183,7 +210,7 @@ async function uploadWorksMedia(
   userId: string,
   file: File,
   prefix = ''
-): Promise<{ url: string; hash: string } | null> {
+): Promise<{ url: string; hash: string; file: File } | null> {
   /*
    * Las imágenes se normalizan a PNG o JPEG antes de guardarse. El audio y el
    * vídeo pasan sin tocar: normalizeImage solo actúa sobre imágenes y devuelve
@@ -200,7 +227,7 @@ async function uploadWorksMedia(
   const {
     data: { publicUrl },
   } = supabase.storage.from('works-media').getPublicUrl(fileName)
-  return { url: publicUrl, hash }
+  return { url: publicUrl, hash, file: upload }
 }
 
 export type SimilarityResult =
@@ -385,7 +412,15 @@ export async function createDraftWork(
    */
   let chainImageUrl: string | null = null
   if (input.chainImage === 'full') {
-    chainImageUrl = mediaUrl
+    // Chains 01, 5.4: sobre 8 MB se publica una copia reducida, nunca el original.
+    // Si el navegador no puede hacerla, no se publica imagen: menos, nunca mas.
+    try {
+      const reduced = await reducedCopy(media.file)
+      if (!reduced) chainImageUrl = mediaUrl
+      else chainImageUrl = (await uploadWorksMedia(userId, reduced, 'reduced_'))?.url ?? null
+    } catch {
+      chainImageUrl = null
+    }
   } else if (input.chainImage === 'thumbnail') {
     const thumb = await makeThumbnail(input.imageFile)
     if (thumb) chainImageUrl = (await uploadWorksMedia(userId, thumb, 'thumb_'))?.url ?? null

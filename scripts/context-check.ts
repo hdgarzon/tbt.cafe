@@ -12,7 +12,7 @@ const ok = (label: string, cond: boolean, detail = '') => {
 const read = (p: string) => readFileSync(join(__dirname, '..', p), 'utf8')
 const ctx = read('src/app/api/generate-context/route.ts')
 const complete = read('src/app/api/complete-tbt/route.ts')
-const nft = read('src/lib/solana/nft.ts')
+const nft = read('src/lib/solana/token.ts')
 
 // ---- el origen: sin proveedor, no se fabrica una medicion
 {
@@ -33,7 +33,7 @@ const nft = read('src/lib/solana/nft.ts')
 
 // ---- el final: lo que no hay, no se acuña
 {
-  ok('el NFT solo lleva el atributo si hay clima', /if \(work\.creationWeather\)/.test(nft))
+  ok('el token no lleva clima: su URI es el registro', !/creationWeather|Creation Weather/.test(nft))
 }
 
 console.log(bad === 0 ? '\ntodo en orden' : `\n${bad} fallo(s)`)
