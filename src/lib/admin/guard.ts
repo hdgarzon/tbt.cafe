@@ -25,6 +25,11 @@ export const HIGH_RISK = new Set([
   'config.team',
   // Una enmienda se publica en un almacen que no se borra (Item 5).
   'works.amend',
+  // Vendedores (Work Order 02, 2.6): quien puede vender y quien deja de poder.
+  'seller.approve',
+  'seller.decline',
+  'seller.suspend',
+  'seller.reinstate',
 ])
 
 export type AdminMember = { userId: string; displayName: string; permissions: Record<string, boolean> }

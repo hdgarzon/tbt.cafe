@@ -70,6 +70,7 @@
     "footNote1": "tbt.cafe — Transbit × BROCHA",
     "footNote2": "Tokens Transferibles Facturables",
     "help": "Ayuda",
+    "selling": "Vender",
     "payouts": "Cobros",
     "offersMade": "Hechas",
     "offersReceived": "Recibidas",
@@ -381,7 +382,9 @@
     "anchorNote": "El anclaje a Bitcoin tarda unas horas y se completa solo.",
     "verifyNote": "Cada registro se puede comprobar sin nosotros: descarga la prueba y verifícala contra el registro.",
     "eventSale": "Vendida",
-    "eventGift": "Cedida"
+    "eventGift": "Cedida",
+    "saleLocked": "Vender requiere aprobación.",
+    "saleLockedCta": "Ir a Vender"
   },
   "info": {
     "value": "Valor",
@@ -985,7 +988,11 @@
       "payout_released": "{amount} USD de «{title}» terminaron su espera y están listos para cobrar.",
       "payout_completed": "Tu cobro de {amount} USD se completó.",
       "payout_failed": "No pudimos completar un cobro de {amount} USD.",
-      "payout_destination": "Cambió el destino de tus cobros a {to}."
+      "payout_destination": "Cambió el destino de tus cobros a {to}.",
+      "selling_status_approved": "Estás aprobado para vender. Configura cómo recibes el dinero.",
+      "selling_status_declined": "Tu solicitud para vender no fue aprobada.",
+      "selling_status_suspended": "tbt.cafe pausó tus ventas.",
+      "selling_status_reinstated": "Puedes vender de nuevo."
     }
   },
   "payouts": {
@@ -1098,5 +1105,31 @@
     "askPlaceholder": "Haz una pregunta sobre este artículo",
     "postFailed": "No se pudo publicar.",
     "someone": "Alguien"
+  },
+  "selling": {
+    "intro": "Vender una obra requiere aprobación. Registrar, transferir, regalar y recibir regalías, no.",
+    "apply": "Solicitar para vender",
+    "applyCountry": "País",
+    "applyEntity": "Vendes como",
+    "entity": {
+      "individual": "Persona",
+      "sole_proprietor": "Trabajador independiente",
+      "company": "Empresa",
+      "institution": "Galería, museo o sucesión"
+    },
+    "applyAgree": "Acepto los términos de venta.",
+    "pending": "Estamos revisando tu solicitud. Te avisaremos.",
+    "declined": "Tu solicitud no fue aprobada: {reason}",
+    "setup": "Aprobada. Configura cómo recibes el dinero para empezar a vender.",
+    "activeDirect": "Puedes vender. Las ventas se pagan a tu cuenta de Stripe.",
+    "activePlatform": "Puedes vender. tbt.cafe cobra cada venta y te paga cuando se liquida.",
+    "notCovered": "Aún no se puede vender en {country}. Tus ganancias siguen siendo tuyas y se guardan hasta que los cobros lleguen a tu país.",
+    "pause": "Pausar ventas",
+    "pauseConfirm": "Tus obras en venta se retiran. Las ventas en curso se completan; las ofertas abiertas vencen.",
+    "paused": "Ventas en pausa.",
+    "resume": "Reanudar ventas",
+    "restoreTitle": "¿Volver a poner en venta?",
+    "suspended": "tbt.cafe pausó tus ventas: {reason}",
+    "suspendedHelp": "Abrir una solicitud de ayuda"
   }
 }

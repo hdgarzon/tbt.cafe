@@ -82,6 +82,42 @@ const APPLY: Record<string, (a: Approval) => { url: string; body: Record<string,
       approvalId: a.id,
     },
   }),
+  'seller.approve': (a) => ({
+    url: '/api/admin/sellers',
+    body: {
+      action: 'seller.approve',
+      userId: (a.payload as { userId?: string })?.userId,
+      reason: a.reason,
+      approvalId: a.id,
+    },
+  }),
+  'seller.decline': (a) => ({
+    url: '/api/admin/sellers',
+    body: {
+      action: 'seller.decline',
+      userId: (a.payload as { userId?: string })?.userId,
+      reason: a.reason,
+      approvalId: a.id,
+    },
+  }),
+  'seller.suspend': (a) => ({
+    url: '/api/admin/sellers',
+    body: {
+      action: 'seller.suspend',
+      userId: (a.payload as { userId?: string })?.userId,
+      reason: a.reason,
+      approvalId: a.id,
+    },
+  }),
+  'seller.reinstate': (a) => ({
+    url: '/api/admin/sellers',
+    body: {
+      action: 'seller.reinstate',
+      userId: (a.payload as { userId?: string })?.userId,
+      reason: a.reason,
+      approvalId: a.id,
+    },
+  }),
   'work.amend': (a) => ({
     url: '/api/admin/works/amend',
     body: {

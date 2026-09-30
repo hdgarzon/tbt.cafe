@@ -621,6 +621,41 @@ create table if not exists public.payout_destinations (
   created_at timestamp with time zone default now() not null
 );
 
+-- 059 · Work Order 02 Stage 2: the seller state and the provider countries
+create table if not exists public.provider_countries (
+  country text primary key check (country ~ '^[A-Z]{2}$'),
+  provider text not null default 'stripe',
+  merchant boolean not null default false,
+  payout_bank boolean not null default false,
+  payout_usdc boolean not null default false,
+  enabled boolean not null default true,
+  updated_at timestamptz not null default now()
+);
+
+create table if not exists public.seller_accounts (
+  user_id uuid primary key references auth.users(id) on delete restrict,
+  status text not null default 'not_applied'
+    check (status in ('not_applied', 'pending', 'declined', 'active', 'paused_self')),
+  suspended_at timestamptz,
+  suspended_reason text,
+  suspended_by uuid references auth.users(id) on delete restrict,
+  provider text not null default 'stripe',
+  country text references public.provider_countries(country) on delete restrict,
+  charge_path text check (charge_path in ('direct', 'platform')),
+  entity_type text check (entity_type in ('individual', 'sole_proprietor', 'company', 'institution')),
+  applied_at timestamptz,
+  approved_at timestamptz,
+  approved_by uuid references auth.users(id) on delete restrict,
+  declined_reason text,
+  remembered_listings uuid[] not null default '{}',
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  constraint seller_suspension_whole check (
+    (suspended_at is null and suspended_reason is null and suspended_by is null)
+    or (suspended_at is not null and suspended_reason is not null and suspended_by is not null)
+  )
+);
+
 create table if not exists public.payout_connect_accounts (
   user_id uuid not null,
   account_id text not null,
@@ -1243,5 +1278,9 @@ create policy "write own curation" on public.curations for all using ((auth.uid(
 create policy "offer parties read" on public.offers for select using (((auth.uid() = from_user) OR (auth.uid() = ( SELECT w.current_owner_id FROM works w WHERE (w.id = offers.work_id)))));
 create policy "offerer writes" on public.offers for insert with check ((auth.uid() = from_user));
 create policy "roast questions readable" on public.roast_questions for select using ((NOT hidden));
+alter table public.provider_countries enable row level security;
+alter table public.seller_accounts enable row level security;
+create policy "provider countries readable" on public.provider_countries for select using (true);
+create policy "sellers read their own" on public.seller_accounts for select using ((user_id = ( SELECT auth.uid() AS uid)));
 -- roast_questions no tiene politica de insercion desde la 048: el envio esta apagado hasta que exista moderacion.
 

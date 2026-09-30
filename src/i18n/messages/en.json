@@ -70,6 +70,7 @@
     "footNote1": "tbt.cafe — Transbit × BROCHA",
     "footNote2": "Transferable Billable Tokens",
     "help": "Help",
+    "selling": "Selling",
     "payouts": "Payouts",
     "offersMade": "Made",
     "offersReceived": "Received",
@@ -381,7 +382,9 @@
     "anchorNote": "Anchoring to Bitcoin takes a few hours and completes on its own.",
     "verifyNote": "Every record can be checked without us: download the proof and verify it against the record.",
     "eventSale": "Sold",
-    "eventGift": "Given"
+    "eventGift": "Given",
+    "saleLocked": "Selling needs approval.",
+    "saleLockedCta": "Go to Selling"
   },
   "info": {
     "value": "Value",
@@ -985,7 +988,11 @@
       "payout_released": "{amount} USD from “{title}” finished its waiting period and is ready to collect.",
       "payout_completed": "Your collection of {amount} USD completed.",
       "payout_failed": "A payout of {amount} USD could not be completed.",
-      "payout_destination": "Your payout destination was changed to {to}."
+      "payout_destination": "Your payout destination was changed to {to}.",
+      "selling_status_approved": "You're approved to sell. Set up how you get paid.",
+      "selling_status_declined": "Your application to sell wasn't approved.",
+      "selling_status_suspended": "Selling was paused by tbt.cafe.",
+      "selling_status_reinstated": "You can sell again."
     }
   },
   "payouts": {
@@ -1098,5 +1105,31 @@
     "askPlaceholder": "Ask a question about this article",
     "postFailed": "That could not be posted.",
     "someone": "Someone"
+  },
+  "selling": {
+    "intro": "Selling a work needs approval. Registering, transfers, gifts and royalties don't.",
+    "apply": "Apply to sell",
+    "applyCountry": "Country",
+    "applyEntity": "Selling as",
+    "entity": {
+      "individual": "An individual",
+      "sole_proprietor": "A sole proprietor",
+      "company": "A company",
+      "institution": "A gallery, museum or estate"
+    },
+    "applyAgree": "I agree to the selling terms.",
+    "pending": "Your application is being reviewed. We'll let you know.",
+    "declined": "Your application wasn't approved: {reason}",
+    "setup": "Approved. Set up how you get paid to start selling.",
+    "activeDirect": "You can sell. Sales are paid to your Stripe account.",
+    "activePlatform": "You can sell. tbt.cafe collects each sale and pays you after it settles.",
+    "notCovered": "Selling isn't available in {country} yet. Your earnings stay yours and are kept until payouts reach your country.",
+    "pause": "Pause selling",
+    "pauseConfirm": "Your listed works come off sale. Sales in progress complete; open offers lapse.",
+    "paused": "Selling is paused.",
+    "resume": "Resume selling",
+    "restoreTitle": "Put these back on sale?",
+    "suspended": "Selling is paused by tbt.cafe: {reason}",
+    "suspendedHelp": "Open a help request"
   }
 }

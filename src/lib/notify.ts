@@ -52,6 +52,8 @@ const CATEGORY_OF: Record<string, NotificationCategory> = {
   payout_completed: 'payouts',
   payout_failed: 'payouts',
   payout_destination: 'security',
+  // Work Order 02, 2.6: aprobado, rechazado, suspendido, reintegrado.
+  selling_status: 'transactional',
 }
 
 /**

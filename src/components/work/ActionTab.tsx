@@ -16,6 +16,8 @@ import {
 import { pendingTransferFor, cancelTransfer, type Transfer } from '@/lib/transfer-data'
 import { useRules } from '@/lib/rules-public'
 import { transferWindowMs } from '@/lib/rules-shape'
+import { supabase } from '@/lib/supabase'
+import { canSell, type SellerStatus } from '@/lib/seller'
 
 const LockIcon = () => (
   <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -53,6 +55,17 @@ export function ActionTab({
   const [transferring, setTransferring] = useState(false)
   const [pending, setPending] = useState<Transfer | null>(null)
   const [availability, setAvailability] = useState<Availability>(c.availability)
+  // Locked, not hidden (Work Order 02, 2.8): sin estado de vendedor activo la
+  // opcion de venta se ve bloqueada y lleva a Vender. La base rechaza igual.
+  const [sellerOk, setSellerOk] = useState<boolean | null>(null)
+  useEffect(() => {
+    supabase
+      .from('seller_accounts')
+      .select('status, suspended_at')
+      .eq('user_id', userId)
+      .maybeSingle()
+      .then(({ data }) => setSellerOk(canSell(data as { status: SellerStatus; suspended_at: string | null } | null)))
+  }, [userId])
   const [takingOffers, setTakingOffers] = useState(c.taking_offers)
   const [price, setPrice] = useState(c.initial_price ? money(c.initial_price) : '')
   // Una regalía fija es un monto, no un porcentaje: el control rotulado `%`
@@ -157,13 +170,18 @@ export function ActionTab({
               const next = e.target.value as Availability
               setAvailability(next)
               const { error } = await saveAvailability(work.id, next)
-              if (error) return flash(error)
+              if (error) {
+                setAvailability(c.availability)
+                return flash(sellerOk === false && next === 'for_sale' ? t.work.saleLocked : error)
+              }
               flash(t.action.availability)
               onChanged()
             }}
             className="flex-1 appearance-none border border-hairline rounded-lg bg-paper px-3 py-2.5 text-[13px] text-ink outline-none focus:border-ink transition-colors cursor-pointer"
           >
-            <option value="for_sale">{t.action.forSale}</option>
+            <option value="for_sale" disabled={sellerOk === false && availability !== 'for_sale'}>
+              {t.action.forSale}
+            </option>
             <option value="reserved">{t.action.reserved}</option>
             <option value="not_for_sale">{t.action.notForSale}</option>
           </select>
@@ -194,6 +212,14 @@ export function ActionTab({
             {t.action.takingOffers}
           </button>
         </div>
+        {sellerOk === false && (
+          <p className="text-[11.5px] leading-[1.55] text-ink-soft mt-2">
+            {t.work.saleLocked}{' '}
+            <a href="/settings/selling" className="underline text-ink">
+              {t.work.saleLockedCta}
+            </a>
+          </p>
+        )}
       </div>
 
       <div className="pb-5 mb-5 border-b border-hairline">
