@@ -58,6 +58,7 @@
     "check:pause": "npx --yes tsx scripts/pause-check.ts",
     "check:payouts": "npx --yes tsx scripts/payouts-check.ts",
     "check:security": "npx --yes tsx scripts/security-check.ts",
+    "check:notifykeys": "npx --yes tsx scripts/notify-keys-check.ts",
     "check:imagevectors": "npx --yes tsx scripts/image-vectors-check.ts",
     "reindex:images": "npx --yes tsx scripts/reindex-images.ts",
     "check:tbtid": "npx --yes tsx scripts/tbt-id-check.ts",

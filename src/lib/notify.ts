@@ -37,6 +37,8 @@ const CATEGORY_OF: Record<string, NotificationCategory> = {
   favorites: 'tbt',
   surge: 'tbt',
   new_from_followed: 'tbt',
+  // Declarada y sin disparar (Work Order 02, Stage 12): ninguna fuente de
+  // eventos sabe hoy desde donde se autentica alguien. No se inventa una.
   new_location: 'security',
   new_device: 'security',
   suspicious: 'security',

@@ -358,15 +358,16 @@ export async function lapseOffersOfHolder(holderId: string, reason: 'seller_paus
   for (const o of (live ?? []) as { id: string; work_id: string; from_user: string }[]) {
     const { data: changed } = await db
       .from('offers')
-      .update({ status: 'expired', closed_at: now, close_reason: reason })
+      // Stage 12: una pausa o suspension del vendedor CANCELA las vivas, con su motivo.
+      .update({ status: 'cancelled', closed_at: now, close_reason: reason })
       .eq('id', o.id)
       .eq('status', 'open')
       .select('id')
     if (!changed?.length) continue
-    await logEvent(db, o.id, 'expired', null, { reason })
+    await logEvent(db, o.id, 'cancelled', null, { reason })
     const data = { title: titleOf.get(o.work_id) ?? '', offerId: o.id }
-    await notify(db, { userId: o.from_user, eventKey: 'offer_expired', dedupeKey: `offer:${o.id}:expired:buyer`, data, href: sheetOf(o.id) })
-    await notify(db, { userId: holderId, eventKey: 'offer_expired', dedupeKey: `offer:${o.id}:expired:seller`, data, href: sheetOf(o.id) })
+    await notify(db, { userId: o.from_user, eventKey: 'offer_cancelled', dedupeKey: `offer:${o.id}:cancelled:buyer`, data, href: sheetOf(o.id) })
+    await notify(db, { userId: holderId, eventKey: 'offer_cancelled', dedupeKey: `offer:${o.id}:cancelled:seller`, data, href: sheetOf(o.id) })
   }
 }
 
