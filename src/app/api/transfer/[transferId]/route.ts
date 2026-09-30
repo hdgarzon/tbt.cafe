@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase-admin'
 import { authenticate } from '@/lib/route-auth'
+import { getRules } from '@/lib/rules'
+import { transferWindowMs } from '@/lib/rules-shape'
 
 /**
  * Lectura pública y mínima de una transferencia de dos fases, para la vista
@@ -30,7 +32,7 @@ export async function GET(request: NextRequest, props: { params: Promise<{ trans
     transfer.outcome === null &&
     transfer.payment_status === 'pending' &&
     !!transfer.authorized_at &&
-    Date.now() - new Date(transfer.authorized_at).getTime() > 24 * 3600 * 1000
+    Date.now() - new Date(transfer.authorized_at).getTime() > transferWindowMs(await getRules())
 
   return NextResponse.json({
     id: transfer.id,

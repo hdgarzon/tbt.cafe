@@ -201,8 +201,8 @@ const curation = read('src/components/CurationModal.tsx')
   ok('y solo carga el contexto personal si hay quien',
      route.includes('auth.ok ? await loadPersonContext(auth.supabase, auth.user.id) : null'))
   ok('el conocimiento se recupera igual para todos',
-     route.includes('const docs = retrieve(question, locale)'),
-     'retrieve() es puro sobre documentos estáticos y no toca dato de nadie')
+     route.includes('const docs = retrieve(question, locale, await getRules())'),
+     'retrieve() es puro sobre los documentos y las reglas globales; no toca dato de nadie')
 
   ok('a una visita se le DICE que lo es', ctx.includes('You are speaking to a visitor who has not signed in.'),
      'un contexto vacío el modelo lo lee como «no tiene nada», y de ahí inventa una cifra')

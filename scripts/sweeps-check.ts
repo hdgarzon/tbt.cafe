@@ -102,7 +102,7 @@ const count = (s: string, needle: string) => s.split(needle).length - 1
   const src = code(readIf('src/lib/transfer-lapse.ts'))
   const respond = code(read('src/app/api/transfer/respond/route.ts'))
 
-  ok('la misma ventana que respond', src.includes('HOLD_WINDOW_MS = 24 * 3600 * 1000') && respond.includes('HOLD_WINDOW_MS = 24 * 3600 * 1000'))
+  ok('la misma ventana que respond, de configuracion', src.includes('transferWindowMs(await getRules())') && respond.includes('transferWindowMs(await getRules())'))
 
   const q = src.indexOf(".from('transfers')")
   const query = q > -1 ? src.slice(q, q + 700) : ''

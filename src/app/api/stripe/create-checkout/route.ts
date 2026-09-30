@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createCheckoutSession, stripe, type CheckoutType } from '@/lib/stripe'
-import { SERVICE_FEE_CENTS, royaltyAmountOf, type RoyaltyType } from '@/lib/fees'
+import { royaltyAmountOf, type RoyaltyType } from '@/lib/fees'
+import { getRules } from '@/lib/rules'
 import { trackProvider } from '@/lib/provider-events'
 import { authenticate } from '@/lib/route-auth'
 import { createAdminClient } from '@/lib/supabase-admin'
@@ -259,7 +260,7 @@ export async function POST(request: NextRequest) {
       await supabase.from('tbt_payments').insert({
         work_id: workId,
         user_id: user.id,
-        amount: SERVICE_FEE_CENTS / 100,
+        amount: (await getRules()).fees.registration,
         currency: 'USD',
         stripe_checkout_session_id: session.id,
         status: 'pending',

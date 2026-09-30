@@ -10,7 +10,8 @@ import { EspressoFlow, type EspressoResult } from '@/components/brew/EspressoFlo
 import { ContextEditor } from '@/components/brew/ContextEditor'
 import { fetchCoveredStatus, type CoveredStatus } from '@/lib/covered-data'
 import { EmbeddedCheckoutSheet } from '@/components/EmbeddedCheckoutSheet'
-import { money, FEE } from '@/lib/fees'
+import { money } from '@/lib/fees'
+import { useRules } from '@/lib/rules-public'
 import type { SeriesWithCount } from '@/lib/series-data'
 import type { ChainImageChoice } from '@/lib/chain/publish-image'
 import { linkIdentifierProblem } from '@/lib/chain/identifier-patterns'
@@ -98,6 +99,8 @@ type Declaration = 'original' | 'derivative' | 'authorized_edition'
 
 export function BrewWizard() {
   const { t } = useLocale()
+  // La tarifa de registro es de configuracion (Work Order 02, 1.2).
+  const rules = useRules()
   const { connected, openAuth } = useShell()
   const params = useSearchParams()
 
@@ -1514,7 +1517,7 @@ export function BrewWizard() {
           clientSecret={clientSecret}
           onClose={() => setClientSecret(null)}
           // Un registro no cambia de manos: no hay "para quién".
-          recap={{ what: t.recap.registration, amount: `${money(FEE.service)} USD` }}
+          recap={{ what: t.recap.registration, amount: rules ? `${money(rules.fees.registration)} USD` : '—' }}
         />
       )}
       <BrewChrome

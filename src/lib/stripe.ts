@@ -1,5 +1,6 @@
 import Stripe from 'stripe'
-import { SERVICE_FEE_CENTS, PLATFORM_CURRENCY } from '@/lib/fees'
+import { cents, PLATFORM_CURRENCY } from '@/lib/fees'
+import { getRules } from '@/lib/rules'
 
 /**
  * El cliente de Stripe, construido en el primer uso y no al importar.
@@ -45,18 +46,15 @@ export const stripe = new Proxy({} as Stripe, {
   },
 })
 
-// Payment configuration — la tarifa sale de fees.ts, que es su unica casa
-export const PAYMENT_CONFIG = {
-  tbtCreation: {
-    amount: SERVICE_FEE_CENTS, // $8.00 (Spec 01, ítem 2)
-    currency: PLATFORM_CURRENCY,
-    description: 'TBT Creation Fee',
-  },
-  transfer: {
-    amount: SERVICE_FEE_CENTS, // $8.00 — la misma tarifa de servicio, un solo origen
-    currency: PLATFORM_CURRENCY,
-    description: 'TBT Transfer Fee',
-  },
+/**
+ * La tarifa de cada cobro, de configuracion (Work Order 02, 1.2): la fila de
+ * `platform_config` es su unica casa. Se lee al crear la sesion, no al importar.
+ */
+async function paymentConfig(type: CheckoutType) {
+  const { fees } = await getRules()
+  return type === 'tbt_creation'
+    ? { amount: cents(fees.registration), currency: PLATFORM_CURRENCY, description: 'TBT Creation Fee' }
+    : { amount: cents(fees.transfer), currency: PLATFORM_CURRENCY, description: 'TBT Transfer Fee' }
 }
 
 // Type for checkout session creation
@@ -102,7 +100,7 @@ export interface CreateCheckoutParams {
 
 export async function createCheckoutSession(params: CreateCheckoutParams) {
   const { type, workId, userId, successUrl, cancelUrl, transferId, royaltyAmount = 0, embedded = false, returnUrl, requireThreeDS = false, promotionCodeId } = params
-  const config = type === 'tbt_creation' ? PAYMENT_CONFIG.tbtCreation : PAYMENT_CONFIG.transfer
+  const config = await paymentConfig(type)
 
   const lineItems: Stripe.Checkout.SessionCreateParams.LineItem[] = [
     {

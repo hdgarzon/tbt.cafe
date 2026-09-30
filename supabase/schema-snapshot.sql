@@ -490,7 +490,75 @@ create table if not exists public.platform_config (
   payout_platform_pct numeric(6,4) default 0.0230 not null,
   biometric_threshold numeric(12,2) default 500 not null,
   three_ds_threshold numeric(12,2) default 1000 not null,
-  tbt_id_blocklist text[] not null default '{}'
+  tbt_id_blocklist text[] not null default '{}',
+  -- 058 · Work Order 02 Stage 1: configuration is the single source
+  service_fee_buyer numeric(12,2) not null default 8.00,
+  service_fee_seller numeric(12,2) not null default 8.00,
+  service_fee_royalty numeric(12,2) not null default 8.00,
+  registration_fee numeric(12,2) not null default 8.00,
+  transfer_fee numeric(12,2) not null default 8.00,
+  settlement_days_top integer not null default 30,
+  settlement_top_threshold numeric(12,2) not null default 10000,
+  first_payout_hold_days integer not null default 30,
+  first_payout_clean_sales integer not null default 2,
+  first_payout_max_days integer not null default 90,
+  absorption_threshold numeric(12,2) not null default 250,
+  writeoff_months integer not null default 24,
+  royalty_pct_ceiling numeric(5,2) not null default 90,
+  royalty_pct_warning numeric(5,2) not null default 50,
+  royalty_floor_pct numeric(5,2) not null default 10,
+  royalty_floor_min numeric(12,2) not null default 50,
+  transfer_window_hours integer not null default 48,
+  offer_max_hours integer not null default 72,
+  offer_payment_window_hours integer not null default 24,
+  offer_auto_cancel_days integer not null default 4,
+  offer_near_expiry_fraction numeric(4,3) not null default 0.10,
+  offer_message_max integer not null default 500,
+  title_link_days integer not null default 30,
+  title_link_warning_day integer not null default 25,
+  velocity_count_per_hour integer not null default 3,
+  velocity_outbound_24h numeric(12,2) not null default 25000,
+  velocity_new_pair_days integer not null default 30,
+  velocity_new_pair_threshold numeric(12,2) not null default 5000,
+  phone_change_days integer not null default 30,
+  three_ds_registration_exempt boolean not null default true,
+  payout_cost_bank numeric(12,2) not null default 1.50,
+  payout_cost_usdc numeric(12,2) not null default 1.00,
+  seller_payout_delay_days integer not null default 7,
+  usdc_enabled boolean not null default false,
+  scan_warn numeric(4,3) not null default 0.75,
+  scan_block numeric(4,3) not null default 0.90,
+  scan_processor_url text not null default 'https://tbt-image-processor.fly.dev',
+  pause_registration boolean not null default false,
+  pause_registration_message jsonb not null default jsonb_build_object(
+    'en', 'Registration is paused for a moment. Everything else works as usual.',
+    'es', 'El registro está en pausa por un momento. Todo lo demás funciona con normalidad.',
+    'pt', 'O registro está pausado por um momento. O resto funciona normalmente.',
+    'fr', 'L''enregistrement est suspendu pour un moment. Tout le reste fonctionne normalement.'),
+  pause_selling boolean not null default false,
+  pause_selling_message jsonb not null default jsonb_build_object(
+    'en', 'Sales are paused for a moment. Offers and transfers work as usual.',
+    'es', 'Las ventas están en pausa por un momento. Ofertas y transferencias funcionan con normalidad.',
+    'pt', 'As vendas estão pausadas por um momento. Ofertas e transferências funcionam normalmente.',
+    'fr', 'Les ventes sont suspendues pour un moment. Les offres et transferts fonctionnent normalement.'),
+  pause_offers boolean not null default false,
+  pause_offers_message jsonb not null default jsonb_build_object(
+    'en', 'Offers are paused for a moment.',
+    'es', 'Las ofertas están en pausa por un momento.',
+    'pt', 'As ofertas estão pausadas por um momento.',
+    'fr', 'Les offres sont suspendues pour un moment.'),
+  pause_transfers boolean not null default false,
+  pause_transfers_message jsonb not null default jsonb_build_object(
+    'en', 'New transfers are paused for a moment. Pending ones can still be accepted.',
+    'es', 'Las transferencias nuevas están en pausa por un momento. Las pendientes aún se pueden aceptar.',
+    'pt', 'Novas transferências estão pausadas por um momento. As pendentes ainda podem ser aceitas.',
+    'fr', 'Les nouveaux transferts sont suspendus pour un moment. Ceux en attente peuvent encore être acceptés.'),
+  pause_payouts boolean not null default false,
+  pause_payouts_message jsonb not null default jsonb_build_object(
+    'en', 'Payout collection is paused for a moment. Your earnings are safe.',
+    'es', 'El cobro está en pausa por un momento. Tus ganancias están seguras.',
+    'pt', 'Os repasses estão pausados por um momento. Seus ganhos estão seguros.',
+    'fr', 'Les versements sont suspendus pour un moment. Vos gains sont en sécurité.')
 );
 
 create table if not exists public.covered_registrations (
@@ -872,6 +940,21 @@ alter table public.platform_config add constraint platform_config_settlement_hig
 alter table public.platform_config add constraint platform_config_payout_platform_pct_check CHECK ((payout_platform_pct >= (0)::numeric));
 alter table public.platform_config add constraint platform_config_biometric_threshold_check CHECK ((biometric_threshold >= (0)::numeric));
 alter table public.platform_config add constraint platform_config_three_ds_threshold_check CHECK ((three_ds_threshold >= (0)::numeric));
+alter table public.platform_config add constraint rules_fees_non_negative check (service_fee_buyer >= 0 and service_fee_seller >= 0 and service_fee_royalty >= 0 and registration_fee >= 0 and transfer_fee >= 0);
+alter table public.platform_config add constraint rules_thresholds_non_negative check (settlement_top_threshold >= 0 and absorption_threshold >= 0 and velocity_outbound_24h >= 0 and velocity_new_pair_threshold >= 0 and payout_cost_bank >= 0 and payout_cost_usdc >= 0 and royalty_floor_min >= 0 and royalty_floor_pct >= 0);
+alter table public.platform_config add constraint rules_days_positive check (settlement_days_top > 0 and first_payout_hold_days >= 0 and first_payout_clean_sales >= 0 and first_payout_max_days >= first_payout_hold_days and writeoff_months > 0 and offer_max_hours > 0 and offer_payment_window_hours > 0 and offer_auto_cancel_days > 0 and offer_message_max > 0 and velocity_count_per_hour > 0 and velocity_new_pair_days >= 0 and phone_change_days >= 0 and seller_payout_delay_days >= 0);
+alter table public.platform_config add constraint rules_transfer_window check (transfer_window_hours > 0 and transfer_window_hours < 168);
+alter table public.platform_config add constraint rules_royalty_ceiling check (royalty_pct_ceiling >= 0 and royalty_pct_ceiling <= 90);
+alter table public.platform_config add constraint rules_royalty_warning check (royalty_pct_warning <= royalty_pct_ceiling);
+alter table public.platform_config add constraint rules_near_expiry check (offer_near_expiry_fraction > 0 and offer_near_expiry_fraction < 1);
+alter table public.platform_config add constraint rules_scan_fractions check (scan_warn > 0 and scan_warn <= scan_block and scan_block <= 1);
+alter table public.platform_config add constraint rules_title_link check (title_link_warning_day > 0 and title_link_warning_day < title_link_days);
+alter table public.platform_config add constraint rules_scan_url check (scan_processor_url ~ '^https://');
+alter table public.platform_config add constraint rules_pause_registration_message check (pause_registration_message ?& array['en', 'es', 'pt', 'fr']);
+alter table public.platform_config add constraint rules_pause_selling_message check (pause_selling_message ?& array['en', 'es', 'pt', 'fr']);
+alter table public.platform_config add constraint rules_pause_offers_message check (pause_offers_message ?& array['en', 'es', 'pt', 'fr']);
+alter table public.platform_config add constraint rules_pause_transfers_message check (pause_transfers_message ?& array['en', 'es', 'pt', 'fr']);
+alter table public.platform_config add constraint rules_pause_payouts_message check (pause_payouts_message ?& array['en', 'es', 'pt', 'fr']);
 alter table public.covered_registrations add constraint covered_registrations_pkey PRIMARY KEY (id);
 alter table public.covered_registrations add constraint covered_registrations_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES auth.users(id) ON DELETE CASCADE;
 alter table public.covered_registrations add constraint covered_registrations_work_id_fkey FOREIGN KEY (work_id) REFERENCES works(id) ON DELETE SET NULL;

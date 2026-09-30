@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { recordProviderEvent } from '@/lib/provider-events'
 import { createAdminClient } from '@/lib/supabase-admin'
 import { outageIsOpen } from '@/lib/scan-outages'
+import { getRules } from '@/lib/rules'
 
 /**
  * ¿Se puede registrar ahora? — Update Package 01, N9 (c, e).
@@ -46,7 +47,6 @@ function reply(value: Health) {
 }
 
 async function probe(): Promise<Health> {
-  const url = process.env.TBT_IMAGE_PROCESSOR_URL
   const key = process.env.TBT_IMAGE_PROCESSOR_API_KEY
   const started = Date.now()
 
@@ -55,7 +55,16 @@ async function probe(): Promise<Health> {
     return reason === 'setup' ? { available: false, reason: 'setup' } : { available: false, reason: 'outage' }
   }
 
-  if (!url) return down('setup', 'url_unset')
+  // De configuracion (Work Order 02, 1.3): restaurar la direccion desde el panel
+  // levanta el aviso sin desplegar.
+  let scanProcessorUrl: string | null
+  try {
+    scanProcessorUrl = (await getRules()).scanProcessorUrl
+  } catch (error) {
+    return down('setup', 'rules_unreadable', error)
+  }
+  if (!scanProcessorUrl) return down('setup', 'url_unset')
+  const url = scanProcessorUrl
   if (!key) return down('setup', 'key_missing')
 
   try {

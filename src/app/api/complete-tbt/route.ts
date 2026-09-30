@@ -4,7 +4,8 @@ import { indexCertifiedImage } from '@/lib/image-index'
 import { isProduction, assertServerEnv } from '@/lib/app-env'
 import { wasDelivered } from '@/lib/notification-outcome'
 import { stripe } from '@/lib/stripe'
-import { resolveCoveredRegistration, REGISTRATION_FEE } from '@/lib/covered-registrations'
+import { resolveCoveredRegistration } from '@/lib/covered-registrations'
+import { getRules } from '@/lib/rules'
 import { fileSystemTicket } from '@/lib/system-tickets'
 import { notify } from '@/lib/notify'
 import { recordProviderEvent } from '@/lib/provider-events'
@@ -690,7 +691,8 @@ export async function POST(request: NextRequest) {
       const { error: ledgerError } = await createAdminClient().from('covered_registrations').insert({
         creator_id: work.creator_id,
         work_id: workId,
-        amount: REGISTRATION_FEE,
+        // Lo que se habria cobrado, de configuracion (Work Order 02, 1.2).
+        amount: (await getRules()).fees.registration,
         reason: coveredReason,
       })
       if (ledgerError) console.error('Covered registration ledger write failed:', ledgerError)

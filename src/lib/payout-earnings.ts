@@ -1,6 +1,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { royaltyAmountOf, royaltyPayout, type Royalty } from '@/lib/fees'
 import { notify } from '@/lib/notify'
+import { getRules } from '@/lib/rules'
 
 /**
  * Escritura del libro de ganancias — Backend Spec 01 §1.3 y §4.
@@ -90,7 +91,7 @@ export async function recordRoyaltyEarning(
     // Lo que le queda al creador — §1.3: el proveedor absorbe el
     // procesamiento, pero la tarifa de servicio se descuenta. Toda ruta de
     // dinero pasa por la misma función; ninguna hace su propia resta.
-    const net = royaltyPayout(gross)
+    const net = royaltyPayout(gross, await getRules())
     if (net <= 0) return
 
     const releasesAt =

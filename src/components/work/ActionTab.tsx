@@ -14,6 +14,8 @@ import {
   type Availability,
 } from '@/lib/work-data'
 import { pendingTransferFor, cancelTransfer, type Transfer } from '@/lib/transfer-data'
+import { useRules } from '@/lib/rules-public'
+import { transferWindowMs } from '@/lib/rules-shape'
 
 const LockIcon = () => (
   <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -65,11 +67,14 @@ export function ActionTab({
     pendingTransferFor(work.id, userId).then(setPending)
   }, [work.id, userId])
 
-  // Cuenta regresiva de 24h sobre la transferencia pendiente.
+  // Cuenta regresiva sobre la transferencia pendiente; la ventana es de
+  // configuracion (Work Order 02, 1.2). Sin reglas todavia, no se inventa.
+  const rules = useRules()
+  const windowMs = rules ? transferWindowMs(rules) : null
   useEffect(() => {
-    if (!pending?.authorized_at) return
+    if (!pending?.authorized_at || windowMs === null) return
     const started = new Date(pending.authorized_at).getTime()
-    const expires = started + 24 * 3600 * 1000
+    const expires = started + windowMs
     const tick = () => {
       const left = Math.max(0, expires - Date.now())
       const h = Math.floor(left / 3_600_000)
@@ -80,7 +85,7 @@ export function ActionTab({
     tick()
     const iv = setInterval(tick, 1000)
     return () => clearInterval(iv)
-  }, [pending?.authorized_at])
+  }, [pending?.authorized_at, windowMs])
 
   function flash(msg: string) {
     setToast(msg)

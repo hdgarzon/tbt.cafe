@@ -14,6 +14,7 @@ import { ProfileTab } from '@/components/work/ProfileTab'
 import { InfoTab } from '@/components/work/InfoTab'
 import { HistoryTab } from '@/components/work/HistoryTab'
 import { ActionTab } from '@/components/work/ActionTab'
+import { useRules } from '@/lib/rules-public'
 
 /**
  * /work/[tbtId] — el registro público canónico, cuatro pestañas
@@ -36,6 +37,9 @@ const TAB_KEY: Record<'profile' | 'info' | 'history', 'tabProfile' | 'tabInfo' |
 
 export default function WorkPage({ params, scannedAt = null }: { params: { tbtId: string }; scannedAt?: string | null }) {
   const { t } = useLocale()
+  // Tarifas y piso de configuracion (Work Order 02, 1.2). Sin reglas no se
+  // muestra ni se decide un precio.
+  const rules = useRules()
   const { connected, openAuth } = useShell()
 
   const [work, setWork] = useState<WorkFull | null>(null)
@@ -136,7 +140,8 @@ export default function WorkPage({ params, scannedAt = null }: { params: { tbtId
     if (!isFinite(amount) || amount <= 0) return
     // Piso de regalía fija (Spec 01 §2.2): una oferta por debajo dejaría al
     // vendedor pagando por vender, así que se rechaza indicando el mínimo.
-    const floor = minPriceFor(royaltyOf(c))
+    if (!rules) return
+    const floor = minPriceFor(royaltyOf(c), rules)
     if (floor > 0 && amount < floor) {
       return setMsg(t.work.errors.belowFloor.replace('{min}', money(floor)))
     }
@@ -278,8 +283,8 @@ export default function WorkPage({ params, scannedAt = null }: { params: { tbtId
 
             {(() => {
               const v = parseFloat(offerAmount.replace(/[^0-9.]/g, ''))
-              if (!isFinite(v) || v <= 0) return null
-              const q = quote(v, royaltyOf(c))
+              if (!isFinite(v) || v <= 0 || !rules) return null
+              const q = quote(v, royaltyOf(c), rules)
               return (
                 <div className="mt-3 pt-3 border-t border-hairline">
                   <div className="flex items-center justify-between text-[13px] font-medium">
@@ -323,7 +328,7 @@ export default function WorkPage({ params, scannedAt = null }: { params: { tbtId
           // compra no añade nada.
           recap={{
             what: work.title,
-            amount: `${money(quote(c.initial_price ?? 0, royaltyOf(c)).buyerTotal)} USD`,
+            amount: rules ? `${money(quote(c.initial_price ?? 0, royaltyOf(c), rules).buyerTotal)} USD` : '—',
           }}
         />
       )}

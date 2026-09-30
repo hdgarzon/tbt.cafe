@@ -3,8 +3,9 @@ import { createAdminClient } from '@/lib/supabase-admin'
 import { stripe } from '@/lib/stripe'
 import { authenticate } from '@/lib/route-auth'
 import { notify } from '@/lib/notify'
+import { getRules } from '@/lib/rules'
+import { transferWindowMs } from '@/lib/rules-shape'
 
-const HOLD_WINDOW_MS = 24 * 3600 * 1000
 
 /**
  * Avisa a quien envió que la transferencia no siguió. La clave lleva el motivo:
@@ -73,7 +74,7 @@ export async function POST(request: NextRequest) {
     }
 
     const elapsed = Date.now() - new Date(transfer.authorized_at).getTime()
-    if (elapsed > HOLD_WINDOW_MS) {
+    if (elapsed > transferWindowMs(await getRules())) {
       // Card holds do not reliably survive past 24h — release cleanly rather
       // than risk a capture failure the sender wasn't told about. Ask them
       // to resend (Transfer Companion, "24 HOURS IS NOT ARBITRARY").

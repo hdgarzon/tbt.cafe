@@ -4,6 +4,7 @@ import { enforceLadder } from '@/lib/auth-ladder-server'
 import { stripe } from '@/lib/stripe'
 import { transferQuote, type Royalty, type RoyaltyType } from '@/lib/fees'
 import { authenticate } from '@/lib/route-auth'
+import { getRules } from '@/lib/rules'
 
 /**
  * Fase 1 del transfer de dos fases (tbt.cafe Build Spec 02 / Transfer &
@@ -109,7 +110,7 @@ export async function POST(request: NextRequest) {
       value: Number(commerce?.royalty_value ?? 0),
     }
     const senderIsCreator = work.creator_id === user.id
-    const quote = transferQuote(recordedValue, terms, senderIsCreator)
+    const quote = transferQuote(recordedValue, terms, senderIsCreator, await getRules())
 
     // One open two-phase transfer per work at a time (partial index enforces
     // this is cheap to check; a second authorisation on the same work before

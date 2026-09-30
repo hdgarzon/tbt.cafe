@@ -1,6 +1,10 @@
 import { readFileSync } from 'fs'
 import { join } from 'path'
-import { retrieve, KNOWLEDGE, type Locale } from '../src/lib/assistant/knowledge'
+import { retrieve, knowledgeFor, type Locale } from '../src/lib/assistant/knowledge'
+import { testRules } from './rules-fixture'
+
+const RULES = testRules()
+const KNOWLEDGE = knowledgeFor(RULES)
 import { ROAST_ARTICLES } from '../src/lib/roast-content'
 
 /**
@@ -110,10 +114,10 @@ const FILES = ['src/lib/roast-content.ts', 'src/lib/legal-content.ts', 'src/lib/
   ]
   for (let i = 0; i < ASKS.length; i++) {
     const [locale, q] = ASKS[i]
-    const first = retrieve(q, locale)[0]
+    const first = retrieve(q, locale, RULES)[0]
     ok(`${locale}: «${q}» recupera el titulo`, first?.id === 'title_delivery', first?.id ?? 'nada')
   }
-  const phone = retrieve('I lost my phone', 'en')[0]
+  const phone = retrieve('I lost my phone', 'en', RULES)[0]
   ok('«I lost my phone» sigue siendo autenticacion', phone?.id === 'authentication', phone?.id ?? 'nada')
 }
 

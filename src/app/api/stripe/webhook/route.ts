@@ -3,6 +3,7 @@ import { stripe } from '@/lib/stripe'
 import { createAdminClient } from '@/lib/supabase-admin'
 import Stripe from 'stripe'
 import { describeDisputeEvent } from '@/lib/disputes'
+import { getRules } from '@/lib/rules'
 
 /**
  * El cliente de service-role, construido en el primer uso y no al importar.
@@ -192,9 +193,10 @@ async function notifyRecipientOfPendingTransfer(transferId: string) {
 
     const work = Array.isArray(transfer.work) ? transfer.work[0] : transfer.work
     const acceptUrl = `${process.env.NEXT_PUBLIC_TBT_CAFE_URL || 'https://tbt.cafe'}/transfer/accept/${transferId}`
+    const { transferWindowHours } = await getRules()
     const message =
       `${transfer.from_owner_name || 'Someone'} is transferring "${work?.title || 'a work'}" to you on tbt.cafe.\n\n` +
-      `Accept or decline: ${acceptUrl}\n\nExpires in 24 hours. Nothing is charged unless you accept.`
+      `Accept or decline: ${acceptUrl}\n\nExpires in ${transferWindowHours} hours. Nothing is charged unless you accept.`
 
     if (process.env.TWILIO_ACCOUNT_SID && process.env.TWILIO_AUTH_TOKEN && process.env.TWILIO_PHONE_NUMBER) {
       const twilio = (await import('twilio')).default

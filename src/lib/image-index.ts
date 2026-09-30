@@ -2,6 +2,7 @@ import { createAdminClient } from '@/lib/supabase-admin'
 import { recordProviderEvent } from '@/lib/provider-events'
 import { fileSystemTicket } from '@/lib/system-tickets'
 import { fetchStoredImageBytes, computeImageSha256Hex } from '@/lib/image-bytes'
+import { getRules } from '@/lib/rules'
 
 /**
  * Anadir la imagen recien certificada al indice de originalidad — Update
@@ -77,13 +78,14 @@ export async function indexCertifiedImage(params: {
   }
 
   try {
-    const url = process.env.TBT_IMAGE_PROCESSOR_URL
+    const { scanProcessorUrl } = await getRules()
+    const url = scanProcessorUrl
     const key = process.env.TBT_IMAGE_PROCESSOR_API_KEY ?? ''
 
     // Sin URL no se indexa nada, en ninguna obra. Es un fallo de configuracion,
     // y callarlo es exactamente como el indice se quedo vacio.
     if (!url) {
-      return fail({ code: 'url_unset', message: 'TBT_IMAGE_PROCESSOR_URL is not set' })
+      return fail({ code: 'url_unset', message: 'scan_processor_url is not set' })
     }
 
     // Los bytes se traen UNA vez y se usan dos: para la sha256 servidor-side, y

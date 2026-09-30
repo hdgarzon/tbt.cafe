@@ -13,6 +13,7 @@ import { loadPersonContext, renderContext } from '@/lib/assistant/context'
 import { geminiProvider, tierFor } from '@/lib/assistant/provider'
 import { fileEscalationTicket } from '@/lib/assistant/escalate'
 import { trackProvider } from '@/lib/provider-events'
+import { getRules } from '@/lib/rules'
 
 
 const LOCALES: Locale[] = ['en', 'es', 'pt', 'fr']
@@ -50,7 +51,7 @@ export async function POST(request: NextRequest) {
      */
     const auth = await authenticate(request)
     const person = auth.ok ? await loadPersonContext(auth.supabase, auth.user.id) : null
-    const docs = retrieve(question, locale)
+    const docs = retrieve(question, locale, await getRules())
 
     const tier = tierFor(question, (person?.tickets.length ?? 0) > 0)
     const reply = await trackProvider(
