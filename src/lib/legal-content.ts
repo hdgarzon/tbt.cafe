@@ -154,7 +154,7 @@ export const LEGAL_DOCS: LegalDoc[] = [
       },
       {
         "kind": "p",
-        "html": "tbt.cafe has <b>authentication</b>, not accounts. Your identity rests on a mobile number verified by code, and on the security factors you add: a recovery email, a private code, and biometric confirmation on your device."
+        "html": "tbt.cafe has <b>authentication</b>, not accounts. Your identity rests on a mobile number verified by code, and on the security factors you add: a private code, and biometric confirmation on your device."
       },
       {
         "kind": "p",
@@ -324,7 +324,7 @@ export const LEGAL_DOCS: LegalDoc[] = [
         "items": [
           "<b>Biometric</b> — your device’s fingerprint or face. Nothing biometric ever leaves your device; we learn only that your device recognised you.",
           "<b>Private code</b> — a short code only you know. It matters because it is the one factor a stolen, unlocked phone cannot supply.",
-          "<b>Recovery email</b> — lets you reset your private code, and gives us a second way to reach you."
+          "<b>e-Mail</b> — gives us a second way to reach you, and receives a copy of every title link. If you forget your private code, open a help request."
         ]
       },
       {
@@ -405,7 +405,7 @@ export const LEGAL_DOCS: LegalDoc[] = [
       {
         "kind": "ul",
         "items": [
-          "<b>Identity</b> — your mobile number (verified by code), and, where you provide them, your legal name, public alias, entity or collective name, and recovery email.",
+          "<b>Identity</b> — your mobile number (verified by code), and, where you provide them, your legal name, public alias, entity or collective name, and e-Mail address.",
           "<b>Works</b> — what you register: title, description, images or media links, and the context recorded at registration.",
           "<b>Transactions</b> — purchases, sales, offers, transfers, payouts, and the amounts involved.",
           "<b>Payout details</b> — the bank account or USDC wallet address you choose for payouts, held so we can pay you.",

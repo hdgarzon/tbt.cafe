@@ -30,6 +30,9 @@ const sql = (p: string) => read(p).split('\n').filter((l) => !l.trim().startsWit
 const PRIVATE = [
   'email', 'phone', 'physical_address', 'tax_id', 'legal_name',
   'recovery_email', 'recovery_email_verified', 'private_code_hash', 'private_code_freq',
+  // La firma del creador (055): dato personal que un título muestra, pero que
+  // la tabla no entrega a nadie más que a su dueño.
+  'signature_strokes',
 ]
 
 const M = sql('supabase/migrations/053_profiles_private_columns.sql')

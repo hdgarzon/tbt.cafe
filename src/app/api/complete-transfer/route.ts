@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextRequest, NextResponse, after } from 'next/server'
 import { createAdminClient } from '@/lib/supabase-admin'
 import { recordRoyaltyEarning } from '@/lib/payout-earnings'
 import { stripe } from '@/lib/stripe'
@@ -6,6 +6,7 @@ import { getExplorerUrl } from '@/lib/solana/config'
 import { isProduction, assertServerEnv } from '@/lib/app-env'
 import { authenticate } from '@/lib/route-auth'
 import { notify } from '@/lib/notify'
+import { issueTitle } from '@/lib/titles/issue'
 
 /**
  * Esta ruta mueve el NFT en cadena: inicializa Irys, consulta precio, transfiere fondos en
@@ -338,14 +339,24 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Emitir el titulo del nuevo dueño. Incrementar version y enlazar supersedes es el Step 14.
-    const { error: titleError } = await serviceClient.from('titles').insert({
-      work_id: transfer.work_id,
-      owner_id: transfer.to_owner_id,
-      qr_code_data: `${process.env.NEXT_PUBLIC_APP_URL}/work/${transfer.work.tbt_id}`,
-      version: 1,
-    })
-    if (titleError) console.error('Error issuing title:', titleError)
+    /*
+     * El título del nuevo dueño (Work Order 01 Stage 5). Una venta imprime
+     * PURCHASED; un regalo o una transferencia manual, TRANSFERRED. La versión
+     * y `supersedes` los pone issueTitle a partir del título anterior de la obra.
+     * Una clave por transferencia: esta ruta se reintenta y no emite dos veces.
+     */
+    if (transfer.to_owner_id) {
+      const toOwner = transfer.to_owner_id
+      after(() =>
+        issueTitle(serviceClient, {
+          workId: transfer.work_id,
+          holderId: toOwner,
+          event: transfer.transfer_type === 'automatic' ? 'PURCHASED' : 'TRANSFERRED',
+          eventDate: new Date(),
+          sourceKey: `transfer:${transfer.id}`,
+        }).then((outcome) => console.log('[title] transferencia:', outcome))
+      )
+    }
 
     /*
      * Avisar a las dos partes. Aquí la propiedad ya cambió y la regalía ya se
