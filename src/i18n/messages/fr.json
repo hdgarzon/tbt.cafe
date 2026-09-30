@@ -997,7 +997,7 @@
       "offer_expiring": "L'offre pour {title} expire dans {time}.",
       "new_location": "Authentification depuis un nouveau lieu.",
       "new_device": "Authentification depuis un nouvel appareil.",
-      "suspicious": "Activité suspecte détectée.",
+      "suspicious": "Nous avons demandé une vérification supplémentaire pour votre dernière action.",
       "views_created": "Une de vos œuvres attire l'attention.",
       "views_collection": "Une œuvre de votre collection attire l'attention.",
       "favorites": "Activité sur l'un de vos favoris.",
@@ -1018,7 +1018,11 @@
       "offer_withdrawn": "L'offre pour {title} a été retirée.",
       "offer_expired": "L'offre pour {title} a expiré.",
       "offer_cancelled": "L'offre pour {title} a été annulée.",
-      "offer_holder_ready": "Le propriétaire de {title} peut désormais vendre. Vous pouvez faire une nouvelle offre."
+      "offer_holder_ready": "Le propriétaire de {title} peut désormais vendre. Vous pouvez faire une nouvelle offre.",
+      "security_change_phone": "Votre numéro tbt.cafe a été modifié. Ce n'est pas vous ? Ouvrez une demande d'aide maintenant.",
+      "security_change_factor": "Un facteur de sécurité de votre authentification tbt.cafe a changé. Ce n'est pas vous ? Ouvrez une demande d'aide maintenant.",
+      "security_change_reset": "Votre code privé a été réinitialisé. Vous en créerez un nouveau lors de votre prochain versement ou transfert.",
+      "transfers_readdressed": "Un transfert de {title} vous attend."
     }
   },
   "payouts": {
@@ -1323,5 +1327,12 @@
   "holder": {
     "nameQuestion": "Afficher mon nom dans le registre permanent de cette œuvre ?",
     "nameNote": "Une fois publié, un nom ne peut plus être retiré, même si vous choisissez plus tard l'anonymat."
+  },
+  "phone": {
+    "change": "Changer de numéro",
+    "changeNote": "Il vous faudra votre code privé, votre biométrie et un code envoyé au nouveau numéro.",
+    "rateLimited": "Vous pourrez changer de numéro à nouveau le {date}.",
+    "noFactor": "Pas de code privé ni de biométrie ? Ouvrez une demande d'aide et nous vous vérifierons.",
+    "changed": "Votre numéro a été modifié."
   }
 }

@@ -997,7 +997,7 @@
       "offer_expiring": "La oferta por {title} vence en {time}.",
       "new_location": "Autenticación desde un lugar nuevo.",
       "new_device": "Autenticación desde un dispositivo nuevo.",
-      "suspicious": "Se detectó actividad sospechosa.",
+      "suspicious": "Pedimos una verificación extra en tu última acción.",
       "views_created": "Una obra tuya está llamando la atención.",
       "views_collection": "Una obra de tu colección está llamando la atención.",
       "favorites": "Actividad en uno de tus favoritos.",
@@ -1018,7 +1018,11 @@
       "offer_withdrawn": "Retiraron la oferta por {title}.",
       "offer_expired": "La oferta por {title} venció.",
       "offer_cancelled": "La oferta por {title} fue cancelada.",
-      "offer_holder_ready": "El dueño de {title} ya puede vender. Puedes hacer una nueva oferta."
+      "offer_holder_ready": "El dueño de {title} ya puede vender. Puedes hacer una nueva oferta.",
+      "security_change_phone": "Se cambió tu número en tbt.cafe. ¿No fuiste tú? Abre una solicitud de ayuda ya.",
+      "security_change_factor": "Cambió un factor de seguridad de tu autenticación en tbt.cafe. ¿No fuiste tú? Abre una solicitud de ayuda ya.",
+      "security_change_reset": "Se restableció tu código privado. Crearás uno nuevo en tu próximo cobro o transferencia.",
+      "transfers_readdressed": "Una transferencia de {title} te espera."
     }
   },
   "payouts": {
@@ -1323,5 +1327,12 @@
   "holder": {
     "nameQuestion": "¿Mostrar mi nombre en el registro permanente de esta obra?",
     "nameNote": "Una vez publicado, un nombre no se puede quitar, aunque después elijas ser anónimo."
+  },
+  "phone": {
+    "change": "Cambiar número de teléfono",
+    "changeNote": "Necesitarás tu código privado, tu biometría y un código enviado al número nuevo.",
+    "rateLimited": "Podrás cambiar tu número de nuevo el {date}.",
+    "noFactor": "¿Sin código privado ni biometría? Abre una solicitud de ayuda y te verificaremos.",
+    "changed": "Tu número fue cambiado."
   }
 }

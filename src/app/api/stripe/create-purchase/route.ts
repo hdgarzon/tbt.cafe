@@ -104,6 +104,8 @@ export async function POST(request: NextRequest) {
       amount: commerce.initial_price,
       workId,
       biometricProof,
+      // 10.4: la otra parte, para la regla de pareja nueva.
+      counterpartyId: work.current_owner_id,
     })
     if (!ladder.ok) {
       return NextResponse.json({ error: ladder.error }, { status: ladder.status })

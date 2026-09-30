@@ -24,6 +24,8 @@ export type NotificationCategory = 'tbt' | 'security' | 'transactional' | 'suppo
  */
 const ALWAYS_ON = new Set([
   'payout_destination',
+  // Work Order 02, 10: un numero cambiado, un factor nuevo o quitado, un codigo restablecido.
+  'security_change',
   'payout_failed',
   'suspicious',
   'ticket_system',
@@ -59,6 +61,7 @@ const CATEGORY_OF: Record<string, NotificationCategory> = {
   offer_expired: 'transactional',
   offer_cancelled: 'transactional',
   offer_holder_ready: 'transactional',
+  security_change: 'security',
 }
 
 /**

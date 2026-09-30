@@ -118,6 +118,33 @@ const APPLY: Record<string, (a: Approval) => { url: string; body: Record<string,
       approvalId: a.id,
     },
   }),
+  'private_code.reset': (a) => ({
+    url: '/api/admin/private-code-reset',
+    body: {
+      userId: (a.payload as { userId?: string })?.userId,
+      ticketRef: (a.payload as { ticketRef?: string })?.ticketRef,
+      reason: a.reason,
+      approvalId: a.id,
+    },
+  }),
+  'velocity.release': (a) => ({
+    url: '/api/admin/velocity-holds',
+    body: {
+      action: 'velocity.release',
+      holdId: (a.payload as { holdId?: string })?.holdId,
+      reason: a.reason,
+      approvalId: a.id,
+    },
+  }),
+  'velocity.decline': (a) => ({
+    url: '/api/admin/velocity-holds',
+    body: {
+      action: 'velocity.decline',
+      holdId: (a.payload as { holdId?: string })?.holdId,
+      reason: a.reason,
+      approvalId: a.id,
+    },
+  }),
   'work.amend': (a) => ({
     url: '/api/admin/works/amend',
     body: {

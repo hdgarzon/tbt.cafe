@@ -4,6 +4,8 @@ import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useLocale } from '@/i18n/LocaleProvider'
 import { Sheet, SheetButton, FieldLabel } from '@/components/Sheet'
+import { BiometricRing } from '@/components/BiometricRing'
+import { useBiometricProof } from '@/lib/use-biometric-proof'
 
 /**
  * Código privado — Master Handoff §10.
@@ -20,12 +22,18 @@ export function PrivateCodeSheet({
   onClose,
   onSaved,
   emailVerified = false,
+  hasCode = false,
 }: {
   open: boolean
   onClose: () => void
   onSaved: () => void
   /** Cambia la nota de pie: con email verificado se ofrece como recuperación real. */
   emailVerified?: boolean
+  /**
+   * Ya hay un codigo: cambiarlo exige el actual y el biometrico (Work Order 02,
+   * 10.1). La ruta lo exige igual; esto solo pide lo que la ruta va a pedir.
+   */
+  hasCode?: boolean
 }) {
   const { t } = useLocale()
   const [code, setCode] = useState('')
@@ -33,6 +41,9 @@ export function PrivateCodeSheet({
   const [freq, setFreq] = useState<'always' | 'occasional'>('always')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
+  const [current, setCurrent] = useState('')
+  const bio = useBiometricProof()
+  const { reset: resetBio } = bio
 
   useEffect(() => {
     if (!open) {
@@ -41,12 +52,14 @@ export function PrivateCodeSheet({
       setFreq('always')
       setError('')
       setBusy(false)
+      setCurrent('')
+      resetBio()
     }
-  }, [open])
+  }, [open, resetBio])
 
   const lengthOk = code.length >= MIN_LEN && code.length <= MAX_LEN
   const matches = code.length > 0 && code === confirm
-  const canSave = lengthOk && matches && !busy
+  const canSave = lengthOk && matches && !busy && (!hasCode || (current.length > 0 && !!bio.proof))
 
   async function save() {
     setError('')
@@ -63,7 +76,7 @@ export function PrivateCodeSheet({
           'Content-Type': 'application/json',
           Authorization: `Bearer ${session.access_token}`,
         },
-        body: JSON.stringify({ code, frequency: freq }),
+        body: JSON.stringify({ code, frequency: freq, ...(hasCode ? { currentCode: current, biometricProof: bio.proof } : {}) }),
       })
       const json = await res.json()
       if (!res.ok) throw new Error(json.error ?? t.privateCode.errors.saveFailed)
@@ -80,6 +93,26 @@ export function PrivateCodeSheet({
       <p className="text-[12.5px] leading-[1.6] tracking-[0.01em] text-ink-soft">
         {t.privateCode.description.replace('{min}', String(MIN_LEN)).replace('{max}', String(MAX_LEN))}
       </p>
+
+      {hasCode && (
+        <div className="mt-[18px]">
+          <FieldLabel htmlFor="pc-current">{t.payouts.enterCode}</FieldLabel>
+          <input
+            id="pc-current"
+            type="password"
+            autoComplete="current-password"
+            value={current}
+            onChange={(e) => setCurrent(e.target.value.slice(0, MAX_LEN))}
+            className="w-full border border-hairline rounded-xl outline-none px-3.5 py-[13px] text-[15px] tracking-[0.3em] text-ink focus:border-ink transition-colors"
+          />
+          <BiometricRing
+            confirmed={Boolean(bio.proof)}
+            busy={bio.busy}
+            onPress={bio.request}
+            hint={bio.proof ? t.payouts.identityConfirmed : t.payouts.touchToConfirm}
+          />
+        </div>
+      )}
 
       <div className="mt-[22px]">
         <FieldLabel htmlFor="pc">{t.privateCode.codeLabel}</FieldLabel>

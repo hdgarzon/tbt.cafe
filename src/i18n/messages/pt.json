@@ -997,7 +997,7 @@
       "offer_expiring": "A oferta por {title} expira em {time}.",
       "new_location": "Autenticação de um novo local.",
       "new_device": "Autenticação de um novo dispositivo.",
-      "suspicious": "Atividade suspeita detectada.",
+      "suspicious": "Pedimos uma verificação extra na sua última ação.",
       "views_created": "Uma obra sua está chamando atenção.",
       "views_collection": "Uma obra da sua coleção está chamando atenção.",
       "favorites": "Atividade em um dos seus favoritos.",
@@ -1018,7 +1018,11 @@
       "offer_withdrawn": "A oferta por {title} foi retirada.",
       "offer_expired": "A oferta por {title} expirou.",
       "offer_cancelled": "A oferta por {title} foi cancelada.",
-      "offer_holder_ready": "O dono de {title} já pode vender. Você pode fazer uma nova oferta."
+      "offer_holder_ready": "O dono de {title} já pode vender. Você pode fazer uma nova oferta.",
+      "security_change_phone": "Seu número na tbt.cafe foi alterado. Não foi você? Abra uma solicitação de ajuda agora.",
+      "security_change_factor": "Um fator de segurança da sua autenticação na tbt.cafe mudou. Não foi você? Abra uma solicitação de ajuda agora.",
+      "security_change_reset": "Seu código privado foi redefinido. Você criará um novo no próximo repasse ou transferência.",
+      "transfers_readdressed": "Uma transferência de {title} está esperando por você."
     }
   },
   "payouts": {
@@ -1323,5 +1327,12 @@
   "holder": {
     "nameQuestion": "Mostrar meu nome no registro permanente desta obra?",
     "nameNote": "Depois de publicado, um nome não pode ser removido, mesmo que você escolha ficar anônimo depois."
+  },
+  "phone": {
+    "change": "Alterar número de telefone",
+    "changeNote": "Você precisará do seu código privado, da biometria e de um código enviado ao novo número.",
+    "rateLimited": "Você poderá alterar seu número novamente em {date}.",
+    "noFactor": "Sem código privado nem biometria? Abra uma solicitação de ajuda e vamos verificar você.",
+    "changed": "Seu número foi alterado."
   }
 }

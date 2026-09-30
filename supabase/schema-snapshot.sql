@@ -135,7 +135,12 @@ create table if not exists public.profiles (
   collector_website text,
   covered_registrations_granted integer default 0 not null,
   payout_country text,
-  signature_strokes jsonb
+  signature_strokes jsonb,
+  -- 066 · Work Order 02 Stage 10.2
+  phone_changed_at timestamptz,
+  phone_change_pending text,
+  phone_change_pending_at timestamptz,
+  phone_change_pending_id uuid
 );
 
 create table if not exists public.works (
@@ -692,6 +697,22 @@ create table if not exists public.seller_accounts (
     (suspended_at is null and suspended_reason is null and suspended_by is null)
     or (suspended_at is not null and suspended_reason is not null and suspended_by is not null)
   )
+);
+
+-- 066 · Work Order 02 Stage 10.4
+create table if not exists public.velocity_holds (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references auth.users(id) on delete cascade,
+  action text not null check (action in ('purchase', 'offer_accept', 'transfer_initiate')),
+  amount numeric(12,2),
+  work_id uuid references public.works(id) on delete set null,
+  counterparty_id uuid references auth.users(id) on delete set null,
+  status text not null default 'held' check (status in ('held', 'released', 'declined', 'used')),
+  reason text,
+  ticket_ref text,
+  released_at timestamptz,
+  release_expires_at timestamptz,
+  created_at timestamptz not null default now()
 );
 
 create table if not exists public.payout_connect_accounts (
@@ -1312,7 +1333,9 @@ create policy "Users can create their own payments" on public.tbt_payments for i
 create policy "admin reads own membership" on public.admin_members for select using ((auth.uid() = user_id));
 create policy "audit readable by viewers" on public.admin_audit_log for select using (admin_has('audit.view'::text));
 create policy "pending readable by admins" on public.admin_pending_approvals for select using (admin_has('dashboard.view'::text));
-create policy "own credentials" on public.webauthn_credentials for all using ((auth.uid() = user_id)) with check ((auth.uid() = user_id));
+create policy "own credentials read" on public.webauthn_credentials for select using ((user_id = ( SELECT auth.uid() AS uid)));
+alter table public.velocity_holds enable row level security;
+create policy "own holds read" on public.velocity_holds for select using ((user_id = ( SELECT auth.uid() AS uid)));
 create policy "own challenges" on public.webauthn_challenges for all using ((auth.uid() = user_id)) with check ((auth.uid() = user_id));
 create policy "own money action auth readable" on public.money_action_auth for select using ((( SELECT auth.uid() AS uid) = user_id));
 

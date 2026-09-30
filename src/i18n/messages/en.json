@@ -997,7 +997,7 @@
       "offer_expiring": "The offer on {title} expires in {time}.",
       "new_location": "Authentication from a new location.",
       "new_device": "Authentication from a new device.",
-      "suspicious": "Suspicious activity detected.",
+      "suspicious": "We asked for an extra check on your last action.",
       "views_created": "A work you created is getting attention.",
       "views_collection": "A work in your collection is getting attention.",
       "favorites": "Activity on one of your favourites.",
@@ -1018,7 +1018,11 @@
       "offer_withdrawn": "The offer on {title} was withdrawn.",
       "offer_expired": "The offer on {title} expired.",
       "offer_cancelled": "The offer on {title} was cancelled.",
-      "offer_holder_ready": "The owner of {title} can now sell. You can make a new offer."
+      "offer_holder_ready": "The owner of {title} can now sell. You can make a new offer.",
+      "security_change_phone": "Your tbt.cafe number was changed. Not you? Open a help request now.",
+      "security_change_factor": "A security factor on your tbt.cafe authentication changed. Not you? Open a help request now.",
+      "security_change_reset": "Your private code was reset. You'll set a new one at your next payout or transfer.",
+      "transfers_readdressed": "A transfer of {title} is waiting for you."
     }
   },
   "payouts": {
@@ -1323,5 +1327,12 @@
   "holder": {
     "nameQuestion": "Show my name on the permanent record for this work?",
     "nameNote": "Once published, a name cannot be removed, even if you later choose to be anonymous."
+  },
+  "phone": {
+    "change": "Change phone number",
+    "changeNote": "You'll need your private code, biometric and a code sent to the new number.",
+    "rateLimited": "You can change your number again on {date}.",
+    "noFactor": "No private code or biometric set? Open a help request and we'll verify you.",
+    "changed": "Your number was changed."
   }
 }
