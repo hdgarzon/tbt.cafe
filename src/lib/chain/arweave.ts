@@ -27,7 +27,7 @@ import { toMetaplexFile, type MetaplexFile } from '@metaplex-foundation/js'
 import { canonicalize, recordHash } from './serialize'
 import { assertNoIdentifiers } from './pseudonym'
 import { anchorRecord } from './ots'
-import { getMetaplex } from '@/lib/solana/nft'
+import { getMetaplex } from './irys'
 import { SOLANA_NETWORK } from '@/lib/solana/config'
 import { arweaveUrl } from './gateways'
 

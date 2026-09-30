@@ -10,7 +10,7 @@ const ok = (label: string, cond: boolean, detail = '') => {
 }
 
 const src = readFileSync(join(__dirname, '..', 'src/app/api/complete-tbt/route.ts'), 'utf8')
-const nft = readFileSync(join(__dirname, '..', 'src/lib/solana/nft.ts'), 'utf8')
+const nft = readFileSync(join(__dirname, '..', 'src/lib/solana/token.ts'), 'utf8')
 
 const at = (needle: string) => src.indexOf(needle)
 
@@ -58,9 +58,8 @@ const at = (needle: string) => src.indexOf(needle)
 {
   ok('el nombre en cadena es el TBT ID', nft.includes('name: work.tbtId'),
      'el título puede pasar el tope de 32 bytes con un acento')
-  ok('la regalía en cadena es cero', nft.includes('sellerFeeBasisPoints: 0'),
+  ok('el token no lleva regalía (Chains 01, 4.4: la lleva el registro)', !/Royalties|sellerFeeBasisPoints/.test(nft),
      'un número público que contradice work_commerce')
-  ok('ya no se fija en 500', !nft.includes('sellerFeeBasisPoints: 500'))
   ok('el mint exige la URI del registro', /mintTitleToken\([\s\S]{0,300}registrationRecordUri: string/.test(nft))
 }
 
@@ -93,8 +92,8 @@ const xfer = readFileSync(join(__dirname, '..', 'src/app/api/complete-transfer/r
 
 // ---- y la firma que SÍ existe es una firma
 {
-  const nftSrc = readFileSync(join(__dirname, '..', 'src/lib/solana/nft.ts'), 'utf8')
-  ok('el mint devuelve la firma de la transacción', nftSrc.includes('signature: response.signature'))
+  ok('el mint devuelve la firma de la transacción', nft.includes('signature: signatureOf(result)'))
+  ok('y la procedencia la recibe', src.includes('solanaSignature: mintSignature'))
   ok('la certificación ya no manda la dirección del mint',
      !src.includes('solanaSignature: mintAddress'),
      'una direccion de cuenta en un campo que significa firma')
