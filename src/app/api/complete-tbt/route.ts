@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse, after } from 'next/server'
 import { createAdminClient } from '@/lib/supabase-admin'
 import { indexCertifiedImage } from '@/lib/image-index'
+import { issueTitle } from '@/lib/titles/issue'
 import { isProduction, assertServerEnv } from '@/lib/app-env'
 import { wasDelivered } from '@/lib/notification-outcome'
 import { stripe } from '@/lib/stripe'
@@ -275,19 +276,39 @@ export async function POST(request: NextRequest) {
       .eq('id', workId)
       .single()
 
-    // Emitir el titulo. Incrementar version y enlazar supersedes es el Step 14.
-    const { error: titleError } = await supabase
-      .from('titles')
-      .insert({
-        work_id: workId,
-        owner_id: user.id,
-        qr_code_data: `${process.env.NEXT_PUBLIC_APP_URL}/work/${updatedWork?.tbt_id || workId}`,
-        version: 1,
-      })
-
-    if (titleError) {
-      console.warn('Title insert error:', titleError)
+    /*
+     * La firma del creador se congela en la obra al certificar (Title Spec 02
+     * §5 c): nunca cambia para esta obra aunque el creador redibuje la suya.
+     * Solo si la obra todavía no tiene una — un segundo paso por aquí no la pisa.
+     */
+    const { data: signer } = await createAdminClient()
+      .from('profiles')
+      .select('signature_strokes')
+      .eq('id', user.id)
+      .single()
+    if (signer?.signature_strokes) {
+      await createAdminClient()
+        .from('works')
+        .update({ signature_strokes: signer.signature_strokes })
+        .eq('id', workId)
+        .is('signature_strokes', null)
     }
+
+    /*
+     * Emitir el título (Work Order 01 Stage 5). Lo emite el servidor: la 055
+     * cerró la inserción desde el cliente. El render tarda unos segundos en Fly,
+     * así que va en `after()` — el creador no lo espera y el despliegue sí. Una
+     * clave por hecho hace que un reintento de esta ruta no emita dos títulos.
+     */
+    after(() =>
+      issueTitle(createAdminClient(), {
+        workId,
+        holderId: user.id,
+        event: 'REGISTERED',
+        eventDate: new Date(),
+        sourceKey: `registration:${workId}`,
+      }).then((outcome) => console.log('[title] registro:', outcome))
+    )
 
     console.log('TBT certified with ID:', updatedWork?.tbt_id)
 

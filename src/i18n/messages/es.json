@@ -112,11 +112,11 @@
     "needSignIn": "Autentícate para gestionar tu autenticación.",
     "mobilePhone": "Móvil",
     "change": "Cambiar",
-    "recoveryEmail": "Email de recuperación",
+    "recoveryEmail": "e-Mail",
     "add": "Agregar",
     "notConfigured": "No configurado",
     "unverified": "sin verificar",
-    "recoveryHint": "Para recuperar la cuenta si pierdes el teléfono.",
+    "recoveryHint": "Una segunda copia de cada enlace a tus títulos, y otra forma de contactarte.",
     "privateCode": "Código privado",
     "setUp": "Configurar",
     "active": "Activo",
@@ -150,23 +150,32 @@
     "errors": {
       "saveFailed": "No pudimos guardar el código"
     },
-    "pcResetNote": "¿Lo olvidas luego? Restablécelo con tu correo de recuperación.",
-    "pcResetNoteNoEmail": "Consejo: añade un correo de recuperación para poder restablecerlo si lo olvidas.",
+    "pcResetNote": "¿Lo olvidas luego? Abre una solicitud de ayuda.",
+    "pcResetNoteNoEmail": "¿Lo olvidas luego? Abre una solicitud de ayuda.",
     "freqLabel": "Cuándo pedirlo"
   },
   "recoveryEmail": {
-    "title": "Email de recuperación",
-    "description": "Sirve para recuperar la cuenta si pierdes el teléfono, y como confirmación adicional.",
+    "title": "e-Mail",
+    "description": "Recibe una copia de cada enlace a tus títulos y nos da otra forma de contactarte. Opcional.",
     "emailLabel": "Email",
     "invalidEmail": "Correo inválido.",
     "send": "Enviar confirmación",
     "sending": "Enviando…",
     "checkEmail": "Revisa tu correo.",
-    "checkEmailDesc": "Enviamos un enlace de confirmación a {email}. Al abrirlo, el email queda verificado y podrás usarlo para recuperar tu cuenta si pierdes el teléfono.",
+    "checkEmailDesc": "Enviamos un código a {email}. Escríbelo para verificar la dirección.",
     "done": "Listo",
     "errors": {
-      "sendFailed": "No pudimos enviar la confirmación"
-    }
+      "sendFailed": "No pudimos enviar la confirmación",
+      "invalidCode": "Ese código no es correcto. Revísalo y vuelve a intentarlo.",
+      "expired": "Ese código ya caducó. Pide uno nuevo.",
+      "tooManyAttempts": "Demasiados intentos. Pide un código nuevo.",
+      "tooMany": "Pediste demasiados códigos. Vuelve a intentarlo en una hora."
+    },
+    "codeLabel": "Código",
+    "verify": "Verificar",
+    "verifying": "Verificando…",
+    "resend": "Enviar un código nuevo",
+    "verified": "e-Mail verificado"
   },
   "biometric": {
     "title": "Autenticación biométrica",
@@ -1098,6 +1107,34 @@
     "askPlaceholder": "Haz una pregunta sobre este artículo",
     "postFailed": "No se pudo publicar.",
     "someone": "Alguien"
+  },
+  "titleLink": {
+    "kicker": "Tu título",
+    "loading": "Cargando tu título…",
+    "needAuth": "Autentícate para abrir tu título.",
+    "notFound": "No hay un título con este número bajo tu autenticación.",
+    "error": "No pudimos abrir tu título en este momento. Vuelve a intentarlo.",
+    "number": "Título No. {number}",
+    "superseded": "Ya se emitió un título posterior para esta obra, el No. {number}. Este sigue siendo un registro fiel del titular que nombra.",
+    "expired": "Este enlace ya cerró: los enlaces de título duran 30 días. El registro de tu obra no cambia. Para recibir el título de nuevo, abre una solicitud de ayuda.",
+    "rendering": "Estamos preparando tu título. Vuelve en un minuto.",
+    "alt": "Título animado No. {number}",
+    "downloadGif": "Descargar el título (GIF)",
+    "downloadPng": "Descargar la imagen fija (PNG)",
+    "availableUntil": "Este enlace está abierto hasta el {date}.",
+    "workPage": "Ver la página de la obra"
+  },
+  "signature": {
+    "label": "Firma",
+    "title": "Tu firma",
+    "instruction": "Firma con el dedo, o con el mouse o el trackpad. Aparece en los títulos de las obras que registres de ahora en adelante.",
+    "none": "Todavía no tienes firma. Tus títulos muestran solo tu nombre.",
+    "draw": "Agregar tu firma",
+    "redraw": "Volver a dibujarla",
+    "clear": "Borrar",
+    "done": "Listo",
+    "hint": "Opcional. Las obras ya registradas conservan la firma con la que se emitieron.",
+    "saveFailed": "No pudimos guardar tu firma. Vuelve a intentarlo."
   },
   "claim": {
     "file": "Presentar un reclamo",
