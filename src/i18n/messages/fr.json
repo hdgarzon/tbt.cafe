@@ -393,7 +393,8 @@
     "eventSale": "Vendue",
     "eventGift": "Offerte",
     "saleLocked": "La vente nécessite une approbation.",
-    "saleLockedCta": "Aller à Vendre"
+    "saleLockedCta": "Aller à Vendre",
+    "frozen": "Une offre a été acceptée. Cette œuvre est en attente jusqu'au {date}."
   },
   "info": {
     "value": "Valeur",
@@ -1266,5 +1267,11 @@
     "provenancePlaceholder": "Comment elle vous est parvenue, qui l’avait avant, tout ce qui étaie votre version.",
     "bondedIssued": "Titre bonded émis",
     "saveFailed": "Nous n’avons pas pu enregistrer ce que vous nous avez dit du créateur. Réessayez."
+  },
+  "royalty": {
+    "warnHigh": "Au-delà de {pct} %, cette redevance est permanente et rendra la revente difficile.",
+    "floor": "Prix minimum avec cette redevance : {amount} USD",
+    "priceLifted": "Prix relevé à {amount} USD pour couvrir la redevance.",
+    "locked": "Fixée au premier changement de propriétaire. Elle ne peut plus changer."
   }
 }

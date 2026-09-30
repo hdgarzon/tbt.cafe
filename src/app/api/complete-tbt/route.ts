@@ -7,6 +7,7 @@ import { wasDelivered } from '@/lib/notification-outcome'
 import { stripe } from '@/lib/stripe'
 import { resolveCoveredRegistration } from '@/lib/covered-registrations'
 import { getRules } from '@/lib/rules'
+import { minPriceFor } from '@/lib/fees'
 import { fileSystemTicket } from '@/lib/system-tickets'
 import { notify } from '@/lib/notify'
 import { recordProviderEvent } from '@/lib/provider-events'
@@ -236,15 +237,27 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Create work_commerce record
-    const { error: commerceError } = await supabase
+    // La fila de comercio de la obra. Con el service role: el navegador ya no
+    // escribe work_commerce (060). El techo y el piso de configuracion se
+    // aplican aqui igual que en /api/work/commerce (Work Order 02, 3.4, 3.5).
+    const commerceRules = await getRules()
+    const registeredType = commProData.royaltyType === 'none' ? null : commProData.royaltyType
+    const registeredValue = registeredType
+      ? Math.min(parseFloat(commProData.royaltyValue || '0') || 0, registeredType === 'percentage' ? commerceRules.royalty.pctCeiling : Infinity)
+      : 0
+    const askedPrice = commProData.marketPrice ? parseFloat(commProData.marketPrice) || 0 : 0
+    // Un precio de 0 es «sin precio»: no se sube; uno puesto por debajo del piso, si.
+    const registeredPrice = registeredType === 'fixed' && askedPrice > 0
+      ? Math.max(askedPrice, minPriceFor({ type: 'fixed', value: registeredValue }, commerceRules))
+      : askedPrice
+    const { error: commerceError } = await createAdminClient()
       .from('work_commerce')
       .upsert({
         work_id: workId,
-        initial_price: commProData.marketPrice ? parseFloat(commProData.marketPrice) : 0,
+        initial_price: registeredPrice,
         currency: commProData.currency || 'USD',
-        royalty_type: commProData.royaltyType === 'none' ? null : commProData.royaltyType,
-        royalty_value: commProData.royaltyType !== 'none' ? parseFloat(commProData.royaltyValue || '0') : 0,
+        royalty_type: registeredType,
+        royalty_value: registeredValue,
         is_for_sale: true,
       }, { onConflict: 'work_id' })
 

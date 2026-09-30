@@ -233,7 +233,11 @@ create table if not exists public.work_commerce (
   updated_at timestamp with time zone default now(),
   availability text default 'not_for_sale'::text not null,
   taking_offers boolean default false not null,
-  royalty_locked boolean default false not null
+  royalty_locked boolean default false not null,
+  -- 060 · Work Order 02 Stage 3
+  royalty_locked_at timestamptz,
+  royalty_locked_by uuid references public.ownership_history(id) on delete restrict,
+  frozen_offer_id uuid references public.offers(id) on delete set null
 );
 
 create table if not exists public.titles (
@@ -912,7 +916,7 @@ alter table public.work_commerce add constraint work_commerce_pkey PRIMARY KEY (
 alter table public.work_commerce add constraint work_commerce_work_id_key UNIQUE (work_id);
 alter table public.work_commerce add constraint work_commerce_work_id_fkey FOREIGN KEY (work_id) REFERENCES works(id) ON DELETE CASCADE;
 alter table public.work_commerce add constraint work_commerce_availability_check CHECK ((availability = ANY (ARRAY['for_sale'::text, 'reserved'::text, 'not_for_sale'::text])));
-alter table public.work_commerce add constraint valid_royalty_percentage CHECK (((royalty_type <> 'percentage'::royalty_type) OR ((royalty_value >= (0)::numeric) AND (royalty_value <= (50)::numeric))));
+alter table public.work_commerce add constraint valid_royalty_percentage CHECK (((royalty_type <> 'percentage'::royalty_type) OR ((royalty_value >= (0)::numeric) AND (royalty_value <= (90)::numeric))));
 alter table public.work_commerce add constraint valid_royalty_fixed CHECK (((royalty_type <> 'fixed'::royalty_type) OR (royalty_value >= (0)::numeric)));
 
 alter table public.titles add constraint titles_pkey PRIMARY KEY (id);
@@ -1250,7 +1254,6 @@ create policy "Creadores pueden crear obras" on public.works for insert with che
 create policy "Creadores y propietarios pueden editar obras" on public.works for update using (((auth.uid() = creator_id) OR (auth.uid() = current_owner_id)));
 
 create policy "Commerce visible para obras accesibles" on public.work_commerce for select using ((EXISTS ( SELECT 1 FROM works w WHERE ((w.id = work_commerce.work_id) AND ((w.status = 'certified'::work_status) OR (w.creator_id = auth.uid()) OR (w.current_owner_id = auth.uid()))))));
-create policy "Creadores pueden gestionar commerce" on public.work_commerce for all using ((EXISTS ( SELECT 1 FROM works w WHERE ((w.id = work_commerce.work_id) AND (w.creator_id = auth.uid())))));
 
 create policy "Titulos son publicos" on public.titles for select using (true);
 

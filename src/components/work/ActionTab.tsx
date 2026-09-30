@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useLocale } from '@/i18n/LocaleProvider'
 import { TransferPanel } from '@/components/work/TransferPanel'
-import { money } from '@/lib/fees'
+import { money, minPriceFor } from '@/lib/fees'
 import {
   saveAvailability,
   saveTakingOffers,
@@ -49,8 +49,9 @@ export function ActionTab({
 }) {
   const { t } = useLocale()
   const c = work.commerce!
-  const hasSold = role === 'collector' // cambió de manos → regalía bloqueada
-  const royaltyLocked = c.royalty_locked || hasSold
+  // El bloqueo lo escribe la base al primer cambio de dueno (060); aqui se lee,
+  // no se deduce de las ventas (Work Order 02, 3.3).
+  const royaltyLocked = c.royalty_locked
 
   const [transferring, setTransferring] = useState(false)
   const [pending, setPending] = useState<Transfer | null>(null)
@@ -250,10 +251,14 @@ export function ActionTab({
               onChange={(e) => setRoyalty(e.target.value)}
               onBlur={async () => {
                 const n = parseFloat(royalty)
-                if (!isFinite(n) || n < 0 || n > 50) return
-                const { error } = await saveRoyalty(work.id, n, royaltyLocked)
-                if (error) return flash(t.action.errors.royaltyLocked)
-                flash(t.action.priceRoyalty)
+                // Techo de configuracion (3.4); la ruta lo vuelve a comprobar.
+                if (!rules || !isFinite(n) || n < 0 || n > rules.royalty.pctCeiling) return
+                const { error, priceLifted } = await saveRoyalty(work.id, n, royaltyLocked)
+                if (error) return flash(error === 'royalty_locked' ? t.action.errors.royaltyLocked : error)
+                if (priceLifted) {
+                  setPrice(money(priceLifted))
+                  flash(t.royalty.priceLifted.replace('{amount}', money(priceLifted)))
+                } else flash(t.action.priceRoyalty)
                 onChanged()
               }}
               inputMode="decimal"
@@ -269,11 +274,21 @@ export function ActionTab({
           {royaltyIsFixed
             ? t.action.royaltyIsFixed.replace('{amount}', money(c.royalty_value))
             : royaltyLocked
-            ? hasSold
-              ? t.action.royaltyLockedAtFirstSale
-              : t.action.royaltyLockedBy.replace('{name}', work.creator?.public_alias || work.creator?.display_name || '')
+            ? t.royalty.locked
             : t.action.royaltyLocksAtFirstSale}
         </p>
+        {/* Por encima de la marca de configuracion, el aviso del companion (3.4). */}
+        {!royaltyLocked && rules && !royaltyIsFixed && parseFloat(royalty) > rules.royalty.pctWarning && (
+          <p className="text-[10.5px] text-t-red mt-1 leading-[1.6]">
+            {t.royalty.warnHigh.replace('{pct}', money(rules.royalty.pctWarning))}
+          </p>
+        )}
+        {/* El piso de una regalia fija, donde se fija el precio (3.5). */}
+        {rules && royaltyIsFixed && (
+          <p className="text-[10.5px] text-placeholder mt-1 leading-[1.6]">
+            {t.royalty.floor.replace('{amount}', money(minPriceFor({ type: 'fixed', value: Number(c.royalty_value ?? 0) }, rules)))}
+          </p>
+        )}
       </div>
 
       <button

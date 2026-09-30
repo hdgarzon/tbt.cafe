@@ -51,6 +51,7 @@
     "check:rules": "npx --yes tsx scripts/rules-check.ts",
     "check:prose": "npx --yes tsx scripts/prose-check.ts",
     "check:seller": "npx --yes tsx scripts/seller-check.ts",
+    "check:lock": "npx --yes tsx scripts/lock-check.ts",
     "check:imagevectors": "npx --yes tsx scripts/image-vectors-check.ts",
     "reindex:images": "npx --yes tsx scripts/reindex-images.ts",
     "check:tbtid": "npx --yes tsx scripts/tbt-id-check.ts",

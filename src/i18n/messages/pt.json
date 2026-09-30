@@ -393,7 +393,8 @@
     "eventSale": "Vendida",
     "eventGift": "Doada",
     "saleLocked": "Vender requer aprovação.",
-    "saleLockedCta": "Ir para Vender"
+    "saleLockedCta": "Ir para Vender",
+    "frozen": "Uma oferta foi aceita. Esta obra está em espera até {date}."
   },
   "info": {
     "value": "Valor",
@@ -1266,5 +1267,11 @@
     "provenancePlaceholder": "Como chegou até você, quem a teve antes, tudo o que sustente a sua versão.",
     "bondedIssued": "Título bonded emitido",
     "saveFailed": "Não conseguimos salvar o que você contou sobre o criador. Tente novamente."
+  },
+  "royalty": {
+    "warnHigh": "Acima de {pct}%, este royalty é permanente e dificultará a revenda.",
+    "floor": "Preço mínimo com este royalty: {amount} USD",
+    "priceLifted": "Preço elevado para {amount} USD para cobrir o royalty.",
+    "locked": "Fixado na primeira troca de dono. Nunca pode mudar."
   }
 }

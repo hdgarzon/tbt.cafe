@@ -393,7 +393,8 @@
     "eventSale": "Sold",
     "eventGift": "Given",
     "saleLocked": "Selling needs approval.",
-    "saleLockedCta": "Go to Selling"
+    "saleLockedCta": "Go to Selling",
+    "frozen": "An offer was accepted. This work is on hold until {date}."
   },
   "info": {
     "value": "Value",
@@ -1266,5 +1267,11 @@
     "provenancePlaceholder": "How it came to you, who had it before, anything that supports the claim.",
     "bondedIssued": "Bonded title issued",
     "saveFailed": "We couldn't save what you told us about the creator. Please try again."
+  },
+  "royalty": {
+    "warnHigh": "Above {pct}%, this royalty is permanent and will make resale difficult.",
+    "floor": "Minimum price with this royalty: {amount} USD",
+    "priceLifted": "Price raised to {amount} USD to cover the royalty.",
+    "locked": "Locked at the first change of ownership. It can never change."
   }
 }

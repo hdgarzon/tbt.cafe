@@ -189,19 +189,37 @@ export async function fetchOwnershipHistory(workId: string): Promise<OwnershipEv
  * real — ver TBT_DataModel_Companion_02, "ROYALTY LOCK IS ENFORCED HERE".
  */
 
-async function updateCommerce(workId: string, patch: Partial<WorkCommerce>): Promise<{ error?: string }> {
-  const { error } = await supabase.from('work_commerce').update(patch).eq('work_id', workId)
-  return error ? { error: error.message } : {}
+/**
+ * Toda escritura de work_commerce pasa por /api/work/commerce (Work Order 02,
+ * 3.1): el navegador ya no puede escribir la fila (060). La ruta comprueba que
+ * quien llama tenga la obra, el estado de vendedor, la pausa, la congelacion,
+ * el bloqueo, el techo y el piso. Devuelve el precio si tuvo que subirlo.
+ */
+async function updateCommerce(
+  workId: string,
+  patch: { availability?: Availability; price?: number; takingOffers?: boolean; royalty?: { type: 'percentage' | 'fixed'; value: number } }
+): Promise<{ error?: string; priceLifted?: number | null }> {
+  const {
+    data: { session },
+  } = await supabase.auth.getSession()
+  if (!session) return { error: 'needSignIn' }
+  const res = await fetch('/api/work/commerce', {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${session.access_token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ workId, ...patch }),
+  })
+  const json = await res.json().catch(() => ({}))
+  return res.ok ? { priceLifted: json.priceLifted ?? null } : { error: json.error ?? 'commerce_failed' }
 }
 
 export const saveAvailability = (workId: string, availability: Availability) =>
   updateCommerce(workId, { availability })
 
 export const saveTakingOffers = (workId: string, takingOffers: boolean) =>
-  updateCommerce(workId, { taking_offers: takingOffers })
+  updateCommerce(workId, { takingOffers })
 
 export const savePrice = (workId: string, price: number | null) =>
-  updateCommerce(workId, { initial_price: price })
+  updateCommerce(workId, { price: price ?? 0 })
 
 /**
  * Guarda la regalía en los términos canónicos — `royalty_type` + `royalty_value`.
@@ -219,9 +237,9 @@ export async function saveRoyalty(
   workId: string,
   royaltyPct: number,
   currentlyLocked: boolean
-): Promise<{ error?: string }> {
-  if (currentlyLocked) return { error: 'royaltyLocked' }
-  return updateCommerce(workId, { royalty_type: 'percentage', royalty_value: royaltyPct })
+): Promise<{ error?: string; priceLifted?: number | null }> {
+  if (currentlyLocked) return { error: 'royalty_locked' }
+  return updateCommerce(workId, { royalty: { type: 'percentage', value: royaltyPct } })
 }
 
 export async function saveFeatured(workId: string, featured: boolean): Promise<{ error?: string }> {
