@@ -54,7 +54,10 @@
     "reindex:images": "npx --yes tsx scripts/reindex-images.ts",
     "check:tbtid": "npx --yes tsx scripts/tbt-id-check.ts",
     "check:profileprivacy": "npx --yes tsx scripts/profile-privacy-check.ts",
-    "check:legalinterim": "npx --yes tsx scripts/legal-interim-check.ts"
+    "check:titleissue": "npx --yes tsx scripts/title-issue-check.ts",
+    "check:legalinterim": "npx --yes tsx scripts/legal-interim-check.ts",
+    "check:email": "npx --yes tsx scripts/email-verification-check.ts",
+    "check:collector": "npx --yes tsx scripts/collector-check.ts"
   },
   "dependencies": {
     "@metaplex-foundation/js": "^0.20.1",

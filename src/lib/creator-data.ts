@@ -77,6 +77,8 @@ export async function fetchCreatorWorks(creatorId: string): Promise<PublicWork[]
       'id, tbt_id, title, media_url, series_id, is_featured, created_at, commerce:work_commerce(availability, taking_offers, initial_price)'
     )
     .eq('creator_id', creatorId)
+    // Las que registró como coleccionista no son suyas como creador (Step 20).
+    .eq('registered_as', 'creator')
     .eq('is_published', true)
     .eq('status', 'certified')
     .order('created_at', { ascending: false })
