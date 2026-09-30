@@ -48,8 +48,18 @@ Source: `src/lib/solana/holding.ts`; guard: `npm run check:holding`.
 No email, phone, coordinates, internal UUID, price, royalty, or transfer code —
 the same rule `assertNoIdentifiers` applies to every record.
 
-## Open until built
+## Devnet values (29 September 2026)
 
-- Title-signing key ID: generated in Stage 9.1 (key from Stage 7.1).
-- Collection address: created once per network in Stage 4.2.
-- Storage key address: Stage 5.2.
+Public values only. The secrets live in Vercel Production and in the offline
+backups; see `documentation/chain-keys-procedure.md`.
+
+| Identifier | Devnet value |
+| --- | --- |
+| Collection address (Stage 4.2) | `EWCYT4EH9Zvxfna7L7CTx2219cJRWB2RP83My9nxodAt` |
+| Authority address (update authority and permanent transfer delegate) | `8RQ3BZXPMeCY9yUTHREK3wh5CtvCn589QaJETJEFjCFp` |
+| Storage key address (Stage 5.2) | `8qKcyR4Lju8XvZSBdLJVH8yiS2g1xPUauGoxQ8D6bA6b` — not signing uploads until Turbo (5.1) |
+| Title-signing public key (Stage 9.1) | `9A8nQt7pdfo6brRFLnnbDrhZQzuBLE4AZQjMWnT6aZuX` |
+| Title-signing key ID | `ts-7a928033ee35eeb2` = `ts-` + first 16 hex of SHA-256 of the public key bytes |
+
+Mainnet gets its own four keys and its own collection on the day of the switch
+(Stage 11); none of these carry over.
