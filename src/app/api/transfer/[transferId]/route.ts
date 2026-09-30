@@ -19,7 +19,7 @@ export async function GET(request: NextRequest, props: { params: Promise<{ trans
   const { data: transfer } = await service
     .from('transfers')
     .select(
-      'id, payment_status, outcome, authorized_at, payment_amount, payment_currency, from_owner_name, work:works(title, media_url)'
+      'id, payment_status, outcome, authorized_at, payment_amount, payment_currency, from_owner_name, value_kind, work:works(title, media_url)'
     )
     .eq('id', params.transferId)
     .eq('is_two_phase', true)
@@ -41,6 +41,8 @@ export async function GET(request: NextRequest, props: { params: Promise<{ trans
     workMediaUrl: work?.media_url ?? null,
     senderName: transfer.from_owner_name,
     value: transfer.payment_amount,
+    // 5.3: la pagina muestra siempre la linea del valor, declarado o regalo.
+    valueKind: transfer.value_kind ?? (Number(transfer.payment_amount) > 0 ? 'declared' : 'gift'),
     currency: transfer.payment_currency ?? 'USD',
   })
 }

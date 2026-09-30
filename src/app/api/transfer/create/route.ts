@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase-admin'
 import { enforceLadder } from '@/lib/auth-ladder-server'
+import { lastRecordedValue, valueKindOf } from '@/lib/transfer-value'
 import { stripe } from '@/lib/stripe'
 import { transferQuote, type Royalty, type RoyaltyType } from '@/lib/fees'
 import { authenticate } from '@/lib/route-auth'
@@ -144,18 +145,16 @@ export async function POST(request: NextRequest) {
      * puede romper la retención de la autorización, que es dinero real
      * retenido a alguien. El biométrico no tiene esa ambigüedad y sí se exige.
      *
-     * NOTA para producto: aquí el monto lo DECLARA el emisor, no sale de la
-     * base como en la compra. Declarar cero baja del umbral y evita el
-     * biométrico — un secuestro de cuenta podría sacar una obra valiosa
-     * declarándola regalo. El spec gatea por monto y eso es lo implementado;
-     * cerrar ese hueco es una decisión de producto, emparentada con los
-     * límites de velocidad del §5.5, que el §9 deja sin decidir.
+     * El monto lo DECLARA el emisor. Declarar cero bajaba del umbral y evitaba
+     * el biometrico: un secuestro de cuenta podia sacar una obra valiosa
+     * declarandola regalo. Work Order 02 5.7 lo cierra: la escalera mira el
+     * mayor entre lo declarado y el ultimo valor registrado de la obra.
      */
     const ladder = await enforceLadder({
       admin: service,
       userId: user.id,
       action: 'transfer_initiate',
-      amount: recordedValue,
+      amount: Math.max(recordedValue, await lastRecordedValue(service, workId)),
       workId,
       biometricProof,
     })
@@ -171,6 +170,8 @@ export async function POST(request: NextRequest) {
         from_owner_name: fromOwnerName,
         to_owner_id: null,
         transfer_type: recordedValue > 0 ? 'sale' : 'gift',
+        // 5.3: declarado por quien envia, o regalo sin valor.
+        value_kind: valueKindOf(recordedValue),
         new_owner_name: recipientName.trim(),
         new_owner_phone: recipientPhone,
         payment_status: 'pending',

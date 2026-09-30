@@ -465,7 +465,7 @@
     "payAndSend": "Pagar e enviar transferência",
     "payAmountAndSend": "Pagar {amount} e enviar transferência",
     "securedByStripe": "Protegido pela Stripe",
-    "authoriseNote": "Seu cartão será autorizado mas não cobrado até que o destinatário aceite. Se não aceitar em {hours} horas, ou você cancelar, a retenção é liberada e nada é cobrado.",
+    "authoriseNote": "Seu cartão será autorizado, sem cobrança, até o destinatário aceitar. Se não aceitar em {hours} horas, a retenção é liberada.",
     "fillAll": "Preencha todos os campos",
     "authorizing": "Autorizando seu cartão…",
     "sentTitle": "Transferência enviada",
@@ -481,7 +481,8 @@
       "invalidPhone": "Verifique o número de telefone.",
       "invalidValue": "Verifique o valor."
     },
-    "creatorRoyaltyFixed": "Direitos autorais do criador"
+    "creatorRoyaltyFixed": "Direitos autorais do criador",
+    "elsewhere": "Vendida fora da tbt.cafe? Informe o preço combinado. Ele fica no histórico da obra como valor declarado e o royalty é calculado sobre ele."
   },
   "transferAccept": {
     "loading": "Carregando…",
@@ -498,7 +499,7 @@
     "rejectedTitle": "Recusada",
     "rejectedBody": "O cartão do remetente nunca foi cobrado.",
     "lapsedTitle": "Esta transferência expirou",
-    "lapsedBody": "Não foi aceita dentro de {hours} horas. Peça ao remetente para enviar novamente.",
+    "lapsedBody": "Não foi aceita em {hours} horas. Peça ao remetente para enviar novamente.",
     "alreadyResolvedTitle": "Já resolvida",
     "alreadyResolvedBody": "Esta transferência não está mais aguardando resposta.",
     "needSignInTitle": "Autentique-se para continuar",
@@ -508,7 +509,11 @@
       "lapsed": "Esta transferência expirou.",
       "captureFailed": "Não conseguimos concluir o pagamento. Nada foi cobrado — peça ao remetente para reenviar.",
       "respondFailed": "Algo deu errado. Tente novamente."
-    }
+    },
+    "declared": "Valor declarado · {amount} USD · declarado por {sender}",
+    "gift": "Presente · sem valor declarado",
+    "confirmNote": "Ao aceitar, você confirma este valor no histórico da obra.",
+    "wrongNumber": "Esta transferência foi enviada para outro número."
   },
   "purchase": {
     "successWorking": "Concluindo sua compra…",
@@ -1309,5 +1314,9 @@
     "report": "Denunciar",
     "reportConfirm": "Denunciar esta mensagem à tbt.cafe?",
     "reported": "Denunciado. Nossa equipe vai analisar."
+  },
+  "holder": {
+    "nameQuestion": "Mostrar meu nome no registro permanente desta obra?",
+    "nameNote": "Depois de publicado, um nome não pode ser removido, mesmo que você escolha ficar anônimo depois."
   }
 }

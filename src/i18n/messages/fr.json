@@ -465,7 +465,7 @@
     "payAndSend": "Payer et envoyer le transfert",
     "payAmountAndSend": "Payer {amount} et envoyer le transfert",
     "securedByStripe": "Sécurisé par Stripe",
-    "authoriseNote": "Votre carte sera autorisée mais non débitée tant que le destinataire n'aura pas accepté. S'il n'accepte pas sous {hours} heures, ou si vous annulez, l'autorisation est libérée et rien n'est prélevé.",
+    "authoriseNote": "Votre carte sera autorisée, sans débit, jusqu'à l'acceptation du destinataire. Sans acceptation sous {hours} heures, l'autorisation est libérée.",
     "fillAll": "Remplissez tous les champs",
     "authorizing": "Autorisation de votre carte…",
     "sentTitle": "Transfert envoyé",
@@ -481,7 +481,8 @@
       "invalidPhone": "Vérifiez le numéro de téléphone.",
       "invalidValue": "Vérifiez la valeur."
     },
-    "creatorRoyaltyFixed": "Redevance du créateur"
+    "creatorRoyaltyFixed": "Redevance du créateur",
+    "elsewhere": "Vendue hors de tbt.cafe ? Saisissez le prix convenu. Il est inscrit dans l'historique de l'œuvre comme valeur déclarée et la redevance est calculée dessus."
   },
   "transferAccept": {
     "loading": "Chargement…",
@@ -508,7 +509,11 @@
       "lapsed": "Ce transfert a expiré.",
       "captureFailed": "Nous n'avons pas pu finaliser le paiement. Rien n'a été débité — demandez à l'expéditeur de renvoyer.",
       "respondFailed": "Une erreur s'est produite. Réessayez."
-    }
+    },
+    "declared": "Valeur déclarée · {amount} USD · déclarée par {sender}",
+    "gift": "Don · aucune valeur déclarée",
+    "confirmNote": "En acceptant, vous confirmez cette valeur dans l'historique de l'œuvre.",
+    "wrongNumber": "Ce transfert a été envoyé à un autre numéro."
   },
   "purchase": {
     "successWorking": "Finalisation de votre achat…",
@@ -1309,5 +1314,9 @@
     "report": "Signaler",
     "reportConfirm": "Signaler ce message à tbt.cafe ?",
     "reported": "Signalé. Notre équipe va l'examiner."
+  },
+  "holder": {
+    "nameQuestion": "Afficher mon nom dans le registre permanent de cette œuvre ?",
+    "nameNote": "Une fois publié, un nom ne peut plus être retiré, même si vous choisissez plus tard l'anonymat."
   }
 }

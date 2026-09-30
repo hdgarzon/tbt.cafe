@@ -339,7 +339,11 @@ create table if not exists public.transfers (
   is_two_phase boolean default false not null,
   stripe_payment_intent_id text,
   authorized_at timestamp with time zone,
-  outcome text
+  outcome text,
+  -- 063 · Work Order 02 Stage 5
+  value_kind text check (value_kind in ('declared', 'gift', 'sale', 'restoring')),
+  declared_value_confirmed_at timestamptz,
+  holder_named boolean
 );
 
 create table if not exists public.tbt_payments (

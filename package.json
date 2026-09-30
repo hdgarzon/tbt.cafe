@@ -54,6 +54,7 @@
     "check:lock": "npx --yes tsx scripts/lock-check.ts",
     "check:offers": "npx --yes tsx scripts/offers-check.ts",
     "check:holdercode": "npx --yes tsx scripts/holder-code-check.ts",
+    "check:transfer": "npx --yes tsx scripts/transfer-check.ts",
     "check:imagevectors": "npx --yes tsx scripts/image-vectors-check.ts",
     "reindex:images": "npx --yes tsx scripts/reindex-images.ts",
     "check:tbtid": "npx --yes tsx scripts/tbt-id-check.ts",

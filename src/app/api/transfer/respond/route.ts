@@ -5,6 +5,7 @@ import { authenticate } from '@/lib/route-auth'
 import { notify } from '@/lib/notify'
 import { getRules } from '@/lib/rules'
 import { transferWindowMs } from '@/lib/rules-shape'
+import { samePhone } from '@/lib/transfer-value'
 
 
 /**
@@ -46,7 +47,7 @@ export async function POST(request: NextRequest) {
     if (!auth.ok) return NextResponse.json(auth.body, { status: auth.status })
     const { user } = auth
 
-    const { transferId, action } = await request.json()
+    const { transferId, action, showName } = await request.json()
     if (!transferId || (action !== 'accept' && action !== 'reject')) {
       return NextResponse.json({ error: 'invalidRequest' }, { status: 400 })
     }
@@ -54,7 +55,7 @@ export async function POST(request: NextRequest) {
     const service = createAdminClient()
     const { data: transfer, error } = await service
       .from('transfers')
-      .select('id, work_id, from_owner_id, is_two_phase, payment_status, outcome, stripe_payment_intent_id, authorized_at, work:works(current_owner_id, title, tbt_id)')
+      .select('id, work_id, from_owner_id, is_two_phase, payment_status, outcome, stripe_payment_intent_id, authorized_at, new_owner_phone, value_kind, work:works(current_owner_id, title, tbt_id)')
       .eq('id', transferId)
       .single()
     if (error || !transfer) return NextResponse.json({ error: 'transferNotFound' }, { status: 404 })
@@ -64,6 +65,11 @@ export async function POST(request: NextRequest) {
     }
     if (!transfer.stripe_payment_intent_id || !transfer.authorized_at) {
       return NextResponse.json({ error: 'notYetAuthorized' }, { status: 409 })
+    }
+
+    // 5.2: solo responde el numero al que se envio. Nada revela cual era.
+    if (!samePhone(user.phone ? `+${user.phone.replace(/^\+/, '')}` : null, transfer.new_owner_phone)) {
+      return NextResponse.json({ error: 'wrongNumber' }, { status: 403 })
     }
 
     // Ownership-drift guard, same spirit as /api/complete-transfer: the
@@ -118,6 +124,9 @@ export async function POST(request: NextRequest) {
       .from('transfers')
       .update({
         to_owner_id: user.id,
+        // 5.3: tocar Aceptar confirma el valor declarado; 5.5: su eleccion de nombre.
+        declared_value_confirmed_at: new Date().toISOString(),
+        holder_named: showName === true,
         payment_status: 'completed',
         payment_reference: transfer.stripe_payment_intent_id,
         outcome: 'accepted',

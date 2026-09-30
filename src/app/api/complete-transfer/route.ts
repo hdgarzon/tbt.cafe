@@ -199,6 +199,12 @@ export async function POST(request: NextRequest) {
       console.error('Error reopening the work for transfer:', reopenError)
     }
 
+    // 5.3: una transferencia de dos fases se completa solo con su clase de
+    // valor y la confirmacion de quien la recibio.
+    if (transfer.is_two_phase && (!transfer.value_kind || !transfer.declared_value_confirmed_at)) {
+      return NextResponse.json({ error: 'valueNotConfirmed' }, { status: 409 })
+    }
+
     // Get the current sequence number for this work
     const { count: historyCount } = await supabase
       .from('ownership_history')

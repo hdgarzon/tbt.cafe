@@ -134,6 +134,8 @@ export function TransferPanel({
         <span className="text-[11px] tracking-[0.1em] text-placeholder">USD</span>
       </div>
       <p className="text-[10.5px] text-placeholder mt-1.5 leading-[1.6]">{t.transfer.valueNote}</p>
+      {/* 5.4: una venta hecha fuera se completa aqui como transferencia. */}
+      <p className="text-[10.5px] text-placeholder mt-1 leading-[1.6]">{t.transfer.elsewhere}</p>
 
       <div className="mt-4 flex flex-col divide-y divide-hairline text-[12.5px]">
         <div className="flex items-center justify-between py-2">

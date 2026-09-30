@@ -6,6 +6,7 @@ import { useShell } from '@/components/AppShell'
 import { money } from '@/lib/fees'
 import { fetchTransferForAccept, respondTransfer, type TransferForAccept } from '@/lib/transfer-data'
 import { useRules } from '@/lib/rules-public'
+import { supabase } from '@/lib/supabase'
 
 /**
  * /transfer/accept/[transferId] — el lado del RECIPIENTE (Transfer & Commerce
@@ -30,6 +31,20 @@ export default function TransferAcceptPage(props: { params: Promise<{ transferId
   const [busy, setBusy] = useState<'accept' | 'reject' | null>(null)
   const [outcome, setOutcome] = useState<'accepted' | 'rejected' | 'lapsed' | 'error' | null>(null)
   const [errMsg, setErrMsg] = useState('')
+  // 5.5 / M19: preseleccionado desde su interruptor de coleccionista anonimo.
+  const [showName, setShowName] = useState(true)
+  useEffect(() => {
+    if (!connected) return
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (!user) return
+      supabase
+        .from('profiles')
+        .select('collector_anonymous')
+        .eq('id', user.id)
+        .maybeSingle()
+        .then(({ data }) => setShowName(!data?.collector_anonymous))
+    })
+  }, [connected])
 
   useEffect(() => {
     fetchTransferForAccept(params.transferId).then((t) => {
@@ -41,9 +56,14 @@ export default function TransferAcceptPage(props: { params: Promise<{ transferId
   async function respond(action: 'accept' | 'reject') {
     if (!connected) return openAuth()
     setBusy(action)
-    const { error } = await respondTransfer(params.transferId, action)
+    const { error } = await respondTransfer(params.transferId, action, showName)
     setBusy(null)
     if (error === 'lapsed') return setOutcome('lapsed')
+    // 5.2: sin revelar a que numero se envio.
+    if (error === 'wrongNumber') {
+      setErrMsg(t.transferAccept.wrongNumber)
+      return setOutcome('error')
+    }
     if (error) {
       setErrMsg(t.transferAccept.errors?.[error as keyof typeof t.transferAccept.errors] ?? t.transferAccept.errors.respondFailed)
       return setOutcome('error')
@@ -119,14 +139,15 @@ export default function TransferAcceptPage(props: { params: Promise<{ transferId
           {t.transferAccept.title.replace('{sender}', transfer.senderName ?? '')}
         </h1>
         <div className="text-[14px] text-ink-soft mt-1">{transfer.workTitle}</div>
-        {transfer.value != null && (
-          <div className="flex items-center justify-center gap-1.5 mt-3 text-[13px]">
-            <span className="text-ink-soft">{t.transferAccept.value}</span>
-            <span className="font-medium text-ink">
-              {money(transfer.value)} {transfer.currency}
-            </span>
-          </div>
-        )}
+        {/* 5.3: la linea del valor siempre; aceptar la confirma. */}
+        <p className="mt-3 text-[13px] text-ink">
+          {transfer.valueKind === 'gift' || !transfer.value
+            ? t.transferAccept.gift
+            : t.transferAccept.declared
+                .replace('{amount}', money(transfer.value))
+                .replace('{sender}', transfer.senderName ?? '')}
+        </p>
+        <p className="mt-1 text-[11.5px] text-ink-soft px-4">{t.transferAccept.confirmNote}</p>
       </div>
 
       {!connected ? (
@@ -142,6 +163,12 @@ export default function TransferAcceptPage(props: { params: Promise<{ transferId
         </div>
       ) : (
         <div className="mt-8">
+          {/* 5.5 / M19: el nombre en el registro permanente, con su nota. */}
+          <label className="flex items-start gap-2.5 mb-2 text-[13px] text-ink">
+            <input type="checkbox" checked={showName} onChange={(e) => setShowName(e.target.checked)} className="mt-1" />
+            <span>{t.holder.nameQuestion}</span>
+          </label>
+          <p className="text-[11px] leading-[1.5] text-ink-soft mb-5 pl-6">{t.holder.nameNote}</p>
           {errMsg && <p className="text-[12px] text-t-red text-center mb-3">{errMsg}</p>}
           <button
             type="button"

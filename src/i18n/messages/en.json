@@ -465,7 +465,7 @@
     "payAndSend": "Pay & send transfer",
     "payAmountAndSend": "Pay {amount} & send transfer",
     "securedByStripe": "Secured by Stripe",
-    "authoriseNote": "Your card will be authorised but not charged until the recipient accepts. If they don't accept within {hours} hours, or you cancel, the hold is released and nothing is taken.",
+    "authoriseNote": "Your card will be authorised, not charged, until the recipient accepts. If they don't accept within {hours} hours, the hold is released.",
     "fillAll": "Fill in every field",
     "authorizing": "Authorising your card…",
     "sentTitle": "Transfer sent",
@@ -481,7 +481,8 @@
       "invalidPhone": "Check the phone number.",
       "invalidValue": "Check the value."
     },
-    "creatorRoyaltyFixed": "Creator royalty"
+    "creatorRoyaltyFixed": "Creator royalty",
+    "elsewhere": "Sold outside tbt.cafe? Enter the price you agreed. It's recorded in this work's history as a declared value, and any royalty is calculated on it."
   },
   "transferAccept": {
     "loading": "Loading…",
@@ -498,7 +499,7 @@
     "rejectedTitle": "Declined",
     "rejectedBody": "The sender's card was never charged.",
     "lapsedTitle": "This transfer has expired",
-    "lapsedBody": "It was not accepted within {hours} hours. Ask the sender to send it again.",
+    "lapsedBody": "It wasn't accepted within {hours} hours. Ask the sender to send it again.",
     "alreadyResolvedTitle": "Already handled",
     "alreadyResolvedBody": "This transfer isn't waiting on a response anymore.",
     "needSignInTitle": "Authenticate to continue",
@@ -508,7 +509,11 @@
       "lapsed": "This transfer has expired.",
       "captureFailed": "We couldn't complete the payment. Nothing was charged — try asking the sender to resend.",
       "respondFailed": "Something went wrong. Please try again."
-    }
+    },
+    "declared": "Declared value · {amount} USD · declared by {sender}",
+    "gift": "Gift · no value declared",
+    "confirmNote": "Accepting confirms this value in the work's history.",
+    "wrongNumber": "This transfer was sent to a different number."
   },
   "purchase": {
     "successWorking": "Completing your purchase…",
@@ -1309,5 +1314,9 @@
     "report": "Report",
     "reportConfirm": "Report this message to tbt.cafe?",
     "reported": "Reported. Our team will look at it."
+  },
+  "holder": {
+    "nameQuestion": "Show my name on the permanent record for this work?",
+    "nameNote": "Once published, a name cannot be removed, even if you later choose to be anonymous."
   }
 }
