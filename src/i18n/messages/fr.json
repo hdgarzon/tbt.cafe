@@ -112,11 +112,11 @@
     "needSignIn": "Authentifiez-vous pour gérer votre authentification.",
     "mobilePhone": "Téléphone mobile",
     "change": "Modifier",
-    "recoveryEmail": "Email de récupération",
+    "recoveryEmail": "e-Mail",
     "add": "Ajouter",
     "notConfigured": "Non configuré",
     "unverified": "non vérifié",
-    "recoveryHint": "Pour récupérer le compte si vous perdez votre téléphone.",
+    "recoveryHint": "Une seconde copie de chaque lien vers vos titres, et un autre moyen de vous joindre.",
     "privateCode": "Code privé",
     "setUp": "Configurer",
     "active": "Actif",
@@ -150,23 +150,32 @@
     "errors": {
       "saveFailed": "Nous n'avons pas pu enregistrer le code"
     },
-    "pcResetNote": "Oublié plus tard ? Réinitialisez-le avec votre e-mail de récupération.",
-    "pcResetNoteNoEmail": "Astuce : ajoutez un e-mail de récupération pour pouvoir le réinitialiser en cas d’oubli.",
+    "pcResetNote": "Oublié plus tard ? Ouvrez une demande d’aide.",
+    "pcResetNoteNoEmail": "Oublié plus tard ? Ouvrez une demande d’aide.",
     "freqLabel": "Quand le demander"
   },
   "recoveryEmail": {
-    "title": "Email de récupération",
-    "description": "Sert à récupérer le compte si vous perdez votre téléphone, et comme confirmation supplémentaire.",
+    "title": "e-Mail",
+    "description": "Reçoit une copie de chaque lien vers vos titres et nous donne un autre moyen de vous joindre. Facultatif.",
     "emailLabel": "Email",
     "invalidEmail": "Email invalide.",
     "send": "Envoyer la confirmation",
     "sending": "Envoi…",
     "checkEmail": "Vérifiez votre email.",
-    "checkEmailDesc": "Nous avons envoyé un lien de confirmation à {email}. Une fois ouvert, l'email est vérifié et vous pourrez l'utiliser pour récupérer votre compte si vous perdez votre téléphone.",
+    "checkEmailDesc": "Nous avons envoyé un code à {email}. Saisissez-le pour vérifier l’adresse.",
     "done": "Terminé",
     "errors": {
-      "sendFailed": "Nous n'avons pas pu envoyer la confirmation"
-    }
+      "sendFailed": "Nous n'avons pas pu envoyer la confirmation",
+      "invalidCode": "Ce code n’est pas correct. Vérifiez-le et réessayez.",
+      "expired": "Ce code a expiré. Demandez-en un nouveau.",
+      "tooManyAttempts": "Trop de tentatives. Demandez un nouveau code.",
+      "tooMany": "Trop de codes demandés. Réessayez dans une heure."
+    },
+    "codeLabel": "Code",
+    "verify": "Vérifier",
+    "verifying": "Vérification…",
+    "resend": "Envoyer un nouveau code",
+    "verified": "E-mail vérifié"
   },
   "biometric": {
     "title": "Authentification biométrique",

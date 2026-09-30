@@ -548,7 +548,7 @@ export const ROAST_ARTICLES: RoastArticle[] = [
       },
       {
         "kind": "p",
-        "html": "A <b>recovery email</b> lets you reset your private code if you forget it, and gives us a second way to reach you. It is optional in general, but required if you sell or collect — because without it, a forgotten code would lock you out of your own money."
+        "html": "An <b>e-Mail</b> address gives us a second way to reach you, and a second copy of every title link. It is optional — never required to own, sell or collect. If you ever forget your private code, open a help request."
       },
       {
         "kind": "p",
