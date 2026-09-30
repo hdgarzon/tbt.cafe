@@ -297,7 +297,7 @@ export async function POST(request: NextRequest) {
     let solscanUrl = ''
     
     try {
-      const { mintTitleToken } = await import('@/lib/solana/nft')
+      const { mintTitleToken } = await import('@/lib/solana/token')
       const { getExplorerUrl } = await import('@/lib/solana/config')
       
       const { data: workWithCreator } = await supabase
@@ -450,7 +450,8 @@ export async function POST(request: NextRequest) {
         if (!recordUri) throw new Error('No registration record published; the title token waits for the recovery sweep.')
 
         const mintResult = await mintTitleToken(workNftData, recordUri)
-        mintAddress = mintResult.mintAddress
+        // Core: la direccion del activo, cuyo dueno es la tenencia de <TBT ID>-1.
+        mintAddress = mintResult.assetAddress
         mintSignature = mintResult.signature
         solscanUrl = getExplorerUrl(mintAddress)
         
@@ -458,7 +459,7 @@ export async function POST(request: NextRequest) {
           .from('works')
           .update({
             mint_address: mintAddress,
-            token_uri: mintResult.tokenUri,
+            token_uri: recordUri,
             blockchain: 'solana',
             nft_status: 'minted'
           })

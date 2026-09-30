@@ -230,8 +230,10 @@ export async function POST(request: NextRequest) {
     let repointed = false
     if (work.mint_address) {
       try {
-        const { repointNft } = await import('@/lib/solana/nft')
-        await repointNft(work.mint_address, published.uri)
+        // Core (Chains 01, 4.6). Un activo de prueba acunado con la libreria
+        // vieja no es un activo Core: falla aqui, queda anotado y sin repuntar.
+        const { repointTitleToken } = await import('@/lib/solana/token')
+        await repointTitleToken(work.mint_address, published.uri)
         await service
           .from('work_amendments')
           .update({ repointed_at: new Date().toISOString() })
