@@ -684,6 +684,9 @@ create table if not exists public.seller_accounts (
   approved_by uuid references auth.users(id) on delete restrict,
   declined_reason text,
   remembered_listings uuid[] not null default '{}',
+  -- 064 · Work Order 02 Stage 6.3
+  clean_sales integer not null default 0,
+  first_clean_sale_at timestamptz,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
   constraint seller_suspension_whole check (
