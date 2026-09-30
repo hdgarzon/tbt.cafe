@@ -4,6 +4,7 @@ import { createAdminClient } from '@/lib/supabase-admin'
 import { getRules } from '@/lib/rules'
 import { coverageFor, ENTITY_TYPES, type EntityType, type ProviderCountry, type SellerRow } from '@/lib/seller'
 import { countryFromPhone } from '@/lib/phone-country'
+import { lapseOffersOfHolder } from '@/lib/offers-server'
 
 /**
  * Settings → Selling — Work Order 02, Stage 2.
@@ -128,7 +129,8 @@ export async function POST(request: NextRequest) {
       await admin.from('work_commerce').update({ availability: 'not_for_sale' }).in('work_id', ids)
     }
     // Las ventas en curso se completan; las ofertas abiertas vencen con aviso a
-    // ambos lados cuando existan (Stage 4). Las regalias siguen acumulandose.
+    // ambos lados (4.9). Las regalias siguen acumulandose.
+    await lapseOffersOfHolder(userId, 'seller_paused')
     return NextResponse.json(await loadState(userId))
   }
 

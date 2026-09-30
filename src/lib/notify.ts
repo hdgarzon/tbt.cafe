@@ -54,6 +54,11 @@ const CATEGORY_OF: Record<string, NotificationCategory> = {
   payout_destination: 'security',
   // Work Order 02, 2.6: aprobado, rechazado, suspendido, reintegrado.
   selling_status: 'transactional',
+  // Work Order 02, 4: el resto del ciclo de una oferta.
+  offer_withdrawn: 'transactional',
+  offer_expired: 'transactional',
+  offer_cancelled: 'transactional',
+  offer_holder_ready: 'transactional',
 }
 
 /**

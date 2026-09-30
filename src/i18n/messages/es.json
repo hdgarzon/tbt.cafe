@@ -982,10 +982,10 @@
       "transfers_accepted": "Aceptaron tu transferencia de «{title}».",
       "transfers_declined": "Rechazaron tu transferencia de «{title}». No se cobró nada.",
       "transfers_lapsed": "Tu transferencia de «{title}» no se aceptó a tiempo. No se cobró nada.",
-      "offer_received": "Recibiste una oferta.",
-      "offer_accepted": "Aceptaron tu oferta.",
-      "offer_declined": "Rechazaron tu oferta.",
-      "offer_expiring": "Una oferta está por vencer.",
+      "offer_received": "Nueva oferta por {title}: {amount} USD.",
+      "offer_accepted": "Aceptaron tu oferta por {title}. Paga dentro de {hours} horas.",
+      "offer_declined": "Rechazaron tu oferta por {title}.",
+      "offer_expiring": "La oferta por {title} vence en {time}.",
       "new_location": "Autenticación desde un lugar nuevo.",
       "new_device": "Autenticación desde un dispositivo nuevo.",
       "suspicious": "Se detectó actividad sospechosa.",
@@ -1002,7 +1002,14 @@
       "selling_status_approved": "Estás aprobado para vender. Configura cómo recibes el dinero.",
       "selling_status_declined": "Tu solicitud para vender no fue aprobada.",
       "selling_status_suspended": "tbt.cafe pausó tus ventas.",
-      "selling_status_reinstated": "Puedes vender de nuevo."
+      "selling_status_reinstated": "Puedes vender de nuevo.",
+      "offer_received_unapproved": "Nueva oferta por {title}: {amount} USD. Para aceptar, solicita vender.",
+      "offer_received_message": "Nueva oferta por {title}: {amount} USD. Incluye un mensaje.",
+      "offer_received_unapproved_message": "Nueva oferta por {title}: {amount} USD. Para aceptar, solicita vender. Incluye un mensaje.",
+      "offer_withdrawn": "Retiraron la oferta por {title}.",
+      "offer_expired": "La oferta por {title} venció.",
+      "offer_cancelled": "La oferta por {title} fue cancelada.",
+      "offer_holder_ready": "El dueño de {title} ya puede vender. Puedes hacer una nueva oferta."
     }
   },
   "payouts": {
@@ -1273,5 +1280,31 @@
     "floor": "Precio mínimo con esta regalía: {amount} USD",
     "priceLifted": "Precio elevado a {amount} USD para cubrir la regalía.",
     "locked": "Fijada en el primer cambio de dueño. No puede cambiar nunca."
+  },
+  "offer": {
+    "title": "Hacer una oferta",
+    "amount": "Oferta (USD)",
+    "duration": "Vigente por",
+    "hours": "{hours} horas",
+    "message": "Mensaje (opcional)",
+    "elsewhere": "¿Acordaron fuera? La obra se mueve igual por transferencia aquí, aplican regalías y tbt.cafe no protege pagos hechos fuera.",
+    "unapproved": "El dueño aún no puede vender. Si no lo aprueban antes de que venza tu oferta, vencerá; te avisaremos cuando lo aprueben.",
+    "notCovered": "Aún no hay ventas en el país del dueño.",
+    "belowFloor": "La oferta mínima para esta obra es {amount} USD.",
+    "send": "Enviar oferta",
+    "respond": "Responder a la oferta",
+    "accept": "Aceptar",
+    "decline": "Rechazar",
+    "reply": "Respuesta (opcional)",
+    "needApproval": "Para aceptar, necesitas aprobación para vender.",
+    "withdraw": "Retirar oferta",
+    "withdrawConfirm": "¿Retirar tu oferta por {title}?",
+    "acceptedBuyer": "Aceptada. Paga dentro de {hours} horas.",
+    "pay": "Pagar {amount} USD",
+    "expiresIn": "Vence en {time}",
+    "sellerCancel": "Cancelar por falta de pago",
+    "report": "Reportar",
+    "reportConfirm": "¿Reportar este mensaje a tbt.cafe?",
+    "reported": "Reportado. Nuestro equipo lo revisará."
   }
 }

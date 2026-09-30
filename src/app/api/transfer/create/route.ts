@@ -78,13 +78,15 @@ export async function POST(request: NextRequest) {
 
     const { data: work, error: workError } = await service
       .from('works')
-      .select('id, tbt_id, title, creator_id, current_owner_id, commerce:work_commerce(royalty_type, royalty_value, royalty_locked)')
+      .select('id, tbt_id, title, creator_id, current_owner_id, commerce:work_commerce(royalty_type, royalty_value, royalty_locked, frozen_offer_id)')
       .eq('id', workId)
       .single()
     if (workError || !work) return NextResponse.json({ error: 'workNotFound' }, { status: 404 })
     if (work.current_owner_id !== user.id) return NextResponse.json({ error: 'notOwner' }, { status: 403 })
 
     const commerce = Array.isArray(work.commerce) ? work.commerce[0] : work.commerce
+    // Una oferta aceptada congela la obra hasta que se pague o se cancele (4.3).
+    if (commerce?.frozen_offer_id) return NextResponse.json({ error: 'work_frozen' }, { status: 409 })
 
     /**
      * Los terminos canonicos de una regalia son `royalty_type` + `royalty_value`

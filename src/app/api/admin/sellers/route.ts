@@ -4,6 +4,7 @@ import { createAdminClient } from '@/lib/supabase-admin'
 import { loadAdmin, can, writeAudit, gateHighRisk, hasValidStepUp, STEP_UP_HEADER } from '@/lib/admin/guard'
 import { notify } from '@/lib/notify'
 import { pathFor, type SellerRow } from '@/lib/seller'
+import { lapseOffersOfHolder, tellBuyersHolderReady } from '@/lib/offers-server'
 
 /**
  * Aprobar, rechazar, suspender y reintegrar vendedores — Work Order 02, 2.6.
@@ -94,6 +95,7 @@ export async function POST(request: NextRequest) {
     const now = new Date().toISOString()
     let patch: Record<string, unknown> = {}
     let variant: 'approved' | 'declined' | 'suspended' | 'reinstated'
+    let suspendedHolder = false
 
     if (action === 'seller.approve') {
       // La via sale de provider_countries y de nada mas (2.3).
@@ -121,6 +123,7 @@ export async function POST(request: NextRequest) {
       }
       if (ids.length) await service.from('work_commerce').update({ availability: 'not_for_sale' }).in('work_id', ids)
       variant = 'suspended'
+      suspendedHolder = true
     } else {
       patch = { suspended_at: null, suspended_reason: null, suspended_by: null }
       variant = 'reinstated'
@@ -128,6 +131,12 @@ export async function POST(request: NextRequest) {
 
     const { error } = await service.from('seller_accounts').update({ ...patch, updated_at: now }).eq('user_id', body.userId)
     if (error) return NextResponse.json({ error: 'seller_update_failed' }, { status: 500 })
+
+    // 4.9: una suspension hace vencer las ofertas vivas, con aviso a los dos.
+    if (suspendedHolder) await lapseOffersOfHolder(body.userId, 'seller_suspended')
+    // 4.10: al aprobar, cada comprador cuya oferta vencio mientras no lo estaba
+    // se entera una vez.
+    if (variant === 'approved') await tellBuyersHolderReady(body.userId)
 
     await writeAudit(service, request, {
       actor: admin,

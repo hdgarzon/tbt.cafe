@@ -841,7 +841,30 @@ create table if not exists public.offers (
   currency text default 'USD'::text not null,
   status text default 'open'::text not null,
   solicited boolean default false not null,
-  created_at timestamp with time zone default now() not null
+  created_at timestamp with time zone default now() not null,
+  -- 061 · Work Order 02 Stage 4
+  duration_hours integer not null,
+  expires_at timestamptz not null,
+  message text,
+  response_message text,
+  responded_at timestamptz,
+  accepted_at timestamptz,
+  payment_due_at timestamptz,
+  auto_cancel_at timestamptz,
+  closed_at timestamptz,
+  close_reason text,
+  halfway_reminded_at timestamptz,
+  near_reminded_at timestamptz,
+  suspended boolean not null default false
+);
+
+create table if not exists public.offer_events (
+  id uuid primary key default gen_random_uuid(),
+  offer_id uuid not null references public.offers(id) on delete cascade,
+  event text not null,
+  actor_id uuid references auth.users(id) on delete set null,
+  detail jsonb not null default '{}'::jsonb,
+  created_at timestamptz not null default now()
 );
 
 create table if not exists public.roast_questions (
@@ -986,7 +1009,7 @@ alter table public.tickets add constraint tickets_ref_key UNIQUE (ref);
 alter table public.tickets add constraint tickets_subject_user_fkey FOREIGN KEY (subject_user) REFERENCES auth.users(id) ON DELETE CASCADE;
 alter table public.tickets add constraint tickets_assigned_to_fkey FOREIGN KEY (assigned_to) REFERENCES auth.users(id) ON DELETE SET NULL;
 alter table public.tickets add constraint tickets_origin_check CHECK ((origin = ANY (ARRAY['human'::text, 'system'::text, 'ai_escalation'::text])));
-alter table public.tickets add constraint tickets_category_check CHECK ((category = ANY (ARRAY['payments'::text, 'payouts'::text, 'transfers'::text, 'registration'::text, 'authentication'::text, 'other'::text])));
+alter table public.tickets add constraint tickets_category_check CHECK ((category = ANY (ARRAY['payments'::text, 'payouts'::text, 'transfers'::text, 'registration'::text, 'authentication'::text, 'other'::text, 'claim'::text, 'report'::text])));
 alter table public.tickets add constraint tickets_severity_check CHECK ((severity = ANY (ARRAY['financial'::text, 'secondary'::text])));
 alter table public.tickets add constraint tickets_status_check CHECK ((status = ANY (ARRAY['open'::text, 'answered'::text, 'resolved'::text, 'closed'::text])));
 alter table public.ticket_replies add constraint ticket_replies_pkey PRIMARY KEY (id);
@@ -1086,7 +1109,10 @@ alter table public.curations add constraint curations_meaning_check CHECK (((mea
 alter table public.offers add constraint offers_pkey PRIMARY KEY (id);
 alter table public.offers add constraint offers_work_id_fkey FOREIGN KEY (work_id) REFERENCES works(id) ON DELETE CASCADE;
 alter table public.offers add constraint offers_from_user_fkey FOREIGN KEY (from_user) REFERENCES auth.users(id) ON DELETE CASCADE;
-alter table public.offers add constraint offers_status_check CHECK ((status = ANY (ARRAY['open'::text, 'accepted'::text, 'declined'::text, 'withdrawn'::text, 'expired'::text])));
+alter table public.offers add constraint offers_status_check CHECK ((status = ANY (ARRAY['open'::text, 'accepted'::text, 'declined'::text, 'withdrawn'::text, 'expired'::text, 'cancelled'::text, 'completed'::text])));
+alter table public.offers add constraint offers_duration_check CHECK ((duration_hours = ANY (ARRAY[24, 48, 72])));
+alter table public.offers add constraint offers_amount_positive CHECK ((amount > (0)::numeric));
+alter table public.offers add constraint offers_message_length CHECK ((((message IS NULL) OR (char_length(message) <= 2000)) AND ((response_message IS NULL) OR (char_length(response_message) <= 2000))));
 alter table public.roast_questions add constraint roast_questions_pkey PRIMARY KEY (id);
 alter table public.roast_questions add constraint roast_questions_user_id_fkey FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE;
 alter table public.roast_questions add constraint roast_questions_body_check CHECK (((length(TRIM(BOTH FROM body)) >= 1) AND (length(TRIM(BOTH FROM body)) <= 2000)));
@@ -1309,7 +1335,8 @@ create policy "own favorites" on public.favorites for all using ((auth.uid() = u
 create policy "read public or own" on public.curations for select using ((is_public OR (auth.uid() = author_id)));
 create policy "write own curation" on public.curations for all using ((auth.uid() = author_id)) with check ((auth.uid() = author_id));
 create policy "offer parties read" on public.offers for select using (((auth.uid() = from_user) OR (auth.uid() = ( SELECT w.current_owner_id FROM works w WHERE (w.id = offers.work_id)))));
-create policy "offerer writes" on public.offers for insert with check ((auth.uid() = from_user));
+alter table public.offer_events enable row level security;
+create policy "offer parties read events" on public.offer_events for select using ((EXISTS ( SELECT 1 FROM (offers o JOIN works w ON ((w.id = o.work_id))) WHERE ((o.id = offer_events.offer_id) AND ((( SELECT auth.uid() AS uid) = o.from_user) OR (( SELECT auth.uid() AS uid) = w.current_owner_id))))));
 create policy "roast questions readable" on public.roast_questions for select using ((NOT hidden));
 alter table public.provider_countries enable row level security;
 alter table public.seller_accounts enable row level security;

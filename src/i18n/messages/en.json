@@ -982,10 +982,10 @@
       "transfers_accepted": "Your transfer of “{title}” was accepted.",
       "transfers_declined": "Your transfer of “{title}” was declined. Nothing was charged.",
       "transfers_lapsed": "Your transfer of “{title}” was not accepted in time. Nothing was charged.",
-      "offer_received": "You received an offer.",
-      "offer_accepted": "Your offer was accepted.",
-      "offer_declined": "Your offer was declined.",
-      "offer_expiring": "An offer is about to expire.",
+      "offer_received": "New offer on {title}: {amount} USD.",
+      "offer_accepted": "Your offer on {title} was accepted. Pay within {hours} hours.",
+      "offer_declined": "Your offer on {title} was declined.",
+      "offer_expiring": "The offer on {title} expires in {time}.",
       "new_location": "Authentication from a new location.",
       "new_device": "Authentication from a new device.",
       "suspicious": "Suspicious activity detected.",
@@ -1002,7 +1002,14 @@
       "selling_status_approved": "You're approved to sell. Set up how you get paid.",
       "selling_status_declined": "Your application to sell wasn't approved.",
       "selling_status_suspended": "Selling was paused by tbt.cafe.",
-      "selling_status_reinstated": "You can sell again."
+      "selling_status_reinstated": "You can sell again.",
+      "offer_received_unapproved": "New offer on {title}: {amount} USD. To accept, apply to sell.",
+      "offer_received_message": "New offer on {title}: {amount} USD. It includes a message.",
+      "offer_received_unapproved_message": "New offer on {title}: {amount} USD. To accept, apply to sell. It includes a message.",
+      "offer_withdrawn": "The offer on {title} was withdrawn.",
+      "offer_expired": "The offer on {title} expired.",
+      "offer_cancelled": "The offer on {title} was cancelled.",
+      "offer_holder_ready": "The owner of {title} can now sell. You can make a new offer."
     }
   },
   "payouts": {
@@ -1273,5 +1280,31 @@
     "floor": "Minimum price with this royalty: {amount} USD",
     "priceLifted": "Price raised to {amount} USD to cover the royalty.",
     "locked": "Locked at the first change of ownership. It can never change."
+  },
+  "offer": {
+    "title": "Make an offer",
+    "amount": "Offer (USD)",
+    "duration": "Open for",
+    "hours": "{hours} hours",
+    "message": "Message (optional)",
+    "elsewhere": "Agreed terms elsewhere? The work still moves by transfer here, royalties apply, and tbt.cafe doesn't protect payments made outside it.",
+    "unapproved": "The owner isn't set up to sell yet. If they aren't approved before your offer expires, it lapses — we'll let you know when they are.",
+    "notCovered": "Sales aren't available yet in the owner's country.",
+    "belowFloor": "The lowest offer this work can take is {amount} USD.",
+    "send": "Send offer",
+    "respond": "Respond to offer",
+    "accept": "Accept",
+    "decline": "Decline",
+    "reply": "Reply (optional)",
+    "needApproval": "To accept, you need approval to sell.",
+    "withdraw": "Withdraw offer",
+    "withdrawConfirm": "Withdraw your offer on {title}?",
+    "acceptedBuyer": "Accepted. Pay within {hours} hours.",
+    "pay": "Pay {amount} USD",
+    "expiresIn": "Expires in {time}",
+    "sellerCancel": "Cancel for non-payment",
+    "report": "Report",
+    "reportConfirm": "Report this message to tbt.cafe?",
+    "reported": "Reported. Our team will look at it."
   }
 }
