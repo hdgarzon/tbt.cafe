@@ -48,6 +48,13 @@ export type WorkFull = {
   creator_id: string
   series: { id: string; name: string; slug: string } | null
   creator: { id: string; public_alias: string | null; display_name: string | null } | null
+  /**
+   * Step 20: quién la registró. En una obra registrada por un coleccionista,
+   * `creator` es quien la registró, no quien la hizo; el creador es el
+   * declarado en `bonded` (su nombre, o sin atribuir).
+   */
+  registered_as: 'creator' | 'collector'
+  bonded: { name: string | null; unattributed: boolean; alias: string | null; city: string | null; status: string } | null
   commerce: WorkCommerce | null
   /** Pasaje de contexto generado al certificar (Spec 01) — user_edited_summary si existe, si no ai_summary. */
   context: string | null
@@ -69,8 +76,9 @@ export async function fetchWorkFull(tbtId: string): Promise<WorkFull | null> {
     .from('works')
     .select(
       `id, tbt_id, title, description, category, technique, media_url, status,
-       certified_at, mint_address, is_featured, current_owner_id, creator_id,
+       certified_at, mint_address, is_featured, current_owner_id, creator_id, registered_as,
        series:work_series(id, name, slug),
+       bonded:bonded_creators(name, unattributed, alias, city, status),
        creator:profiles!works_creator_id_fkey(id, public_alias, display_name),
        commerce:work_commerce(initial_price, currency, availability, taking_offers, royalty_type, royalty_value, royalty_locked),
        context:context_snapshots(ai_summary, user_edited_summary)`
@@ -87,6 +95,7 @@ export async function fetchWorkFull(tbtId: string): Promise<WorkFull | null> {
     ...data,
     series: one(data.series),
     creator: one(data.creator),
+    bonded: data.registered_as === 'collector' ? one(data.bonded) : null,
     commerce: one(data.commerce) ?? COMMERCE_DEFAULT,
     context: ctx?.user_edited_summary || ctx?.ai_summary || null,
   } as WorkFull

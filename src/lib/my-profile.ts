@@ -19,6 +19,8 @@ export type MyPrivateProfile = {
   recovery_email_verified: boolean
   has_private_code: boolean
   private_code_freq: string | null
+  /** La firma actual: trazos normalizados a 330 × 80 (Title Spec 02 §5). */
+  signature_strokes: number[][][] | null
 }
 
 export async function fetchMyPrivateProfile(client: SupabaseClient = browserClient): Promise<MyPrivateProfile | null> {
