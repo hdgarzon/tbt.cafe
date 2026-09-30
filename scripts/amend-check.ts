@@ -167,7 +167,7 @@ const meta = { supersedes: AR, reason: '  Título mal escrito.  ', decidedBy: { 
 
 const read = (p: string) => readFileSync(join(process.cwd(), p), 'utf8')
 const route = read('src/app/api/admin/works/amend/route.ts')
-const nft = read('src/lib/solana/nft.ts')
+const nft = read('src/lib/solana/token.ts')
 const mig = read('supabase/migrations/038_work_amendments.sql')
 const page = read('src/app/admin/page.tsx')
 
@@ -180,7 +180,7 @@ const page = read('src/app/admin/page.tsx')
   ok('publica antes de mover nada nuestro',
      route.indexOf('publishRecord(') < route.indexOf("from('works').update("))
   ok('guarda la URI nueva antes de repuntar la cadena',
-     route.indexOf('registration_record_uri: published.uri') < route.indexOf('repointNft('))
+     route.indexOf('registration_record_uri: published.uri') < route.indexOf('repointTitleToken('))
   ok('un repunte fallido no tumba la enmienda',
      route.includes("console.error('[chain] la enmienda se publicó pero el NFT no se repuntó:'"))
   ok('una obra sin registro no se puede enmendar', route.includes("'no_registration_record'"))
@@ -191,10 +191,11 @@ const page = read('src/app/admin/page.tsx')
 }
 
 {
-  const fn = nft.slice(nft.indexOf('export async function repointNft'))
-  ok('repuntar solo mueve la URI', fn.includes('update({ nftOrSft: nft, uri })'),
+  const fn = nft.slice(nft.indexOf('export async function repointTitleToken'))
+  const call = fn.slice(fn.indexOf('await update(umi, {'), fn.indexOf('}).sendAndConfirm'))
+  ok('repuntar solo mueve la URI', call.includes('uri,') && !call.includes('name:'),
      'reescribir el nombre arriesga un truncamiento a cambio de nada')
-  ok('y no toca un activo inmutable', fn.includes('!nft.isMutable'))
+  ok('lo firma la autoridad', call.includes('authority: auth'))
   ok('el updateNftMetadata muerto ya no está', !nft.includes('export async function updateNftMetadata'))
 }
 

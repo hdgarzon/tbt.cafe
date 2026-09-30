@@ -843,6 +843,7 @@
     "chainImageNoteNone": "O registro nomeia a obra e prova qual era o arquivo. Nada mais é publicado.",
     "chainImageNoteThumbnail": "Uma cópia reduzida acompanha o registro para que ele possa ser reconhecido. Seu arquivo fica com você.",
     "chainImageNoteFull": "A imagem é publicada em tamanho completo e não pode ser retirada. Antes são removidos a localização e os dados da câmera.",
+    "chainImageNoteCeiling": "Arquivos muito grandes são publicados como uma cópia de alta qualidade com menos de 8 MB.",
     "holdToSeal": "Segure para selar",
     "sealed": "Selado",
     "sealedHint": "Bloqueado e pronto para registrar",
@@ -881,7 +882,14 @@
       "needSignIn": "Autentique-se para continuar",
       "imageRequired": "Adicione uma imagem para continuar",
       "titleRequired": "Dê um título à obra",
-      "categoryRequired": "Escolha uma categoria"
+      "categoryRequired": "Escolha uma categoria",
+      "linkHasIdentifier": "O link {n} contém {what}, que não pode ir para o registro permanente. Altere ou remova-o.",
+      "linkIdentifierKinds": {
+        "email": "um e-mail",
+        "phone": "um número de telefone",
+        "coordinates": "coordenadas de mapa",
+        "uuid": "um identificador interno"
+      }
     },
     "coveredByTbt": "Coberto pela tbt.cafe",
     "coveredNote": "Esta é por nossa conta — restam {n} registros gratuitos.",

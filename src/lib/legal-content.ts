@@ -26,9 +26,9 @@ export type LegalDoc = {
   body: LegalBlock[]
 }
 
-export const LEGAL_ENTITY = "88 Greenwich Ave LLC, d/b/a Transb.it"
+export const LEGAL_ENTITY = "88 Greenwich Ave LLC"
 export const LEGAL_ADDRESS = "88 Greenwich Ave, Floor 3, Greenwich, CT 06830, United States"
-export const LEGAL_UPDATED = "7 August 2026"
+export const LEGAL_UPDATED = "29 September 2026"
 
 export const LEGAL_DOCS: LegalDoc[] = [
   {
@@ -46,7 +46,7 @@ export const LEGAL_DOCS: LegalDoc[] = [
       },
       {
         "kind": "p",
-        "html": "<b>Transb.it</b> (pronounced “Transbit”) is a hyper-financial transactional platform built to simplify and secure digital and SMS/MMS interactions — connecting high technology with human technology, so that advanced capability is usable by everyone. Transb.it is operated by 88 Greenwich Ave LLC, d/b/a Transb.it."
+        "html": "<b>Transb.it</b> (pronounced “Transbit”) is a hyper-financial transactional platform built to simplify and secure digital and SMS/MMS interactions — connecting high technology with human technology, so that advanced capability is usable by everyone. Transb.it is operated by 88 Greenwich Ave LLC."
       },
       {
         "kind": "p",
@@ -98,14 +98,14 @@ export const LEGAL_DOCS: LegalDoc[] = [
       },
       {
         "kind": "p",
-        "html": "88 Greenwich Ave LLC, d/b/a Transb.it<br>88 Greenwich Ave, Floor 3, Greenwich, CT 06830, United States"
+        "html": "88 Greenwich Ave LLC<br>88 Greenwich Ave, Floor 3, Greenwich, CT 06830, United States"
       }
     ]
   },
   {
     "slug": "terms",
     "title": "Terms of Service",
-    "draft": true,
+    "draft": false,
     "body": [
       {
         "kind": "h",
@@ -113,19 +113,15 @@ export const LEGAL_DOCS: LegalDoc[] = [
       },
       {
         "kind": "p",
-        "html": "tbt.cafe is operated by <b>88 Greenwich Ave LLC, d/b/a Transb.it</b>, 88 Greenwich Ave, Floor 3, Greenwich, CT 06830, United States. In these terms, \"we\", \"us\" and \"tbt.cafe\" mean that entity. \"You\" means the person or organisation using the platform."
+        "html": "tbt.cafe is operated by <b>88 Greenwich Ave LLC</b>, 88 Greenwich Ave, Floor 3, Greenwich, CT 06830, United States. In these terms, \"we\", \"us\" and \"tbt.cafe\" mean that entity. \"You\" means the person or organisation using the platform."
       },
       {
         "kind": "h",
-        "text": "2. What a TBT is"
+        "text": "2. What a TBT is and what you buy"
       },
       {
         "kind": "p",
-        "html": "A <b>TBT — Transferable Billable Token</b> — is a blockchain token, issued on Solana, that holds a work’s authorship record, its current ownership, its transfer history, and its commercial terms including any royalty."
-      },
-      {
-        "kind": "p",
-        "html": "A title of authorship is one of the things the token carries. It is <b>not</b> the whole of what a TBT is, and what you acquire when you buy a TBT is <b>the token and everything it holds</b>."
+        "html": "When you buy through tbt.cafe, you buy the work. Its TBT — Transferable Billable Token — is tbt.cafe’s registration and provenance record for that work: who created it, who holds it and every change of ownership, kept on Solana, Arweave and Bitcoin. The TBT names you as holder and moves with the work. A TBT is not a currency, a security or an investment, and tbt.cafe does not sell TBTs apart from the works they record."
       },
       {
         "kind": "p",
@@ -142,11 +138,19 @@ export const LEGAL_DOCS: LegalDoc[] = [
       },
       {
         "kind": "p",
-        "html": "Rights in the underlying work remain with whoever holds them and are a matter between the parties involved. Selling a TBT transfers the token, its authorship record, and the record of custody — nothing more."
+        "html": "Rights in the underlying work remain with whoever holds them and are a matter between the parties involved."
       },
       {
         "kind": "h",
-        "text": "3. Authentication, not accounts"
+        "text": "3. Scope of service"
+      },
+      {
+        "kind": "p",
+        "html": "tbt.cafe registers works, issues and records titles, records every change of ownership, and processes payments made through tbt.cafe. It does not ship, inspect, appraise or warrant any physical work. Delivery and condition of a physical work are between buyer and seller."
+      },
+      {
+        "kind": "h",
+        "text": "4. Authentication, not accounts"
       },
       {
         "kind": "p",
@@ -158,11 +162,11 @@ export const LEGAL_DOCS: LegalDoc[] = [
       },
       {
         "kind": "h",
-        "text": "4. Custody"
+        "text": "5. The records on the chains"
       },
       {
         "kind": "p",
-        "html": "We generate and hold the blockchain keys associated with your TBTs, so that you can use the platform without a crypto wallet or technical knowledge. You direct what happens to your TBTs; we execute those instructions."
+        "html": "tbt.cafe writes and maintains the records of your works on the chains, on your instructions, so you never need a crypto wallet or technical knowledge. tbt.cafe does not hold cryptocurrency for you."
       },
       {
         "kind": "p",
@@ -170,7 +174,7 @@ export const LEGAL_DOCS: LegalDoc[] = [
       },
       {
         "kind": "h",
-        "text": "5. Registration"
+        "text": "6. Registration"
       },
       {
         "kind": "p",
@@ -182,11 +186,11 @@ export const LEGAL_DOCS: LegalDoc[] = [
       },
       {
         "kind": "p",
-        "html": "You warrant that you hold the rights necessary to register any work you submit, and that doing so infringes nobody else’s rights. Submissions are scanned before registration, and we may block or reverse a registration we believe to be infringing or fraudulent."
+        "html": "You warrant that you hold the rights necessary to register any work you submit, and that doing so infringes nobody else’s rights. Submissions are scanned before registration."
       },
       {
         "kind": "h",
-        "text": "6. Sales, fees and royalties"
+        "text": "7. Sales, fees and royalties"
       },
       {
         "kind": "p",
@@ -198,7 +202,7 @@ export const LEGAL_DOCS: LegalDoc[] = [
       },
       {
         "kind": "p",
-        "html": "A royalty <b>locks permanently at the first sale</b> — both its amount and its type. Before that, the creator may change it freely."
+        "html": "A royalty locks at the first change of ownership by any method, including a gift at zero value. After that neither its type nor its amount can change."
       },
       {
         "kind": "p",
@@ -206,7 +210,15 @@ export const LEGAL_DOCS: LegalDoc[] = [
       },
       {
         "kind": "h",
-        "text": "7. Transfers"
+        "text": "8. Sales arranged elsewhere"
+      },
+      {
+        "kind": "p",
+        "html": "You may buy and sell works anywhere — in person, at auction, through a gallery or another marketplace. When a work sold elsewhere changes hands, the change is completed on tbt.cafe as a transfer. The sender declares the value, it is recorded publicly in the work's history, and any royalty is calculated on it. tbt.cafe is not a party to a sale arranged elsewhere and gives no protection for it: payment, fraud, chargebacks and delivery are the parties' own matter."
+      },
+      {
+        "kind": "h",
+        "text": "9. Transfers"
       },
       {
         "kind": "p",
@@ -218,7 +230,15 @@ export const LEGAL_DOCS: LegalDoc[] = [
       },
       {
         "kind": "h",
-        "text": "8. Payouts and settlement"
+        "text": "10. Refunds and disputes"
+      },
+      {
+        "kind": "p",
+        "html": "Refunds are never automatic; our team decides each one. Ownership is never reversed: when a sale is refunded or lost in a dispute, a new title returns the work to the seller. The tbt.cafe service fees are not refunded unless our team decides otherwise."
+      },
+      {
+        "kind": "h",
+        "text": "11. Payouts and settlement"
       },
       {
         "kind": "p",
@@ -234,7 +254,7 @@ export const LEGAL_DOCS: LegalDoc[] = [
       },
       {
         "kind": "h",
-        "text": "9. The blockchain record is permanent"
+        "text": "12. The blockchain record is permanent"
       },
       {
         "kind": "p",
@@ -246,7 +266,7 @@ export const LEGAL_DOCS: LegalDoc[] = [
       },
       {
         "kind": "h",
-        "text": "10. What we do not promise"
+        "text": "13. What we do not promise"
       },
       {
         "kind": "p",
@@ -254,7 +274,7 @@ export const LEGAL_DOCS: LegalDoc[] = [
       },
       {
         "kind": "h",
-        "text": "11. Suspension"
+        "text": "14. Suspension"
       },
       {
         "kind": "p",
@@ -262,7 +282,7 @@ export const LEGAL_DOCS: LegalDoc[] = [
       },
       {
         "kind": "h",
-        "text": "12. Changes"
+        "text": "15. Changes"
       },
       {
         "kind": "p",
@@ -270,19 +290,19 @@ export const LEGAL_DOCS: LegalDoc[] = [
       },
       {
         "kind": "h",
-        "text": "13. Governing law"
+        "text": "16. Governing law"
       },
       {
         "kind": "p",
-        "html": "<b>[Governing law and jurisdiction — to be confirmed by counsel.]</b> This clause is deliberately unfilled pending legal review."
+        "html": "These Terms are governed by the laws of the State of Delaware, United States, without regard to its conflict-of-law rules. Nothing in this clause removes any protection you have under the mandatory consumer laws of the country where you live."
       },
       {
         "kind": "h",
-        "text": "14. Contact"
+        "text": "17. Contact"
       },
       {
         "kind": "p",
-        "html": "88 Greenwich Ave LLC, d/b/a Transb.it<br>88 Greenwich Ave, Floor 3, Greenwich, CT 06830, United States<br>Support requests are best raised through the Help Request tab inside the platform."
+        "html": "88 Greenwich Ave LLC<br>88 Greenwich Ave, Floor 3, Greenwich, CT 06830, United States<br>Support requests are best raised through the Help Request tab inside the platform."
       }
     ]
   },
@@ -368,7 +388,7 @@ export const LEGAL_DOCS: LegalDoc[] = [
   {
     "slug": "privacy",
     "title": "Privacy Policy",
-    "draft": true,
+    "draft": false,
     "body": [
       {
         "kind": "h",
@@ -376,7 +396,7 @@ export const LEGAL_DOCS: LegalDoc[] = [
       },
       {
         "kind": "p",
-        "html": "<b>88 Greenwich Ave LLC, d/b/a Transb.it</b>, 88 Greenwich Ave, Floor 3, Greenwich, CT 06830, United States, is responsible for the personal information described here."
+        "html": "<b>88 Greenwich Ave LLC</b>, 88 Greenwich Ave, Floor 3, Greenwich, CT 06830, United States, is responsible for the personal information described here."
       },
       {
         "kind": "h",
@@ -388,7 +408,7 @@ export const LEGAL_DOCS: LegalDoc[] = [
           "<b>Identity</b> — your mobile number (verified by code), and, where you provide them, your legal name, public alias, entity or collective name, and recovery email.",
           "<b>Works</b> — what you register: title, description, images or media links, and the context recorded at registration.",
           "<b>Transactions</b> — purchases, sales, offers, transfers, payouts, and the amounts involved.",
-          "<b>Payout details</b> — bank or wallet destinations, held so we can pay you.",
+          "<b>Payout details</b> — the bank account or USDC wallet address you choose for payouts, held so we can pay you.",
           "<b>Support</b> — help requests you open, and conversations with the AI assistant.",
           "<b>Technical</b> — device, browser, approximate location and IP, used for security and fraud prevention."
         ]
@@ -436,10 +456,10 @@ export const LEGAL_DOCS: LegalDoc[] = [
       {
         "kind": "ul",
         "items": [
-          "<b>Stripe</b> — to take payments and make payouts.",
+          "<b>Stripe</b> — to take payments and make payouts, including payouts in USDC to the wallet address you choose.",
           "<b>Supabase</b> — to store platform data and to run authentication, including sending verification codes.",
-          "<b>Amazon Web Services</b> — to send text messages, and to run the originality check on registered images.",
-          "<b>Twilio</b> — to deliver verification codes by text message.",
+          "<b>Twilio</b> — to deliver verification codes and notifications by text message.",
+          "<b>Fly.io</b> — to run the originality check on registered images.",
           "<b>Resend</b> — to send e-Mail.",
           "<b>Public blockchains</b> — Solana, Arweave and Bitcoin, for the records described above.",
           "<b>Our AI provider</b> — to operate the assistant.",
@@ -500,7 +520,7 @@ export const LEGAL_DOCS: LegalDoc[] = [
       },
       {
         "kind": "p",
-        "html": "We will notify material changes in the platform and by email where we hold one. Questions about this policy can be raised through the Help Request tab, or in writing to 88 Greenwich Ave LLC, d/b/a Transb.it, 88 Greenwich Ave, Floor 3, Greenwich, CT 06830, United States."
+        "html": "We will notify material changes in the platform and by email where we hold one. Questions about this policy can be raised through the Help Request tab, or in writing to 88 Greenwich Ave LLC, 88 Greenwich Ave, Floor 3, Greenwich, CT 06830, United States."
       }
     ]
   }
