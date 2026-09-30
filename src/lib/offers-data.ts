@@ -90,3 +90,43 @@ export async function fetchMyOffers(): Promise<MyOffer[]> {
     }
   })
 }
+
+/** La oferta vista por una de sus dos partes — /api/offers/[id] (4.12). */
+export type OfferDetail = {
+  id: string
+  role: 'holder' | 'offerer'
+  work: { title: string; tbtId: string }
+  counterparty: string | null
+  amount: number
+  status: OfferStatus
+  suspended: boolean
+  durationHours: number
+  createdAt: string
+  expiresAt: string
+  acceptedAt: string | null
+  paymentDueAt: string | null
+  autoCancelAt: string | null
+  closedAt: string | null
+  closeReason: string | null
+  message: string | null
+  responseMessage: string | null
+  holderApproved: boolean
+  payAvailable: boolean
+}
+
+export async function fetchOffer(offerId: string): Promise<OfferDetail | null> {
+  const {
+    data: { session },
+  } = await supabase.auth.getSession()
+  if (!session) return null
+  const res = await fetch(`/api/offers/${offerId}`, { headers: { Authorization: `Bearer ${session.access_token}` } })
+  return res.ok ? ((await res.json()) as OfferDetail) : null
+}
+
+/** Lo que se avisa antes de ofertar (S-2, sin cobertura) y si la obra esta congelada. */
+export async function fetchOfferContext(
+  workId: string
+): Promise<{ holderApproved: boolean; holderCovered: boolean; frozenUntil: string | null } | null> {
+  const res = await fetch(`/api/offers?workId=${encodeURIComponent(workId)}`)
+  return res.ok ? await res.json() : null
+}

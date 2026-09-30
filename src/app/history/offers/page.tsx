@@ -8,6 +8,8 @@ import { fetchOffersLedger, type OfferRow } from '@/lib/history-data'
 import { LedgerRow } from '@/components/LedgerRow'
 import { money } from '@/lib/fees'
 import { SignInGate } from '@/components/SignInGate'
+import { useShell } from '@/components/AppShell'
+import { useCountdown } from '@/components/offers/Countdown'
 
 const plural = (n: number, one: string, many: string) => (n === 1 ? one : many).replace('{n}', String(n))
 
@@ -17,11 +19,33 @@ const STATUS_KEY = {
   declined: 'offerStatusDeclined',
   withdrawn: 'offerStatusWithdrawn',
   expired: 'offerStatusExpired',
+  cancelled: 'offerStatusCancelled',
+  completed: 'offerStatusCompleted',
 } as const
+
+/**
+ * El estado de una fila con su reloj (Work Order 02, 4.13): abierta cuenta
+ * hasta que vence; aceptada, hasta que vence el pago.
+ */
+function OfferStatusLine({ row, template }: { row: OfferRow; template: string }) {
+  const { t } = useLocale()
+  const until = row.status === 'open' ? row.expiresAt : row.status === 'accepted' ? row.paymentDueAt : null
+  const left = useCountdown(until)
+  const label = t.myCollections[STATUS_KEY[row.status]]
+  // La fila hecha trae su propio {status}; la recibida lo lleva al final.
+  const text = template.includes('{status}') ? template.replace('{status}', label) : `${template} · ${label}`
+  return (
+    <>
+      {text}
+      {until && left && <span className="tabular-nums"> · {left}</span>}
+    </>
+  )
+}
 
 /** /history/offers — ofertas hechas y recibidas (Build Spec 02, ÍTEM 6). */
 function OffersLedger() {
   const { t } = useLocale()
+  const { openOffer } = useShell()
   const [loading, setLoading] = useState(true)
   const [signedIn, setSignedIn] = useState(true)
   const [rows, setRows] = useState<OfferRow[]>([])
@@ -77,12 +101,18 @@ function OffersLedger() {
             {shown.map((r) => (
               <LedgerRow
                 key={r.id}
-                href={r.tbtId ? `/work/${r.tbtId}` : undefined}
+                // Se abre la hoja en el sitio (4.12): responder no saca de aqui.
+                onClick={() => openOffer(r.id)}
                 title={r.title}
                 what={
-                  r.direction === 'received'
-                    ? t.myCollections.offerReceivedRow.replace('{name}', r.counterparty ?? t.work.unknownArtist)
-                    : t.myCollections.offerMadeRow.replace('{status}', t.myCollections[STATUS_KEY[r.status]])
+                  r.direction === 'received' ? (
+                    <OfferStatusLine
+                      row={r}
+                      template={t.myCollections.offerReceivedRow.replace('{name}', r.counterparty ?? t.work.unknownArtist)}
+                    />
+                  ) : (
+                    <OfferStatusLine row={r} template={t.myCollections.offerMadeRow} />
+                  )
                 }
                 amount={`${money(r.amount)} USD`}
                 when={new Date(r.when).toLocaleDateString()}

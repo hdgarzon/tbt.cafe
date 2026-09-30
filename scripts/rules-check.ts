@@ -121,6 +121,8 @@ const restated = apiFiles.filter((f) => {
   return /FEE\.(service|payoutRate)\b|SERVICE_FEE_CENTS|XFER_FEE\b|ROYALTY_FLOOR\b|REGISTRATION_FEE = /.test(s)
 })
 ok('no file restates a fee constant', restated.length === 0, restated.map((f) => f.slice(root.length + 1)).join(', '))
+const literalFee = apiFiles.filter((f) => /\bfee: 8\b/.test(readFileSync(f, 'utf8').replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '')))
+ok('no ledger writes the registration fee as a literal', literalFee.length === 0, literalFee.map((f) => f.slice(root.length + 1)).join(', '))
 
 // ---- 1.5 operators
 const cfg = code('src/app/api/admin/config/route.ts')

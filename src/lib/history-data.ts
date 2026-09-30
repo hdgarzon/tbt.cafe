@@ -10,7 +10,12 @@ import { royaltyAmountOf, type Royalty } from '@/lib/fees'
 
 export type BrewRow = { id: string; tbtId: string; title: string; when: string; fee: number }
 
-/** Obras que el usuario certificó — con su tarifa fija de $8 (Spec 01, ítem 2). */
+/**
+ * Obras que el usuario certificó, con lo que de verdad pagó por cada una: el
+ * pago completado de esa obra, o 0 si la registración fue cubierta. No la
+ * tarifa de hoy — la tarifa es de configuración y puede haber cambiado desde
+ * entonces (Work Order 02, 1.2).
+ */
 export async function fetchBrews(userId: string): Promise<BrewRow[]> {
   const { data } = await supabase
     .from('works')
@@ -19,9 +24,14 @@ export async function fetchBrews(userId: string): Promise<BrewRow[]> {
     .eq('status', 'certified')
     .order('certified_at', { ascending: false })
 
-  return (data ?? [])
-    .filter((w) => w.certified_at)
-    .map((w) => ({ id: w.id, tbtId: w.tbt_id, title: w.title, when: w.certified_at as string, fee: 8 }))
+  const works = (data ?? []).filter((w) => w.certified_at)
+  const ids = works.map((w) => w.id)
+  const { data: payments } = ids.length
+    ? await supabase.from('tbt_payments').select('work_id, amount').eq('user_id', userId).eq('status', 'completed').in('work_id', ids)
+    : { data: [] as { work_id: string; amount: number }[] }
+  const paid = new Map((payments ?? []).map((p) => [p.work_id as string, Number(p.amount)]))
+
+  return works.map((w) => ({ id: w.id, tbtId: w.tbt_id, title: w.title, when: w.certified_at as string, fee: paid.get(w.id) ?? 0 }))
 }
 
 export type OfferRow = {
@@ -31,8 +41,12 @@ export type OfferRow = {
   when: string
   direction: 'made' | 'received'
   counterparty: string | null
-  status: 'open' | 'accepted' | 'declined' | 'withdrawn' | 'expired'
+  status: 'open' | 'accepted' | 'declined' | 'withdrawn' | 'expired' | 'cancelled' | 'completed'
   amount: number
+  /** Para la cuenta regresiva (Work Order 02, 4.13). */
+  expiresAt: string | null
+  paymentDueAt: string | null
+  suspended: boolean
 }
 
 /** Ofertas hechas por el usuario + recibidas sobre obras que posee, fusionadas y ordenadas. */
@@ -40,7 +54,7 @@ export async function fetchOffersLedger(userId: string): Promise<OfferRow[]> {
   const [{ data: made }, { data: ownedWorks }] = await Promise.all([
     supabase
       .from('offers')
-      .select('id, amount, status, created_at, work:works(tbt_id, title)')
+      .select('id, amount, status, created_at, expires_at, payment_due_at, suspended, work:works(tbt_id, title)')
       .eq('from_user', userId)
       .order('created_at', { ascending: false }),
     supabase.from('works').select('id, tbt_id, title').eq('current_owner_id', userId),
@@ -57,6 +71,9 @@ export async function fetchOffersLedger(userId: string): Promise<OfferRow[]> {
       counterparty: null,
       status: o.status,
       amount: Number(o.amount),
+      expiresAt: o.expires_at ?? null,
+      paymentDueAt: o.payment_due_at ?? null,
+      suspended: !!o.suspended,
     }
   })
 
@@ -65,7 +82,7 @@ export async function fetchOffersLedger(userId: string): Promise<OfferRow[]> {
   if (ownedIds.length) {
     const { data: received } = await supabase
       .from('offers')
-      .select('id, amount, status, created_at, work_id, from_user')
+      .select('id, amount, status, created_at, expires_at, payment_due_at, suspended, work_id, from_user')
       .in('work_id', ownedIds)
       .neq('from_user', userId)
       .order('created_at', { ascending: false })
@@ -88,6 +105,9 @@ export async function fetchOffersLedger(userId: string): Promise<OfferRow[]> {
         counterparty: nameOf.get(o.from_user) ?? null,
         status: o.status,
         amount: Number(o.amount),
+        expiresAt: o.expires_at ?? null,
+        paymentDueAt: o.payment_due_at ?? null,
+        suspended: !!o.suspended,
       }
     })
   }

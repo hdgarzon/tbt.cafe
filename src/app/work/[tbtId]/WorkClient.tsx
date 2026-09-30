@@ -7,7 +7,8 @@ import { useShell } from '@/components/AppShell'
 import { LadderGate } from '@/components/LadderGate'
 import { EmbeddedCheckoutSheet } from '@/components/EmbeddedCheckoutSheet'
 import { fetchWorkFull, ownerRole, royaltyOf, type WorkFull } from '@/lib/work-data'
-import { makeOffer } from '@/lib/offers-data'
+import { makeOffer, fetchOfferContext } from '@/lib/offers-data'
+import { durationsFor, DEFAULT_DURATION } from '@/lib/offers'
 import { quote, money, minPriceFor } from '@/lib/fees'
 import { WorkActions } from '@/components/WorkActions'
 import { ProfileTab } from '@/components/work/ProfileTab'
@@ -50,6 +51,10 @@ export default function WorkPage({ params, scannedAt = null }: { params: { tbtId
   const [buying, setBuying] = useState(false)
   const [offering, setOffering] = useState(false)
   const [offerAmount, setOfferAmount] = useState('')
+  const [offerDuration, setOfferDuration] = useState<number | null>(null)
+  const [offerMessage, setOfferMessage] = useState('')
+  // Lo que se avisa antes de ofertar (4.2) y si la obra esta congelada (4.13).
+  const [offerCtx, setOfferCtx] = useState<{ holderApproved: boolean; holderCovered: boolean; frozenUntil: string | null } | null>(null)
   const [msg, setMsg] = useState('')
   const [ladderOpen, setLadderOpen] = useState(false)
   const [clientSecret, setClientSecret] = useState<string | null>(null)
@@ -62,6 +67,7 @@ export default function WorkPage({ params, scannedAt = null }: { params: { tbtId
     const w = await fetchWorkFull(params.tbtId)
     if (!w) setNotFound(true)
     setWork(w)
+    if (w) setOfferCtx(await fetchOfferContext(w.id))
     setLoading(false)
   }, [params.tbtId])
 
@@ -144,18 +150,22 @@ export default function WorkPage({ params, scannedAt = null }: { params: { tbtId
     if (!connected) return openAuth()
     const amount = parseFloat(offerAmount.replace(/[^0-9.]/g, ''))
     if (!isFinite(amount) || amount <= 0) return
-    // Piso de regalía fija (Spec 01 §2.2): una oferta por debajo dejaría al
-    // vendedor pagando por vender, así que se rechaza indicando el mínimo.
+    // Piso de regalía fija (D-8): por debajo se rechaza diciendo el mínimo.
     if (!rules) return
     const floor = minPriceFor(royaltyOf(c), rules)
     if (floor > 0 && amount < floor) {
-      return setMsg(t.work.errors.belowFloor.replace('{min}', money(floor)))
+      return setMsg(t.offer.belowFloor.replace('{amount}', money(floor)))
     }
-    const { error } = await makeOffer(work!.id, amount, c.availability === 'for_sale')
+    const { error, floor: serverFloor } = await makeOffer(work!.id, amount, c.availability === 'for_sale', {
+      durationHours: offerDuration ?? undefined,
+      message: offerMessage.trim() || undefined,
+    })
+    if (error === 'below_floor' && serverFloor) return setMsg(t.offer.belowFloor.replace('{amount}', money(serverFloor)))
     if (error) return setMsg(t.work.errors.offerFailed)
     setMsg(t.work.offerSent)
     setOffering(false)
     setOfferAmount('')
+    setOfferMessage('')
   }
 
   // Matriz de comercio del hero (ÍTEM 1): disponibilidad × taking-offers.
@@ -166,7 +176,15 @@ export default function WorkPage({ params, scannedAt = null }: { params: { tbtId
   const wkActStatic =
     'inline-flex items-center gap-2 rounded-[22px] px-[18px] py-[11px] bg-[rgba(20,19,18,0.72)] text-white border border-white/20 text-[11.5px] font-medium tracking-[0.12em] uppercase'
   let heroControl: ReactNode
-  if (c.availability === 'for_sale') {
+  if (offerCtx?.frozenUntil) {
+    // 4.13: una oferta aceptada espera el pago; la obra esta en espera.
+    heroControl = (
+      <span className={wkActStatic}>
+        <span className="w-2 h-2 rounded-full bg-[#D9922B]" />
+        {t.work.frozen.replace('{date}', new Date(offerCtx.frozenUntil).toLocaleDateString())}
+      </span>
+    )
+  } else if (c.availability === 'for_sale') {
     heroControl = (
       <button type="button" onClick={buy} disabled={buying} className={`${wkActLive} disabled:opacity-60`}>
         <span className="w-2 h-2 rounded-full bg-[#3EA32C]" />
@@ -268,7 +286,7 @@ export default function WorkPage({ params, scannedAt = null }: { params: { tbtId
       {offering && (
         <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/30" onClick={() => setOffering(false)}>
           <div className="w-full max-w-col bg-paper rounded-t-2xl p-5 max-h-[85vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
-            <div className="font-display font-medium text-[18px] text-ink">{t.work.makeOffer}</div>
+            <div className="font-display font-medium text-[18px] text-ink">{t.offer.title}</div>
             <div className="text-[12px] text-ink-soft mt-1">{work.title}</div>
             <p className="text-[11.5px] text-ink-soft mt-2 leading-[1.5]">{t.work.offerHeldNote}</p>
 
@@ -279,8 +297,16 @@ export default function WorkPage({ params, scannedAt = null }: { params: { tbtId
               </div>
             )}
 
+            {/* 4.2: S-2 si quien la tiene no esta aprobado; si su pais no tiene cobro, la linea simple. */}
+            {offerCtx && !offerCtx.holderCovered && (
+              <p className="text-[11.5px] text-ink mt-3 leading-[1.5]">{t.offer.notCovered}</p>
+            )}
+            {offerCtx && offerCtx.holderCovered && !offerCtx.holderApproved && (
+              <p className="text-[11.5px] text-ink mt-3 leading-[1.5]">{t.offer.unapproved}</p>
+            )}
+
             <label className="block mb-[9px] text-[10px] font-medium tracking-[0.18em] uppercase text-ink-soft mt-4">
-              {t.work.offerPrompt}
+              {t.offer.amount}
             </label>
             <input
               value={offerAmount}
@@ -308,14 +334,48 @@ export default function WorkPage({ params, scannedAt = null }: { params: { tbtId
               )
             })()}
 
+            {rules && (
+              <>
+                <label className="block mb-[9px] text-[10px] font-medium tracking-[0.18em] uppercase text-ink-soft mt-4" htmlFor="offer-duration">
+                  {t.offer.duration}
+                </label>
+                <select
+                  id="offer-duration"
+                  value={offerDuration ?? Math.min(DEFAULT_DURATION, rules.offers.maxHours)}
+                  onChange={(e) => setOfferDuration(Number(e.target.value))}
+                  className="w-full px-3.5 py-3 border border-hairline rounded-xl text-[14px] bg-white"
+                >
+                  {durationsFor(rules).map((h) => (
+                    <option key={h} value={h}>
+                      {t.offer.hours.replace('{hours}', String(h))}
+                    </option>
+                  ))}
+                </select>
+
+                <label className="block mb-[9px] text-[10px] font-medium tracking-[0.18em] uppercase text-ink-soft mt-4" htmlFor="offer-message">
+                  {t.offer.message}
+                </label>
+                <textarea
+                  id="offer-message"
+                  value={offerMessage}
+                  onChange={(e) => setOfferMessage(e.target.value.slice(0, rules.offers.messageMax))}
+                  maxLength={rules.offers.messageMax}
+                  rows={3}
+                  className="w-full px-3.5 py-3 border border-hairline rounded-xl text-[14px] outline-none focus:border-ink resize-none"
+                />
+              </>
+            )}
+
             <p className="text-[10.5px] text-placeholder mt-3.5 leading-[1.5]">{t.work.offerNotPayment}</p>
+            {/* 4.11 */}
+            <p className="text-[10.5px] text-placeholder mt-1.5 leading-[1.5]">{t.offer.elsewhere}</p>
 
             <button
               type="button"
               onClick={sendOffer}
               className="w-full mt-4 py-4 text-[12px] font-semibold tracking-[0.16em] uppercase bg-ink text-paper rounded-xl hover:bg-black transition-colors"
             >
-              {t.work.offerSend}
+              {t.offer.send}
             </button>
           </div>
         </div>

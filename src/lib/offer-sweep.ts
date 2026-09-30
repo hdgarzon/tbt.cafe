@@ -19,7 +19,8 @@ import { cancelUnpaid } from '@/lib/offers-server'
  *  - A la cancelacion automatica, cancela la aceptada sin pagar.
  */
 
-const HUB = '/?hub=offers'
+/** El enlace de un aviso abre la hoja de la oferta en el hub (4.12). */
+const sheetOf = (offerId: string) => `/?offer=${offerId}`
 const BATCH = 200
 
 type Live = {
@@ -78,7 +79,7 @@ export async function sweepOffers(db: SupabaseClient, now = new Date()) {
       if (!changed?.length) continue
       await db.from('offer_events').insert({ offer_id: o.id, event: 'expired', detail: { reason } })
       for (let i = 0; i < both.length; i++) {
-        await notify(db, { userId: both[i], eventKey: 'offer_expired', dedupeKey: `offer:${o.id}:expired:${i}`, data: { title }, href: HUB })
+        await notify(db, { userId: both[i], eventKey: 'offer_expired', dedupeKey: `offer:${o.id}:expired:${i}`, data: { title, offerId: o.id }, href: sheetOf(o.id) })
       }
       result.expired++
       continue
@@ -98,8 +99,8 @@ export async function sweepOffers(db: SupabaseClient, now = new Date()) {
         userId: both[i],
         eventKey: 'offer_expiring',
         dedupeKey: `offer:${o.id}:${column}:${i}`,
-        data: { title, time: `${hoursLeft} h` },
-        href: HUB,
+        data: { title, time: `${hoursLeft} h`, offerId: o.id },
+        href: sheetOf(o.id),
       })
     }
     result.reminded++

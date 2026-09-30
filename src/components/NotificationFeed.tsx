@@ -15,6 +15,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useLocale, type Dictionary } from '@/i18n/LocaleProvider'
+import { useShell } from '@/components/AppShell'
 
 type Row = {
   id: string
@@ -52,6 +53,7 @@ function render(t: Dictionary, row: Row): string {
 
 export function NotificationFeed() {
   const { t } = useLocale()
+  const { openOffer } = useShell()
   const [rows, setRows] = useState<Row[]>([])
   const [signedIn, setSignedIn] = useState<boolean | null>(null)
 
@@ -128,6 +130,23 @@ export function NotificationFeed() {
               </div>
             </>
           )
+
+          // Un aviso de oferta abre su hoja aqui mismo (4.12), sin navegar.
+          const offerId = row.params?.offerId ? String(row.params.offerId) : null
+          if (offerId) {
+            return (
+              <button
+                key={row.id}
+                type="button"
+                onClick={() => openOffer(offerId)}
+                className={`block w-full text-left border rounded-xl p-3.5 transition-colors hover:bg-paper-warm ${
+                  row.read_at ? 'border-hairline' : 'border-hairline bg-paper-warm'
+                }`}
+              >
+                {body}
+              </button>
+            )
+          }
 
           return row.href ? (
             <a

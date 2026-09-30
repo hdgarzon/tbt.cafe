@@ -84,6 +84,22 @@ async function main() {
   const notifyCalls = srv.match(/notify\([\s\S]*?\}\)/g) ?? []
   ok('notifications never carry the message text', notifyCalls.length > 0 && notifyCalls.every((c) => !/message:|response_message|reply:/.test(c)))
 
+  // ---- 4.12, 4.13 the surfaces
+  ok('a feed row with an offer opens its sheet in place', /openOffer\(offerId\)/.test(code('src/components/NotificationFeed.tsx')))
+  ok('the shell mounts the offer sheet and reads ?offer=', /<OfferSheet offerId=\{offerId\}/.test(code('src/components/AppShell.tsx')) && /params\.get\('offer'\)/.test(code('src/components/AppShell.tsx')))
+  const sheet = code('src/components/offers/OfferSheet.tsx')
+  ok('the holder sees Accept, Decline and a reply', /act\('accept'\)/.test(sheet) && /act\('decline'\)/.test(sheet) && /t\.offer\.reply/.test(sheet))
+  ok('Accept explains and routes to Selling without approval (S-3)', /need_approval[\s\S]{0,80}setNeedApproval/.test(sheet) && /\/settings\/selling/.test(sheet))
+  ok('the offerer can withdraw, with a confirmation', /act\('withdraw'\)/.test(sheet) && /withdrawConfirm/.test(sheet))
+  ok('each message can be reported', /act\('report', confirmReport\)/.test(sheet))
+  ok('the sheet carries the elsewhere line', /t\.offer\.elsewhere/.test(sheet))
+  const hist = code('src/app/history/offers/page.tsx')
+  ok('History → Offers opens the sheet and counts down', /openOffer\(r\.id\)/.test(hist) && /useCountdown\(/.test(hist))
+  const wc = code('src/app/work/[tbtId]/WorkClient.tsx')
+  ok('the work page shows the frozen state', /offerCtx\?\.frozenUntil/.test(wc) && /t\.work\.frozen/.test(wc))
+  ok('the make-offer sheet asks duration and message', /durationsFor\(rules\)/.test(wc) && /t\.offer\.message/.test(wc))
+  ok('it warns S-2 or not covered before sending', /t\.offer\.unapproved/.test(wc) && /t\.offer\.notCovered/.test(wc))
+
   // ---- keys and strings
   const nt = code('src/lib/notify.ts')
   const keys = ['offer_withdrawn', 'offer_expired', 'offer_cancelled', 'offer_holder_ready']

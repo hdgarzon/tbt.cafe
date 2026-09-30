@@ -593,6 +593,8 @@
     "offerStatusDeclined": "refusée",
     "offerStatusWithdrawn": "retirée",
     "offerStatusExpired": "expirée",
+    "offerStatusCancelled": "annulée",
+    "offerStatusCompleted": "terminée",
     "transactionsSub": "Transferts envoyés ou reçus",
     "transactionsEmpty": "Aucune transaction pour l'instant.",
     "needSignIn": "Authentifiez-vous pour voir ceci.",

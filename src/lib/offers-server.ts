@@ -34,7 +34,8 @@ type OfferRow = {
 const OFFER_COLUMNS =
   'id, work_id, from_user, amount, status, duration_hours, expires_at, message, response_message, payment_due_at, suspended, created_at'
 
-const HUB = '/?hub=offers'
+/** El enlace de un aviso abre la hoja de la oferta en el hub (4.12). */
+const sheetOf = (offerId: string) => `/?offer=${offerId}`
 
 async function logEvent(db: SupabaseClient, offerId: string, event: string, actorId: string | null, detail: Record<string, unknown> = {}) {
   await db.from('offer_events').insert({ offer_id: offerId, event, actor_id: actorId, detail })
@@ -61,7 +62,63 @@ export async function offerContext(workId: string) {
     const { data: row } = await db.from('provider_countries').select('country, merchant, payout_bank, payout_usdc, enabled').eq('country', seller.country).maybeSingle()
     covered = coverageFor(row as ProviderCountry | null, rules)
   }
-  return { holderApproved: canSell(seller), holderCovered: covered }
+  // Mientras una oferta aceptada espera el pago, la obra esta congelada hasta
+  // su cancelacion automatica como mucho (4.13). Es publico: se ve en la obra.
+  const { data: commerce } = await db.from('work_commerce').select('frozen_offer_id').eq('work_id', workId).maybeSingle()
+  let frozenUntil: string | null = null
+  if (commerce?.frozen_offer_id) {
+    const { data: frozen } = await db.from('offers').select('auto_cancel_at').eq('id', commerce.frozen_offer_id).maybeSingle()
+    frozenUntil = frozen?.auto_cancel_at ?? null
+  }
+  return { holderApproved: canSell(seller), holderCovered: covered, frozenUntil }
+}
+
+/**
+ * La oferta vista por una de sus dos partes (4.12): los mensajes completos, el
+ * papel de quien pregunta y lo que puede hacer. A nadie mas.
+ */
+export async function offerDetail(userId: string, offerId: string) {
+  const db = createAdminClient()
+  const { data } = await db
+    .from('offers')
+    .select(`${OFFER_COLUMNS}, accepted_at, auto_cancel_at, closed_at, close_reason`)
+    .eq('id', offerId)
+    .maybeSingle()
+  const offer = data as (OfferRow & { accepted_at: string | null; auto_cancel_at: string | null; closed_at: string | null; close_reason: string | null }) | null
+  if (!offer) return null
+  const { data: work } = await db.from('works').select('id, title, tbt_id, current_owner_id').eq('id', offer.work_id).maybeSingle()
+  if (!work) return null
+  const role = work.current_owner_id === userId ? 'holder' : offer.from_user === userId ? 'offerer' : null
+  if (!role) return null
+  const [{ data: offerer }, { data: holder }, seller] = await Promise.all([
+    db.from('profiles').select('display_name, public_alias').eq('id', offer.from_user).maybeSingle(),
+    db.from('profiles').select('display_name, public_alias').eq('id', work.current_owner_id).maybeSingle(),
+    sellerOf(db, work.current_owner_id),
+  ])
+  return {
+    id: offer.id,
+    role,
+    work: { title: work.title ?? '', tbtId: work.tbt_id ?? '' },
+    counterparty: role === 'holder'
+      ? offerer?.public_alias || offerer?.display_name || null
+      : holder?.public_alias || holder?.display_name || null,
+    amount: Number(offer.amount),
+    status: offer.status,
+    suspended: offer.suspended,
+    durationHours: offer.duration_hours,
+    createdAt: offer.created_at,
+    expiresAt: offer.expires_at,
+    acceptedAt: offer.accepted_at,
+    paymentDueAt: offer.payment_due_at,
+    autoCancelAt: offer.auto_cancel_at,
+    closedAt: offer.closed_at,
+    closeReason: offer.close_reason,
+    message: offer.message,
+    responseMessage: offer.response_message,
+    holderApproved: canSell(seller),
+    // El pago de una oferta aceptada es del Stage 0; hasta entonces no se ofrece.
+    payAvailable: false,
+  }
 }
 
 // ── Hacer (4.2) ─────────────────────────────────────────────────────────────
@@ -104,8 +161,8 @@ export async function makeOffer(userId: string, workId: string, input: OfferInpu
     userId: work.current_owner_id,
     eventKey: 'offer_received',
     dedupeKey: `offer:${offer.id}:received`,
-    data: { title: work.title ?? '', amount: money(plan.amount), ...(variant ? { variant } : {}) },
-    href: HUB,
+    data: { title: work.title ?? '', amount: money(plan.amount), offerId: offer.id, ...(variant ? { variant } : {}) },
+    href: sheetOf(offer.id),
   })
   return { id: offer.id as string }
 }
@@ -162,8 +219,8 @@ export async function actOnOffer(userId: string, offerId: string, action: OfferA
       userId: offer.from_user,
       eventKey: 'offer_accepted',
       dedupeKey: `offer:${offer.id}:accepted`,
-      data: { title, hours: String(rules.offers.paymentWindowHours) },
-      href: HUB,
+      data: { title, hours: String(rules.offers.paymentWindowHours), offerId: offer.id },
+      href: sheetOf(offer.id),
     })
     return { ok: true }
   }
@@ -177,7 +234,7 @@ export async function actOnOffer(userId: string, offerId: string, action: OfferA
       .eq('id', offer.id)
       .eq('status', 'open')
     await logEvent(db, offer.id, 'declined', userId, { with_reply: !!response })
-    await notify(db, { userId: offer.from_user, eventKey: 'offer_declined', dedupeKey: `offer:${offer.id}:declined`, data: { title }, href: HUB })
+    await notify(db, { userId: offer.from_user, eventKey: 'offer_declined', dedupeKey: `offer:${offer.id}:declined`, data: { title, offerId: offer.id }, href: sheetOf(offer.id) })
     return { ok: true }
   }
 
@@ -191,7 +248,7 @@ export async function actOnOffer(userId: string, offerId: string, action: OfferA
       .eq('status', 'open')
     await logEvent(db, offer.id, 'withdrawn', userId)
     // Solo al vendedor (4.4).
-    await notify(db, { userId: work.current_owner_id, eventKey: 'offer_withdrawn', dedupeKey: `offer:${offer.id}:withdrawn`, data: { title }, href: HUB })
+    await notify(db, { userId: work.current_owner_id, eventKey: 'offer_withdrawn', dedupeKey: `offer:${offer.id}:withdrawn`, data: { title, offerId: offer.id }, href: sheetOf(offer.id) })
     return { ok: true }
   }
 
@@ -262,9 +319,9 @@ export async function cancelUnpaid(
   await db.from('work_commerce').update({ frozen_offer_id: null }).eq('work_id', offer.work_id).eq('frozen_offer_id', offer.id)
   await db.from('offers').update({ suspended: false }).eq('work_id', offer.work_id).eq('status', 'open').eq('suspended', true).gt('expires_at', now)
   await logEvent(db, offer.id, 'cancelled', actorId, { reason })
-  const data = { title: work.title ?? '' }
-  await notify(db, { userId: offer.from_user, eventKey: 'offer_cancelled', dedupeKey: `offer:${offer.id}:cancelled:buyer`, data, href: HUB })
-  await notify(db, { userId: work.current_owner_id, eventKey: 'offer_cancelled', dedupeKey: `offer:${offer.id}:cancelled:seller`, data, href: HUB })
+  const data = { title: work.title ?? '', offerId: offer.id }
+  await notify(db, { userId: offer.from_user, eventKey: 'offer_cancelled', dedupeKey: `offer:${offer.id}:cancelled:buyer`, data, href: sheetOf(offer.id) })
+  await notify(db, { userId: work.current_owner_id, eventKey: 'offer_cancelled', dedupeKey: `offer:${offer.id}:cancelled:seller`, data, href: sheetOf(offer.id) })
 }
 
 // ── Pagada (4.5) — la llama el Stage 0 al completar el cobro ─────────────────
@@ -285,7 +342,7 @@ export async function completeOffer(offerId: string) {
   for (const o of (others ?? []) as { id: string; from_user: string }[]) {
     await db.from('offers').update({ status: 'declined', closed_at: now, close_reason: 'sold', suspended: false }).eq('id', o.id).eq('status', 'open')
     await logEvent(db, o.id, 'declined', null, { reason: 'sold' })
-    await notify(db, { userId: o.from_user, eventKey: 'offer_declined', dedupeKey: `offer:${o.id}:declined`, data: { title: work?.title ?? '' }, href: HUB })
+    await notify(db, { userId: o.from_user, eventKey: 'offer_declined', dedupeKey: `offer:${o.id}:declined`, data: { title: work?.title ?? '', offerId: o.id }, href: sheetOf(o.id) })
   }
 }
 
@@ -307,9 +364,9 @@ export async function lapseOffersOfHolder(holderId: string, reason: 'seller_paus
       .select('id')
     if (!changed?.length) continue
     await logEvent(db, o.id, 'expired', null, { reason })
-    const data = { title: titleOf.get(o.work_id) ?? '' }
-    await notify(db, { userId: o.from_user, eventKey: 'offer_expired', dedupeKey: `offer:${o.id}:expired:buyer`, data, href: HUB })
-    await notify(db, { userId: holderId, eventKey: 'offer_expired', dedupeKey: `offer:${o.id}:expired:seller`, data, href: HUB })
+    const data = { title: titleOf.get(o.work_id) ?? '', offerId: o.id }
+    await notify(db, { userId: o.from_user, eventKey: 'offer_expired', dedupeKey: `offer:${o.id}:expired:buyer`, data, href: sheetOf(o.id) })
+    await notify(db, { userId: holderId, eventKey: 'offer_expired', dedupeKey: `offer:${o.id}:expired:seller`, data, href: sheetOf(o.id) })
   }
 }
 
@@ -333,7 +390,7 @@ export async function tellBuyersHolderReady(holderId: string) {
       userId: o.from_user,
       eventKey: 'offer_holder_ready',
       dedupeKey: `offer:${o.id}:holder_ready`,
-      data: { title: titleOf.get(o.work_id) ?? '' },
+      data: { title: titleOf.get(o.work_id) ?? '', offerId: o.id },
       href: `/work/${tbtOf.get(o.work_id) ?? ''}`,
     })
   }
