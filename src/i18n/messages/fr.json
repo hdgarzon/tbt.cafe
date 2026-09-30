@@ -852,6 +852,7 @@
     "chainImageNoteNone": "Le registre nomme l'œuvre et prouve quel fichier c'était. Rien d'autre n'est publié.",
     "chainImageNoteThumbnail": "Une copie réduite accompagne le registre pour qu'il soit reconnaissable. Votre fichier reste chez vous.",
     "chainImageNoteFull": "L'image est publiée en pleine résolution et ne peut pas être retirée. La localisation et les données de l'appareil sont supprimées au préalable.",
+    "chainImageNoteCeiling": "Les fichiers très volumineux sont publiés sous forme de copie haute qualité de moins de 8 Mo.",
     "holdToSeal": "Maintenez pour sceller",
     "sealed": "Scellée",
     "sealedHint": "Verrouillée et prête à être enregistrée",
@@ -890,7 +891,14 @@
       "needSignIn": "Authentifiez-vous pour continuer",
       "imageRequired": "Ajoutez une image pour continuer",
       "titleRequired": "Donnez un titre à l'œuvre",
-      "categoryRequired": "Choisissez une catégorie"
+      "categoryRequired": "Choisissez une catégorie",
+      "linkHasIdentifier": "Le lien {n} contient {what}, qui ne peut pas figurer dans le registre permanent. Modifiez-le ou supprimez-le.",
+      "linkIdentifierKinds": {
+        "email": "une adresse e-mail",
+        "phone": "un numéro de téléphone",
+        "coordinates": "des coordonnées",
+        "uuid": "un identifiant interne"
+      }
     },
     "coveredByTbt": "Offert par tbt.cafe",
     "coveredNote": "Celle-ci est pour nous — il vous reste {n} enregistrements gratuits.",

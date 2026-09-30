@@ -852,6 +852,7 @@
     "chainImageNoteNone": "The record names the work and proves which file it was. Nothing else is published.",
     "chainImageNoteThumbnail": "A reduced copy travels with the record so it can be recognised. Your file stays with you.",
     "chainImageNoteFull": "The image is published at full size and cannot be withdrawn. Location and camera data are removed first.",
+    "chainImageNoteCeiling": "Very large files are published as a high-quality copy under 8 MB.",
     "holdToSeal": "Hold to seal",
     "sealed": "Sealed",
     "sealedHint": "Locked and ready to register",
@@ -890,7 +891,14 @@
       "needSignIn": "Authenticate to continue",
       "imageRequired": "Add an image to continue",
       "titleRequired": "Give the work a title",
-      "categoryRequired": "Choose a category"
+      "categoryRequired": "Choose a category",
+      "linkHasIdentifier": "Link {n} contains {what}, which can't go on the permanent record. Change or remove it.",
+      "linkIdentifierKinds": {
+        "email": "an email address",
+        "phone": "a phone number",
+        "coordinates": "map coordinates",
+        "uuid": "an internal ID"
+      }
     },
     "coveredByTbt": "Covered by tbt.cafe",
     "coveredNote": "This one is on us — {n} free registrations remaining.",

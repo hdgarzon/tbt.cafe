@@ -10,14 +10,14 @@ const ok = (label: string, cond: boolean, detail = '') => {
 }
 
 const src = readFileSync(join(__dirname, '..', 'src/app/api/complete-tbt/route.ts'), 'utf8')
-const nft = readFileSync(join(__dirname, '..', 'src/lib/solana/nft.ts'), 'utf8')
+const nft = readFileSync(join(__dirname, '..', 'src/lib/solana/token.ts'), 'utf8')
 
 const at = (needle: string) => src.indexOf(needle)
 
 // ---- paso 3 antes del paso 4
 {
   const publish = at('publishRecord(')
-  const mint = at('await mintTBTNft(')
+  const mint = at('await mintTitleToken(')
   ok('el registro se publica antes del mint', publish > 0 && mint > 0 && publish < mint,
      'la URI en cadena tiene que apuntar a algo que exista')
 }
@@ -25,7 +25,7 @@ const at = (needle: string) => src.indexOf(needle)
 // ---- la URI se guarda ANTES de mintear
 {
   const store = at('registration_record_uri: published.uri')
-  const mint = at('await mintTBTNft(')
+  const mint = at('await mintTitleToken(')
   ok('la URI se guarda antes del mint', store > 0 && store < mint,
      'sin eso, un reintento del mint no tiene a que agarrarse')
 }
@@ -40,7 +40,7 @@ const at = (needle: string) => src.indexOf(needle)
 
 // ---- la cadena no puede tumbar la certificación
 {
-  const block = src.slice(at('let recordUri'), at('await mintTBTNft('))
+  const block = src.slice(at('let recordUri'), at('await mintTitleToken('))
   ok('la publicación va dentro de try/catch', block.includes('try {') && block.includes('catch'))
   ok('y el fallo solo se registra', block.includes('console.error'))
 }
@@ -48,7 +48,7 @@ const at = (needle: string) => src.indexOf(needle)
 // ---- procedencia: origen sin prior_record, y después del mint
 {
   const prov = at("event: 'creation'")
-  const mint = at('await mintTBTNft(')
+  const mint = at('await mintTitleToken(')
   ok('la procedencia se publica después del mint', prov > mint, 'lleva la firma de Solana dentro')
   ok('la secuencia 1 no lleva prior_record', !/sequence: 1[\s\S]{0,300}priorRecord/.test(src))
   ok('se guarda contra la fila de ownership_history', src.includes('record_uri: published.uri'))
@@ -58,10 +58,9 @@ const at = (needle: string) => src.indexOf(needle)
 {
   ok('el nombre en cadena es el TBT ID', nft.includes('name: work.tbtId'),
      'el título puede pasar el tope de 32 bytes con un acento')
-  ok('la regalía en cadena es cero', nft.includes('sellerFeeBasisPoints: 0'),
+  ok('el token no lleva regalía (Chains 01, 4.4: la lleva el registro)', !/Royalties|sellerFeeBasisPoints/.test(nft),
      'un número público que contradice work_commerce')
-  ok('ya no se fija en 500', !nft.includes('sellerFeeBasisPoints: 500'))
-  ok('el mint acepta la URI del registro', /mintTBTNft\([\s\S]{0,900}registrationRecordUri\?: string/.test(nft))
+  ok('el mint exige la URI del registro', /mintTitleToken\([\s\S]{0,300}registrationRecordUri: string/.test(nft))
 }
 
 // ══ Item 7 — el orden de escritura de la transferencia ═══════════════════
@@ -93,8 +92,8 @@ const xfer = readFileSync(join(__dirname, '..', 'src/app/api/complete-transfer/r
 
 // ---- y la firma que SÍ existe es una firma
 {
-  const nftSrc = readFileSync(join(__dirname, '..', 'src/lib/solana/nft.ts'), 'utf8')
-  ok('el mint devuelve la firma de la transacción', nftSrc.includes('signature: response.signature'))
+  ok('el mint devuelve la firma de la transacción', nft.includes('signature: signatureOf(result)'))
+  ok('y la procedencia la recibe', src.includes('solanaSignature: mintSignature'))
   ok('la certificación ya no manda la dirección del mint',
      !src.includes('solanaSignature: mintAddress'),
      'una direccion de cuenta en un campo que significa firma')

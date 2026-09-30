@@ -64,8 +64,8 @@ async function getWeather(lat: number, lng: number): Promise<string> {
    * quedarian selladas con el mismo clima inventado — el mismo para Medellin
    * en abril que para Bogota en diciembre.
    *
-   * Una cadena vacia hace que `complete-tbt` guarde `weather_data: null` y que
-   * `nft.ts` no anada el atributo. Un dato ausente es honesto; uno fabricado
+   * Una cadena vacia hace que `complete-tbt` guarde `weather_data: null`; el
+   * token ya no lleva clima. Un dato ausente es honesto; uno fabricado
    * en un registro inmutable, no.
    */
   if (!apiKey) return ''

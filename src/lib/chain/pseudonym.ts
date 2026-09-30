@@ -13,6 +13,9 @@
  * Supabase.
  */
 import { createHash } from 'crypto'
+import { UUID_RE, EMAIL_RE, PHONE_RE, COORDS_RE } from './identifier-patterns'
+
+export { UUID_RE }
 
 /**
  * El seudonimo de una persona.
@@ -40,29 +43,6 @@ export function pseudonymFor(userId: string): string {
   if (!userId) throw new Error('pseudonym: falta el identificador.')
   return 'cr_' + createHash('sha256').update(userId).digest('hex').slice(0, 12)
 }
-
-/** Un UUID, en cualquier caja. */
-export const UUID_RE =
-  /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i
-
-const EMAIL_RE = /[^\s@]+@[^\s@]+\.[a-z]{2,}/i
-
-/** Un telefono en formato internacional: al menos 8 digitos tras el mas. */
-const PHONE_RE = /\+\d[\d\s().-]{7,}/
-
-/**
- * Un par de coordenadas en grados decimales.
- *
- * El spec las marca «Never»: `context_snapshots` las guarda y ahi se quedan.
- * En cadena va la ciudad y el pais, que son buena procedencia y no señalan una
- * casa. Esto no busca en una clave llamada `lat` —para eso ya esta la lista de
- * `records.ts`— sino un par suelto dentro de un texto libre, que es por donde
- * se colaria: el resumen del contexto lo escribe un modelo.
- *
- * Exige decimales en ambos numeros para no confundirse con «12, 40» o con un
- * rango de años.
- */
-const COORDS_RE = /-?\d{1,3}\.\d{3,}\s*,\s*-?\d{1,3}\.\d{3,}/
 
 /**
  * Lanza si el registro contiene algo que no puede publicarse.

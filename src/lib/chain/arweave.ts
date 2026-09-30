@@ -27,8 +27,9 @@ import { toMetaplexFile, type MetaplexFile } from '@metaplex-foundation/js'
 import { canonicalize, recordHash } from './serialize'
 import { assertNoIdentifiers } from './pseudonym'
 import { anchorRecord } from './ots'
-import { getMetaplex } from '@/lib/solana/nft'
+import { getMetaplex } from './irys'
 import { SOLANA_NETWORK } from '@/lib/solana/config'
+import { arweaveUrl } from './gateways'
 
 /** Nombres de etiqueta, en un sitio para que la prueba y el modulo no diverjan. */
 export const RECORD_TAGS = {
@@ -94,7 +95,7 @@ export function gatewayUri(driverUri: string): string {
   const id = driverUri.split('/').filter(Boolean).pop()
   if (!id) return driverUri
   return SOLANA_NETWORK === 'mainnet-beta'
-    ? `https://arweave.net/${id}`
+    ? arweaveUrl(id)
     : `https://devnet.irys.xyz/${id}`
 }
 
