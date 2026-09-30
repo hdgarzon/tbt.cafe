@@ -10,7 +10,7 @@ import { useBiometricProof } from '@/lib/use-biometric-proof'
 import {
   fetchPayoutMethods,
   fetchPayoutCountry,
-  fetchDefaultDestination,
+  fetchDestinations,
   quoteCollection,
   checkLimits,
   maskWallet,
@@ -41,6 +41,16 @@ import {
 
 type Step = 'verify' | 'method' | 'code'
 
+/** El nombre del pais en el idioma del navegador; el codigo si no se sabe. */
+function countryName(code: string | null): string {
+  if (!code) return ''
+  try {
+    return new Intl.DisplayNames([navigator.language], { type: 'region' }).of(code) ?? code
+  } catch {
+    return code
+  }
+}
+
 export function CollectSheet({
   open,
   onClose,
@@ -65,8 +75,12 @@ export function CollectSheet({
   const [terms, setTerms] = useState(false)
 
   const [methods, setMethods] = useState<PayoutMethod[] | null>(null)
+  // 7.1: ningun metodo preseleccionado; se elige en cada cobro.
   const [activeMethod, setActiveMethod] = useState<PayoutMethod | null>(null)
-  const [saved, setSaved] = useState<PayoutDestination | null>(null)
+  const [destinations, setDestinations] = useState<PayoutDestination[]>([])
+  const [country, setCountry] = useState<string | null>(null)
+  // Un destino guardado por metodo: el del metodo que se eligio esta vez.
+  const saved = activeMethod ? (destinations.find((d) => d.methodId === activeMethod.id) ?? null) : null
 
   const [address, setAddress] = useState('')
   const [confirmAddress, setConfirmAddress] = useState('')
@@ -88,14 +102,12 @@ export function CollectSheet({
         data: { user },
       } = await supabase.auth.getUser()
       if (!user) return
-      const country = await fetchPayoutCountry(user.id)
-      const [list, destination] = await Promise.all([
-        fetchPayoutMethods(country),
-        fetchDefaultDestination(user.id),
-      ])
+      const payoutCountry = await fetchPayoutCountry(user.id)
+      const [list, saved] = await Promise.all([fetchPayoutMethods(payoutCountry), fetchDestinations(user.id)])
+      setCountry(payoutCountry)
       setMethods(list)
-      setActiveMethod(list[0] ?? null)
-      setSaved(destination)
+      setActiveMethod(null)
+      setDestinations(saved)
     })()
   }, [open, resetBio])
 
@@ -138,8 +150,15 @@ export function CollectSheet({
       })
       const body = await response.json().catch(() => ({}))
 
+      // 7.5: una institucion no cobra aqui; se abrio una solicitud y lo gestiona el equipo.
+      if (response.ok && body.status === 'institution') {
+        setMsg(t.payouts.institution)
+        return
+      }
+
       if (!response.ok) {
-        if (body.error === 'invalid_code') setMsg(t.payouts.wrongCode)
+        if (body.error === 'not_covered') setMsg(t.payouts.notCovered.replace('{country}', countryName(country)))
+        else if (body.error === 'invalid_code') setMsg(t.payouts.wrongCode)
         else if (body.error === 'locked') setMsg(t.payouts.lockedOut)
         else if (body.error === 'biometric_required') {
           // La prueba caducó o ya se gastó: hay que volver a poner el dedo.
@@ -172,9 +191,12 @@ export function CollectSheet({
   /* Un registro vacío se dice con todas las letras y se manda a soporte —
      nunca un selector vacío ni un método por defecto que va a fallar (§3.3). */
   if (methods !== null && methods.length === 0) {
+    // 7.6: sin rail, el cobro no se abre y lo ganado se queda (M8).
     return (
       <StandingSheet open={open} onClose={onClose} head={t.payouts.title}>
-        <p className="py-10 text-[13px] leading-[1.7] text-ink-soft">{t.payouts.noMethods}</p>
+        <p className="py-10 text-[13px] leading-[1.7] text-ink-soft">
+          {country ? t.payouts.notCovered.replace('{country}', countryName(country)) : t.payouts.noMethods}
+        </p>
       </StandingSheet>
     )
   }
@@ -276,6 +298,7 @@ export function CollectSheet({
       {/* ── Paso 2 ──────────────────────────────────────────────────────── */}
       {step === 'method' && methods && (
         <div>
+          <p className="text-[12.5px] leading-[1.6] text-ink mb-3">{t.payouts.chooseMethod}</p>
           <div className="flex border border-hairline rounded-[10px] overflow-hidden mb-4">
             {methods.map((method) => (
               <button
@@ -293,7 +316,7 @@ export function CollectSheet({
             ))}
           </div>
 
-          {isWallet ? (
+          {!activeMethod ? null : isWallet ? (
             <>
               <input
                 type="text"

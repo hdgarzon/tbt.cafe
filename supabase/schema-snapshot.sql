@@ -652,7 +652,6 @@ create table if not exists public.payout_destinations (
   destination text not null,
   destination_masked text not null,
   network text,
-  is_default boolean default false not null,
   verified_at timestamp with time zone default now() not null,
   created_at timestamp with time zone default now() not null
 );
@@ -1067,6 +1066,7 @@ alter table public.payout_methods add constraint payout_methods_pkey PRIMARY KEY
 alter table public.payout_methods add constraint payout_methods_provider_check CHECK ((provider = ANY (ARRAY['stripe_connect_stablecoin'::text, 'stripe_connect_bank'::text, 'other'::text])));
 alter table public.payout_methods add constraint payout_methods_dest_field_type_check CHECK ((dest_field_type = ANY (ARRAY['wallet_address'::text, 'bank_account'::text, 'pix_key'::text, 'phone'::text, 'email'::text])));
 alter table public.payout_destinations add constraint payout_destinations_pkey PRIMARY KEY (id);
+alter table public.payout_destinations add constraint payout_destinations_one_per_method UNIQUE (user_id, method_id);
 alter table public.payout_destinations add constraint payout_destinations_user_id_fkey FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE;
 alter table public.payout_destinations add constraint payout_destinations_method_id_fkey FOREIGN KEY (method_id) REFERENCES payout_methods(id);
 alter table public.payout_connect_accounts add constraint payout_connect_accounts_pkey PRIMARY KEY (user_id);
@@ -1084,7 +1084,7 @@ alter table public.payout_earnings add constraint payout_earnings_work_id_fkey F
 alter table public.payout_earnings add constraint payout_earnings_payout_block_id_fkey FOREIGN KEY (payout_block_id) REFERENCES payout_blocks(id) ON DELETE SET NULL;
 alter table public.payout_earnings add constraint payout_earnings_amount_check CHECK ((amount > (0)::numeric));
 alter table public.payout_earnings add constraint payout_earnings_source_check CHECK ((source = ANY (ARRAY['sale'::text, 'royalty'::text, 'transfer'::text, 'offer'::text])));
-alter table public.payout_earnings add constraint payout_earnings_state_check CHECK ((state = ANY (ARRAY['pending'::text, 'available'::text, 'collected'::text])));
+alter table public.payout_earnings add constraint payout_earnings_state_check CHECK ((state = ANY (ARRAY['pending'::text, 'available'::text, 'collected'::text, 'reserved'::text])));
 alter table public.payout_earnings add constraint payout_earnings_hold_reason_check CHECK ((hold_reason = ANY (ARRAY['settlement_window'::text, 'awaiting_counterparty'::text])));
 alter table public.chain_anchors add constraint chain_anchors_pkey PRIMARY KEY (record_hash);
 alter table public.chain_anchors add constraint chain_anchors_record_kind_check CHECK ((record_kind = ANY (ARRAY['registration'::text, 'provenance'::text, 'amendment'::text])));
@@ -1205,7 +1205,6 @@ create index if not exists provider_events_failures_idx ON public.provider_event
 
 create index if not exists payout_destinations_user_idx ON public.payout_destinations USING btree (user_id);
 create index if not exists payout_destinations_method_idx ON public.payout_destinations USING btree (method_id);
-create unique index if not exists payout_destinations_default_idx ON public.payout_destinations USING btree (user_id) WHERE is_default;
 create index if not exists payout_connect_accounts_account_idx ON public.payout_connect_accounts USING btree (account_id);
 create index if not exists payout_blocks_user_idx ON public.payout_blocks USING btree (user_id, created_at DESC);
 create index if not exists payout_blocks_method_idx ON public.payout_blocks USING btree (method_id);

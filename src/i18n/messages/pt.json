@@ -76,7 +76,8 @@
     "offersReceived": "Recebidas",
     "transfersIn": "Recebidas",
     "transfersOut": "Enviadas",
-    "purchased": "Compradas"
+    "purchased": "Compradas",
+    "payoutMethods": "Métodos de repasse"
   },
   "auth": {
     "termsPrefix": "Concordo com os",
@@ -1107,7 +1108,11 @@
       "active": "Pronta para receber",
       "restricted": "A Stripe pediu mais alguma coisa",
       "rejected": "A Stripe recusou esta conta"
-    }
+    },
+    "chooseMethod": "Como você quer receber desta vez?",
+    "recovered": "Saldo compensado",
+    "institution": "Os repasses a instituições são feitos pela nossa equipe. Abrimos uma solicitação.",
+    "notCovered": "Os repasses ainda não chegam a {country}. Seus ganhos continuam seus e ficam guardados até lá."
   },
   "ladder": {
     "title": "Confirme que é você",

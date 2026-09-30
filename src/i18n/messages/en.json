@@ -76,7 +76,8 @@
     "offersReceived": "Received",
     "transfersIn": "In",
     "transfersOut": "Out",
-    "purchased": "Purchased"
+    "purchased": "Purchased",
+    "payoutMethods": "Payout Methods"
   },
   "auth": {
     "termsPrefix": "I agree to the",
@@ -1107,7 +1108,11 @@
       "active": "Ready to receive",
       "restricted": "Stripe needs something else",
       "rejected": "Stripe declined this account"
-    }
+    },
+    "chooseMethod": "How do you want to be paid this time?",
+    "recovered": "Balance settled",
+    "institution": "Payouts to institutions are handled by our team. We've opened a request.",
+    "notCovered": "Payouts don't reach {country} yet. Your earnings stay yours and are kept until they do."
   },
   "ladder": {
     "title": "Confirm it's you",

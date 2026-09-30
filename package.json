@@ -56,6 +56,7 @@
     "check:holdercode": "npx --yes tsx scripts/holder-code-check.ts",
     "check:transfer": "npx --yes tsx scripts/transfer-check.ts",
     "check:pause": "npx --yes tsx scripts/pause-check.ts",
+    "check:payouts": "npx --yes tsx scripts/payouts-check.ts",
     "check:imagevectors": "npx --yes tsx scripts/image-vectors-check.ts",
     "reindex:images": "npx --yes tsx scripts/reindex-images.ts",
     "check:tbtid": "npx --yes tsx scripts/tbt-id-check.ts",

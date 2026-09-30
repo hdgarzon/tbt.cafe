@@ -76,7 +76,8 @@
     "offersReceived": "Recibidas",
     "transfersIn": "Entrantes",
     "transfersOut": "Salientes",
-    "purchased": "Compradas"
+    "purchased": "Compradas",
+    "payoutMethods": "Métodos de cobro"
   },
   "auth": {
     "termsPrefix": "Acepto los",
@@ -1107,7 +1108,11 @@
       "active": "Lista para recibir",
       "restricted": "Stripe pidió algo más",
       "rejected": "Stripe rechazó esta cuenta"
-    }
+    },
+    "chooseMethod": "¿Cómo quieres recibir esta vez?",
+    "recovered": "Saldo compensado",
+    "institution": "Los cobros de instituciones los gestiona nuestro equipo. Abrimos una solicitud.",
+    "notCovered": "Los cobros aún no llegan a {country}. Tus ganancias siguen siendo tuyas y se guardan hasta entonces."
   },
   "ladder": {
     "title": "Confirma que eres tú",

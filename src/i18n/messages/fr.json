@@ -76,7 +76,8 @@
     "offersReceived": "Reçues",
     "transfersIn": "Entrants",
     "transfersOut": "Sortants",
-    "purchased": "Achetées"
+    "purchased": "Achetées",
+    "payoutMethods": "Modes de versement"
   },
   "auth": {
     "termsPrefix": "J'accepte les",
@@ -1107,7 +1108,11 @@
       "active": "Prêt à recevoir",
       "restricted": "Stripe demande autre chose",
       "rejected": "Stripe a refusé ce compte"
-    }
+    },
+    "chooseMethod": "Comment voulez-vous être payé cette fois ?",
+    "recovered": "Solde régularisé",
+    "institution": "Les versements aux institutions sont gérés par notre équipe. Nous avons ouvert une demande.",
+    "notCovered": "Les versements n'atteignent pas encore {country}. Vos gains restent les vôtres et sont conservés d'ici là."
   },
   "ladder": {
     "title": "Confirmez que c'est vous",
