@@ -3,6 +3,7 @@ import { stripe } from '@/lib/stripe'
 import { createAdminClient } from '@/lib/supabase-admin'
 import Stripe from 'stripe'
 import { describeDisputeEvent } from '@/lib/disputes'
+import { openDisputeTicket } from '@/lib/dispute-ticket'
 import { getRules } from '@/lib/rules'
 
 /**
@@ -405,6 +406,24 @@ async function recordDispute(event: Stripe.Event): Promise<boolean> {
   if (error) {
     console.error(`[webhook] no se pudo guardar ${described.providerRef}:`, error)
     return false
+  }
+
+  // Work Order 02, 8.1: una disputa abre su ticket con la evidencia. Idempotente.
+  if (described.kind === 'dispute') {
+    try {
+      await openDisputeTicket(db(), {
+        providerRef: described.providerRef,
+        amount: described.amount,
+        currency: described.currency,
+        reason: described.reason,
+        status: described.status,
+        workId: resolved.workId ?? null,
+        transferId: resolved.transferId ?? null,
+        userId: resolved.userId ?? null,
+      })
+    } catch (ticketError) {
+      console.error(`[webhook] no se pudo abrir el ticket de ${described.providerRef}:`, ticketError)
+    }
   }
 
   console.error(

@@ -84,7 +84,7 @@ do $$ begin
 exception when duplicate_object then null; end $$;
 
 do $$ begin
-  create type public.transfer_type as enum ('automatic', 'manual', 'gift');
+  create type public.transfer_type as enum ('automatic', 'manual', 'gift', 'sale', 'restoring');
 exception when duplicate_object then null; end $$;
 
 do $$ begin
@@ -317,6 +317,8 @@ create table if not exists public.ownership_history (
   holder_code integer not null check (holder_code between 10000 and 99999),
   holder_named boolean not null default false,
   holder_public_name text,
+  -- 067 · the transfer a restoring row undoes
+  restoring_of uuid[],
   constraint holder_code_unique_in_work unique (work_id, holder_code),
   constraint holder_named_has_name check (not holder_named or holder_public_name is not null)
 );
@@ -994,8 +996,8 @@ alter table public.context_snapshots add constraint context_snapshots_work_id_fk
 alter table public.ownership_history add constraint ownership_history_pkey PRIMARY KEY (id);
 alter table public.ownership_history add constraint ownership_history_work_id_fkey FOREIGN KEY (work_id) REFERENCES works(id) ON DELETE CASCADE;
 alter table public.ownership_history add constraint ownership_history_owner_user_id_fkey FOREIGN KEY (owner_user_id) REFERENCES profiles(id) ON DELETE SET NULL;
-alter table public.ownership_history add constraint ownership_history_event_type_check CHECK ((event_type = ANY (ARRAY['creation'::text, 'transfer'::text])));
-alter table public.ownership_history add constraint ownership_history_transfer_type_check CHECK ((transfer_type = ANY (ARRAY['sale'::text, 'gift'::text, NULL::text])));
+alter table public.ownership_history add constraint ownership_history_event_type_check CHECK ((event_type = ANY (ARRAY['creation'::text, 'transfer'::text, 'restoring'::text])));
+alter table public.ownership_history add constraint ownership_history_transfer_type_check CHECK ((transfer_type = ANY (ARRAY['sale'::text, 'gift'::text, 'restoring'::text])));
 
 alter table public.transfers add constraint transfers_pkey PRIMARY KEY (id);
 alter table public.transfers add constraint transfers_work_id_fkey FOREIGN KEY (work_id) REFERENCES works(id) ON DELETE RESTRICT;
@@ -1042,7 +1044,7 @@ alter table public.tickets add constraint tickets_ref_key UNIQUE (ref);
 alter table public.tickets add constraint tickets_subject_user_fkey FOREIGN KEY (subject_user) REFERENCES auth.users(id) ON DELETE CASCADE;
 alter table public.tickets add constraint tickets_assigned_to_fkey FOREIGN KEY (assigned_to) REFERENCES auth.users(id) ON DELETE SET NULL;
 alter table public.tickets add constraint tickets_origin_check CHECK ((origin = ANY (ARRAY['human'::text, 'system'::text, 'ai_escalation'::text])));
-alter table public.tickets add constraint tickets_category_check CHECK ((category = ANY (ARRAY['payments'::text, 'payouts'::text, 'transfers'::text, 'registration'::text, 'authentication'::text, 'other'::text, 'claim'::text, 'report'::text])));
+alter table public.tickets add constraint tickets_category_check CHECK ((category = ANY (ARRAY['payments'::text, 'payouts'::text, 'transfers'::text, 'registration'::text, 'authentication'::text, 'other'::text, 'claim'::text, 'report'::text, 'dispute'::text])));
 alter table public.tickets add constraint tickets_severity_check CHECK ((severity = ANY (ARRAY['financial'::text, 'secondary'::text])));
 alter table public.tickets add constraint tickets_status_check CHECK ((status = ANY (ARRAY['open'::text, 'answered'::text, 'resolved'::text, 'closed'::text])));
 alter table public.ticket_replies add constraint ticket_replies_pkey PRIMARY KEY (id);

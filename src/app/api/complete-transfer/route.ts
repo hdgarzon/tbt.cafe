@@ -240,7 +240,8 @@ export async function POST(request: NextRequest) {
         owner_user_id: transfer.to_owner_id,
         event_type: 'transfer',
         previous_owner_name: previousOwnerName,
-        transfer_type: transfer.transfer_type || 'sale',
+        // El historial dice venta o regalo: una compra viene como 'automatic' (067).
+        transfer_type: transfer.transfer_type === 'automatic' ? 'sale' : transfer.transfer_type || 'sale',
         price: transfer.payment_amount || null,
         currency: transfer.payment_currency || 'USD',
         sequence_number: sequenceNumber,

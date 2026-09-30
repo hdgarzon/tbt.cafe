@@ -396,7 +396,8 @@
     "saleLocked": "La vente nécessite une approbation.",
     "saleLockedCta": "Aller à Vendre",
     "frozen": "Une offre a été acceptée. Cette œuvre est en attente jusqu'au {date}.",
-    "privateCollector": "Collectionneur privé · {code}"
+    "privateCollector": "Collectionneur privé · {code}",
+    "eventRestoring": "Rendue au vendeur"
   },
   "info": {
     "value": "Valeur",

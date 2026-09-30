@@ -132,7 +132,9 @@ export function HistoryTab({ workId, tbtId }: { workId: string; tbtId: string })
             <div className="flex-1 min-w-0">
               <div className="flex items-baseline justify-between gap-2.5">
                 <span className="text-[12px] font-medium text-ink">
-                  {record?.transferType === 'gift'
+                  {e.event === 'restoring'
+                    ? t.work.eventRestoring
+                    : record?.transferType === 'gift'
                     ? t.work.eventGift
                     : record?.event === 'transfer'
                       ? t.work.eventSale

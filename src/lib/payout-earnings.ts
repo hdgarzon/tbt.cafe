@@ -41,6 +41,8 @@ export type EarningWrite = {
   fromOwnerId: string | null
   /** Valor declarado o precio de venta, para resolver una regalía porcentual. */
   amount: number
+  /** Una restitucion (Work Order 02, 8.4) nunca genera regalia. */
+  transferType?: string | null
 }
 
 /**
@@ -61,7 +63,10 @@ export async function recordRoyaltyEarning(
   input: EarningWrite,
   release: 'timer' | 'event'
 ): Promise<void> {
-  const { admin, workId, transferId, fromOwnerId, amount } = input
+  const { admin, workId, transferId, fromOwnerId, amount, transferType } = input
+
+  // 8.4: devolver la obra al vendedor no es un cambio de dueno que pague regalia.
+  if (transferType === 'restoring') return
 
   try {
     const { data: work } = await admin

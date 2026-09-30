@@ -396,7 +396,8 @@
     "saleLocked": "Selling needs approval.",
     "saleLockedCta": "Go to Selling",
     "frozen": "An offer was accepted. This work is on hold until {date}.",
-    "privateCollector": "Private collector · {code}"
+    "privateCollector": "Private collector · {code}",
+    "eventRestoring": "Returned to seller"
   },
   "info": {
     "value": "Value",

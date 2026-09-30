@@ -17,10 +17,11 @@ import { RECORD_SCHEMA } from '@/lib/chain/serialize'
 export type CreatorType = 'individual' | 'group' | 'corporation'
 export type ImageKind = 'thumbnail' | 'full' | 'reduced'
 export type Originality = 'original' | 'derivative' | 'authorized_edition'
-export type ProvenanceEvent = 'creation' | 'sale' | 'transfer' | 'gift'
+export type ProvenanceEvent = 'creation' | 'sale' | 'transfer' | 'gift' | 'restoring'
 export type AmendmentClass = 'minor' | 'authorship'
 
-const EVENTS: ProvenanceEvent[] = ['creation', 'sale', 'transfer', 'gift']
+// restoring: un reembolso o una disputa perdida devuelve la obra (Work Order 02, 8.4).
+const EVENTS: ProvenanceEvent[] = ['creation', 'sale', 'transfer', 'gift', 'restoring']
 
 /**
  * Ausente por diseño, y esta lista es la guarda.
