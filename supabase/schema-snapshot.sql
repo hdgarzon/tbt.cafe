@@ -142,7 +142,9 @@ create table if not exists public.profiles (
   phone_change_pending_at timestamptz,
   phone_change_pending_id uuid,
   -- 069 · Chains 01 Stage 1.3
-  credited_name_confirmed_at timestamptz
+  credited_name_confirmed_at timestamptz,
+  -- 071 · Chains 01 Stage 2: the random creator code
+  creator_code text
 );
 
 create table if not exists public.works (
@@ -201,7 +203,9 @@ create table if not exists public.works (
   signature_strokes jsonb,
   -- 070 · Chains 01 Stage 8
   recording_hash text,
-  registered_asset_links text[]
+  registered_asset_links text[],
+  -- 071 · Chains 01 Stage 2
+  mint_signature text
 );
 
 comment on column public.works.mint_address is
@@ -327,6 +331,8 @@ create table if not exists public.ownership_history (
   -- 068 · Chains 01 Stage 4.5
   token_move_signature text,
   token_moved_at timestamptz,
+  -- 071 · Chains 01 Stage 2: the transfer this row came from
+  transfer_id uuid,
   constraint holder_code_unique_in_work unique (work_id, holder_code),
   constraint holder_named_has_name check (not holder_named or holder_public_name is not null)
 );
@@ -770,6 +776,11 @@ create table if not exists public.payout_earnings (
   collected_at timestamp with time zone
 );
 
+-- 071 · Chains 01 Stage 2.1 d: the list of record kinds, one row per kind
+create table if not exists public.chain_record_kinds (
+  kind text not null primary key
+);
+
 create table if not exists public.chain_anchors (
   record_hash text not null,
   record_kind text not null,
@@ -1119,7 +1130,10 @@ alter table public.payout_earnings add constraint payout_earnings_source_check C
 alter table public.payout_earnings add constraint payout_earnings_state_check CHECK ((state = ANY (ARRAY['pending'::text, 'available'::text, 'collected'::text, 'reserved'::text])));
 alter table public.payout_earnings add constraint payout_earnings_hold_reason_check CHECK ((hold_reason = ANY (ARRAY['settlement_window'::text, 'awaiting_counterparty'::text])));
 alter table public.chain_anchors add constraint chain_anchors_pkey PRIMARY KEY (record_hash);
-alter table public.chain_anchors add constraint chain_anchors_record_kind_check CHECK ((record_kind = ANY (ARRAY['registration'::text, 'provenance'::text, 'amendment'::text])));
+alter table public.chain_anchors add constraint chain_anchors_record_kind_fkey FOREIGN KEY (record_kind) REFERENCES chain_record_kinds(kind);
+alter table public.ownership_history add constraint ownership_history_transfer_id_fkey FOREIGN KEY (transfer_id) REFERENCES transfers(id) ON DELETE SET NULL;
+alter table public.profiles add constraint profiles_creator_code_shape CHECK (((creator_code IS NULL) OR (creator_code ~ '^cr_[0-9abcdefghjkmnpqrstvwxyz]{10}$'::text)));
+alter table public.profiles add constraint profiles_creator_code_unique UNIQUE (creator_code);
 alter table public.chain_anchors add constraint chain_anchors_status_check CHECK ((status = ANY (ARRAY['pending'::text, 'confirmed'::text, 'failed'::text])));
 alter table public.payment_disputes add constraint payment_disputes_pkey PRIMARY KEY (provider_ref);
 alter table public.payment_disputes add constraint payment_disputes_work_id_fkey FOREIGN KEY (work_id) REFERENCES works(id) ON DELETE SET NULL;
@@ -1346,6 +1360,8 @@ create policy "audit readable by viewers" on public.admin_audit_log for select u
 create policy "pending readable by admins" on public.admin_pending_approvals for select using (admin_has('dashboard.view'::text));
 create policy "own credentials read" on public.webauthn_credentials for select using ((user_id = ( SELECT auth.uid() AS uid)));
 alter table public.velocity_holds enable row level security;
+-- 071: the list of record kinds — service role only.
+alter table public.chain_record_kinds enable row level security;
 create policy "own holds read" on public.velocity_holds for select using ((user_id = ( SELECT auth.uid() AS uid)));
 create policy "own challenges" on public.webauthn_challenges for all using ((auth.uid() = user_id)) with check ((auth.uid() = user_id));
 create policy "own money action auth readable" on public.money_action_auth for select using ((( SELECT auth.uid() AS uid) = user_id));

@@ -39,7 +39,7 @@ ok('Brew keeps the recording hash instead of discarding it', /recording_hash: re
 
 const records = code(read('src/lib/chain/records.ts'))
 ok('the registration record carries the recording hash', /recording_hash: input\.recordingHash/.test(records))
-ok('the recording hash is validated', /assertContentHash\(input\.recordingHash\)/.test(records))
+ok('the recording hash is validated', /assertHash\(input\.recordingHash, 'recording_hash'\)/.test(records))
 ok('the registration record carries the asset links', /asset_links: links/.test(records))
 
 const tbt = code(read('src/app/api/complete-tbt/route.ts'))

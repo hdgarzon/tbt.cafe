@@ -61,6 +61,7 @@
     "check:notifykeys": "npx --yes tsx scripts/notify-keys-check.ts",
     "check:creditedname": "npx --yes tsx scripts/credited-name-check.ts",
     "check:workpage": "npx --yes tsx scripts/work-page-check.ts",
+    "check:gateway": "npx --yes tsx scripts/gateway-check.ts",
     "check:imagevectors": "npx --yes tsx scripts/image-vectors-check.ts",
     "reindex:images": "npx --yes tsx scripts/reindex-images.ts",
     "check:tbtid": "npx --yes tsx scripts/tbt-id-check.ts",

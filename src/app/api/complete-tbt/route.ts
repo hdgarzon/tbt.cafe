@@ -385,9 +385,10 @@ export async function POST(request: NextRequest) {
 
         if (!recordUri && workWithCreator.content_hash) {
           try {
-            const { registrationRecord } = await import('@/lib/chain/records')
-            const { pseudonymFor } = await import('@/lib/chain/pseudonym')
+            const { registrationRecord, signatureHash } = await import('@/lib/chain/records')
+            const { creatorCodeFor } = await import('@/lib/chain/creator-code')
             const { publishRecord } = await import('@/lib/chain/arweave')
+            const { cents } = await import('@/lib/fees')
 
             /*
              * ── Item 10: la imagen sube ANTES del registro ────────────────
@@ -454,7 +455,8 @@ export async function POST(request: NextRequest) {
                 contentHash: workWithCreator.content_hash,
                 creator: {
                   name: creatorName,
-                  id: pseudonymFor(workWithCreator.creator_id),
+                  // Chains 01 2.2: el codigo aleatorio del creador, no un seudonimo calculable.
+                  id: await creatorCodeFor(createAdminClient(), workWithCreator.creator_id),
                   type: (creatorInfo?.creator_type ?? 'individual') as 'individual' | 'group' | 'corporation',
                 },
                 work: {
@@ -469,7 +471,14 @@ export async function POST(request: NextRequest) {
                   city: ctxData?.location_name ?? undefined,
                 },
                 ...(image ? { image } : {}),
+                // El valor declarado al registrar: la palabra del creador, en centavos.
+                declaredValue:
+                  Number(workWithCreator.market_price) > 0
+                    ? { amount_cents: cents(Number(workWithCreator.market_price)), currency: String(workWithCreator.currency || 'USD').toUpperCase() }
+                    : undefined,
+                signatureHash: Array.isArray(workWithCreator.signature_strokes) ? signatureHash(workWithCreator.signature_strokes) : undefined,
                 recordingHash: workWithCreator.recording_hash ?? undefined,
+                recordingKind: workWithCreator.recording_hash ? (workWithCreator.audio_video_type === 'video' ? 'video' : 'audio') : undefined,
                 assetLinks: workWithCreator.registered_asset_links ?? workWithCreator.asset_links ?? undefined,
                 sealedAt: new Date(workWithCreator.certified_at || workWithCreator.created_at),
               }) as never
@@ -503,6 +512,8 @@ export async function POST(request: NextRequest) {
           .from('works')
           .update({
             mint_address: mintAddress,
+            // La procedencia de la creacion lleva esta firma (2.3); el barrido la lee de aqui.
+            mint_signature: mintSignature,
             token_uri: recordUri,
             blockchain: 'solana',
             nft_status: 'minted'
@@ -541,28 +552,9 @@ export async function POST(request: NextRequest) {
          */
         if (recordUri && firstOwner?.id) {
           try {
-            const { provenanceRecord } = await import('@/lib/chain/records')
-            const { pseudonymFor } = await import('@/lib/chain/pseudonym')
-            const { publishRecord } = await import('@/lib/chain/arweave')
-
-            const published = await publishRecord(
-              provenanceRecord({
-                tbtId: workNftData.tbtId,
-                sequence: 1,
-                event: 'creation',
-                to: { name: creatorName, id: pseudonymFor(workWithCreator.creator_id) },
-                occurredAt: new Date(workWithCreator.certified_at || workWithCreator.created_at),
-                solanaSignature: mintSignature,
-                registrationRecord: recordUri,
-              }) as never
-            )
-
-            await createAdminClient()
-              .from('ownership_history')
-              .update({ record_uri: published.uri, record_hash: published.hash })
-              .eq('id', firstOwner.id)
-
-            console.log(`Provenance record published: ${published.uri}`)
+            const { publishProvenance } = await import('@/lib/chain/provenance-publish')
+            const outcome = await publishProvenance(createAdminClient(), firstOwner.id, { solanaSignature: mintSignature })
+            console.log('[chain] procedencia de la creacion:', outcome)
           } catch (chainError) {
             console.error('[chain] no se pudo publicar la procedencia:', chainError)
           }

@@ -6,7 +6,6 @@ import { getExplorerUrl } from '@/lib/solana/config'
 import { isProduction, assertServerEnv } from '@/lib/app-env'
 import { authenticate } from '@/lib/route-auth'
 import { notify } from '@/lib/notify'
-import { holderLabel, type HolderFacts } from '@/lib/holder'
 import { moveTokenForOwnership } from '@/lib/token-move'
 import { issueTitle } from '@/lib/titles/issue'
 
@@ -246,6 +245,8 @@ export async function POST(request: NextRequest) {
         price: transfer.payment_amount || null,
         currency: transfer.payment_currency || 'USD',
         sequence_number: sequenceNumber,
+        // Chains 01 2.3: de aqui sale la clase de valor del registro.
+        transfer_id: transfer.id,
         holder_named: holderNamed,
         holder_public_name: holderNamed ? newOwnerName : null,
       })
@@ -300,10 +301,9 @@ export async function POST(request: NextRequest) {
     /*
      * ── Item 7 · pasos 2 y 3: el eslabon de procedencia ──────────────────
      *
-     * `prior_record` es el hash del eslabon anterior y `registration_record`
-     * la URI del registro sellado al certificar. Los dos son obligatorios a
-     * partir de la secuencia 2: `provenanceRecord` rechaza una cadena rota
-     * antes de publicarla, que es donde tiene que rechazarla.
+     * Lo compone `publishProvenance` desde la base (Chains 01 2.3): el
+     * titular como eligio, la clase de valor de la transferencia, la regalia
+     * si se bloqueo aqui, y el eslabon anterior por su hash.
      *
      * Chains 01 4.5: antes del eslabon se mueve el token a la tenencia nueva, y
      * su firma va en el registro. Si el movimiento no sale, el eslabon espera:
@@ -314,19 +314,6 @@ export async function POST(request: NextRequest) {
      */
     if (historyRow?.id) {
       try {
-        const { data: chainSource } = await supabase
-          .from('works')
-          .select('registration_record_uri')
-          .eq('id', transfer.work_id)
-          .single()
-
-        const { data: priorLink } = await supabase
-          .from('ownership_history')
-          .select('record_hash, holder_code, holder_named, holder_public_name')
-          .eq('work_id', transfer.work_id)
-          .eq('sequence_number', sequenceNumber - 1)
-          .maybeSingle()
-
         // Primero el token; la procedencia lleva su firma (orden: mover, registrar, anclar).
         const moveSignature = await moveTokenForOwnership(serviceClient, {
           workId: transfer.work_id,
@@ -336,36 +323,11 @@ export async function POST(request: NextRequest) {
           historyId: historyRow.id,
         })
 
-        if (moveSignature && chainSource?.registration_record_uri && priorLink?.record_hash) {
-          const { provenanceRecord } = await import('@/lib/chain/records')
-          const { pseudonymFor } = await import('@/lib/chain/pseudonym')
-          const { publishRecord } = await import('@/lib/chain/arweave')
-
-          const published = await publishRecord(
-            provenanceRecord({
-              tbtId: transfer.work.tbt_id,
-              sequence: sequenceNumber,
-              event: transfer.transfer_type === 'gift' ? 'gift' : 'sale',
-              // Cada lado como eligio en su adquisicion: nombre o codigo (Chains 01 3.2).
-              from: { name: holderLabel(priorLink as HolderFacts), id: pseudonymFor(transfer.from_owner_id) },
-              to: { name: holderLabel(historyRow as HolderFacts), id: pseudonymFor(transfer.to_owner_id) },
-              occurredAt: new Date(),
-              solanaSignature: moveSignature,
-              priorRecord: priorLink.record_hash,
-              registrationRecord: chainSource.registration_record_uri,
-            }) as never
-          )
-
-          await serviceClient
-            .from('ownership_history')
-            .update({ record_uri: published.uri, record_hash: published.hash })
-            .eq('id', historyRow.id)
-
-          console.log(`Provenance record published: ${published.uri}`)
-        } else {
-          // Una obra sin registro sellado o sin eslabon previo no puede tener
-          // cadena. Se dice y se sigue; el traspaso ya es valido sin ella.
-          console.log('[chain] sin registro de registración o sin eslabón previo: no se publica procedencia')
+        // Sin firma el eslabon espera: la propiedad ya cambio y el barrido reintenta.
+        if (moveSignature) {
+          const { publishProvenance } = await import('@/lib/chain/provenance-publish')
+          const outcome = await publishProvenance(serviceClient, historyRow.id)
+          console.log('[chain] procedencia de la transferencia:', outcome)
         }
       } catch (chainError) {
         console.error('[chain] no se pudo publicar la procedencia:', chainError)

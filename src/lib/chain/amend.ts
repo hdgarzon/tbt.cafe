@@ -34,6 +34,7 @@
  * necesita su propio TBT: es el unico limite duro del Item 5.
  */
 import { RECORD_SCHEMA } from './serialize'
+import { arweaveId } from './records'
 import type { AmendmentClass } from './records'
 
 /** Lo que una enmienda `minor` puede corregir, y nada mas. */
@@ -147,7 +148,8 @@ export function amendRecord(current: Record_, patch: MinorPatch, meta: Amendment
 
   next.type = 'amendment'
   next.sequence = (current.sequence as number) + 1
-  next.supersedes = meta.supersedes
+  // Chains 01 2.4: por ID desnudo; la base guarda la URL de pasarela.
+  next.supersedes = arweaveId(meta.supersedes)
   next.amendment_class = 'minor'
   next.amendment_reason = meta.reason.trim()
   next.decided_by = { initiator: meta.decidedBy.initiator, approver: meta.decidedBy.approver }

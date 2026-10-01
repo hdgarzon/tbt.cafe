@@ -24,6 +24,7 @@
  * "Cannot read properties of undefined (reading 'makeMerkleTree')", que solo
  * aparece al ejecutarlo — compila igual de bien.
  */
+import type { RecordKind } from './records'
 import OpenTimestamps, { DetachedTimestampFile, Ops } from 'javascript-opentimestamps'
 
 export type UpgradeResult = { upgraded: boolean; proof: Buffer; blockHeight?: number }
@@ -157,7 +158,7 @@ export const fromBytea = (raw: string): Buffer =>
 
 export async function anchorRecord(
   recordHash: string,
-  kind: 'registration' | 'provenance' | 'amendment',
+  kind: RecordKind,
   recordUri?: string
 ): Promise<void> {
   try {

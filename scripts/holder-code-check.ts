@@ -34,7 +34,7 @@ async function main() {
 
   // ---- the records never carry an unnamed holder's name
   const xfer = code('src/app/api/complete-transfer/route.ts')
-  ok('the transfer record names the holder only when chosen', /holderLabel\(/.test(xfer) && !/to: \{ name: newOwnerName/.test(xfer))
+  ok('the transfer record names the holder only when chosen', /row\.holder_named && row\.holder_public_name/.test(read('src/lib/chain/provenance-publish.ts')) && !/to: \{ name: newOwnerName/.test(xfer))
   const lib = code('src/lib/holder.ts')
   ok('src/lib/holder.ts decides the label', /export function holderLabel/.test(lib) && /holder_named \? [\s\S]{0,60}holder_public_name/.test(lib))
 

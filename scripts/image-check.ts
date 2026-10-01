@@ -228,13 +228,14 @@ const dirtyPng = new Uint8Array(Buffer.concat([
 
 const HASH = 'sha256:' + 'a'.repeat(64)
 const IMG_HASH = 'sha256:' + 'b'.repeat(64)
-const AR = 'https://arweave.net/8Kf2QpX'
+const AR_ID = '8Kf2QpXa1b2c3d4e5f6g7h8i9j0kLmNoPqRsTuVwXyZ'
+const AR = `https://arweave.net/${AR_ID}`
 
 const base = {
   tbtId: 'RRO5501',
   sequence: 1,
   contentHash: HASH,
-  creator: { name: 'Sara Alarcón', id: 'cr_8812', type: 'individual' as const },
+  creator: { name: 'Sara Alarcón', id: 'cr_7k2m9q4x8z', type: 'individual' as const },
   work: { title: 'Nocturno en Medellín', year: 2026, originality: 'original' as const },
   sealedAt: new Date(Date.UTC(2026, 7, 26, 14, 3, 22)),
 }
@@ -246,14 +247,14 @@ const base = {
      !('image' in sin) && !('image_hash' in sin) && !('image_kind' in sin))
 
   const con = registrationRecord({ ...base, image: { uri: AR, hash: IMG_HASH, kind: 'thumbnail' } })
-  ok('con elección van las tres', con.image === AR && con.image_hash === IMG_HASH && con.image_kind === 'thumbnail')
+  ok('con elección van las tres, la imagen por ID desnudo', con.image === AR_ID && con.image_hash === IMG_HASH && con.image_kind === 'thumbnail')
   ok('el hash de la imagen NO es el del contenido', con.image_hash !== con.content_hash,
      'uno es lo publicado y el otro el archivo del creador')
 }
 
 // ---- lo que no puede pasar
 {
-  throws('una URI que no es https lanza', () =>
+  throws('lo que no es un ID de Arweave lanza', () =>
     registrationRecord({ ...base, image: { uri: 'ar://8Kf2', hash: IMG_HASH, kind: 'full' } }))
   throws('un hash que no es sha256 lanza', () =>
     registrationRecord({ ...base, image: { uri: AR, hash: 'deadbeef', kind: 'full' } }))

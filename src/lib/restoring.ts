@@ -57,13 +57,22 @@ export async function restoreToSeller(
   // Chains 01 4.5: el token vuelve a la tenencia nueva del vendedor.
   const { data: work } = await db.from('works').select('tbt_id').eq('id', t.work_id).maybeSingle()
   if (work?.tbt_id) {
-    await moveTokenForOwnership(db, {
+    const signature = await moveTokenForOwnership(db, {
       workId: t.work_id,
       tbtId: work.tbt_id,
       fromSequence: count ?? 0,
       toSequence: (count ?? 0) + 1,
       historyId: row.id,
     })
+    // Chains 01 2.3: la restitucion tambien es un eslabon; espera a la firma.
+    if (signature) {
+      try {
+        const { publishProvenance } = await import('@/lib/chain/provenance-publish')
+        await publishProvenance(db, row.id)
+      } catch (error) {
+        console.error('[chain] no se pudo publicar la restitucion:', error)
+      }
+    }
   }
   return { restored: true, historyId: row.id }
 }
