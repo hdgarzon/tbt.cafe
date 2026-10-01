@@ -86,8 +86,11 @@ const xfer = readFileSync(join(__dirname, '..', 'src/app/api/complete-transfer/r
 // ---- una transferencia no firma nada
 {
   const block = xfer.slice(xfer.indexOf('provenanceRecord({'), xfer.indexOf('publishRecord') + 4000)
-  ok('la procedencia de transferencia no lleva firma', !block.includes('solanaSignature'),
-     'la propiedad se mueve en la base, no en la cadena')
+  // Chains 01 4.5 reemplaza la regla anterior: el token se mueve, y el eslabon
+  // lleva la firma de ESE movimiento, nunca otro identificador.
+  ok('la procedencia de transferencia lleva la firma del movimiento', block.includes('solanaSignature: moveSignature'))
+  ok('el token se mueve antes del eslabon', xfer.indexOf('await moveTokenForOwnership(') > -1 && xfer.indexOf('await moveTokenForOwnership(') < xfer.indexOf('provenanceRecord({'))
+  ok('sin movimiento, el eslabon espera', /if \(moveSignature && chainSource\?\.registration_record_uri/.test(xfer))
 }
 
 // ---- y la firma que SÍ existe es una firma

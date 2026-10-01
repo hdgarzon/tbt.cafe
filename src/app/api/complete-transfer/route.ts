@@ -7,6 +7,7 @@ import { isProduction, assertServerEnv } from '@/lib/app-env'
 import { authenticate } from '@/lib/route-auth'
 import { notify } from '@/lib/notify'
 import { holderLabel, type HolderFacts } from '@/lib/holder'
+import { moveTokenForOwnership } from '@/lib/token-move'
 import { issueTitle } from '@/lib/titles/issue'
 
 /**
@@ -304,10 +305,9 @@ export async function POST(request: NextRequest) {
      * partir de la secuencia 2: `provenanceRecord` rechaza una cadena rota
      * antes de publicarla, que es donde tiene que rechazarla.
      *
-     * NO lleva `solana_signature`. Una transferencia no firma ninguna
-     * transaccion —la propiedad se mueve en la base, no en la cadena— y poner
-     * ahi cualquier otro identificador seria afirmar una transaccion que no
-     * existe.
+     * Chains 01 4.5: antes del eslabon se mueve el token a la tenencia nueva, y
+     * su firma va en el registro. Si el movimiento no sale, el eslabon espera:
+     * la propiedad ya cambio en el registro y el barrido reintenta.
      *
      * Como todo lo de cadena, va en su propio try/catch: el pago ya se
      * capturo y la propiedad ya cambio de manos.
@@ -327,7 +327,16 @@ export async function POST(request: NextRequest) {
           .eq('sequence_number', sequenceNumber - 1)
           .maybeSingle()
 
-        if (chainSource?.registration_record_uri && priorLink?.record_hash) {
+        // Primero el token; la procedencia lleva su firma (orden: mover, registrar, anclar).
+        const moveSignature = await moveTokenForOwnership(serviceClient, {
+          workId: transfer.work_id,
+          tbtId: transfer.work.tbt_id,
+          fromSequence: sequenceNumber - 1,
+          toSequence: sequenceNumber,
+          historyId: historyRow.id,
+        })
+
+        if (moveSignature && chainSource?.registration_record_uri && priorLink?.record_hash) {
           const { provenanceRecord } = await import('@/lib/chain/records')
           const { pseudonymFor } = await import('@/lib/chain/pseudonym')
           const { publishRecord } = await import('@/lib/chain/arweave')
@@ -341,6 +350,7 @@ export async function POST(request: NextRequest) {
               from: { name: holderLabel(priorLink as HolderFacts), id: pseudonymFor(transfer.from_owner_id) },
               to: { name: holderLabel(historyRow as HolderFacts), id: pseudonymFor(transfer.to_owner_id) },
               occurredAt: new Date(),
+              solanaSignature: moveSignature,
               priorRecord: priorLink.record_hash,
               registrationRecord: chainSource.registration_record_uri,
             }) as never

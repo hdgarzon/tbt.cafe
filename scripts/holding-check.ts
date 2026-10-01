@@ -65,6 +65,10 @@ async function main() {
     ok('the mint URI is the registration record', /uri: registrationRecordUri/.test(token))
     ok('no legacy library in the new module', !token.includes("'@metaplex-foundation/js'"))
     ok('the RPC is the guarded one', token.includes('createUmi(getRpcUrl())'))
+    const mv = readFileSync(join(root, 'src/lib/token-move.ts'), 'utf8')
+    ok('one function moves the token on a change of ownership', /export async function moveTokenForOwnership/.test(mv) && /moveTitleToken\(/.test(mv))
+    ok('it moves between the two title numbers of the work', /`\$\{p\.tbtId\}-\$\{p\.fromSequence\}`/.test(mv) && /`\$\{p\.tbtId\}-\$\{p\.toSequence\}`/.test(mv))
+    ok('the transfer and the restoring call it', /moveTokenForOwnership\(/.test(readFileSync(join(root, 'src/app/api/complete-transfer/route.ts'), 'utf8')) && /moveTokenForOwnership\(/.test(readFileSync(join(root, 'src/lib/restoring.ts'), 'utf8')))
   } else {
     console.log('skip mint/transfer owner checks — src/lib/solana/token.ts not yet written (Stage 4.1)')
   }

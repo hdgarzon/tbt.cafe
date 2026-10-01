@@ -319,6 +319,9 @@ create table if not exists public.ownership_history (
   holder_public_name text,
   -- 067 · the transfer a restoring row undoes
   restoring_of uuid[],
+  -- 068 · Chains 01 Stage 4.5
+  token_move_signature text,
+  token_moved_at timestamptz,
   constraint holder_code_unique_in_work unique (work_id, holder_code),
   constraint holder_named_has_name check (not holder_named or holder_public_name is not null)
 );

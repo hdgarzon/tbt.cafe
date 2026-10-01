@@ -1,4 +1,5 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
+import { moveTokenForOwnership } from '@/lib/token-move'
 
 /**
  * La restitucion — Work Order 02, Stage 8.4 (57).
@@ -52,5 +53,17 @@ export async function restoreToSeller(
   if (error || !row) return { restored: false }
 
   await db.from('works').update({ current_owner_id: t.from_owner_id }).eq('id', t.work_id)
+
+  // Chains 01 4.5: el token vuelve a la tenencia nueva del vendedor.
+  const { data: work } = await db.from('works').select('tbt_id').eq('id', t.work_id).maybeSingle()
+  if (work?.tbt_id) {
+    await moveTokenForOwnership(db, {
+      workId: t.work_id,
+      tbtId: work.tbt_id,
+      fromSequence: count ?? 0,
+      toSequence: (count ?? 0) + 1,
+      historyId: row.id,
+    })
+  }
   return { restored: true, historyId: row.id }
 }
