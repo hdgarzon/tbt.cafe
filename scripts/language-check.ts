@@ -62,6 +62,44 @@ const FILES = ['src/lib/roast-content.ts', 'src/lib/legal-content.ts', 'src/lib/
   )
 }
 
+// ---- Work Order 02, 13.4: la terminologia del producto
+//
+// Sin sign-in, certificate ni NFT en nada que la persona lea, y «Seller» no es
+// una etiqueta del menu: aqui se autentica, se emite un titulo y se vende desde
+// «Selling». Los terminos de busqueda del asistente quedan fuera: alguien puede
+// escribir «sign in» y tiene que encontrar la respuesta. «account» espera la
+// pregunta (j) a Federico.
+{
+  const walk = (o: unknown, out: string[]): string[] => {
+    if (typeof o === 'string') out.push(o)
+    else if (Array.isArray(o)) for (let i = 0; i < o.length; i++) walk(o[i], out)
+    else if (o && typeof o === 'object') { const v = Object.values(o as Record<string, unknown>); for (let i = 0; i < v.length; i++) walk(v[i], out) }
+    return out
+  }
+  const TERMS: [string, RegExp][] = [
+    ['sign-in', /\b(sign[- ]?in|log[- ]?in|sign[- ]?up)\b/i],
+    ['NFT', /\bNFTs?\b/],
+    // El sustantivo: «Certified» es el estado de la obra y se queda.
+    ['certificate', /\bcertificates?\b|\bcertificats?\b/i],
+  ]
+  const LANGS = ['en', 'es', 'pt', 'fr']
+  for (let l = 0; l < LANGS.length; l++) {
+    const m = JSON.parse(read(`src/i18n/messages/${LANGS[l]}.json`))
+    const strings = walk(m, [])
+    for (let i = 0; i < TERMS.length; i++) {
+      const found = strings.filter((x) => TERMS[i][1].test(x))
+      ok(`${LANGS[l]}: sin «${TERMS[i][0]}» (13.4)`, found.length === 0, found.slice(0, 2).join(' | '))
+    }
+    const menu = Object.values((m.menu ?? {}) as Record<string, unknown>).filter((v) => typeof v === 'string') as string[]
+    ok(`${LANGS[l]}: «Seller» no es una etiqueta del menu`, !menu.some((v) => /^(seller|vendedor|vendeur)s?$/i.test(v.trim())))
+  }
+  const bodies = walk(KNOWLEDGE.map((d) => d.body), []).concat(walk(ROAST_ARTICLES, []), [read('src/lib/legal-content.ts')])
+  for (let i = 0; i < 2; i++) {
+    const found = bodies.filter((x) => TERMS[i][1].test(x))
+    ok(`roast, legal y asistente: sin «${TERMS[i][0]}» (13.4)`, found.length === 0, found.slice(0, 2).join(' | '))
+  }
+}
+
 // ---- la regalia se bifurca una vez, y la del creador no se reescribe
 {
   const text = read('src/lib/roast-content.ts')
