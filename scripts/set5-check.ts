@@ -1,0 +1,73 @@
+import { readFileSync } from 'fs'
+import { join } from 'path'
+import { ROAST_ARTICLES } from '../src/lib/roast-content'
+import { quote } from '../src/lib/fees'
+import { testRules } from './rules-fixture'
+
+/**
+ * Work Order 02, Set 5.2 and 5.3 — Roast and the assistant say what the product
+ * now does: selling needs approval, offers freeze the work and give a payment
+ * window, a transfer's value is confirmed by the recipient, payouts go by USDC
+ * or bank through Stripe Connect, and the phone number can be changed safely.
+ * Figures that live in configuration are prose values, never typed by hand.
+ */
+
+let bad = 0
+const ok = (label: string, cond: boolean, detail = '') => {
+  if (!cond) bad++
+  console.log(`${cond ? 'ok  ' : 'FAIL'} ${label}${detail && !cond ? ` — ${detail}` : ''}`)
+}
+const article = (id: string) => JSON.stringify(ROAST_ARTICLES.find((a) => a.id === id) ?? {})
+
+// ---- Selling
+// The 12,000 example (processing on the full charge, net 10,443.47) and whose
+// name is on the card statement are Stage 0 economics: they go in with Stage 0.
+// Until then the example in Roast must be the arithmetic the product does today.
+const selling = article('selling')
+ok('selling: approval and the Selling menu item', /needs approval/.test(selling) && /<b>Selling<\/b>/.test(selling))
+{
+  const q = quote(18000, { type: 'percentage', value: 10 }, testRules())
+  ok('selling: the example in Roast is what fees.ts computes today',
+     /16,139\.27/.test(selling) && Math.abs(q.sellerNet - 16139.27) < 0.005 && Math.abs(q.processing - 52.73) < 0.005, JSON.stringify(q))
+  ok('selling: no Stage 0 figure ahead of Stage 0', !/10,443\.47/.test(selling) && !/348\.53/.test(selling))
+}
+
+// ---- Offers
+const offers = article('offers')
+ok('offers: duration up to {offer_max_hours}', /\{offer_max_hours\}/.test(offers))
+ok('offers: what acceptance freezes', /frozen|freezes/.test(offers))
+ok('offers: the payment window is a prose value', /\{offer_payment_hours\}/.test(offers) && !/24-hour|24 hours/.test(offers))
+ok('offers: messages are private and can be reported', /private/.test(offers) && /report/i.test(offers))
+ok('offers: when the owner cannot sell yet', /isn’t approved|not approved|approved to sell/.test(offers))
+ok('the payment window is a prose value in prose.ts', /offer_payment_hours: String\(rules\.offers\.paymentWindowHours\)/.test(readFileSync(join(__dirname, '..', 'src/lib/prose.ts'), 'utf8')))
+
+// ---- Transfers
+const transfers = article('transfers')
+ok('transfers: {hours} hours', /\{hours\} hours/.test(transfers))
+ok('transfers: the recipient confirms the declared value', /confirms the declared value|confirm the declared value/.test(transfers))
+ok('transfers: sales made elsewhere, closing like transfer.elsewhere', /any royalty is calculated on it/.test(transfers))
+
+// ---- Payouts
+const payouts = article('payouts')
+ok('payouts: USDC and bank through Stripe Connect', /USDC/.test(payouts) && /bank/.test(payouts) && /Stripe Connect/.test(payouts))
+ok('payouts: PayPal, USDT and BTC are gone', !/PayPal|USDT|BTC/.test(payouts))
+ok('payouts: the method is chosen at each collection', /each time you collect|at each collection/.test(payouts))
+ok('payouts: earnings kept where payouts do not reach', /kept/.test(payouts))
+ok('payouts: institutions by request', /institution/i.test(payouts))
+
+// ---- Staying safe
+const safe = article('staying-safe')
+ok('safe: changing your phone number', /change your phone number|Changing your phone number/i.test(safe))
+ok('safe: the alarm to the old number', /old number/.test(safe))
+ok('safe: private-code reset by help request', /help request/.test(safe) && /private code/.test(safe))
+
+// ---- Assistant (5.3), in all four languages
+const k = readFileSync(join(__dirname, '..', 'src/lib/assistant/knowledge.ts'), 'utf8')
+ok('assistant: an offers entry', /id: 'offers'/.test(k))
+ok('assistant: selling needs approval', /needs approval/.test(k))
+ok('assistant: no Stage 0 figure ahead of Stage 0', !/10,443\.47|10\.443,47|10 443,47/.test(k))
+ok('assistant: transfers confirm the declared value and cover sales elsewhere', /confirms the declared value/.test(k) && /sold elsewhere|made elsewhere/.test(k))
+ok('assistant: payouts by USDC or bank', /USDC/.test(k) && !/PayPal/.test(k))
+
+console.log(bad === 0 ? '\nall good' : `\n${bad} failure(s)`)
+process.exit(bad === 0 ? 0 : 1)

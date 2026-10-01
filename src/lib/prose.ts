@@ -32,6 +32,7 @@ export function proseValues(rules: Rules): Record<string, string> {
     top_threshold: money(rules.settlement.topThreshold),
     hold: String(rules.settlement.firstPayoutHoldDays),
     offer_max_hours: String(rules.offers.maxHours),
+    offer_payment_hours: String(rules.offers.paymentWindowHours),
     covered: String(rules.covered.count),
   }
 }
@@ -40,7 +41,7 @@ export function proseValues(rules: Rules): Record<string, string> {
 export const PROSE_NAMES = [
   'hours', 'fee', 'service_fee', 'seller_fee', 'transfer_fee', 'floor_pct', 'floor_min', 'royalty_ceiling',
   'biometric', 'payout_pct', 'standard', 'high', 'high_threshold', 'top', 'top_threshold', 'hold',
-  'offer_max_hours', 'covered',
+  'offer_max_hours', 'offer_payment_hours', 'covered',
 ] as const
 
 const TOKEN = /\{([a-z_]+)\}/g
