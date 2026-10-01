@@ -792,7 +792,10 @@ create table if not exists public.chain_anchors (
   upgrade_attempts integer default 0 not null,
   last_attempt_at timestamp with time zone,
   created_at timestamp with time zone default now() not null,
-  updated_at timestamp with time zone default now() not null
+  updated_at timestamp with time zone default now() not null,
+  -- 072 · Chains 01 Stage 6.3: the published proof, and the work it anchors
+  proof_record_id text,
+  tbt_id text
 );
 
 comment on table public.chain_anchors is

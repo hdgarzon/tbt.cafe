@@ -142,7 +142,7 @@ export async function publishRecord(record: PublishableRecord): Promise<Publishe
    * certificacion no puede caerse por un calendario lento.
    */
   // Una prueba no se ancla a su vez (Chains 01 2.4): es la prueba de otro ancla.
-  if (record.type !== 'proof') await anchorRecord(hash, record.type as RecordKind, uri)
+  if (record.type !== 'proof') await anchorRecord(hash, record.type as RecordKind, uri, record.tbt_id)
 
   return { uri, hash, bytes: file.buffer.length }
 }

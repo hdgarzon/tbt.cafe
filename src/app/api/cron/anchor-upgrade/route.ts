@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase-admin'
 import { upgrade, toBytea, fromBytea } from '@/lib/chain/ots'
+import { publishProofs } from '@/lib/chain/proof-publish'
 
 /**
  * Actualiza las anclas pendientes — Chain Spec 01, Item 8.
@@ -138,12 +139,16 @@ export async function GET(request: NextRequest) {
     }
   }
 
-  console.log(`[ots-cron] revisadas ${pending?.length ?? 0}: ${confirmed} confirmadas, ${stillPending} pendientes`)
+  // Chains 01 6.3: cada ancla confirmada sin prueba publicada, incluidas las de corridas anteriores.
+  const proofs = await publishProofs(admin)
+
+  console.log(`[ots-cron] revisadas ${pending?.length ?? 0}: ${confirmed} confirmadas, ${stillPending} pendientes; pruebas publicadas ${proofs.published}, fallidas ${proofs.failed}`)
 
   return NextResponse.json({
     checked: pending?.length ?? 0,
     confirmed,
     pending: stillPending,
+    proofs,
   })
 }
 

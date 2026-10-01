@@ -132,6 +132,8 @@ export type LedgerAnchor = {
   status: 'pending' | 'confirmed' | 'failed'
   blockHeight: number | null
   attestedAt: string | null
+  /** La prueba publicada en Arweave, cuando confirmo (Chains 01 6.3). */
+  proofRecordId?: string | null
 }
 
 export type LedgerEntry = {

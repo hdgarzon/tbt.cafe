@@ -159,7 +159,9 @@ export const fromBytea = (raw: string): Buffer =>
 export async function anchorRecord(
   recordHash: string,
   kind: RecordKind,
-  recordUri?: string
+  recordUri?: string,
+  /** La obra del registro: la prueba publicada la nombra (Chains 01 6.3). */
+  tbtId?: string
 ): Promise<void> {
   try {
     const { createAdminClient } = await import('@/lib/supabase-admin')
@@ -171,6 +173,7 @@ export async function anchorRecord(
         record_hash: recordHash.replace(/^sha256:/i, ''),
         record_kind: kind,
         record_uri: recordUri ?? null,
+        tbt_id: tbtId ?? null,
         ots_proof: toBytea(proof),
       })
 

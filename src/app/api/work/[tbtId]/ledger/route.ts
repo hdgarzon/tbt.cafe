@@ -24,6 +24,7 @@ type Anchor = {
   status: string
   blockHeight: number | null
   attestedAt: string | null
+  proofRecordId: string | null
 }
 
 export async function GET(_request: NextRequest, props: { params: Promise<{ tbtId: string }> }) {
@@ -58,7 +59,7 @@ export async function GET(_request: NextRequest, props: { params: Promise<{ tbtI
     if (hashes.length > 0) {
       const { data: anchors } = await admin
         .from('chain_anchors')
-        .select('record_hash, status, block_height, attested_at')
+        .select('record_hash, status, block_height, attested_at, proof_record_id')
         .in('record_hash', hashes)
 
       for (const a of anchors ?? []) {
@@ -66,6 +67,8 @@ export async function GET(_request: NextRequest, props: { params: Promise<{ tbtI
           status: a.status,
           blockHeight: a.block_height,
           attestedAt: a.attested_at,
+          // Chains 01 6.4: la prueba publicada en Arweave, por su ID.
+          proofRecordId: a.proof_record_id,
         })
       }
     }

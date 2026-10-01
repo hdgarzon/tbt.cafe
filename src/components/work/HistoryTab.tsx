@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useLocale } from '@/i18n/LocaleProvider'
 import { money } from '@/lib/fees'
+import { arweaveUrl } from '@/lib/chain/gateways'
 import {
   fetchOwnershipHistory,
   fetchLedger,
@@ -94,6 +95,10 @@ function RecordLinks({
           no demuestra nada que un tercero pueda comprobar. */}
       {entry.recordHash && entry.anchor?.status === 'confirmed' && (
         <ExternalLink href={`/api/chain/ots/${entry.recordHash}`}>{t.work.linkOts}</ExternalLink>
+      )}
+      {/* Chains 01 6.4: la misma prueba, publicada en Arweave junto al registro. */}
+      {entry.anchor?.proofRecordId && (
+        <ExternalLink href={arweaveUrl(entry.anchor.proofRecordId)}>{t.work.linkProofRecord}</ExternalLink>
       )}
       <Anchor anchor={entry.anchor} t={t} />
     </div>

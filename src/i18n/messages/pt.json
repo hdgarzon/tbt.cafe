@@ -387,7 +387,7 @@
     "linkArweave": "Arweave",
     "linkOts": "Prova",
     "anchorPending": "ancorando",
-    "anchorConfirmed": "bloco {height}",
+    "anchorConfirmed": "ancorado no Bitcoin, bloco {height}",
     "anchorFailed": "a âncora falhou",
     "anchorNote": "A ancoragem no Bitcoin leva algumas horas e se completa sozinha.",
     "verifyNote": "Cada registro pode ser conferido sem nós: baixe a prova e verifique-a contra o registro.",
@@ -404,7 +404,8 @@
     "linkRemove": "Remover link",
     "linkSaveFailed": "Não conseguimos salvar os links.",
     "recordingHeading": "Gravação",
-    "linkTx": "Transação"
+    "linkTx": "Transação",
+    "linkProofRecord": "Prova no Arweave"
   },
   "info": {
     "value": "Valor",
