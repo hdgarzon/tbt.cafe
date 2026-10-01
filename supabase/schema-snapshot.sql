@@ -615,7 +615,9 @@ create table if not exists public.platform_config (
     'en', 'Payout collection is paused for a moment. Your earnings are safe.',
     'es', 'El cobro está en pausa por un momento. Tus ganancias están seguras.',
     'pt', 'Os repasses estão pausados por um momento. Seus ganhos estão seguros.',
-    'fr', 'Les versements sont suspendus pour un moment. Vos gains sont en sécurité.')
+    'fr', 'Les versements sont suspendus pour un moment. Vos gains sont en sécurité.'),
+  -- 074 · Chains 01 Stage 10: the prototype example IDs, never issued
+  tbt_id_reserved text[] default '{}'::text[] not null
 );
 
 create table if not exists public.covered_registrations (
