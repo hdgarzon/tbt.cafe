@@ -121,6 +121,8 @@ export function BrewWizard() {
   const [bondedDoc, setBondedDoc] = useState<File | null>(null)
   const [userId, setUserId] = useState<string | null>(null)
   const [profile, setProfile] = useState<CreatorProfileRow | null>(null)
+  const [creditedName, setCreditedName] = useState('')
+  const [creditedConfirmed, setCreditedConfirmed] = useState(false)
   const [series, setSeries] = useState<SeriesWithCount[]>([])
   const [msg, setMsg] = useState('')
   const [busy, setBusy] = useState(false)
@@ -547,7 +549,27 @@ export function BrewWizard() {
     setEditedSummary(result.summary)
   }
 
+  // Chains 01 1.3: el nombre acreditado se confirma una vez, antes del primer Sello.
+  const needsCreditedName = brewAs !== 'collector' && !creditedConfirmed && !profile?.credited_name_confirmed_at
+
+  async function confirmCreditedName() {
+    const {
+      data: { session },
+    } = await supabase.auth.getSession()
+    if (!session) return openAuth()
+    const res = await fetch('/api/brew/credited-name', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${session.access_token}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: creditedName || profile?.public_alias || '' }),
+    })
+    if (!res.ok) return setMsg(t.transferAccept.errors.respondFailed)
+    const { name } = await res.json()
+    setProfile((p) => (p ? { ...p, public_alias: name } : p))
+    setCreditedConfirmed(true)
+  }
+
   function startSeal() {
+    if (needsCreditedName) return
     if (sealTimerRef.current) clearInterval(sealTimerRef.current)
     sealTimerRef.current = setInterval(() => {
       setSealHolding((p) => {
@@ -1545,6 +1567,24 @@ export function BrewWizard() {
             </div>
           ))}
         </div>
+
+        {needsCreditedName && (
+          <div className="mt-5 rounded-xl border border-ink p-3.5">
+            <BrewLabel>{t.brew.creditedNameLabel}</BrewLabel>
+            <BrewInput
+              value={creditedName || profile?.public_alias || ''}
+              onChange={(e) => setCreditedName(e.target.value)}
+            />
+            <p className="text-[11.5px] leading-[1.55] text-ink mt-2">{t.brew.creditedNameNote}</p>
+            <button
+              type="button"
+              onClick={confirmCreditedName}
+              className="mt-3 rounded-[9px] border border-ink px-4 py-[9px] text-[10px] font-semibold tracking-[0.12em] uppercase text-ink"
+            >
+              {t.menu.confirm}
+            </button>
+          </div>
+        )}
 
         <div className="mt-5">
           <BrewLabel info={t.brew.chainImageTip}>{t.brew.chainImageLabel}</BrewLabel>

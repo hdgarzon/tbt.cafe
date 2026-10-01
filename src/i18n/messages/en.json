@@ -921,7 +921,9 @@
     "coveredNoteLast": "This one is on us — it's your last free registration.",
     "promoApplied": "{value} off applied.",
     "promoAppliedFixed": "{value} USD off applied.",
-    "promoNotAccepted": "That code is not valid for this payment."
+    "promoNotAccepted": "That code is not valid for this payment.",
+    "creditedNameLabel": "Credited as",
+    "creditedNameNote": "This name goes on the permanent record of every work you register. It cannot be removed later."
   },
   "help": {
     "title": "Help",

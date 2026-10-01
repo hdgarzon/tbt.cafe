@@ -38,6 +38,8 @@ export type CreatorProfileRow = {
   creator_type: 'individual' | 'group' | 'corporation'
   legal_name: string | null
   public_alias: string | null
+  /** Chains 01 1.3: el nombre acreditado ya se confirmo. */
+  credited_name_confirmed_at?: string | null
   collective_name: string | null
   lead_representative: string | null
   entity_name: string | null
@@ -59,7 +61,7 @@ export async function fetchCreatorProfile(userId: string): Promise<CreatorProfil
     supabase
       .from('profiles')
       .select(
-        'creator_type, public_alias, collective_name, lead_representative, entity_name, credentials, social_linkedin, social_website, social_instagram, bio'
+        'creator_type, public_alias, collective_name, lead_representative, entity_name, credentials, social_linkedin, social_website, social_instagram, bio, credited_name_confirmed_at'
       )
       .eq('id', userId)
       .maybeSingle(),

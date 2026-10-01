@@ -921,7 +921,9 @@
     "coveredNoteLast": "Celle-ci est pour nous — c'est votre dernier enregistrement gratuit.",
     "promoApplied": "{value} de réduction appliquée.",
     "promoAppliedFixed": "{value} USD de réduction appliquée.",
-    "promoNotAccepted": "Ce code n'est pas valable pour ce paiement."
+    "promoNotAccepted": "Ce code n'est pas valable pour ce paiement.",
+    "creditedNameLabel": "Crédité sous le nom",
+    "creditedNameNote": "Ce nom figure dans le registre permanent de chaque œuvre que vous enregistrez. Il ne pourra pas être retiré."
   },
   "help": {
     "title": "Aide",

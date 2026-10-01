@@ -140,7 +140,9 @@ create table if not exists public.profiles (
   phone_changed_at timestamptz,
   phone_change_pending text,
   phone_change_pending_at timestamptz,
-  phone_change_pending_id uuid
+  phone_change_pending_id uuid,
+  -- 069 · Chains 01 Stage 1.3
+  credited_name_confirmed_at timestamptz
 );
 
 create table if not exists public.works (

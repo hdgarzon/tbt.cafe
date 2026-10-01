@@ -921,7 +921,9 @@
     "coveredNoteLast": "Esta va por nuestra cuenta — es tu última registración gratis.",
     "promoApplied": "{value} de descuento aplicado.",
     "promoAppliedFixed": "{value} USD de descuento aplicado.",
-    "promoNotAccepted": "Ese código no es válido para este pago."
+    "promoNotAccepted": "Ese código no es válido para este pago.",
+    "creditedNameLabel": "Acreditado como",
+    "creditedNameNote": "Este nombre va al registro permanente de cada obra que registres. No se puede quitar después."
   },
   "help": {
     "title": "Ayuda",
