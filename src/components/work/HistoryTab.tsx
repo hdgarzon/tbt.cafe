@@ -58,7 +58,7 @@ function Anchor({ anchor, t }: { anchor: LedgerEntry['anchor']; t: ReturnType<ty
   return <span className="text-[10.5px] text-placeholder">{t.work.anchorPending}</span>
 }
 
-/** Los enlaces de un registro: Arweave, la prueba, y en su caso Solana. */
+/** Los enlaces de un evento: Arweave, Solana, el ancla y su prueba (Chains 01, 8.3). */
 function RecordLinks({
   entry,
   mintAddress,
@@ -68,7 +68,7 @@ function RecordLinks({
   mintAddress?: string | null
   t: ReturnType<typeof useLocale>['t']
 }) {
-  if (!entry.recordUri && !entry.recordHash) return null
+  if (!entry.recordUri && !entry.recordHash && !entry.solanaSignature) return null
 
   const network = process.env.NEXT_PUBLIC_SOLANA_NETWORK || 'devnet'
   const cluster = network === 'mainnet-beta' ? '' : `?cluster=${network}`
@@ -78,9 +78,16 @@ function RecordLinks({
       {entry.recordUri && (
         <ExternalLink href={entry.recordUri}>{t.work.linkArweave}</ExternalLink>
       )}
+      {/* La registración abre el activo, cuyo dueño es hoy la dirección de
+          tenencia; cada cambio de dueño abre la transacción que movió el token. */}
       {mintAddress && (
         <ExternalLink href={`https://explorer.solana.com/address/${mintAddress}${cluster}`}>
           {t.work.linkSolana}
+        </ExternalLink>
+      )}
+      {entry.solanaSignature && (
+        <ExternalLink href={`https://explorer.solana.com/tx/${entry.solanaSignature}${cluster}`}>
+          {t.work.linkTx}
         </ExternalLink>
       )}
       {/* La descarga solo donde hay ancla confirmada: una prueba pendiente aún

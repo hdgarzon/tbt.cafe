@@ -397,7 +397,14 @@
     "saleLockedCta": "Ir a Vender",
     "frozen": "Se aceptó una oferta. Esta obra está en espera hasta el {date}.",
     "privateCollector": "Coleccionista privado · {code}",
-    "eventRestoring": "Devuelta al vendedor"
+    "eventRestoring": "Devuelta al vendedor",
+    "linksHeading": "Enlaces",
+    "linksAsRegistered": "Tal como se dieron al registrar",
+    "linkAdd": "Añadir",
+    "linkRemove": "Quitar enlace",
+    "linkSaveFailed": "No pudimos guardar los enlaces.",
+    "recordingHeading": "Grabación",
+    "linkTx": "Transacción"
   },
   "info": {
     "value": "Valor",

@@ -397,7 +397,14 @@
     "saleLockedCta": "Go to Selling",
     "frozen": "An offer was accepted. This work is on hold until {date}.",
     "privateCollector": "Private collector · {code}",
-    "eventRestoring": "Returned to seller"
+    "eventRestoring": "Returned to seller",
+    "linksHeading": "Links",
+    "linksAsRegistered": "As provided at registration",
+    "linkAdd": "Add",
+    "linkRemove": "Remove link",
+    "linkSaveFailed": "We couldn't save the links.",
+    "recordingHeading": "Recording",
+    "linkTx": "Transaction"
   },
   "info": {
     "value": "Value",

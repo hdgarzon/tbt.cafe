@@ -469,6 +469,8 @@ export async function POST(request: NextRequest) {
                   city: ctxData?.location_name ?? undefined,
                 },
                 ...(image ? { image } : {}),
+                recordingHash: workWithCreator.recording_hash ?? undefined,
+                assetLinks: workWithCreator.registered_asset_links ?? workWithCreator.asset_links ?? undefined,
                 sealedAt: new Date(workWithCreator.certified_at || workWithCreator.created_at),
               }) as never
             )

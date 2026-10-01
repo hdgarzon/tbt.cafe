@@ -198,7 +198,10 @@ create table if not exists public.works (
   provenance_hash text,
   image_sha256 text,
   plagiarism_scan_id uuid,
-  signature_strokes jsonb
+  signature_strokes jsonb,
+  -- 070 · Chains 01 Stage 8
+  recording_hash text,
+  registered_asset_links text[]
 );
 
 comment on column public.works.mint_address is
@@ -994,6 +997,7 @@ alter table public.title_files add constraint title_files_pkey PRIMARY KEY (titl
 alter table public.title_files add constraint title_files_title_id_fkey FOREIGN KEY (title_id) REFERENCES titles(id) ON DELETE CASCADE;
 alter table public.profiles add constraint profiles_signature_strokes_array CHECK (((signature_strokes IS NULL) OR (jsonb_typeof(signature_strokes) = 'array'::text)));
 alter table public.works add constraint works_signature_strokes_array CHECK (((signature_strokes IS NULL) OR (jsonb_typeof(signature_strokes) = 'array'::text)));
+alter table public.works add constraint works_recording_hash_shape CHECK (((recording_hash IS NULL) OR (recording_hash ~ '^sha256:[0-9a-f]{64}$'::text)));
 
 alter table public.context_snapshots add constraint context_snapshots_pkey PRIMARY KEY (id);
 alter table public.context_snapshots add constraint context_snapshots_work_id_fkey FOREIGN KEY (work_id) REFERENCES works(id) ON DELETE CASCADE;

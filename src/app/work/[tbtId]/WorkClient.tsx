@@ -277,7 +277,16 @@ export default function WorkPage({ params, scannedAt = null }: { params: { tbtId
       </div>
 
       <div className="mt-5 pb-8">
-        {tab === 'profile' && <ProfileTab work={work} canEdit={!!role} heroControl={heroControl} onSaved={load} />}
+        {tab === 'profile' && (
+          <ProfileTab
+            work={work}
+            canEdit={!!role}
+            // Chains 01, 8.2: los enlaces, solo el creador mientras tiene la obra.
+            canEditLinks={!!userId && work.creator_id === userId && work.current_owner_id === userId}
+            heroControl={heroControl}
+            onSaved={load}
+          />
+        )}
         {tab === 'info' && <InfoTab work={work} scannedAt={scannedAt} />}
         {tab === 'history' && <HistoryTab workId={work.id} tbtId={work.tbt_id} />}
         {tab === 'action' && role && userId && <ActionTab work={work} role={role} userId={userId} onChanged={load} />}

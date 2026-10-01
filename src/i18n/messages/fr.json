@@ -397,7 +397,14 @@
     "saleLockedCta": "Aller à Vendre",
     "frozen": "Une offre a été acceptée. Cette œuvre est en attente jusqu'au {date}.",
     "privateCollector": "Collectionneur privé · {code}",
-    "eventRestoring": "Rendue au vendeur"
+    "eventRestoring": "Rendue au vendeur",
+    "linksHeading": "Liens",
+    "linksAsRegistered": "Tels que fournis à l'enregistrement",
+    "linkAdd": "Ajouter",
+    "linkRemove": "Retirer le lien",
+    "linkSaveFailed": "Nous n'avons pas pu enregistrer les liens.",
+    "recordingHeading": "Enregistrement",
+    "linkTx": "Transaction"
   },
   "info": {
     "value": "Valeur",

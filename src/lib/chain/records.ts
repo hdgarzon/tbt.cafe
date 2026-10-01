@@ -101,6 +101,10 @@ export type RegistrationInput = {
    * `hash` es de los BYTES PUBLICADOS — nunca el `contentHash` (Item 10).
    */
   image?: { uri: string; hash: string; kind: ImageKind }
+  /** El hash de la grabacion del creador, tomado al subirla (Chains 01, 8.1). */
+  recordingHash?: string
+  /** Los enlaces tal como estaban al certificar (8.2); la lista viva no va aqui. */
+  assetLinks?: string[]
 }
 
 export type RegistrationRecord = {
@@ -116,6 +120,8 @@ export type RegistrationRecord = {
   image?: string
   image_hash?: string
   image_kind?: ImageKind
+  recording_hash?: string
+  asset_links?: string[]
   sealed_at: string
   issuer: 'tbt.cafe'
 }
@@ -133,6 +139,8 @@ export function registrationRecord(input: RegistrationInput): RegistrationRecord
   if (!input.tbtId) throw new Error('records: falta tbt_id.')
   if (!input.work?.title) throw new Error('records: falta el titulo de la obra.')
   if (input.image) assertImage(input.image)
+  if (input.recordingHash) assertContentHash(input.recordingHash)
+  const links = (input.assetLinks ?? []).filter((l) => /^https?:\/\//.test(l))
 
   const context =
     input.context && (input.context.statement || input.context.city || input.context.country)
@@ -162,6 +170,8 @@ export function registrationRecord(input: RegistrationInput): RegistrationRecord
     ...(input.image
       ? { image: input.image.uri, image_hash: input.image.hash, image_kind: input.image.kind }
       : {}),
+    ...(input.recordingHash ? { recording_hash: input.recordingHash } : {}),
+    ...(links.length > 0 ? { asset_links: links } : {}),
     sealed_at: iso(input.sealedAt),
     issuer: 'tbt.cafe',
   }

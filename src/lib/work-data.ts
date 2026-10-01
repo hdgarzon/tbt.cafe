@@ -59,6 +59,12 @@ export type WorkFull = {
   commerce: WorkCommerce | null
   /** Pasaje de contexto generado al certificar (Spec 01) — user_edited_summary si existe, si no ai_summary. */
   context: string | null
+  /** Chains 01, 8.2: la lista viva, y la que se registró al certificar. */
+  asset_links: string[] | null
+  registered_asset_links: string[] | null
+  /** Chains 01, 8.1: la grabación del creador. */
+  audio_video_url: string | null
+  audio_video_type: string | null
 }
 
 const COMMERCE_DEFAULT: WorkCommerce = {
@@ -78,6 +84,7 @@ export async function fetchWorkFull(tbtId: string): Promise<WorkFull | null> {
     .select(
       `id, tbt_id, title, description, category, technique, media_url, status,
        certified_at, mint_address, is_featured, current_owner_id, creator_id, registered_as,
+       asset_links, registered_asset_links, audio_video_url, audio_video_type,
        series:work_series(id, name, slug),
        bonded:bonded_creators(name, unattributed, alias, city, status),
        creator:profiles!works_creator_id_fkey(id, public_alias, display_name),
@@ -132,12 +139,12 @@ export type LedgerEntry = {
   sequence: number
   event?: string
   transferType?: string | null
-  actor?: string | null
-  from?: string | null
   occurredAt: string | null
   recordUri: string | null
   recordHash: string | null
   anchor: LedgerAnchor | null
+  /** La transaccion que movio el token en este cambio de dueño (Chains 01, 4.5 y 8.3). */
+  solanaSignature?: string | null
 }
 
 export type Ledger = {
@@ -270,6 +277,16 @@ export async function saveFeatured(workId: string, featured: boolean): Promise<{
  * SELLADOS — TBT ID, creador, contexto, registro, cadena — no tienen
  * contraparte de escritura aquí a propósito.
  */
+/**
+ * Chains 01, 8.2: la lista viva de enlaces. Solo el creador mientras tiene la
+ * obra; la base lo hace cumplir (070). Lo que no es http(s) no se guarda.
+ */
+export async function saveAssetLinks(workId: string, links: string[]): Promise<{ error?: string }> {
+  const clean = links.map((l) => l.trim()).filter((l) => /^https?:\/\//.test(l))
+  const { error } = await supabase.from('works').update({ asset_links: clean }).eq('id', workId)
+  return error ? { error: error.message } : {}
+}
+
 async function updateWork(workId: string, patch: { description?: string; category?: string; technique?: string }): Promise<{ error?: string }> {
   const { error } = await supabase.from('works').update(patch).eq('id', workId)
   return error ? { error: error.message } : {}

@@ -428,10 +428,9 @@ export async function createDraftWork(
     if (thumb) chainImageUrl = (await uploadWorksMedia(userId, thumb, 'thumb_'))?.url ?? null
   }
 
-  let audioVideoUrl: string | null = null
-  if (input.audioVideoFile) {
-    audioVideoUrl = (await uploadWorksMedia(userId, input.audioVideoFile, 'av_'))?.url ?? null
-  }
+  // Chains 01, 8.1: el hash de la grabacion se guarda y va al registro.
+  const recording = input.audioVideoFile ? await uploadWorksMedia(userId, input.audioVideoFile, 'av_') : null
+  const audioVideoUrl = recording?.url ?? null
 
   let seriesId = input.seriesId
   if (!seriesId && input.newSeriesName?.trim()) {
@@ -508,6 +507,7 @@ export async function createDraftWork(
       asset_links: input.assetLinks.filter((l) => l.trim()),
       about_work: input.aboutWork,
       audio_video_url: audioVideoUrl,
+      recording_hash: recording?.hash ?? null,
       audio_video_type: input.audioVideoFile ? input.audioVideoType : null,
       payment_status: 'pending',
       market_price: input.marketPrice || null,
