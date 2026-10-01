@@ -83,9 +83,12 @@ drop function if exists public.complete_transfer();
 -- ── 0.7a ────────────────────────────────────────────────────────────────────
 -- p_amounts: buyer_total, processing, application_fee, royalty_gross,
 -- royalty_earning, platform_take, seller_net (numbers), charge_path,
--- provider, payment_intent (text). Returns the ownership row's id.
+-- provider, payment_intent (text). Returns { history_id, completed }:
+-- `completed` is true only for the call that completed the sale. Two
+-- deliveries of one event can both get here; the row lock makes the second
+-- wait and find it done, and it must not move the token a second time.
 create or replace function public.complete_sale(p_transfer uuid, p_amounts jsonb, p_three_ds boolean)
-returns uuid
+returns jsonb
 language plpgsql
 security definer
 set search_path = public
@@ -108,7 +111,7 @@ begin
   -- A replay finds it done and changes nothing.
   if v_transfer.payment_status = 'completed' then
     select id into v_history from public.ownership_history where transfer_id = p_transfer;
-    return v_history;
+    return jsonb_build_object('history_id', v_history, 'completed', false);
   end if;
 
   select * into v_work from public.works where id = v_transfer.work_id for update;
@@ -195,7 +198,7 @@ begin
       order by created_at desc limit 1
    );
 
-  return v_history;
+  return jsonb_build_object('history_id', v_history, 'completed', true);
 end;
 $$;
 
