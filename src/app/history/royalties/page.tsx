@@ -5,6 +5,7 @@ import { supabase } from '@/lib/supabase'
 import { useLocale } from '@/i18n/LocaleProvider'
 import { fetchRoyalties, type RoyaltyRow } from '@/lib/history-data'
 import { LedgerRow } from '@/components/LedgerRow'
+import { ReceiptSheet } from '@/components/ReceiptSheet'
 import { money } from '@/lib/fees'
 import { SignInGate } from '@/components/SignInGate'
 
@@ -14,6 +15,8 @@ const plural = (n: number, one: string, many: string) => (n === 1 ? one : many).
 export default function RoyaltiesPage() {
   const { t } = useLocale()
   const [loading, setLoading] = useState(true)
+  // Stage 9: cada fila abre su recibo.
+  const [receiptId, setReceiptId] = useState<string | null>(null)
   const [signedIn, setSignedIn] = useState(true)
   const [rows, setRows] = useState<RoyaltyRow[]>([])
 
@@ -56,7 +59,7 @@ export default function RoyaltiesPage() {
             {rows.map((r) => (
               <LedgerRow
                 key={r.id}
-                href={r.tbtId ? `/work/${r.tbtId}` : undefined}
+                onClick={() => setReceiptId(r.id)}
                 title={r.title}
                 what={
                   r.royalty.type === 'fixed'
@@ -70,6 +73,7 @@ export default function RoyaltiesPage() {
           </div>
         </>
       )}
+      {receiptId && <ReceiptSheet kind="royalty" id={receiptId} onClose={() => setReceiptId(null)} />}
     </div>
   )
 }

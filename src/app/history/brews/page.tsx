@@ -5,6 +5,7 @@ import { supabase } from '@/lib/supabase'
 import { useLocale } from '@/i18n/LocaleProvider'
 import { fetchBrews, type BrewRow } from '@/lib/history-data'
 import { LedgerRow } from '@/components/LedgerRow'
+import { ReceiptSheet } from '@/components/ReceiptSheet'
 import { money } from '@/lib/fees'
 import { SignInGate } from '@/components/SignInGate'
 import { useRules } from '@/lib/rules-public'
@@ -17,6 +18,8 @@ export default function BrewsPage() {
   // La tarifa es de configuracion (Work Order 02, 1.4).
   const rules = useRules()
   const [loading, setLoading] = useState(true)
+  // Stage 9: cada fila abre su recibo.
+  const [receiptId, setReceiptId] = useState<string | null>(null)
   const [signedIn, setSignedIn] = useState(true)
   const [rows, setRows] = useState<BrewRow[]>([])
 
@@ -59,7 +62,7 @@ export default function BrewsPage() {
             {rows.map((r) => (
               <LedgerRow
                 key={r.id}
-                href={`/work/${r.tbtId}`}
+                onClick={() => setReceiptId(r.id)}
                 title={r.title}
                 what={t.myCollections.brewRow.replace('{fee}', `$${money(r.fee)}`)}
                 amount="—"
@@ -69,6 +72,7 @@ export default function BrewsPage() {
           </div>
         </>
       )}
+      {receiptId && <ReceiptSheet kind="registration" id={receiptId} onClose={() => setReceiptId(null)} />}
     </div>
   )
 }

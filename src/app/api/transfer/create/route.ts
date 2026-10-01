@@ -184,6 +184,13 @@ export async function POST(request: NextRequest) {
         payment_amount: recordedValue,
         payment_currency: 'USD',
         is_two_phase: true,
+        // Stage 9: el recibo lee lo guardado y nunca recalcula (0.9c).
+        buyer_total: quote.total,
+        processing: quote.processing,
+        royalty_gross: quote.royalty,
+        platform_take: quote.transferFee,
+        charge_path: 'platform',
+        provider: 'stripe',
       })
       .select('id')
       .single()

@@ -70,6 +70,7 @@
     "check:balance": "npx --yes tsx scripts/balance-check.ts",
     "check:set5": "npx --yes tsx scripts/set5-check.ts",
     "check:money": "npx --yes tsx scripts/money-check.ts",
+    "check:receipts": "npx --yes tsx scripts/receipts-check.ts",
     "check:switch": "npx --yes tsx scripts/switch-check.ts",
     "chain:create-collection": "npx --yes tsx scripts/create-title-collection.ts",
     "check:imagevectors": "npx --yes tsx scripts/image-vectors-check.ts",
