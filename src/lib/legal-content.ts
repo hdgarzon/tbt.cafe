@@ -265,6 +265,10 @@ export const LEGAL_DOCS: LegalDoc[] = [
         "html": "Where a record needs correction, we can annotate it or issue a superseding record. We cannot erase what has been written."
       },
       {
+        "kind": "p",
+        "html": "tbt.cafe holds the keys that record and move TBTs; no key is created or held for any holder."
+      },
+      {
         "kind": "h",
         "text": "13. What we do not promise"
       },
@@ -481,6 +485,10 @@ export const LEGAL_DOCS: LegalDoc[] = [
       {
         "kind": "p",
         "html": "<b>We cannot delete what is written to a public blockchain.</b> Registration records, ownership and transfer history are permanent and beyond our control — that permanence is what makes a TBT worth holding. Before you register a work, please understand that its authorship record is intended to outlast us and cannot be withdrawn."
+      },
+      {
+        "kind": "p",
+        "html": "What is permanent and public: the credited creator name, the signature’s fingerprint (not the signature), the recording’s fingerprint, asset links as provided at registration, prices and declared values, and holder names only when chosen."
       },
       {
         "kind": "p",

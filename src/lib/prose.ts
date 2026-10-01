@@ -33,6 +33,8 @@ export function proseValues(rules: Rules): Record<string, string> {
     hold: String(rules.settlement.firstPayoutHoldDays),
     offer_max_hours: String(rules.offers.maxHours),
     covered: String(rules.covered.count),
+    // Chains 01 Stage 12: la clave que firma en Arweave; se pone el dia del cambio.
+    storage_address: process.env.NEXT_PUBLIC_TBT_STORAGE_ADDRESS || '—',
   }
 }
 
@@ -40,7 +42,7 @@ export function proseValues(rules: Rules): Record<string, string> {
 export const PROSE_NAMES = [
   'hours', 'fee', 'service_fee', 'seller_fee', 'transfer_fee', 'floor_pct', 'floor_min', 'royalty_ceiling',
   'biometric', 'payout_pct', 'standard', 'high', 'high_threshold', 'top', 'top_threshold', 'hold',
-  'offer_max_hours', 'covered',
+  'offer_max_hours', 'covered', 'storage_address',
 ] as const
 
 const TOKEN = /\{([a-z_]+)\}/g

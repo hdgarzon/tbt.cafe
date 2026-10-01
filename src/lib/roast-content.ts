@@ -1,5 +1,6 @@
 /**
- * Roast — los once artículos, portados VERBATIM del prototipo.
+ * Roast — los once artículos portados VERBATIM del prototipo, y el del anonimato
+ * (Work Order Chains 01, Stage 12).
  *
  * Es la superficie donde los clientes aprenden las reglas, y el índice del
  * handoff la nombra entre las cuatro que hay que actualizar EN LA MISMA PASADA
@@ -46,7 +47,7 @@ export const ROAST_ARTICLES: RoastArticle[] = [
         "rows": [
           { "chain": "Bitcoin", "role": "Anchor", "detail": "An anchor is dropped at the moments that matter — registration, and every change of ownership. Each one timestamps a fingerprint of the record to the most durable chain there is, proving it existed when we say it did and has not been altered since — including by us." },
           { "chain": "Solana", "role": "Sailing", "detail": "The token is minted here when a work is registered. It is public, so anyone can confirm the registration without asking us." },
-          { "chain": "Arweave", "role": "Treasured", "detail": "The record itself — title, creator, year, the statement made at registration — and, where the creator chooses to publish it, an image of the work. Stored permanently, paid once, with no subscription keeping it alive." }
+          { "chain": "Arweave", "role": "Treasured", "detail": "The record itself — title, creator, year, the statement made at registration — and an image of the work, at full size unless the creator chooses otherwise. Stored permanently, paid once, with no subscription keeping it alive." }
         ]
       },
       { "kind": "p", "html": "Using all three together is <b>the first of its kind</b>. Most systems pick one chain and accept its weaknesses. A TBT takes what each does best: Bitcoin’s permanence, Solana’s speed, Arweave’s storage. The result is a record that is fast to move, cheap to keep, and effectively impossible to falsify." },
@@ -54,7 +55,7 @@ export const ROAST_ARTICLES: RoastArticle[] = [
       { "kind": "p", "html": "<b>Authorship.</b> Who made the work, and when. Sealed at registration and never rewritten — the title of authorship lives inside the token." },
       { "kind": "p", "html": "<b>Ownership.</b> Who holds it now, and everyone who held it before. Each change is recorded and published to the permanent record, where it cannot be quietly rewritten." },
       { "kind": "p", "html": "<b>History.</b> Every hand it has passed through, in order, with dates and values. Provenance that accumulates rather than resets." },
-      { "kind": "p", "html": "<b>Commercial terms.</b> Its price, its availability, and the creator’s royalty — which travels with the token permanently and pays out on every future sale. This is the <b>billable</b> part, and it is what a title alone could never do." },
+      { "kind": "p", "html": "<b>Commercial terms.</b> Its price, its availability, and the creator’s royalty — which is written to the permanent record when it locks and can never change, and pays out on every future sale. This is the <b>billable</b> part, and it is what a title alone could never do." },
       { "kind": "p", "html": "So a title of authorship is one of the things a TBT holds. It is not the whole of what a TBT is." },
       { "kind": "p", "html": "<b>Transferable</b> means it moves, and the moving is recorded. Sell it, gift it, pass it to an institution — each movement joins the history, is published to the permanent record, and is anchored to Bitcoin." },
       { "kind": "p", "html": "<b>Billable</b> means it carries money. A price when it is for sale. A royalty that returns to the creator on every resale, <b>enforced at settlement</b> rather than left to the goodwill of whoever handles the next transaction. A work that keeps earning for the person who made it." },
@@ -561,6 +562,38 @@ export const ROAST_ARTICLES: RoastArticle[] = [
     ]
   },
   {
+    "id": "staying-anonymous",
+    "title": "Staying anonymous, and checking the chain yourself",
+    "minutes": 3,
+    "summary": "Your name on the permanent record is your choice, every time you acquire a work.",
+    "body": [
+      {
+        "kind": "p",
+        "html": "Every change of hands is recorded. <b>Whether your name is on it is up to you</b>, and you choose each time you accept or buy a work. The answer starts from the “Display as anonymous” switch in your profile, and you can change it for that one acquisition."
+      },
+      {
+        "kind": "p",
+        "html": "If you stay anonymous, the permanent record says <b>Private collector</b> and a five-digit code issued for that holding alone. The code is random and is never reused across your works, so being named on one work reveals nothing about any other. Only our register connects a code to a person."
+      },
+      {
+        "kind": "p",
+        "html": "<b>Once a name is published it cannot be removed</b>, even if you later choose to be anonymous. The switch in your profile changes what our website shows, at any time; it never changes a record already written."
+      },
+      {
+        "kind": "p",
+        "html": "<b>Each holding has its own address on Solana.</b> When a work changes hands, its token moves to the address of the new holding. No key exists for those addresses — not for you, and not for us — so nothing about your holding depends on a wallet."
+      },
+      {
+        "kind": "p",
+        "html": "Anyone can work out the address from the title number, without asking us. It is the Solana program-derived address of the seeds <code>tbt-holding</code> and the title number (for example <code>RRO5501-3</code>), under the public key <code>F9ieqDeu9tk2eBeMLXdRdtyagHVhdR9uNbqqJBjPgg3q</code>, whose secret was destroyed when it was made."
+      },
+      {
+        "kind": "p",
+        "html": "Records issued by tbt.cafe are signed on Arweave by <code>{storage_address}</code>. A record signed by any other address is not ours."
+      }
+    ]
+  },
+  {
     "id": "if-we-disappear",
     "title": "What survives if tbt.cafe disappears",
     "minutes": 3,
@@ -572,7 +605,7 @@ export const ROAST_ARTICLES: RoastArticle[] = [
       },
       {
         "kind": "p",
-        "html": "Your work’s <b>registration</b> is a token on Solana, which anyone can look up without asking us. Every change of ownership since is published to the permanent record and anchored to Bitcoin."
+        "html": "Your work’s <b>registration</b> is a token on Solana, which anyone can look up without asking us. Every change of ownership moves the token to the new holding’s own address on Solana, and is published to the permanent record and anchored to Bitcoin."
       },
       {
         "kind": "p",
@@ -580,11 +613,11 @@ export const ROAST_ARTICLES: RoastArticle[] = [
       },
       {
         "kind": "p",
-        "html": "And the <b>Bitcoin anchor</b> proves that record existed when it says it did and has not been altered — verifiable by anyone, using the proof file we store alongside the record."
+        "html": "And the <b>Bitcoin anchor</b> proves that record existed when it says it did and has not been altered — verifiable by anyone. Each Bitcoin proof is published to Arweave beside its record."
       },
       {
         "kind": "p",
-        "html": "Every step of that chain runs on infrastructure nobody at tbt.cafe operates or pays for. That is deliberate, and it is the reason the architecture has several layers rather than one convenient database."
+        "html": "tbt.cafe pays once for each record; nothing needs paying again. That is deliberate, and it is the reason the architecture has several layers rather than one convenient database."
       },
       {
         "kind": "p",
