@@ -31,6 +31,13 @@ export const FEE = {
   stripeFlat: 0.3,
 } as const
 
+/**
+ * La tarifa de tarjeta, para mostrarla: el panel y el asistente la leen de aqui
+ * y no la escriben a mano (Work Order 02, check:money).
+ */
+export const PROCESSING_PCT = FEE.stripePct * 100
+export const PROCESSING_RULE = `${PROCESSING_PCT}% x charge + $${FEE.stripeFlat.toFixed(2)}`
+
 /** Lo que estas funciones necesitan de las reglas. `Rules` lo cumple entero. */
 export type FeeRules = Pick<Rules, 'fees' | 'royalty'>
 

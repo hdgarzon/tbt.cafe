@@ -64,7 +64,13 @@ ok('safe: private-code reset by help request', /help request/.test(safe) && /pri
 const k = readFileSync(join(__dirname, '..', 'src/lib/assistant/knowledge.ts'), 'utf8')
 ok('assistant: an offers entry', /id: 'offers'/.test(k))
 ok('assistant: selling needs approval', /needs approval/.test(k))
-ok('assistant: the 12,000 example in four languages', (k.match(/10,443\.47|10\.443,47|10 443,47/g) ?? []).length >= 4)
+{
+  // The example is computed by saleQuote inside the assistant, in four languages.
+  const { knowledgeFor } = require('../src/lib/assistant/knowledge') as typeof import('../src/lib/assistant/knowledge')
+  const sale = knowledgeFor(testRules()).find((d) => d.id === 'sale_fees')
+  const bodies = sale ? [sale.body.en, sale.body.es, sale.body.pt, sale.body.fr] : []
+  ok('assistant: the 12,000 example in four languages', bodies.length === 4 && /10,443\.47/.test(bodies[0]) && /10\.443,47/.test(bodies[1]) && /10\.443,47/.test(bodies[2]) && /10 443,47/.test(bodies[3]), bodies.join(' | ').slice(0, 300))
+}
 ok('assistant: transfers confirm the declared value and cover sales elsewhere', /confirms the declared value/.test(k) && /sold elsewhere|made elsewhere/.test(k))
 ok('assistant: payouts by USDC or bank', /USDC/.test(k) && !/PayPal/.test(k))
 

@@ -99,7 +99,7 @@ ok('no browser file imports the server reader', clientImporters.length === 0, cl
 const fees = code('src/lib/fees.ts')
 ok('fees.ts keeps only the Stripe rate', /stripePct: 0\.029/.test(fees) && !/service: 8\b/.test(fees) && !/payoutRate: 0\.023/.test(fees) && !/ROYALTY_FLOOR = \{/.test(fees))
 ok('LADDER_DEFAULTS is gone', !code('src/lib/auth-ladder.ts').includes('LADDER_DEFAULTS'))
-const windowFiles = ['src/lib/transfer-lapse.ts', 'src/app/api/transfer/respond/route.ts', 'src/app/api/transfer/[transferId]/route.ts', 'src/components/work/ActionTab.tsx', 'src/app/api/stripe/webhook/route.ts']
+const windowFiles = ['src/lib/transfer-lapse.ts', 'src/app/api/transfer/respond/route.ts', 'src/app/api/transfer/[transferId]/route.ts', 'src/components/work/ActionTab.tsx', 'src/lib/stripe-events.ts']
 for (let i = 0; i < windowFiles.length; i++) {
   const s = code(windowFiles[i])
   ok(`no hard-coded 24-hour window in ${windowFiles[i]}`, !/24 \* (3600|60 \* 60)/.test(s) && !/HOLD_WINDOW_MS = /.test(s))

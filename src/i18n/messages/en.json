@@ -535,7 +535,16 @@
     "errors": {
       "sessionExpired": "Session expired — please authenticate again.",
       "completeFailed": "We couldn't complete the purchase"
-    }
+    },
+    "terms": "Paying accepts the {terms}, including what tbt.cafe delivers.",
+    "termsLink": "Terms",
+    "statementSeller": "Your card statement will show {seller}.",
+    "statementPlatform": "Your card statement will show TBT.CAFE.",
+    "confirmTitle": "It's yours",
+    "confirmBody": "Your title for {title} was issued, the record was written and ownership moved to you.",
+    "confirmOk": "Got it",
+    "confirmHelp": "Something wrong? Open a help request.",
+    "review": "We need to review this purchase. We'll let you know shortly."
   },
   "creator": {
     "label": "Creator",

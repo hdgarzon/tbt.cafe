@@ -6,14 +6,11 @@ import { supabase } from '@/lib/supabase'
 import { useLocale } from '@/i18n/LocaleProvider'
 
 /**
- * /purchase/success — a donde Stripe redirige tras el pago de una compra
- * iniciada por el comprador (create-purchase en el backend existente
- * construye esta URL con transferId + workId ya embebidos).
+ * /purchase/success — el retorno de Stripe despues de una compra.
  *
- * Llama complete-transfer (cross-origin, Bearer token) para terminar de
- * mover la propiedad, generar el nuevo código de transferencia y actualizar
- * el NFT on-chain — el mismo endpoint que usa /transferir, ahora también
- * autorizado para el comprador (to_owner_id), no solo el vendedor.
+ * Solo pregunta el estado (Work Order 02, 0.7b): la venta la completa el
+ * webhook con completeSale, se quede o no el comprador en esta pagina. Cuando
+ * consta, lleva a la confirmacion con su «Entendido» (0.9a).
  *
  * useSearchParams() exige un límite de Suspense en el App Router; se aísla
  * en un componente interno para no forzar a toda la página a client-only.
@@ -27,39 +24,55 @@ function PurchaseSuccessContent() {
   const [error, setError] = useState('')
   const [workTitle, setWorkTitle] = useState('')
 
-  useEffect(() => {
-    const transferId = params.get('transferId')
-    const sessionId = params.get('session_id')
+  const [transferId, setTransferId] = useState<string | null>(null)
 
-    if (!transferId) {
+  /*
+   * Solo pregunta (Work Order 02, 0.7b). La venta la completa el webhook; esta
+   * pagina espera a que conste y nunca completa nada. Un comprador que cierra
+   * la pestana ya es dueno: el webhook no depende de que vuelva.
+   */
+  useEffect(() => {
+    const id = params.get('transferId')
+    if (!id) {
       setState('error')
       setError(t.purchase.missingTransferId)
       return
     }
+    setTransferId(id)
+    let tries = 0
+    let stopped = false
 
-    ;(async () => {
+    const check = async () => {
+      if (stopped) return
       try {
         const { data: { session } } = await supabase.auth.getSession()
         if (!session) throw new Error(t.purchase.errors.sessionExpired)
-
-        const res = await fetch('/api/complete-transfer', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${session.access_token}`,
-          },
-          body: JSON.stringify({ transferId, sessionId }),
+        const res = await fetch(`/api/purchase/status?transferId=${encodeURIComponent(id)}`, {
+          headers: { Authorization: `Bearer ${session.access_token}` },
         })
         const body = await res.json()
         if (!res.ok) throw new Error(body.error ?? t.purchase.errors.completeFailed)
-
-        setWorkTitle(body.workTitle ?? '')
-        setState('done')
+        if (body.status === 'completed') {
+          setWorkTitle(body.title ?? '')
+          setState('done')
+          return
+        }
+        // Unos dos minutos; despues, la revision la dice el aviso, no esta pagina.
+        if (++tries >= 40) {
+          setError(t.purchase.review)
+          setState('error')
+          return
+        }
+        setTimeout(check, 3000)
       } catch (e) {
         setError(e instanceof Error ? e.message : t.purchase.errors.completeFailed)
         setState('error')
       }
-    })()
+    }
+    check()
+    return () => {
+      stopped = true
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [params])
 
@@ -77,7 +90,12 @@ function PurchaseSuccessContent() {
           </div>
           <p className="font-display font-medium text-[28px] leading-[1.08] text-ink">{t.purchase.successDone}</p>
           {workTitle && <p className="text-[13px] text-ink-soft mt-2">{workTitle}</p>}
-          <a href="/" className="back-link mt-8">← {t.purchase.home}</a>
+          {transferId && (
+            <a href={`/purchase/confirmed?transferId=${transferId}`} className="back-link mt-8">
+              {t.purchase.confirmTitle} →
+            </a>
+          )}
+          <a href="/" className="back-link mt-4">← {t.purchase.home}</a>
         </>
       )}
       {state === 'error' && (

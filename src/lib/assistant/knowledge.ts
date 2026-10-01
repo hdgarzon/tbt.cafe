@@ -20,7 +20,7 @@
  * se quedaban atrás, produciendo material seguro de sí mismo y equivocado.
  * Derivarlas hace que esa deriva no pueda ocurrir.
  */
-import { FEE as CARD } from '@/lib/fees'
+import { PROCESSING_PCT, saleQuote } from '@/lib/fees'
 import type { Rules } from '@/lib/rules-shape'
 
 export type Locale = 'en' | 'es' | 'pt' | 'fr'
@@ -46,10 +46,22 @@ const COVERED = rules.covered.count
 /** El piso de una regalia fija y el procesamiento, derivados igual que la tarifa. */
 const FLOOR_PCT = rules.royalty.floorPct
 const FLOOR_MIN = rules.royalty.floorMin
-const STRIPE_PCT = CARD.stripePct * 100
+const STRIPE_PCT = PROCESSING_PCT
 const HOURS = rules.transferWindowHours
 const OFFER_MAX = rules.offers.maxHours
 const PAY_HOURS = rules.offers.paymentWindowHours
+/*
+ * El ejemplo de venta (Set 5.3): se calcula, no se escribe. Si una tarifa
+ * cambia en configuracion, el ejemplo del asistente cambia con ella.
+ */
+const EX_PCT = 10
+const EX = saleQuote({ price: 12000, royalty: { type: 'percentage', value: EX_PCT }, path: 'direct' }, rules)
+const SEP: Record<Locale, [string, string]> = { en: [',', '.'], es: ['.', ','], pt: ['.', ','], fr: [' ', ','] }
+const amt = (l: Locale, n: number, decimals = true) => {
+  const [int, dec] = n.toFixed(2).split('.')
+  const grouped = int.replace(/\B(?=(\d{3})+(?!\d))/g, SEP[l][0])
+  return decimals ? `${grouped}${SEP[l][1]}${dec}` : grouped
+}
 
 return [
   {
@@ -122,10 +134,10 @@ return [
       fr: ['vente', 'vendre', 'acheteur paie', 'frais de service', 'combien je reçois', 'traitement'],
     },
     body: {
-      en: `Selling a work needs approval: apply from Selling in the menu. Registering, transferring, gifting and receiving royalties need none. On a sale the buyer pays the price plus $${FEE}. The seller has $${FEE} deducted as well — the service fee is charged on both sides, $${FEE * 2} per sale to the platform. Card processing is ${STRIPE_PCT}% of the full charge (price + $${FEE}) plus $0.30, borne by the seller only; it is never added to the buyer. The seller receives price − royalty − $${FEE} − processing. Example: 12,000 USD at 10% — the buyer pays 12,008.00, processing 348.53, royalty 1,200.00, service fee 8.00, the seller nets 10,443.47. Depending on the seller's country, the card is charged on the seller's own Stripe account (the statement shows the seller's name) or by tbt.cafe on the seller's behalf (the statement shows tbt.cafe); the purchase screen says which.`,
-      es: `Vender una obra necesita aprobación: se solicita desde Vender en el menú. Registrar, transferir, regalar y recibir regalías no la necesitan. En una venta el comprador paga el precio más $${FEE}. Al vendedor también se le descuentan $${FEE} — la tarifa de servicio se cobra en ambos lados, $${FEE * 2} por venta para la plataforma. El procesamiento de tarjeta es el ${STRIPE_PCT}% del cargo completo (precio + $${FEE}) más $0,30, y lo absorbe solo el vendedor; nunca se le suma al comprador. El vendedor recibe precio − regalía − $${FEE} − procesamiento. Ejemplo: 12.000 USD al 10%: el comprador paga 12.008,00, procesamiento 348,53, regalía 1.200,00, tarifa de servicio 8,00, el vendedor recibe 10.443,47. Según el país del vendedor, la tarjeta se cobra en la propia cuenta de Stripe del vendedor (el estado de cuenta muestra su nombre) o la cobra tbt.cafe en su nombre (muestra tbt.cafe); la pantalla de compra dice cuál.`,
-      pt: `Vender uma obra exige aprovação: peça em Vender, no menu. Registrar, transferir, presentear e receber royalties não exigem. Em uma venda o comprador paga o preço mais $${FEE}. Do vendedor também são descontados $${FEE} — a taxa de serviço é cobrada dos dois lados, $${FEE * 2} por venda para a plataforma. O processamento do cartão é ${STRIPE_PCT}% da cobrança inteira (preço + $${FEE}) mais $0,30, absorvido só pelo vendedor; nunca é somado ao comprador. O vendedor recebe preço − royalty − $${FEE} − processamento. Exemplo: 12.000 USD a 10%: o comprador paga 12.008,00, processamento 348,53, royalty 1.200,00, taxa de serviço 8,00, o vendedor recebe 10.443,47. Conforme o país do vendedor, o cartão é cobrado na própria conta Stripe do vendedor (a fatura mostra o nome dele) ou pela tbt.cafe em nome dele (mostra tbt.cafe); a tela de compra diz qual.`,
-      fr: `Vendre une œuvre nécessite une approbation : la demande se fait depuis Vendre dans le menu. Enregistrer, transférer, offrir et recevoir des redevances n'en demandent pas. Lors d'une vente, l'acheteur paie le prix plus $${FEE}. Le vendeur se voit aussi déduire $${FEE} — les frais de service sont prélevés des deux côtés, $${FEE * 2} par vente pour la plateforme. Les frais de carte sont de ${STRIPE_PCT} % du montant débité entier (prix + $${FEE}) plus $0,30, supportés uniquement par le vendeur ; ils ne sont jamais ajoutés à l'acheteur. Le vendeur reçoit prix − redevance − $${FEE} − frais. Exemple : 12 000 USD à 10 % — l'acheteur paie 12 008,00, frais de carte 348,53, redevance 1 200,00, frais de service 8,00, le vendeur reçoit 10 443,47. Selon le pays du vendeur, la carte est débitée sur le propre compte Stripe du vendeur (le relevé affiche son nom) ou par tbt.cafe pour son compte (le relevé affiche tbt.cafe) ; l'écran d'achat indique lequel.`,
+      en: `Selling a work needs approval: apply from Selling in the menu. Registering, transferring, gifting and receiving royalties need none. On a sale the buyer pays the price plus $${FEE}. The seller has $${FEE} deducted as well — the service fee is charged on both sides, $${FEE * 2} per sale to the platform. Card processing is ${STRIPE_PCT}% of the full charge (price + $${FEE}) plus $0.30, borne by the seller only; it is never added to the buyer. The seller receives price − royalty − $${FEE} − processing. Example: ${amt('en', EX.price, false)} USD at ${EX_PCT}% — the buyer pays ${amt('en', EX.buyerTotal)}, processing ${amt('en', EX.processing)}, royalty ${amt('en', EX.royaltyGross)}, service fee ${amt('en', EX.serviceSeller)}, the seller nets ${amt('en', EX.sellerNet)}. Depending on the seller's country, the card is charged on the seller's own Stripe account (the statement shows the seller's name) or by tbt.cafe on the seller's behalf (the statement shows tbt.cafe); the purchase screen says which.`,
+      es: `Vender una obra necesita aprobación: se solicita desde Vender en el menú. Registrar, transferir, regalar y recibir regalías no la necesitan. En una venta el comprador paga el precio más $${FEE}. Al vendedor también se le descuentan $${FEE} — la tarifa de servicio se cobra en ambos lados, $${FEE * 2} por venta para la plataforma. El procesamiento de tarjeta es el ${STRIPE_PCT}% del cargo completo (precio + $${FEE}) más $0,30, y lo absorbe solo el vendedor; nunca se le suma al comprador. El vendedor recibe precio − regalía − $${FEE} − procesamiento. Ejemplo: ${amt('es', EX.price, false)} USD al ${EX_PCT}%: el comprador paga ${amt('es', EX.buyerTotal)}, procesamiento ${amt('es', EX.processing)}, regalía ${amt('es', EX.royaltyGross)}, tarifa de servicio ${amt('es', EX.serviceSeller)}, el vendedor recibe ${amt('es', EX.sellerNet)}. Según el país del vendedor, la tarjeta se cobra en la propia cuenta de Stripe del vendedor (el estado de cuenta muestra su nombre) o la cobra tbt.cafe en su nombre (muestra tbt.cafe); la pantalla de compra dice cuál.`,
+      pt: `Vender uma obra exige aprovação: peça em Vender, no menu. Registrar, transferir, presentear e receber royalties não exigem. Em uma venda o comprador paga o preço mais $${FEE}. Do vendedor também são descontados $${FEE} — a taxa de serviço é cobrada dos dois lados, $${FEE * 2} por venda para a plataforma. O processamento do cartão é ${STRIPE_PCT}% da cobrança inteira (preço + $${FEE}) mais $0,30, absorvido só pelo vendedor; nunca é somado ao comprador. O vendedor recebe preço − royalty − $${FEE} − processamento. Exemplo: ${amt('pt', EX.price, false)} USD a ${EX_PCT}%: o comprador paga ${amt('pt', EX.buyerTotal)}, processamento ${amt('pt', EX.processing)}, royalty ${amt('pt', EX.royaltyGross)}, taxa de serviço ${amt('pt', EX.serviceSeller)}, o vendedor recebe ${amt('pt', EX.sellerNet)}. Conforme o país do vendedor, o cartão é cobrado na própria conta Stripe do vendedor (a fatura mostra o nome dele) ou pela tbt.cafe em nome dele (mostra tbt.cafe); a tela de compra diz qual.`,
+      fr: `Vendre une œuvre nécessite une approbation : la demande se fait depuis Vendre dans le menu. Enregistrer, transférer, offrir et recevoir des redevances n'en demandent pas. Lors d'une vente, l'acheteur paie le prix plus $${FEE}. Le vendeur se voit aussi déduire $${FEE} — les frais de service sont prélevés des deux côtés, $${FEE * 2} par vente pour la plateforme. Les frais de carte sont de ${STRIPE_PCT} % du montant débité entier (prix + $${FEE}) plus $0,30, supportés uniquement par le vendeur ; ils ne sont jamais ajoutés à l'acheteur. Le vendeur reçoit prix − redevance − $${FEE} − frais. Exemple : ${amt('fr', EX.price, false)} USD à ${EX_PCT} % — l'acheteur paie ${amt('fr', EX.buyerTotal)}, frais de carte ${amt('fr', EX.processing)}, redevance ${amt('fr', EX.royaltyGross)}, frais de service ${amt('fr', EX.serviceSeller)}, le vendeur reçoit ${amt('fr', EX.sellerNet)}. Selon le pays du vendeur, la carte est débitée sur le propre compte Stripe du vendeur (le relevé affiche son nom) ou par tbt.cafe pour son compte (le relevé affiche tbt.cafe) ; l'écran d'achat indique lequel.`,
     },
   },
   {

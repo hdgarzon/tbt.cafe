@@ -7,7 +7,7 @@ import { useShell } from '@/components/AppShell'
 import { LadderGate } from '@/components/LadderGate'
 import { EmbeddedCheckoutSheet } from '@/components/EmbeddedCheckoutSheet'
 import { fetchWorkFull, ownerRole, royaltyOf, type WorkFull } from '@/lib/work-data'
-import { makeOffer, fetchOfferContext } from '@/lib/offers-data'
+import { makeOffer, fetchOfferContext, fetchOffer } from '@/lib/offers-data'
 import { durationsFor, DEFAULT_DURATION } from '@/lib/offers'
 import { saleQuote, money, minPriceFor } from '@/lib/fees'
 import { WorkActions } from '@/components/WorkActions'
@@ -58,6 +58,16 @@ export default function WorkPage({ params, scannedAt = null }: { params: { tbtId
   const [msg, setMsg] = useState('')
   const [ladderOpen, setLadderOpen] = useState(false)
   const [clientSecret, setClientSecret] = useState<string | null>(null)
+  const [checkoutAccount, setCheckoutAccount] = useState<string | null>(null)
+  /*
+   * La hoja antes del cargo (Work Order 02, 0.8): la pregunta del nombre, la
+   * linea del estado de cuenta y, en la primera compra, la de los Terms. Lo que
+   * se paga: el precio de lista, o el monto de la oferta aceptada.
+   */
+  const [prepay, setPrepay] = useState<{ amount: number } | null>(null)
+  const [purchaseCtx, setPurchaseCtx] = useState<{ firstPurchase: boolean; path: 'direct' | 'platform'; sellerName: string | null } | null>(null)
+  const [holderNamed, setHolderNamed] = useState(false)
+  const [payAmount, setPayAmount] = useState<number | null>(null)
 
   const load = useCallback(async () => {
     const {
@@ -68,6 +78,12 @@ export default function WorkPage({ params, scannedAt = null }: { params: { tbtId
     if (!w) setNotFound(true)
     setWork(w)
     if (w) setOfferCtx(await fetchOfferContext(w.id))
+    // Desde la hoja de la oferta: pagar la oferta aceptada (0.8a).
+    const payOffer = typeof window !== 'undefined' ? new URLSearchParams(window.location.search).get('payOffer') : null
+    if (w && payOffer && user) {
+      const offer = await fetchOffer(payOffer)
+      if (offer && offer.payAvailable) await openPrepay(offer.amount, w.id)
+    }
     setLoading(false)
   }, [params.tbtId])
 
@@ -108,7 +124,23 @@ export default function WorkPage({ params, scannedAt = null }: { params: { tbtId
   function buy() {
     setMsg('')
     if (!connected) return openAuth()
-    setLadderOpen(true)
+    openPrepay(c.initial_price ?? 0, work!.id)
+  }
+
+  async function openPrepay(amount: number, workId: string) {
+    const {
+      data: { session },
+    } = await supabase.auth.getSession()
+    if (!session) return openAuth()
+    const res = await fetch(`/api/purchase/context?workId=${encodeURIComponent(workId)}`, {
+      headers: { Authorization: `Bearer ${session.access_token}` },
+    })
+    const ctx = await res.json().catch(() => null)
+    if (!res.ok || !ctx) return setMsg(t.work.errors.buyFailed)
+    setPurchaseCtx({ firstPurchase: ctx.firstPurchase, path: ctx.path, sellerName: ctx.sellerName })
+    // 0.8a: preseleccionado por el interruptor de anonimato.
+    setHolderNamed(ctx.nameByDefault === true)
+    setPrepay({ amount })
   }
 
   async function buyAuthorized(biometricProof: string | null) {
@@ -127,7 +159,7 @@ export default function WorkPage({ params, scannedAt = null }: { params: { tbtId
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
         // Checkout embebido (Spec 01 §3.1): el comprador no sale de tbt.cafe.
-        body: JSON.stringify({ workId: work!.id, biometricProof, embedded: true }),
+        body: JSON.stringify({ workId: work!.id, biometricProof, embedded: true, holderNamed }),
       })
       const body = await res.json()
       if (!res.ok) throw new Error(body.error ?? t.work.errors.buyFailed)
@@ -135,6 +167,7 @@ export default function WorkPage({ params, scannedAt = null }: { params: { tbtId
       // mandó, se cae al redirect de siempre en vez de dejar al comprador sin
       // ninguna forma de pagar.
       if (body.clientSecret) {
+        setCheckoutAccount(body.stripeAccount ?? null)
         setClientSecret(body.clientSecret)
         setBuying(false)
         return
@@ -400,6 +433,7 @@ export default function WorkPage({ params, scannedAt = null }: { params: { tbtId
       {clientSecret && (
         <EmbeddedCheckoutSheet
           clientSecret={clientSecret}
+          stripeAccount={checkoutAccount}
           onClose={() => setClientSecret(null)}
           // Sin "para quién": en una compra el destinatario es quien está
           // pagando. El prototipo sí lo muestra porque allí el comprador acaba
@@ -408,15 +442,64 @@ export default function WorkPage({ params, scannedAt = null }: { params: { tbtId
           // compra no añade nada.
           recap={{
             what: work.title,
-            amount: rules ? `${money(saleQuote({ price: c.initial_price ?? 0, royalty: royaltyOf(c), path: 'platform' }, rules).buyerTotal)} USD` : '—',
+            amount: rules ? `${money(saleQuote({ price: payAmount ?? c.initial_price ?? 0, royalty: royaltyOf(c), path: purchaseCtx?.path ?? 'platform' }, rules).buyerTotal)} USD` : '—',
           }}
         />
+      )}
+
+      {prepay && purchaseCtx && (
+        <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/30" onClick={() => setPrepay(null)}>
+          <div className="w-full max-w-col bg-paper rounded-t-2xl p-5 max-h-[85vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+            <div className="font-display font-medium text-[18px] text-ink">{work.title}</div>
+            {rules && (
+              <div className="flex items-center justify-between mt-4 pt-4 border-t border-hairline text-[13px] font-medium">
+                <span className="text-ink">{t.work.offerYouWouldPay}</span>
+                <span className="text-ink">
+                  {money(saleQuote({ price: prepay.amount, royalty: royaltyOf(c), path: purchaseCtx.path }, rules).buyerTotal)} USD
+                </span>
+              </div>
+            )}
+            {/* 0.8a: el nombre en el registro permanente, con su nota. */}
+            <label className="flex items-start gap-2.5 mt-5 mb-2 text-[13px] text-ink">
+              <input type="checkbox" checked={holderNamed} onChange={(e) => setHolderNamed(e.target.checked)} className="mt-1" />
+              <span>{t.holder.nameQuestion}</span>
+            </label>
+            <p className="text-[11px] leading-[1.5] text-ink-soft pl-6">{t.holder.nameNote}</p>
+            {/* 0.8c: el nombre del estado de cuenta. */}
+            <p className="text-[11.5px] text-ink-soft mt-4">
+              {purchaseCtx.path === 'direct' && purchaseCtx.sellerName
+                ? t.purchase.statementSeller.replace('{seller}', purchaseCtx.sellerName)
+                : t.purchase.statementPlatform}
+            </p>
+            {/* 0.8b: solo en la primera compra, sin casilla. */}
+            {purchaseCtx.firstPurchase && (
+              <p className="text-[11.5px] text-ink-soft mt-2">
+                {t.purchase.terms.split('{terms}')[0]}
+                <a href="/legal/terms" target="_blank" rel="noopener noreferrer" className="underline">
+                  {t.purchase.termsLink}
+                </a>
+                {t.purchase.terms.split('{terms}')[1] ?? ''}
+              </p>
+            )}
+            <button
+              type="button"
+              onClick={() => {
+                setPayAmount(prepay.amount)
+                setPrepay(null)
+                setLadderOpen(true)
+              }}
+              className="mt-5 w-full rounded-xl bg-ink text-paper py-3 text-[13px] font-medium"
+            >
+              {t.work.buy}
+            </button>
+          </div>
+        </div>
       )}
 
       <LadderGate
         open={ladderOpen}
         action="purchase"
-        amount={c.initial_price ?? null}
+        amount={payAmount ?? c.initial_price ?? null}
         onAuthorized={buyAuthorized}
         onCancel={() => setLadderOpen(false)}
       />

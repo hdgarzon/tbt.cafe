@@ -535,7 +535,16 @@
     "errors": {
       "sessionExpired": "Session expirée — veuillez vous authentifier à nouveau.",
       "completeFailed": "Nous n'avons pas pu finaliser l'achat"
-    }
+    },
+    "terms": "En payant, vous acceptez les {terms}, y compris ce que tbt.cafe fournit.",
+    "termsLink": "Conditions",
+    "statementSeller": "Votre relevé bancaire indiquera {seller}.",
+    "statementPlatform": "Votre relevé bancaire indiquera TBT.CAFE.",
+    "confirmTitle": "Elle est à vous",
+    "confirmBody": "Votre titre pour {title} a été émis, le registre a été écrit et la propriété vous a été transférée.",
+    "confirmOk": "Compris",
+    "confirmHelp": "Un problème ? Ouvrez une demande d'aide.",
+    "review": "Nous devons vérifier cet achat. Nous vous préviendrons rapidement."
   },
   "creator": {
     "label": "Créateur",

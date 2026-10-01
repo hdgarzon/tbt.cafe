@@ -535,7 +535,16 @@
     "errors": {
       "sessionExpired": "A sessão expirou — autentique-se novamente.",
       "completeFailed": "Não conseguimos concluir a compra"
-    }
+    },
+    "terms": "Ao pagar, você aceita os {terms}, incluindo o que a tbt.cafe entrega.",
+    "termsLink": "Termos",
+    "statementSeller": "Sua fatura mostrará {seller}.",
+    "statementPlatform": "Sua fatura mostrará TBT.CAFE.",
+    "confirmTitle": "É sua",
+    "confirmBody": "Seu Título de {title} foi emitido, o registro foi escrito e a propriedade passou para você.",
+    "confirmOk": "Entendi",
+    "confirmHelp": "Algo errado? Abra uma solicitação de ajuda.",
+    "review": "Precisamos analisar esta compra. Avisaremos em breve."
   },
   "creator": {
     "label": "Criador",

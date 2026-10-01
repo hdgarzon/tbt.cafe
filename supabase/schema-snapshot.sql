@@ -364,7 +364,23 @@ create table if not exists public.transfers (
   -- 063 · Work Order 02 Stage 5
   value_kind text check (value_kind in ('declared', 'gift', 'sale', 'restoring')),
   declared_value_confirmed_at timestamptz,
-  holder_named boolean
+  holder_named boolean,
+  -- 076 · Work Order 02 Stage 0: the path, the stored amounts, the acknowledgment, tax
+  offer_id uuid,
+  charge_path text check (charge_path in ('direct', 'platform')),
+  provider text,
+  buyer_total numeric(12,2),
+  processing numeric(12,2),
+  application_fee numeric(12,2),
+  royalty_gross numeric(12,2),
+  royalty_earning numeric(12,2),
+  platform_take numeric(12,2),
+  seller_net numeric(12,2),
+  confirmation_acknowledged_at timestamptz,
+  tax_amount numeric(12,2) default 0 not null,
+  tax_party text default 'none' not null check (tax_party in ('buyer', 'seller', 'platform', 'none')),
+  tax_country text,
+  tax_collected_by text default 'none' not null check (tax_collected_by in ('platform', 'seller', 'provider', 'none'))
 );
 
 create table if not exists public.tbt_payments (
@@ -378,7 +394,12 @@ create table if not exists public.tbt_payments (
   status text default 'pending'::text,
   created_at timestamp with time zone default now(),
   completed_at timestamp with time zone,
-  metadata jsonb
+  metadata jsonb,
+  -- 076 · Work Order 02 Stage 0.10
+  tax_amount numeric(12,2) default 0 not null,
+  tax_party text default 'none' not null check (tax_party in ('buyer', 'seller', 'platform', 'none')),
+  tax_country text,
+  tax_collected_by text default 'none' not null check (tax_collected_by in ('platform', 'seller', 'provider', 'none'))
 );
 
 
@@ -488,7 +509,9 @@ create table if not exists public.money_action_auth (
   satisfied_private_code boolean default false not null,
   biometric_threshold_at_time numeric(12,2),
   three_ds_threshold_at_time numeric(12,2),
-  created_at timestamp with time zone default now() not null
+  created_at timestamp with time zone default now() not null,
+  -- 076 · Work Order 02 Stage 0.6d
+  satisfied_three_ds boolean
 );
 
 create table if not exists public.tickets (
@@ -618,7 +641,16 @@ create table if not exists public.platform_config (
     'fr', 'Les versements sont suspendus pour un moment. Vos gains sont en sécurité.'),
   -- 074 · Chains 01 Stage 10: the prototype example IDs, never issued
   tbt_id_reserved text[] default '{}'::text[] not null,
-  -- 075 · Chains 01 Stage 7.2: the payer's balance thresholds
+  -- 076 · Work Order 02 Stage 0.8b: the first purchase accepts the Terms
+create table if not exists public.terms_acceptances (
+  id uuid default gen_random_uuid() not null primary key,
+  user_id uuid not null references auth.users (id) on delete cascade,
+  transfer_id uuid references public.transfers (id) on delete set null,
+  terms_version text not null,
+  accepted_at timestamptz default now() not null
+);
+
+-- 075 · Chains 01 Stage 7.2: the payer's balance thresholds
   balance_warning_days integer default 14 not null check (balance_warning_days > 0),
   balance_urgent_days integer default 3 not null check (balance_urgent_days > 0),
   balance_warning_floor_sol numeric default 0.5 not null check (balance_warning_floor_sol >= 0),
@@ -763,7 +795,12 @@ create table if not exists public.payout_blocks (
   provider_reference text,
   failure_reason text,
   created_at timestamp with time zone default now() not null,
-  settled_at timestamp with time zone
+  settled_at timestamp with time zone,
+  -- 076 · Work Order 02 Stage 0.10
+  tax_amount numeric(12,2) default 0 not null,
+  tax_party text default 'none' not null check (tax_party in ('buyer', 'seller', 'platform', 'none')),
+  tax_country text,
+  tax_collected_by text default 'none' not null check (tax_collected_by in ('platform', 'seller', 'provider', 'none'))
 );
 
 create table if not exists public.payout_earnings (
@@ -780,7 +817,12 @@ create table if not exists public.payout_earnings (
   payout_block_id uuid,
   created_at timestamp with time zone default now() not null,
   released_at timestamp with time zone,
-  collected_at timestamp with time zone
+  collected_at timestamp with time zone,
+  -- 076 · Work Order 02 Stage 0.10
+  tax_amount numeric(12,2) default 0 not null,
+  tax_party text default 'none' not null check (tax_party in ('buyer', 'seller', 'platform', 'none')),
+  tax_country text,
+  tax_collected_by text default 'none' not null check (tax_collected_by in ('platform', 'seller', 'provider', 'none'))
 );
 
 -- 075 · Chains 01 Stage 7.2: the open balance alert, one per account
@@ -1400,6 +1442,7 @@ alter table public.velocity_holds enable row level security;
 alter table public.chain_record_kinds enable row level security;
 alter table public.chain_recovery_failures enable row level security;
 alter table public.balance_alerts enable row level security;
+alter table public.terms_acceptances enable row level security;
 create policy "own holds read" on public.velocity_holds for select using ((user_id = ( SELECT auth.uid() AS uid)));
 create policy "own challenges" on public.webauthn_challenges for all using ((auth.uid() = user_id)) with check ((auth.uid() = user_id));
 create policy "own money action auth readable" on public.money_action_auth for select using ((( SELECT auth.uid() AS uid) = user_id));
