@@ -178,7 +178,18 @@ export async function sealOnChain(admin: SupabaseClient, workId: string): Promis
 
     if (!recordUri) throw new Error('No registration record published; the title token waits for the recovery sweep.')
 
-    const mintResult = await mintTitleToken(workNftData, recordUri)
+    let mintResult: Awaited<ReturnType<typeof mintTitleToken>>
+    try {
+      mintResult = await mintTitleToken(workNftData, recordUri)
+    } catch (error) {
+      // Chains 01 7.2.3: sin saldo para un mint no se intenta, y suena la urgente.
+      const low = /^payer_balance_low: (\d+)/.exec(error instanceof Error ? error.message : '')
+      if (low) {
+        const { raiseUrgent } = await import('./balance')
+        await raiseUrgent(admin, Number(low[1]))
+      }
+      throw error
+    }
     // Core: la direccion del activo, cuyo dueno es la tenencia de <TBT ID>-1.
     const mintAddress = mintResult.assetAddress
     const mintSignature = mintResult.signature

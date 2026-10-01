@@ -617,7 +617,12 @@ create table if not exists public.platform_config (
     'pt', 'Os repasses estão pausados por um momento. Seus ganhos estão seguros.',
     'fr', 'Les versements sont suspendus pour un moment. Vos gains sont en sécurité.'),
   -- 074 · Chains 01 Stage 10: the prototype example IDs, never issued
-  tbt_id_reserved text[] default '{}'::text[] not null
+  tbt_id_reserved text[] default '{}'::text[] not null,
+  -- 075 · Chains 01 Stage 7.2: the payer's balance thresholds
+  balance_warning_days integer default 14 not null check (balance_warning_days > 0),
+  balance_urgent_days integer default 3 not null check (balance_urgent_days > 0),
+  balance_warning_floor_sol numeric default 0.5 not null check (balance_warning_floor_sol >= 0),
+  balance_urgent_floor_sol numeric default 0.2 not null check (balance_urgent_floor_sol >= 0)
 );
 
 create table if not exists public.covered_registrations (
@@ -776,6 +781,17 @@ create table if not exists public.payout_earnings (
   created_at timestamp with time zone default now() not null,
   released_at timestamp with time zone,
   collected_at timestamp with time zone
+);
+
+-- 075 · Chains 01 Stage 7.2: the open balance alert, one per account
+create table if not exists public.balance_alerts (
+  id uuid default gen_random_uuid() not null primary key,
+  account text default 'payer' not null check (account in ('payer')),
+  level text not null check (level in ('warning', 'urgent')),
+  balance_lamports bigint not null,
+  threshold_lamports bigint not null,
+  fired_at timestamptz default now() not null,
+  cleared_at timestamptz
 );
 
 -- 073 · Chains 01 Stage 7.3: what the recovery sweep could not finish
@@ -1204,6 +1220,7 @@ alter table public.works add constraint works_plagiarism_scan_id_fkey FOREIGN KE
 -- INDICES
 -- ============================================================================
 
+create unique index if not exists balance_alerts_one_open on public.balance_alerts (account) where cleared_at is null;
 create index if not exists idx_works_tbt_id ON public.works USING btree (tbt_id);
 create index if not exists idx_works_creator_id ON public.works USING btree (creator_id);
 create index if not exists idx_works_current_owner_id ON public.works USING btree (current_owner_id);
@@ -1382,6 +1399,7 @@ alter table public.velocity_holds enable row level security;
 -- 071: the list of record kinds — service role only.
 alter table public.chain_record_kinds enable row level security;
 alter table public.chain_recovery_failures enable row level security;
+alter table public.balance_alerts enable row level security;
 create policy "own holds read" on public.velocity_holds for select using ((user_id = ( SELECT auth.uid() AS uid)));
 create policy "own challenges" on public.webauthn_challenges for all using ((auth.uid() = user_id)) with check ((auth.uid() = user_id));
 create policy "own money action auth readable" on public.money_action_auth for select using ((( SELECT auth.uid() AS uid) = user_id));

@@ -7,6 +7,7 @@ import { rulesFromRow, type Rules } from '../src/lib/rules-shape'
  */
 export const DEFAULT_ROW: Record<string, unknown> = {
   covered_brews_enabled: true, covered_brews_count: 10,
+  balance_warning_days: 14, balance_urgent_days: 3, balance_warning_floor_sol: 0.5, balance_urgent_floor_sol: 0.2,
   service_fee_buyer: 8, service_fee_seller: 8, service_fee_royalty: 8, registration_fee: 8, transfer_fee: 8,
   settlement_days_standard: 7, settlement_days_high: 14, settlement_high_threshold: 1000,
   settlement_days_top: 30, settlement_top_threshold: 10000,

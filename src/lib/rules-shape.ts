@@ -51,6 +51,8 @@ export type Rules = {
   pauses: Record<PauseKey, { on: boolean; message: Locale4 }>
   /** El programa de registraciones cubiertas (011): ya vivia en esta fila. */
   covered: { enabled: boolean; count: number }
+  /** Chains 01 7.2: los umbrales del saldo del payer (075). */
+  balance: { warningDays: number; urgentDays: number; warningFloorSol: number; urgentFloorSol: number }
 }
 
 /**
@@ -143,6 +145,12 @@ export function rulesFromRow(row: RulesRow): Rules {
     scanProcessorUrl: typeof row.scan_processor_url === 'string' ? row.scan_processor_url : null,
     pauses,
     covered: { enabled: bool(row, 'covered_brews_enabled'), count: num(row, 'covered_brews_count') },
+    balance: {
+      warningDays: num(row, 'balance_warning_days'),
+      urgentDays: num(row, 'balance_urgent_days'),
+      warningFloorSol: num(row, 'balance_warning_floor_sol'),
+      urgentFloorSol: num(row, 'balance_urgent_floor_sol'),
+    },
   }
 }
 
@@ -205,4 +213,8 @@ export const RULE_AUTHORITY: Record<string, 'two_person' | 'operator'> = {
   pause_transfers_message: 'operator',
   pause_payouts: 'operator',
   pause_payouts_message: 'operator',
+  balance_warning_days: 'operator',
+  balance_urgent_days: 'operator',
+  balance_warning_floor_sol: 'operator',
+  balance_urgent_floor_sol: 'operator',
 }
