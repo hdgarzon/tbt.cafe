@@ -23,6 +23,7 @@ const throws = (label: string, fn: () => unknown) => {
 const AR_REG = '3Bq9xY7kLmN2pQ4rS6tU8vW0xZ1aB3cD5eF7gH9iJ0k'
 const AR_IMG = '8Kf2QpXa1b2c3d4e5f6g7h8i9j0kLmNoPqRsTuVwXyZ'
 const HASH_B = 'sha256:' + 'b'.repeat(64)
+const PRIOR = 'b'.repeat(64)
 
 const reg = {
   tbtId: 'TBT-A7K2M9',
@@ -107,7 +108,7 @@ const prov = {
   value: { kind: 'sale' as const, amount_cents: 450000, currency: 'USD' },
   occurredAt: new Date(Date.UTC(2026, 8, 14, 9, 11, 4)),
   solanaSignature: '5xQabcSig',
-  priorRecord: HASH_B,
+  priorRecord: PRIOR,
   registrationRecord: `https://arweave.net/${AR_REG}`,
 }
 {
@@ -119,7 +120,8 @@ const prov = {
   ok('el valor: precio pagado', p.value.kind === 'sale' && p.value.amount_cents === 450000 && p.value.currency === 'USD')
   ok('sin from', !('from' in p) && !canonicalize(p).includes('"from"'))
   ok('sin regalia cuando no se bloquea aqui', !('royalty' in p))
-  ok('enlaza hacia atras por hash', p.prior_record === HASH_B)
+  ok('enlaza hacia atras por hash, sin prefijo como siempre', p.prior_record === PRIOR)
+  throws('un prior_record con otra forma lanza', () => provenanceRecord({ ...prov, priorRecord: HASH_B }))
   ok('la registracion por ID desnudo', p.registration_record === AR_REG)
   ok('la firma de solana', p.solana_signature === '5xQabcSig')
 
@@ -179,10 +181,10 @@ throws('la enmienda exige dos personas distintas', () => amendmentRecord({
   ok('autenticacion: registracion desnuda', a.registration_record === AR_REG)
 
   const pr = proofRecord({
-    tbtId: 'TBT-A7K2M9', recordHash: HASH_B, recordId: `https://arweave.net/${AR_REG}`,
+    tbtId: 'TBT-A7K2M9', recordHash: PRIOR, recordId: `https://arweave.net/${AR_REG}`,
     otsProof: Buffer.from('proof-bytes'), blockHeight: 912345, attestedAt: new Date(Date.UTC(2026, 9, 1)),
   })
-  ok('prueba tipada', pr.type === 'proof' && pr.record_id === AR_REG && pr.block_height === 912345)
+  ok('prueba tipada', pr.type === 'proof' && pr.record_hash === PRIOR && pr.record_id === AR_REG && pr.block_height === 912345)
   ok('la prueba entera en base64', pr.ots_proof === Buffer.from('proof-bytes').toString('base64'))
 }
 

@@ -339,7 +339,10 @@ export function provenanceRecord(input: ProvenanceInput): ProvenanceRecord {
   if (input.sequence > 1 && !input.priorRecord) {
     throw new Error('records: prior_record es obligatorio a partir de la secuencia 2.')
   }
-  if (input.priorRecord) assertHash(input.priorRecord, 'prior_record')
+  // El hash del registro anterior, como lo da recordHash: 64 hex sin prefijo (sin cambios, 2.3).
+  if (input.priorRecord && !/^[0-9a-f]{64}$/.test(input.priorRecord)) {
+    throw new Error('records: prior_record es el hash del registro anterior, 64 hex en minuscula.')
+  }
   if ((input.event === 'creation') !== (input.sequence === 1)) {
     throw new Error('records: la creacion es la secuencia 1, y solo ella.')
   }
@@ -514,8 +517,9 @@ export type ProofRecord = {
  * tbt.cafe ya no exista. Una prueba no se ancla a su vez.
  */
 export function proofRecord(input: ProofInput): ProofRecord {
-  const hash = /^sha256:/.test(input.recordHash) ? input.recordHash : `sha256:${input.recordHash}`
-  assertHash(hash, 'record_hash')
+  // El hash anclado, como lo guarda chain_anchors: 64 hex sin prefijo.
+  const hash = input.recordHash.replace(/^sha256:/, '')
+  if (!/^[0-9a-f]{64}$/.test(hash)) throw new Error('records: record_hash es 64 hex en minuscula.')
   if (!input.otsProof?.length) throw new Error('records: una prueba sin bytes no prueba nada.')
   if (!Number.isInteger(input.blockHeight) || input.blockHeight < 1) throw new Error('records: falta la altura del bloque.')
   return {

@@ -85,7 +85,7 @@ const OTHER = '7393fadd-77b1-4399-9bd9-2dee166b68be'
     value: { kind: 'sale', amount_cents: 100000, currency: 'USD' },
     occurredAt: new Date(Date.UTC(2026, 7, 27)),
     solanaSignature: 'sig',
-    priorRecord: 'sha256:' + 'b'.repeat(64),
+    priorRecord: 'b'.repeat(64),
     registrationRecord: 'https://arweave.net/3Bq9xY7kLmN2pQ4rS6tU8vW0xZ1aB3cD5eF7gH9iJ0k',
   })
   ok('el de procedencia tampoco', !UUID_RE.test(canonicalize(prov)))
