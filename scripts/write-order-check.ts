@@ -9,7 +9,8 @@ const ok = (label: string, cond: boolean, detail = '') => {
   console.log(`${cond ? 'ok  ' : 'FAIL'} ${label}${detail && !cond ? ` — ${detail}` : ''}`)
 }
 
-const src = readFileSync(join(__dirname, '..', 'src/app/api/complete-tbt/route.ts'), 'utf8')
+// La certificacion sella por lib/chain/seal.ts, que tambien usa el barrido (Chains 01 7.3).
+const src = readFileSync(join(__dirname, '..', 'src/lib/chain/seal.ts'), 'utf8')
 const nft = readFileSync(join(__dirname, '..', 'src/lib/solana/token.ts'), 'utf8')
 
 const at = (needle: string) => src.indexOf(needle)
@@ -48,7 +49,7 @@ const at = (needle: string) => src.indexOf(needle)
 // ---- procedencia: origen sin prior_record, y después del mint
 {
   // Chains 01 2.3: la creacion pasa por el publicador, con la firma del mint.
-  const prov = at('publishProvenance(createAdminClient(), firstOwner.id, { solanaSignature: mintSignature })')
+  const prov = at('publishProvenance(admin, firstOwner.id, { solanaSignature: mintSignature })')
   const mint = at('await mintTitleToken(')
   ok('la procedencia se publica después del mint', prov > mint, 'lleva la firma de Solana dentro')
   ok('la secuencia 1 no lleva prior_record', !/sequence: 1[\s\S]{0,300}priorRecord/.test(src))

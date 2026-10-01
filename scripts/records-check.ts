@@ -207,7 +207,7 @@ throws('la enmienda exige dos personas distintas', () => amendmentRecord({
   ok('la procedencia se compone en un solo sitio', /export async function publishProvenance\(/.test(pub))
   ok('la regalia solo donde se bloqueo', /royalty_locked_by === row\.id/.test(pub))
   ok('una transferencia con valor es transfer, no sale', /declared: 'transfer'/.test(pub))
-  const tbt = read('src/app/api/complete-tbt/route.ts')
+  const tbt = read('src/lib/chain/seal.ts')
   ok('la creacion pasa por el publicador', /publishProvenance\(/.test(tbt))
   ok('el creador va con su codigo', /creatorCodeFor\(/.test(tbt) && !/pseudonymFor\(/.test(tbt))
   const xfer = read('src/app/api/complete-transfer/route.ts')

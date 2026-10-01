@@ -42,7 +42,7 @@ ok('the registration record carries the recording hash', /recording_hash: input\
 ok('the recording hash is validated', /assertHash\(input\.recordingHash, 'recording_hash'\)/.test(records))
 ok('the registration record carries the asset links', /asset_links: links/.test(records))
 
-const tbt = code(read('src/app/api/complete-tbt/route.ts'))
+const tbt = code(read('src/lib/chain/seal.ts'))
 ok('complete-tbt passes the recording hash', /recordingHash: workWithCreator\.recording_hash \?\? undefined/.test(tbt))
 ok('complete-tbt passes the links as registered', /assetLinks: workWithCreator\.registered_asset_links \?\? workWithCreator\.asset_links \?\? undefined/.test(tbt))
 

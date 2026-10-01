@@ -63,6 +63,7 @@
     "check:workpage": "npx --yes tsx scripts/work-page-check.ts",
     "check:gateway": "npx --yes tsx scripts/gateway-check.ts",
     "check:proof": "npx --yes tsx scripts/proof-record-check.ts",
+    "check:recovery": "npx --yes tsx scripts/recovery-check.ts",
     "check:imagevectors": "npx --yes tsx scripts/image-vectors-check.ts",
     "reindex:images": "npx --yes tsx scripts/reindex-images.ts",
     "check:tbtid": "npx --yes tsx scripts/tbt-id-check.ts",

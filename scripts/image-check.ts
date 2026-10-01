@@ -327,7 +327,7 @@ const base = {
 const read = (p: string) => readFileSync(join(process.cwd(), p), 'utf8')
 
 {
-  const route = read('src/app/api/complete-tbt/route.ts')
+  const route = read('src/lib/chain/seal.ts')
   ok('la imagen se publica antes que el registro',
      route.indexOf('publishWorkImage(') > 0 &&
      route.indexOf('publishWorkImage(') < route.indexOf('publishRecord('),
@@ -423,7 +423,7 @@ async function ceiling() {
   ok('Brew reduce al subir, junto a la miniatura', /reduceUnderCeiling\(/.test(brew) && /'reduced_'/.test(brew))
   ok('con full, el original sobre el techo no se publica', /chainImageUrl = \(await uploadWorksMedia\(userId, reduced, 'reduced_'\)\)/.test(brew))
 
-  const route = read('src/app/api/complete-tbt/route.ts')
+  const route = read('src/lib/chain/seal.ts')
   ok('el servidor la llama reduced', /chain_image_url !== workWithCreator\.media_url \? 'reduced'/.test(route))
   const records = read('src/lib/chain/records.ts')
   ok('el registro admite reduced', /ImageKind = 'thumbnail' \| 'full' \| 'reduced'/.test(records))

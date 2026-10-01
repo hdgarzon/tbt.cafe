@@ -50,9 +50,10 @@ ok('the token URI is the record URI', /uri: registrationRecordUri/.test(nft))
 ok('the mint takes no price, location or weather',
    !/marketPrice|creationLocation|creationWeather|royaltyPercentage/.test(nft))
 
-const route = readFileSync(join(root, 'src/app/api/complete-tbt/route.ts'), 'utf8')
+// El mint vive en lib/chain/seal.ts: lo llaman la certificacion y el barrido.
+const route = readFileSync(join(root, 'src/lib/chain/seal.ts'), 'utf8')
 const call = route.indexOf('await mintTitleToken(')
-ok('complete-tbt calls mintTitleToken', call > 0)
+ok('the seal calls mintTitleToken', call > 0 && readFileSync(join(root, 'src/app/api/complete-tbt/route.ts'), 'utf8').includes('sealOnChain('))
 ok('from the Core module', route.includes("await import('@/lib/solana/token')"))
 const guardAt = route.lastIndexOf('if (!recordUri) throw', call)
 ok('the call is reached only with a record URI', guardAt > 0 && call - guardAt < 400,

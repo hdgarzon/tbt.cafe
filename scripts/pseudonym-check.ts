@@ -95,11 +95,12 @@ const OTHER = '7393fadd-77b1-4399-9bd9-2dee166b68be'
 {
   const read = (rel: string) => readFileSync(join(__dirname, '..', rel), 'utf8')
 
-  const tbt = read('src/app/api/complete-tbt/route.ts')
+  const tbt = read('src/lib/chain/seal.ts')
   const pub = read('src/lib/chain/provenance-publish.ts')
   const ar = read('src/lib/chain/arweave.ts')
 
-  ok('la certificación no publica el UUID del creador', !/id: workWithCreator\.creator_id\b/.test(tbt))
+  // `[^_]`: `owner_user_id:` es una escritura a la base, no al registro.
+  ok('la certificación no publica el UUID del creador', !/[^_]id: workWithCreator\.creator_id\b/.test(tbt))
   ok('la certificación usa el codigo del creador', tbt.includes('creatorCodeFor('))
   ok('la procedencia no lleva ids de persona', !/_owner_id/.test(pub) && !/owner_user_id/.test(pub))
   ok('nada sube sin pasar la guarda', ar.includes('assertNoIdentifiers(record)'),

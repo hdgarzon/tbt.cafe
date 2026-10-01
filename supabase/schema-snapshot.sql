@@ -776,6 +776,20 @@ create table if not exists public.payout_earnings (
   collected_at timestamp with time zone
 );
 
+-- 073 · Chains 01 Stage 7.3: what the recovery sweep could not finish
+create table if not exists public.chain_recovery_failures (
+  id uuid default gen_random_uuid() not null primary key,
+  work_id uuid not null references public.works (id) on delete cascade,
+  step text not null check (step in ('seal', 'move', 'provenance')),
+  subject_id uuid not null,
+  first_failed_at timestamptz default now() not null,
+  last_failed_at timestamptz default now() not null,
+  attempts integer default 1 not null,
+  last_error text,
+  ticket_ref text,
+  unique (work_id, step, subject_id)
+);
+
 -- 071 · Chains 01 Stage 2.1 d: the list of record kinds, one row per kind
 create table if not exists public.chain_record_kinds (
   kind text not null primary key
@@ -1365,6 +1379,7 @@ create policy "own credentials read" on public.webauthn_credentials for select u
 alter table public.velocity_holds enable row level security;
 -- 071: the list of record kinds — service role only.
 alter table public.chain_record_kinds enable row level security;
+alter table public.chain_recovery_failures enable row level security;
 create policy "own holds read" on public.velocity_holds for select using ((user_id = ( SELECT auth.uid() AS uid)));
 create policy "own challenges" on public.webauthn_challenges for all using ((auth.uid() = user_id)) with check ((auth.uid() = user_id));
 create policy "own money action auth readable" on public.money_action_auth for select using ((( SELECT auth.uid() AS uid) = user_id));
