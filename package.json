@@ -68,6 +68,7 @@
     "check:cleanup": "npx --yes tsx scripts/cleanup-check.ts",
     "cleanup:test-data": "npx --yes tsx scripts/cleanup-test-data.ts",
     "check:balance": "npx --yes tsx scripts/balance-check.ts",
+    "check:set5": "npx --yes tsx scripts/set5-check.ts",
     "check:switch": "npx --yes tsx scripts/switch-check.ts",
     "chain:create-collection": "npx --yes tsx scripts/create-title-collection.ts",
     "check:imagevectors": "npx --yes tsx scripts/image-vectors-check.ts",
