@@ -1,4 +1,5 @@
 import { supabase } from '@/lib/supabase'
+import { holderDisplay } from '@/lib/holder'
 import type { Royalty, RoyaltyType } from '@/lib/fees'
 
 /**
@@ -58,6 +59,12 @@ export type WorkFull = {
   commerce: WorkCommerce | null
   /** Pasaje de contexto generado al certificar (Spec 01) — user_edited_summary si existe, si no ai_summary. */
   context: string | null
+  /** Chains 01, 8.2: la lista viva, y la que se registró al certificar. */
+  asset_links: string[] | null
+  registered_asset_links: string[] | null
+  /** Chains 01, 8.1: la grabación del creador. */
+  audio_video_url: string | null
+  audio_video_type: string | null
 }
 
 const COMMERCE_DEFAULT: WorkCommerce = {
@@ -77,6 +84,7 @@ export async function fetchWorkFull(tbtId: string): Promise<WorkFull | null> {
     .select(
       `id, tbt_id, title, description, category, technique, media_url, status,
        certified_at, mint_address, is_featured, current_owner_id, creator_id, registered_as,
+       asset_links, registered_asset_links, audio_video_url, audio_video_type,
        series:work_series(id, name, slug),
        bonded:bonded_creators(name, unattributed, alias, city, status),
        creator:profiles!works_creator_id_fkey(id, public_alias, display_name),
@@ -124,6 +132,8 @@ export type LedgerAnchor = {
   status: 'pending' | 'confirmed' | 'failed'
   blockHeight: number | null
   attestedAt: string | null
+  /** La prueba publicada en Arweave, cuando confirmo (Chains 01 6.3). */
+  proofRecordId?: string | null
 }
 
 export type LedgerEntry = {
@@ -131,12 +141,12 @@ export type LedgerEntry = {
   sequence: number
   event?: string
   transferType?: string | null
-  actor?: string | null
-  from?: string | null
   occurredAt: string | null
   recordUri: string | null
   recordHash: string | null
   anchor: LedgerAnchor | null
+  /** La transaccion que movio el token en este cambio de dueño (Chains 01, 4.5 y 8.3). */
+  solanaSignature?: string | null
 }
 
 export type Ledger = {
@@ -163,18 +173,34 @@ export async function fetchLedger(tbtId: string): Promise<Ledger | null> {
   }
 }
 
-/** Historial de propiedad, más reciente primero — alimenta la pestaña History. */
-export async function fetchOwnershipHistory(workId: string): Promise<OwnershipEvent[]> {
+/**
+ * Historial de propiedad, más reciente primero — alimenta la pestaña History.
+ *
+ * Quien sale en cada fila sigue su interruptor de coleccionista anonimo, en
+ * vivo (Chains 01 3.4): anonimo, «Private collector · <codigo de esa tenencia>»;
+ * si no, su perfil. El creador sale siempre nombrado. Lo publicado no cambia.
+ */
+export async function fetchOwnershipHistory(workId: string, privateLabel: string): Promise<OwnershipEvent[]> {
   const { data } = await supabase
     .from('ownership_history')
-    .select('id, event_type, owner_name, previous_owner_name, price, currency, created_at')
+    .select('id, event_type, owner_name, previous_owner_name, owner_user_id, holder_code, price, currency, created_at')
     .eq('work_id', workId)
     .order('sequence_number', { ascending: false })
 
-  return (data ?? []).map((e) => ({
+  const rows = data ?? []
+  const ids = Array.from(new Set(rows.map((e) => e.owner_user_id).filter(Boolean))) as string[]
+  const { data: profiles } = ids.length
+    ? await supabase.from('profiles').select('id, public_alias, display_name, collector_anonymous').in('id', ids)
+    : { data: [] as { id: string; public_alias: string | null; display_name: string | null; collector_anonymous: boolean | null }[] }
+  const profileOf = new Map((profiles ?? []).map((p) => [p.id, p]))
+
+  return rows.map((e) => ({
     id: e.id,
     event: e.event_type,
-    actor_label: e.owner_name ?? e.previous_owner_name ?? null,
+    actor_label:
+      (e.owner_user_id
+        ? holderDisplay(e, profileOf.get(e.owner_user_id) ?? null, privateLabel, e.event_type === 'creation')
+        : null) ?? e.previous_owner_name ?? null,
     amount: e.price,
     currency: e.currency,
     occurred_at: e.created_at,
@@ -189,19 +215,37 @@ export async function fetchOwnershipHistory(workId: string): Promise<OwnershipEv
  * real — ver TBT_DataModel_Companion_02, "ROYALTY LOCK IS ENFORCED HERE".
  */
 
-async function updateCommerce(workId: string, patch: Partial<WorkCommerce>): Promise<{ error?: string }> {
-  const { error } = await supabase.from('work_commerce').update(patch).eq('work_id', workId)
-  return error ? { error: error.message } : {}
+/**
+ * Toda escritura de work_commerce pasa por /api/work/commerce (Work Order 02,
+ * 3.1): el navegador ya no puede escribir la fila (060). La ruta comprueba que
+ * quien llama tenga la obra, el estado de vendedor, la pausa, la congelacion,
+ * el bloqueo, el techo y el piso. Devuelve el precio si tuvo que subirlo.
+ */
+async function updateCommerce(
+  workId: string,
+  patch: { availability?: Availability; price?: number; takingOffers?: boolean; royalty?: { type: 'percentage' | 'fixed'; value: number } }
+): Promise<{ error?: string; priceLifted?: number | null }> {
+  const {
+    data: { session },
+  } = await supabase.auth.getSession()
+  if (!session) return { error: 'needSignIn' }
+  const res = await fetch('/api/work/commerce', {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${session.access_token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ workId, ...patch }),
+  })
+  const json = await res.json().catch(() => ({}))
+  return res.ok ? { priceLifted: json.priceLifted ?? null } : { error: json.error ?? 'commerce_failed' }
 }
 
 export const saveAvailability = (workId: string, availability: Availability) =>
   updateCommerce(workId, { availability })
 
 export const saveTakingOffers = (workId: string, takingOffers: boolean) =>
-  updateCommerce(workId, { taking_offers: takingOffers })
+  updateCommerce(workId, { takingOffers })
 
 export const savePrice = (workId: string, price: number | null) =>
-  updateCommerce(workId, { initial_price: price })
+  updateCommerce(workId, { price: price ?? 0 })
 
 /**
  * Guarda la regalía en los términos canónicos — `royalty_type` + `royalty_value`.
@@ -219,9 +263,9 @@ export async function saveRoyalty(
   workId: string,
   royaltyPct: number,
   currentlyLocked: boolean
-): Promise<{ error?: string }> {
-  if (currentlyLocked) return { error: 'royaltyLocked' }
-  return updateCommerce(workId, { royalty_type: 'percentage', royalty_value: royaltyPct })
+): Promise<{ error?: string; priceLifted?: number | null }> {
+  if (currentlyLocked) return { error: 'royalty_locked' }
+  return updateCommerce(workId, { royalty: { type: 'percentage', value: royaltyPct } })
 }
 
 export async function saveFeatured(workId: string, featured: boolean): Promise<{ error?: string }> {
@@ -235,6 +279,16 @@ export async function saveFeatured(workId: string, featured: boolean): Promise<{
  * SELLADOS — TBT ID, creador, contexto, registro, cadena — no tienen
  * contraparte de escritura aquí a propósito.
  */
+/**
+ * Chains 01, 8.2: la lista viva de enlaces. Solo el creador mientras tiene la
+ * obra; la base lo hace cumplir (070). Lo que no es http(s) no se guarda.
+ */
+export async function saveAssetLinks(workId: string, links: string[]): Promise<{ error?: string }> {
+  const clean = links.map((l) => l.trim()).filter((l) => /^https?:\/\//.test(l))
+  const { error } = await supabase.from('works').update({ asset_links: clean }).eq('id', workId)
+  return error ? { error: error.message } : {}
+}
+
 async function updateWork(workId: string, patch: { description?: string; category?: string; technique?: string }): Promise<{ error?: string }> {
   const { error } = await supabase.from('works').update(patch).eq('id', workId)
   return error ? { error: error.message } : {}

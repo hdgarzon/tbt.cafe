@@ -178,7 +178,7 @@ export const LEGAL_DOCS: LegalDoc[] = [
       },
       {
         "kind": "p",
-        "html": "Registering a work has two distinct moments. <b>Sealing</b> completes the authorship record. <b>Registration</b> writes it to the blockchain. Registration costs a flat <b>$8</b> plus card processing."
+        "html": "Registering a work has two distinct moments. <b>Sealing</b> completes the authorship record. <b>Registration</b> writes it to the blockchain. Registration costs a flat <b>${fee}</b> plus card processing."
       },
       {
         "kind": "p",
@@ -194,7 +194,7 @@ export const LEGAL_DOCS: LegalDoc[] = [
       },
       {
         "kind": "p",
-        "html": "On a sale, the <b>buyer pays the price plus a flat $8 service fee</b>. The <b>seller has a separate $8 service fee deducted</b> from their proceeds, along with the creator’s royalty and card processing. The service fee is charged once to each party."
+        "html": "On a sale, the <b>buyer pays the price plus a flat ${service_fee} service fee</b>. The <b>seller has a separate ${seller_fee} service fee deducted</b> from their proceeds, along with the creator’s royalty and card processing. The service fee is charged once to each party."
       },
       {
         "kind": "p",
@@ -206,7 +206,7 @@ export const LEGAL_DOCS: LegalDoc[] = [
       },
       {
         "kind": "p",
-        "html": "Where a work carries a fixed royalty, it has a <b>minimum price</b>: the royalty plus the greater of 5% or $25. Prices and offers below that minimum cannot be set or accepted."
+        "html": "Where a work carries a fixed royalty, it has a <b>minimum price</b>: the royalty plus the greater of {floor_pct} or ${floor_min}. Prices and offers below that minimum cannot be set or accepted."
       },
       {
         "kind": "h",
@@ -222,7 +222,7 @@ export const LEGAL_DOCS: LegalDoc[] = [
       },
       {
         "kind": "p",
-        "html": "A transfer moves a TBT to a named recipient. The sender pays the transfer cost — any royalty, the service fee, and card processing. The sender’s card is <b>authorised, not charged</b>, and captured only when the recipient accepts. If the recipient does not accept within 24 hours, or the sender cancels, the authorisation is released."
+        "html": "A transfer moves a TBT to a named recipient. The sender pays the transfer cost — any royalty, the service fee, and card processing. The sender’s card is <b>authorised, not charged</b>, and captured only when the recipient accepts. If the recipient does not accept within {hours} hours, or the sender cancels, the authorisation is released."
       },
       {
         "kind": "p",
@@ -242,11 +242,11 @@ export const LEGAL_DOCS: LegalDoc[] = [
       },
       {
         "kind": "p",
-        "html": "Money owed to you is <b>not immediately collectable</b>. It is held for a settlement period — currently seven days, or fourteen days above $1,000 — before becoming available. Amounts arising from transfers and offers are released when the counterparty completes."
+        "html": "Money owed to you is <b>not immediately collectable</b>. It is held for a settlement period — currently {standard} days, or {high} days above ${high_threshold} — before becoming available. Amounts arising from transfers and offers are released when the counterparty completes."
       },
       {
         "kind": "p",
-        "html": "Collecting a payout carries a platform fee of <b>2.3%</b> of the gross plus the cost of your chosen method. You will see the gross, the fees, and the net before confirming."
+        "html": "Collecting a payout carries a platform fee of <b>{payout_pct}</b> of the gross plus the cost of your chosen method. You will see the gross, the fees, and the net before confirming."
       },
       {
         "kind": "p",
@@ -338,7 +338,7 @@ export const LEGAL_DOCS: LegalDoc[] = [
       {
         "kind": "ul",
         "items": [
-          "From <b>$500</b>: biometric confirmation.",
+          "From <b>${biometric}</b>: biometric confirmation.",
           "From <b>$1,000</b>: biometric, and your bank verifies the payment. That second step also moves fraud liability to your bank, which protects you.",
           "<b>Collecting a payout</b>, and <b>changing where you get paid</b>: biometric and your private code, at any amount. Redirecting payment is what an attacker would try first, so it is the most heavily guarded action on the platform."
         ]

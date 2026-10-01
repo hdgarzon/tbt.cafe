@@ -154,6 +154,7 @@ export type TransferForAccept = {
   senderName: string | null
   value: number | null
   currency: string
+  valueKind: 'declared' | 'gift' | 'sale' | 'restoring'
 }
 
 /**
@@ -181,7 +182,9 @@ export async function fetchTransferForAccept(transferId: string): Promise<Transf
  */
 export async function respondTransfer(
   transferId: string,
-  action: 'accept' | 'reject'
+  action: 'accept' | 'reject',
+  /** 5.5: mostrar su nombre en el registro permanente de esta obra. */
+  showName = false
 ): Promise<{ error?: string }> {
   const auth = await authHeader()
   if (!auth) return { error: 'needSignIn' }
@@ -190,7 +193,7 @@ export async function respondTransfer(
     const res = await fetch('/api/transfer/respond', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', ...auth },
-      body: JSON.stringify({ transferId, action }),
+      body: JSON.stringify({ transferId, action, showName }),
     })
     if (!res.ok) {
       const body = await res.json().catch(() => ({}))

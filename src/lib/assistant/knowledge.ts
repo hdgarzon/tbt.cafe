@@ -20,7 +20,8 @@
  * se quedaban atrás, produciendo material seguro de sí mismo y equivocado.
  * Derivarlas hace que esa deriva no pueda ocurrir.
  */
-import { FEE as PLATFORM, ROYALTY_FLOOR } from '@/lib/fees'
+import { FEE as CARD } from '@/lib/fees'
+import type { Rules } from '@/lib/rules-shape'
 
 export type Locale = 'en' | 'es' | 'pt' | 'fr'
 
@@ -31,14 +32,23 @@ export type KnowledgeDoc = {
   body: Record<Locale, string>
 }
 
-const FEE = PLATFORM.service
-const COVERED = 10
-/** El piso de una regalia fija y el procesamiento, derivados igual que la tarifa. */
-const FLOOR_PCT = ROYALTY_FLOOR.pct * 100
-const FLOOR_MIN = ROYALTY_FLOOR.min
-const STRIPE_PCT = PLATFORM.stripePct * 100
+/** Lo que la base de conocimiento lee de la configuracion (Work Order 02, 1.4). */
+export type KnowledgeRules = Pick<Rules, 'fees' | 'royalty' | 'covered'>
 
-export const KNOWLEDGE: KnowledgeDoc[] = [
+/**
+ * Los documentos, con las cifras de la fila vigente. Una funcion y no una
+ * constante: si el panel cambia una tarifa, el asistente la cuenta en la
+ * siguiente pregunta, sin desplegar.
+ */
+export function knowledgeFor(rules: KnowledgeRules): KnowledgeDoc[] {
+const FEE = rules.fees.registration
+const COVERED = rules.covered.count
+/** El piso de una regalia fija y el procesamiento, derivados igual que la tarifa. */
+const FLOOR_PCT = rules.royalty.floorPct
+const FLOOR_MIN = rules.royalty.floorMin
+const STRIPE_PCT = CARD.stripePct * 100
+
+return [
   {
     /*
      * COMO se registra, que no es lo mismo que CUANTO cuesta.
@@ -206,6 +216,7 @@ export const KNOWLEDGE: KnowledgeDoc[] = [
     },
   },
 ]
+}
 
 /**
  * Recuperación por idioma de la pregunta. Buscar en español contra contenido en
@@ -215,9 +226,9 @@ export const KNOWLEDGE: KnowledgeDoc[] = [
  * asistente NO sabe y lo dice, en vez de inventar una estructura de tarifas
  * verosímil.
  */
-export function retrieve(question: string, locale: Locale, limit = 3): KnowledgeDoc[] {
+export function retrieve(question: string, locale: Locale, rules: KnowledgeRules, limit = 3): KnowledgeDoc[] {
   const q = question.toLowerCase()
-  const scored = KNOWLEDGE.map((doc) => {
+  const scored = knowledgeFor(rules).map((doc) => {
     let score = 0
     for (const term of doc.terms[locale]) {
       if (q.includes(term.toLowerCase())) score += term.length

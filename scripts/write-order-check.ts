@@ -9,7 +9,8 @@ const ok = (label: string, cond: boolean, detail = '') => {
   console.log(`${cond ? 'ok  ' : 'FAIL'} ${label}${detail && !cond ? ` — ${detail}` : ''}`)
 }
 
-const src = readFileSync(join(__dirname, '..', 'src/app/api/complete-tbt/route.ts'), 'utf8')
+// La certificacion sella por lib/chain/seal.ts, que tambien usa el barrido (Chains 01 7.3).
+const src = readFileSync(join(__dirname, '..', 'src/lib/chain/seal.ts'), 'utf8')
 const nft = readFileSync(join(__dirname, '..', 'src/lib/solana/token.ts'), 'utf8')
 
 const at = (needle: string) => src.indexOf(needle)
@@ -47,7 +48,8 @@ const at = (needle: string) => src.indexOf(needle)
 
 // ---- procedencia: origen sin prior_record, y después del mint
 {
-  const prov = at("event: 'creation'")
+  // Chains 01 2.3: la creacion pasa por el publicador, con la firma del mint.
+  const prov = at('publishProvenance(admin, firstOwner.id, { solanaSignature: mintSignature })')
   const mint = at('await mintTitleToken(')
   ok('la procedencia se publica después del mint', prov > mint, 'lleva la firma de Solana dentro')
   ok('la secuencia 1 no lleva prior_record', !/sequence: 1[\s\S]{0,300}priorRecord/.test(src))
@@ -78,16 +80,22 @@ const xfer = readFileSync(join(__dirname, '..', 'src/app/api/complete-transfer/r
 
 // ---- la cadena de procedencia se encadena de verdad
 {
-  ok('lleva el eslabón anterior', xfer.includes('priorRecord: priorLink.record_hash'))
-  ok('y el registro sellado', xfer.includes('registrationRecord: chainSource.registration_record_uri'))
+  // Chains 01 2.3: el eslabon lo compone un solo sitio, desde la base.
+  const pub = readFileSync(join(__dirname, '..', 'src/lib/chain/provenance-publish.ts'), 'utf8')
+  ok('lleva el eslabón anterior', pub.includes('priorRecord = prior.record_hash') && pub.includes('priorRecord,'))
+  ok('y el registro sellado', pub.includes('registrationRecord: work.registration_record_uri'))
   ok('el anterior se busca por secuencia', xfer.includes('sequenceNumber - 1'))
 }
 
 // ---- una transferencia no firma nada
 {
-  const block = xfer.slice(xfer.indexOf('provenanceRecord({'), xfer.indexOf('publishRecord') + 4000)
-  ok('la procedencia de transferencia no lleva firma', !block.includes('solanaSignature'),
-     'la propiedad se mueve en la base, no en la cadena')
+  const pub2 = readFileSync(join(__dirname, '..', 'src/lib/chain/provenance-publish.ts'), 'utf8')
+  // Chains 01 4.5 reemplaza la regla anterior: el token se mueve, y el eslabon
+  // lleva la firma de ESE movimiento, nunca otro identificador.
+  ok('la procedencia de transferencia lleva la firma del movimiento',
+     /if \(moveSignature\) \{/.test(xfer) && pub2.includes('row.token_move_signature'))
+  ok('el token se mueve antes del eslabon', xfer.indexOf('await moveTokenForOwnership(') > -1 && xfer.indexOf('await moveTokenForOwnership(') < xfer.indexOf('publishProvenance('))
+  ok('sin movimiento, el eslabon espera', /if \(moveSignature\) \{/.test(xfer) && pub2.includes("reason: 'no_signature'"))
 }
 
 // ---- y la firma que SÍ existe es una firma

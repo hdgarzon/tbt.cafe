@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createCheckoutSession, stripe, type CheckoutType } from '@/lib/stripe'
-import { SERVICE_FEE_CENTS, royaltyAmountOf, type RoyaltyType } from '@/lib/fees'
+import { royaltyAmountOf, type RoyaltyType } from '@/lib/fees'
+import { getRules, assertNotPaused } from '@/lib/rules'
 import { trackProvider } from '@/lib/provider-events'
 import { authenticate } from '@/lib/route-auth'
 import { createAdminClient } from '@/lib/supabase-admin'
@@ -48,6 +49,12 @@ export async function POST(request: NextRequest) {
 
     const auth = await authenticate(request)
     if (!auth.ok) return NextResponse.json(auth.body, { status: auth.status })
+
+    // Stage 11: registrar y transferir se pausan por separado; el mensaje va en la respuesta.
+    {
+      const paused = type === 'transfer' ? await assertNotPaused('transfers') : await assertNotPaused('registration')
+      if (paused) return NextResponse.json(paused, { status: 423 })
+    }
     const { supabase, user } = auth
 
     // Ownership checks and server-side royalty calculation
@@ -259,7 +266,7 @@ export async function POST(request: NextRequest) {
       await supabase.from('tbt_payments').insert({
         work_id: workId,
         user_id: user.id,
-        amount: SERVICE_FEE_CENTS / 100,
+        amount: (await getRules()).fees.registration,
         currency: 'USD',
         stripe_checkout_session_id: session.id,
         status: 'pending',

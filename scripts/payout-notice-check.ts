@@ -72,19 +72,18 @@ const SAFE = /^[A-Za-z0-9•… ]+$/
   for (let i = 0; i < ROUTES.length; i++) {
     const rel = ROUTES[i]
     const src = read(rel)
-    const readPrevious = src.indexOf(".eq('is_default', true)")
-    const demote = src.indexOf("update({ is_default: false })")
-    const insert = src.indexOf("from('payout_destinations').insert(")
-    const selected = src.indexOf(".select('id').single()", insert)
+    // Work Order 02, 7.1: un destino por metodo, escrito con un upsert atomico.
+    const readPrevious = src.search(/\.eq\('method_id', methodId\)\s*\.maybeSingle\(\)/)
+    const write = src.indexOf('.upsert(', readPrevious)
+    const selected = src.indexOf(".select('id')", write)
     const checked = src.search(/\|\| !saved\)/)
-    const restore = src.indexOf("update({ is_default: true }).eq('id', previous.id)")
     const call = src.indexOf('await notifyPayoutDestinationChanged(admin, {')
 
     ok(`${rel}: importa el aviso`, src.includes("from '@/lib/payout-destination-notice'"))
-    ok(`${rel}: lee el destino anterior antes de bajarlo`, readPrevious > -1 && demote > readPrevious)
-    ok(`${rel}: el insert devuelve la fila`, insert > demote && selected > insert)
-    ok(`${rel}: comprueba que se guardo antes de avisar`, checked > insert && call > checked, 'no se avisa de un cambio que no quedo guardado')
-    ok(`${rel}: si falla, el anterior vuelve`, restore > insert && restore < call, 'sin esto la persona se queda sin destino por defecto')
+    ok(`${rel}: lee el destino anterior de ese metodo antes de escribir`, readPrevious > -1 && write > readPrevious)
+    ok(`${rel}: el upsert es por persona y metodo y devuelve la fila`, /onConflict: 'user_id,method_id'/.test(src) && selected > write)
+    ok(`${rel}: comprueba que se guardo antes de avisar`, checked > write && call > checked, 'no se avisa de un cambio que no quedo guardado')
+    ok(`${rel}: no queda rastro del destino por defecto`, !/is_default/.test(src))
     ok(`${rel}: avisa con la fila nueva`, call > -1 && /destinationId: saved\.id/.test(src.slice(call, call + 300)))
     ok(`${rel}: el mismo destino no es un cambio`, /previous\.destination (===|!==) (destination\.trim\(\)|typed)/.test(src))
   }

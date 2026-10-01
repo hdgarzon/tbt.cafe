@@ -30,6 +30,7 @@ import { anchorRecord } from './ots'
 import { getMetaplex } from './irys'
 import { SOLANA_NETWORK } from '@/lib/solana/config'
 import { arweaveUrl } from './gateways'
+import type { RecordKind } from './records'
 
 /** Nombres de etiqueta, en un sitio para que la prueba y el modulo no diverjan. */
 export const RECORD_TAGS = {
@@ -140,11 +141,8 @@ export async function publishRecord(record: PublishableRecord): Promise<Publishe
    * lanza; un ancla pendiente o ausente es un estado normal, y la
    * certificacion no puede caerse por un calendario lento.
    */
-  const kind =
-    record.type === 'registration' ? 'registration'
-    : record.type === 'amendment' ? 'amendment'
-    : 'provenance'
-  await anchorRecord(hash, kind as 'registration' | 'provenance' | 'amendment', uri)
+  // Una prueba no se ancla a su vez (Chains 01 2.4): es la prueba de otro ancla.
+  if (record.type !== 'proof') await anchorRecord(hash, record.type as RecordKind, uri, record.tbt_id)
 
   return { uri, hash, bytes: file.buffer.length }
 }

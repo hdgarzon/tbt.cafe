@@ -3,6 +3,7 @@ import { createCheckoutSession } from '@/lib/stripe'
 import { authenticate } from '@/lib/route-auth'
 import { createAdminClient } from '@/lib/supabase-admin'
 import { enforceLadder } from '@/lib/auth-ladder-server'
+import { assertNotPaused } from '@/lib/rules'
 
 /**
  * POST /api/stripe/create-purchase — compra iniciada por el COMPRADOR desde
@@ -44,6 +45,12 @@ export async function POST(request: NextRequest) {
 
     const auth = await authenticate(request)
     if (!auth.ok) return NextResponse.json(auth.body, { status: auth.status })
+
+    // Stage 11: con las ventas en pausa no se abre ningun cobro nuevo.
+    {
+      const paused = await assertNotPaused('selling')
+      if (paused) return NextResponse.json(paused, { status: 423 })
+    }
     const { supabase, user } = auth
 
     // Obra: debe existir, estar certificada, y no ser ya propiedad del comprador
@@ -97,6 +104,8 @@ export async function POST(request: NextRequest) {
       amount: commerce.initial_price,
       workId,
       biometricProof,
+      // 10.4: la otra parte, para la regla de pareja nueva.
+      counterpartyId: work.current_owner_id,
     })
     if (!ladder.ok) {
       return NextResponse.json({ error: ladder.error }, { status: ladder.status })

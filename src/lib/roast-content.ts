@@ -86,11 +86,11 @@ export const ROAST_ARTICLES: RoastArticle[] = [
       },
       {
         "kind": "p",
-        "html": "Registration costs a flat <b>$8</b>, plus card processing. That is the whole price. There is no subscription, no gas fee to worry about, no percentage of your work’s value."
+        "html": "Registration costs a flat <b>${fee}</b>, plus card processing. That is the whole price. There is no subscription, no gas fee to worry about, no percentage of your work’s value."
       },
       {
         "kind": "p",
-        "html": "<b>Your first ten registrations are on us.</b> The $8 is shown, and tbt.cafe covers it — you will see how many remain each time you register. After that, registration is charged normally."
+        "html": "<b>Your first ten registrations are on us.</b> The ${fee} is shown, and tbt.cafe covers it — you will see how many remain each time you register. After that, registration is charged normally."
       },
       {
         "kind": "x",
@@ -115,7 +115,7 @@ export const ROAST_ARTICLES: RoastArticle[] = [
       },
       {
         "kind": "p",
-        "html": "While a registration is covered, that total is <b>0.00 USD</b> to you — the fee is still $8, and tbt.cafe pays it."
+        "html": "While a registration is covered, that total is <b>0.00 USD</b> to you — the fee is still ${fee}, and tbt.cafe pays it."
       },
       {
         "kind": "p",
@@ -162,7 +162,7 @@ export const ROAST_ARTICLES: RoastArticle[] = [
       },
       {
         "kind": "p",
-        "html": "The royalty is <b>deducted from the sale price</b>, never added on top of it. If a work sells for 12,000 USD with a 10% royalty, the 1,200 comes out of the sale, to you — the buyer pays the 12,000 plus their own $8 service fee, and nothing more."
+        "html": "The royalty is <b>deducted from the sale price</b>, never added on top of it. If a work sells for 12,000 USD with a 10% royalty, the 1,200 comes out of the sale, to you — the buyer pays the 12,000 plus their own ${service_fee} service fee, and nothing more."
       },
       {
         "kind": "p",
@@ -201,7 +201,7 @@ export const ROAST_ARTICLES: RoastArticle[] = [
       },
       {
         "kind": "p",
-        "html": "Because a fixed royalty is owed in full whatever the price, a work carrying one has a <b>minimum price</b>: the royalty plus the greater of 5% or 25 USD. That floor covers the fees and keeps a sale from ever costing the seller money. Offers below it cannot be accepted."
+        "html": "Because a fixed royalty is owed in full whatever the price, a work carrying one has a <b>minimum price</b>: the royalty plus the greater of {floor_pct} or {floor_min} USD. That floor covers the fees and keeps a sale from ever costing the seller money. Offers below it cannot be accepted."
       },
       {
         "kind": "x",
@@ -259,7 +259,7 @@ export const ROAST_ARTICLES: RoastArticle[] = [
       },
       {
         "kind": "p",
-        "html": "When a sale completes, three things come out of the sale price: the creator’s royalty, an <b>$8 service fee</b>, and card processing of <b>2.9% + $0.30</b> calculated on the royalty and fee together. The rest is your payout."
+        "html": "When a sale completes, three things come out of the sale price: the creator’s royalty, a <b>${seller_fee} service fee</b>, and card processing of <b>2.9% + $0.30</b> calculated on the royalty and fee together. The rest is your payout."
       },
       {
         "kind": "x",
@@ -294,7 +294,7 @@ export const ROAST_ARTICLES: RoastArticle[] = [
       },
       {
         "kind": "p",
-        "html": "The buyer pays the listed price plus their own flat <b>$8 service fee</b>. The <b>$8</b> shown above is yours as the seller — the service fee is charged on both sides of a sale, once to each party. The royalty and card processing come out of your side only."
+        "html": "The buyer pays the listed price plus their own flat <b>${service_fee} service fee</b>. The <b>${seller_fee}</b> shown above is yours as the seller — the service fee is charged on both sides of a sale, once to each party. The royalty and card processing come out of your side only."
       },
       {
         "kind": "p",
@@ -314,7 +314,7 @@ export const ROAST_ARTICLES: RoastArticle[] = [
       },
       {
         "kind": "p",
-        "html": "Your total is the <b>price plus a flat $8 service fee</b>. Nothing else is added. The creator’s royalty and the card processing come out of the <b>seller’s</b> side, not yours — so what you see before you confirm is exactly what your card is charged."
+        "html": "Your total is the <b>price plus a flat ${service_fee} service fee</b>. Nothing else is added. The creator’s royalty and the card processing come out of the <b>seller’s</b> side, not yours — so what you see before you confirm is exactly what your card is charged."
       },
       {
         "kind": "x",
@@ -343,7 +343,7 @@ export const ROAST_ARTICLES: RoastArticle[] = [
       },
       {
         "kind": "p",
-        "html": "Above certain amounts we ask for more proof that it is really you. From <b>500 USD</b> we ask for your biometric; from <b>1,000 USD</b> your bank verifies the payment as well. That second step also moves fraud liability to your bank, which protects you if a card is ever used without permission."
+        "html": "Above certain amounts we ask for more proof that it is really you. From <b>{biometric} USD</b> we ask for your biometric; from <b>1,000 USD</b> your bank verifies the payment as well. That second step also moves fraud liability to your bank, which protects you if a card is ever used without permission."
       },
       {
         "kind": "p",
@@ -391,7 +391,7 @@ export const ROAST_ARTICLES: RoastArticle[] = [
       },
       {
         "kind": "p",
-        "html": "The sender pays the <b>Transfer Cost</b>: the creator’s royalty on the recorded value, an $8 transfer fee, and card processing on those two together."
+        "html": "The sender pays the <b>Transfer Cost</b>: the creator’s royalty on the recorded value, a ${transfer_fee} transfer fee, and card processing on those two together."
       },
       {
         "kind": "x",
@@ -421,7 +421,7 @@ export const ROAST_ARTICLES: RoastArticle[] = [
       },
       {
         "kind": "p",
-        "html": "Payment is <b>two-phase</b>. When you send the transfer, your card is <b>authorised but not charged</b> — the amount is held. Only when the recipient accepts is it captured. If they decline, or don’t respond within <b>24 hours</b>, or you cancel, the hold is released and nothing is taken."
+        "html": "Payment is <b>two-phase</b>. When you send the transfer, your card is <b>authorised but not charged</b> — the amount is held. Only when the recipient accepts is it captured. If they decline, or don’t respond within <b>{hours} hours</b>, or you cancel, the hold is released and nothing is taken."
       },
       {
         "kind": "p",
@@ -441,7 +441,7 @@ export const ROAST_ARTICLES: RoastArticle[] = [
       },
       {
         "kind": "p",
-        "html": "Collecting takes two steps: verify (your itemised payouts, confirmed with a touch), then choose a method — <b>PayPal</b>, <b>USDT</b>, or <b>BTC</b>. A <b>2.3% payout fee</b> applies, plus the method’s own cost (PayPal’s 2.9% + $0.30, or the network fee for crypto)."
+        "html": "Collecting takes two steps: verify (your itemised payouts, confirmed with a touch), then choose a method — <b>PayPal</b>, <b>USDT</b>, or <b>BTC</b>. A <b>{payout_pct} payout fee</b> applies, plus the method’s own cost (PayPal’s 2.9% + $0.30, or the network fee for crypto)."
       },
       {
         "kind": "x",
@@ -495,7 +495,7 @@ export const ROAST_ARTICLES: RoastArticle[] = [
       },
       {
         "kind": "p",
-        "html": "Because a fixed royalty is owed in full whatever the price, a work carrying one has a <b>minimum price</b>: the royalty plus the greater of 5% or 25 USD. That floor covers the fees and keeps a sale from ever costing the seller money."
+        "html": "Because a fixed royalty is owed in full whatever the price, a work carrying one has a <b>minimum price</b>: the royalty plus the greater of {floor_pct} or {floor_min} USD. That floor covers the fees and keeps a sale from ever costing the seller money."
       },
       {
         "kind": "x",
@@ -540,7 +540,7 @@ export const ROAST_ARTICLES: RoastArticle[] = [
       },
       {
         "kind": "p",
-        "html": "<b>Biometric</b> uses your device’s fingerprint or face. Nothing biometric ever leaves your device; we only ever learn that your device confirmed you. It is required from <b>500 USD</b>, and it is what stops someone using a session you left open."
+        "html": "<b>Biometric</b> uses your device’s fingerprint or face. Nothing biometric ever leaves your device; we only ever learn that your device confirmed you. It is required from <b>{biometric} USD</b>, and it is what stops someone using a session you left open."
       },
       {
         "kind": "p",

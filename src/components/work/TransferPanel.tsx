@@ -8,6 +8,7 @@ import { createTransfer } from '@/lib/transfer-data'
 import { LadderGate } from '@/components/LadderGate'
 import { EmbeddedCheckoutSheet } from '@/components/EmbeddedCheckoutSheet'
 import { royaltyOf, type WorkFull } from '@/lib/work-data'
+import { useRules } from '@/lib/rules-public'
 
 /**
  * Panel de transferencia — reemplaza EN SITIO el contenido de la pestaña
@@ -40,7 +41,9 @@ export function TransferPanel({
   const [clientSecret, setClientSecret] = useState<string | null>(null)
 
   const numValue = parseFloat(value.replace(/[^0-9.]/g, '')) || 0
-  const q = transferQuote(numValue, royalty, senderIsCreator)
+  // La tarifa de transferencia es de configuracion (Work Order 02, 1.2).
+  const rules = useRules()
+  const q = rules ? transferQuote(numValue, royalty, senderIsCreator, rules) : null
   const mismatch = phone1 && phone2 && phone1 !== phone2
 
   /**
@@ -83,6 +86,9 @@ export function TransferPanel({
     }
     if (checkoutUrl) window.location.href = checkoutUrl
   }
+
+  // Sin reglas todavia no se muestra un total: se espera, nunca se inventa.
+  if (!q || !rules) return null
 
   return (
     <div>
@@ -128,6 +134,8 @@ export function TransferPanel({
         <span className="text-[11px] tracking-[0.1em] text-placeholder">USD</span>
       </div>
       <p className="text-[10.5px] text-placeholder mt-1.5 leading-[1.6]">{t.transfer.valueNote}</p>
+      {/* 5.4: una venta hecha fuera se completa aqui como transferencia. */}
+      <p className="text-[10.5px] text-placeholder mt-1 leading-[1.6]">{t.transfer.elsewhere}</p>
 
       <div className="mt-4 flex flex-col divide-y divide-hairline text-[12.5px]">
         <div className="flex items-center justify-between py-2">
@@ -159,7 +167,7 @@ export function TransferPanel({
         </div>
       </div>
 
-      <p className="text-[10.5px] text-placeholder mt-2 leading-[1.6]">{t.transfer.authoriseNote}</p>
+      <p className="text-[10.5px] text-placeholder mt-2 leading-[1.6]">{t.transfer.authoriseNote.replace('{hours}', String(rules.transferWindowHours))}</p>
 
       {err && <p className="text-[12px] text-t-red text-center mt-3.5">{err}</p>}
 

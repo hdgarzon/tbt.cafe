@@ -1,5 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { createHash } from 'crypto'
+import { velocityCheck } from '@/lib/velocity'
 
 /**
  * La escalera de autenticación, del lado que manda — Backend Spec 01 §5.1.
@@ -46,8 +47,10 @@ export async function enforceLadder(params: {
   amount: number
   workId?: string | null
   biometricProof?: string | null
+  /** La otra parte, para la regla de pareja nueva (Work Order 02, 10.4). */
+  counterpartyId?: string | null
 }): Promise<LadderVerdict> {
-  const { admin, userId, action, amount, workId = null, biometricProof = null } = params
+  const { admin, userId, action, amount, workId = null, biometricProof = null, counterpartyId = null } = params
 
   const { data: resolved, error: resolveError } = await admin.rpc('resolve_auth_ladder', {
     p_action: action,
@@ -64,8 +67,13 @@ export async function enforceLadder(params: {
     return { ok: false, status: 500, error: 'ladder_unavailable' }
   }
 
-  const needBiometric: boolean = rule.need_biometric
   const needThreeDS: boolean = rule.need_three_ds
+
+  // 10.4: cuenta y valor desafian (biometrico aunque el monto no lo pidiera);
+  // una pareja nueva retiene para revision. Nada mas rechaza.
+  const velocity = await velocityCheck(admin, { userId, action, amount, workId, counterpartyId })
+  if (velocity.verdict === 'hold') return { ok: false, status: 423, error: 'under_review' }
+  const needBiometric: boolean = rule.need_biometric || velocity.verdict === 'challenge'
 
   let satisfiedBiometric = false
 

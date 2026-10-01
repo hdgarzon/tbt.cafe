@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { verifyRegistrationResponse } from '@simplewebauthn/server'
 import { isoBase64URL } from '@simplewebauthn/server/helpers'
 import { requireUser, consumeChallenge, rpFromRequest, deviceLabel } from '@/lib/webauthn'
+import { createAdminClient } from '@/lib/supabase-admin'
+import { notify } from '@/lib/notify'
 
 /**
  * POST /api/webauthn/register/finish — companion doc §5.2 (SEAM 2).
@@ -49,7 +51,10 @@ export async function POST(request: NextRequest) {
   // API v13: la credencial vive bajo registrationInfo.credential
   const { credential: cred } = verification.registrationInfo
 
-  const { error } = await supabase.from('webauthn_credentials').insert({
+  // Con el service role: el navegador ya no puede escribir credenciales (066).
+  // Solo llega aqui una clave cuya attestation se acaba de verificar.
+  const admin = createAdminClient()
+  const { error } = await admin.from('webauthn_credentials').insert({
     user_id: userId,
     credential_id: cred.id, // ya es base64url string
     public_key: isoBase64URL.fromBuffer(cred.publicKey), // Uint8Array → base64url text
@@ -67,6 +72,15 @@ export async function POST(request: NextRequest) {
       { status: already ? 409 : 500 }
     )
   }
+
+  // Work Order 02, 10.1: un factor nuevo se anuncia, y no se puede silenciar.
+  await notify(admin, {
+    userId,
+    eventKey: 'security_change',
+    dedupeKey: `biometric:${cred.id}`,
+    data: { variant: 'factor' },
+    href: '/settings/authentication',
+  })
 
   return NextResponse.json({ verified: true, device: deviceLabel(request), bioMode: 'extra' })
 }

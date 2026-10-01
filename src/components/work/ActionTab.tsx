@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useLocale } from '@/i18n/LocaleProvider'
 import { TransferPanel } from '@/components/work/TransferPanel'
-import { money } from '@/lib/fees'
+import { money, minPriceFor } from '@/lib/fees'
 import {
   saveAvailability,
   saveTakingOffers,
@@ -14,6 +14,10 @@ import {
   type Availability,
 } from '@/lib/work-data'
 import { pendingTransferFor, cancelTransfer, type Transfer } from '@/lib/transfer-data'
+import { useRules } from '@/lib/rules-public'
+import { transferWindowMs } from '@/lib/rules-shape'
+import { supabase } from '@/lib/supabase'
+import { canSell, type SellerStatus } from '@/lib/seller'
 
 const LockIcon = () => (
   <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -45,12 +49,24 @@ export function ActionTab({
 }) {
   const { t } = useLocale()
   const c = work.commerce!
-  const hasSold = role === 'collector' // cambió de manos → regalía bloqueada
-  const royaltyLocked = c.royalty_locked || hasSold
+  // El bloqueo lo escribe la base al primer cambio de dueno (060); aqui se lee,
+  // no se deduce de las ventas (Work Order 02, 3.3).
+  const royaltyLocked = c.royalty_locked
 
   const [transferring, setTransferring] = useState(false)
   const [pending, setPending] = useState<Transfer | null>(null)
   const [availability, setAvailability] = useState<Availability>(c.availability)
+  // Locked, not hidden (Work Order 02, 2.8): sin estado de vendedor activo la
+  // opcion de venta se ve bloqueada y lleva a Vender. La base rechaza igual.
+  const [sellerOk, setSellerOk] = useState<boolean | null>(null)
+  useEffect(() => {
+    supabase
+      .from('seller_accounts')
+      .select('status, suspended_at')
+      .eq('user_id', userId)
+      .maybeSingle()
+      .then(({ data }) => setSellerOk(canSell(data as { status: SellerStatus; suspended_at: string | null } | null)))
+  }, [userId])
   const [takingOffers, setTakingOffers] = useState(c.taking_offers)
   const [price, setPrice] = useState(c.initial_price ? money(c.initial_price) : '')
   // Una regalía fija es un monto, no un porcentaje: el control rotulado `%`
@@ -65,11 +81,14 @@ export function ActionTab({
     pendingTransferFor(work.id, userId).then(setPending)
   }, [work.id, userId])
 
-  // Cuenta regresiva de 24h sobre la transferencia pendiente.
+  // Cuenta regresiva sobre la transferencia pendiente; la ventana es de
+  // configuracion (Work Order 02, 1.2). Sin reglas todavia, no se inventa.
+  const rules = useRules()
+  const windowMs = rules ? transferWindowMs(rules) : null
   useEffect(() => {
-    if (!pending?.authorized_at) return
+    if (!pending?.authorized_at || windowMs === null) return
     const started = new Date(pending.authorized_at).getTime()
-    const expires = started + 24 * 3600 * 1000
+    const expires = started + windowMs
     const tick = () => {
       const left = Math.max(0, expires - Date.now())
       const h = Math.floor(left / 3_600_000)
@@ -80,7 +99,7 @@ export function ActionTab({
     tick()
     const iv = setInterval(tick, 1000)
     return () => clearInterval(iv)
-  }, [pending?.authorized_at])
+  }, [pending?.authorized_at, windowMs])
 
   function flash(msg: string) {
     setToast(msg)
@@ -152,13 +171,18 @@ export function ActionTab({
               const next = e.target.value as Availability
               setAvailability(next)
               const { error } = await saveAvailability(work.id, next)
-              if (error) return flash(error)
+              if (error) {
+                setAvailability(c.availability)
+                return flash(sellerOk === false && next === 'for_sale' ? t.work.saleLocked : error)
+              }
               flash(t.action.availability)
               onChanged()
             }}
             className="flex-1 appearance-none border border-hairline rounded-lg bg-paper px-3 py-2.5 text-[13px] text-ink outline-none focus:border-ink transition-colors cursor-pointer"
           >
-            <option value="for_sale">{t.action.forSale}</option>
+            <option value="for_sale" disabled={sellerOk === false && availability !== 'for_sale'}>
+              {t.action.forSale}
+            </option>
             <option value="reserved">{t.action.reserved}</option>
             <option value="not_for_sale">{t.action.notForSale}</option>
           </select>
@@ -189,6 +213,14 @@ export function ActionTab({
             {t.action.takingOffers}
           </button>
         </div>
+        {sellerOk === false && (
+          <p className="text-[11.5px] leading-[1.55] text-ink-soft mt-2">
+            {t.work.saleLocked}{' '}
+            <a href="/settings/selling" className="underline text-ink">
+              {t.work.saleLockedCta}
+            </a>
+          </p>
+        )}
       </div>
 
       <div className="pb-5 mb-5 border-b border-hairline">
@@ -219,10 +251,14 @@ export function ActionTab({
               onChange={(e) => setRoyalty(e.target.value)}
               onBlur={async () => {
                 const n = parseFloat(royalty)
-                if (!isFinite(n) || n < 0 || n > 50) return
-                const { error } = await saveRoyalty(work.id, n, royaltyLocked)
-                if (error) return flash(t.action.errors.royaltyLocked)
-                flash(t.action.priceRoyalty)
+                // Techo de configuracion (3.4); la ruta lo vuelve a comprobar.
+                if (!rules || !isFinite(n) || n < 0 || n > rules.royalty.pctCeiling) return
+                const { error, priceLifted } = await saveRoyalty(work.id, n, royaltyLocked)
+                if (error) return flash(error === 'royalty_locked' ? t.action.errors.royaltyLocked : error)
+                if (priceLifted) {
+                  setPrice(money(priceLifted))
+                  flash(t.royalty.priceLifted.replace('{amount}', money(priceLifted)))
+                } else flash(t.action.priceRoyalty)
                 onChanged()
               }}
               inputMode="decimal"
@@ -238,11 +274,21 @@ export function ActionTab({
           {royaltyIsFixed
             ? t.action.royaltyIsFixed.replace('{amount}', money(c.royalty_value))
             : royaltyLocked
-            ? hasSold
-              ? t.action.royaltyLockedAtFirstSale
-              : t.action.royaltyLockedBy.replace('{name}', work.creator?.public_alias || work.creator?.display_name || '')
+            ? t.royalty.locked
             : t.action.royaltyLocksAtFirstSale}
         </p>
+        {/* Por encima de la marca de configuracion, el aviso del companion (3.4). */}
+        {!royaltyLocked && rules && !royaltyIsFixed && parseFloat(royalty) > rules.royalty.pctWarning && (
+          <p className="text-[10.5px] text-t-red mt-1 leading-[1.6]">
+            {t.royalty.warnHigh.replace('{pct}', money(rules.royalty.pctWarning))}
+          </p>
+        )}
+        {/* El piso de una regalia fija, donde se fija el precio (3.5). */}
+        {rules && royaltyIsFixed && (
+          <p className="text-[10.5px] text-placeholder mt-1 leading-[1.6]">
+            {t.royalty.floor.replace('{amount}', money(minPriceFor({ type: 'fixed', value: Number(c.royalty_value ?? 0) }, rules)))}
+          </p>
+        )}
       </div>
 
       <button

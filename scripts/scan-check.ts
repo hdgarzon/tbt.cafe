@@ -57,7 +57,7 @@ const INFO = code(read('src/components/work/InfoTab.tsx'))
 // disco del procesador. Esa separacion es la que hace que un redespliegue no
 // vacie el indice — el fallo original de N10.
 {
-  ok('lee la configuración al atender, no al importar', /export async function POST[\s\S]*process\.env\.TBT_IMAGE_PROCESSOR_URL/.test(SIMILARITY))
+  ok('lee la configuración al atender, no al importar', /export async function POST[\s\S]*await getRules\(\)/.test(SIMILARITY))
   ok('sin URL: configuración', /if \(!url\) return unavailable\('setup', 'url_unset'\)/.test(SIMILARITY))
   ok('sin clave: configuración', /if \(!key\) return unavailable\('setup', 'key_missing'\)/.test(SIMILARITY))
   ok('clave rechazada: configuración', /embedResponse\.status === 401 \|\| embedResponse\.status === 403\) return unavailable\('setup', 'key_rejected'\)/.test(SIMILARITY))

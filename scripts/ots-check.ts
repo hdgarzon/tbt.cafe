@@ -43,7 +43,7 @@ const cron = read('src/app/api/cron/anchor-upgrade/route.ts')
 // ---- todo lo publicado se ancla, en un solo sitio
 {
   ok('publishRecord ancla', ar.includes('await anchorRecord('))
-  ok('y distingue el tipo de registro', /record\.type === 'registration'/.test(ar))
+  ok('y distingue el tipo de registro', /anchorRecord\(hash, record\.type as RecordKind/.test(ar))
 }
 
 // ---- el cron

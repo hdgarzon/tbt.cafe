@@ -76,6 +76,71 @@ const APPLY: Record<string, (a: Approval) => { url: string; body: Record<string,
     body: {
       action: (a.payload as { action?: string })?.action,
       value: (a.payload as { value?: unknown })?.value,
+      // Con `rule` (Work Order 02, 1.5): la columna aprobada, no otra.
+      column: (a.payload as { column?: string })?.column,
+      reason: a.reason,
+      approvalId: a.id,
+    },
+  }),
+  'seller.approve': (a) => ({
+    url: '/api/admin/sellers',
+    body: {
+      action: 'seller.approve',
+      userId: (a.payload as { userId?: string })?.userId,
+      reason: a.reason,
+      approvalId: a.id,
+    },
+  }),
+  'seller.decline': (a) => ({
+    url: '/api/admin/sellers',
+    body: {
+      action: 'seller.decline',
+      userId: (a.payload as { userId?: string })?.userId,
+      reason: a.reason,
+      approvalId: a.id,
+    },
+  }),
+  'seller.suspend': (a) => ({
+    url: '/api/admin/sellers',
+    body: {
+      action: 'seller.suspend',
+      userId: (a.payload as { userId?: string })?.userId,
+      reason: a.reason,
+      approvalId: a.id,
+    },
+  }),
+  'seller.reinstate': (a) => ({
+    url: '/api/admin/sellers',
+    body: {
+      action: 'seller.reinstate',
+      userId: (a.payload as { userId?: string })?.userId,
+      reason: a.reason,
+      approvalId: a.id,
+    },
+  }),
+  'private_code.reset': (a) => ({
+    url: '/api/admin/private-code-reset',
+    body: {
+      userId: (a.payload as { userId?: string })?.userId,
+      ticketRef: (a.payload as { ticketRef?: string })?.ticketRef,
+      reason: a.reason,
+      approvalId: a.id,
+    },
+  }),
+  'velocity.release': (a) => ({
+    url: '/api/admin/velocity-holds',
+    body: {
+      action: 'velocity.release',
+      holdId: (a.payload as { holdId?: string })?.holdId,
+      reason: a.reason,
+      approvalId: a.id,
+    },
+  }),
+  'velocity.decline': (a) => ({
+    url: '/api/admin/velocity-holds',
+    body: {
+      action: 'velocity.decline',
+      holdId: (a.payload as { holdId?: string })?.holdId,
       reason: a.reason,
       approvalId: a.id,
     },

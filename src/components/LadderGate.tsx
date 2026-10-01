@@ -9,7 +9,6 @@ import { useBiometricProof } from '@/lib/use-biometric-proof'
 import {
   resolveLadder,
   fetchLadderThresholds,
-  LADDER_DEFAULTS,
   type MoneyAction,
   type LadderThresholds,
 } from '@/lib/auth-ladder'
@@ -56,15 +55,17 @@ export function LadderGate({
     fetchLadderThresholds().then(setThresholds)
   }, [open, resetBio])
 
-  const requirement = resolveLadder(action, amount, thresholds ?? LADDER_DEFAULTS)
+  // Sin umbrales todavia no se decide nada: los valores viven en configuracion.
+  const requirement = thresholds ? resolveLadder(action, amount, thresholds) : null
 
   // Nada que pedir: no se enseña un modal para decir que no hace falta nada.
+  const needsBiometric = requirement?.biometric ?? null
   useEffect(() => {
-    if (!open || thresholds === null) return
-    if (!requirement.biometric) onAuthorized(null)
-  }, [open, thresholds, requirement.biometric, onAuthorized])
+    if (!open || needsBiometric === null) return
+    if (!needsBiometric) onAuthorized(null)
+  }, [open, needsBiometric, onAuthorized])
 
-  if (!open || thresholds === null || !requirement.biometric) return null
+  if (!open || !requirement || !requirement.biometric) return null
 
   return (
     <StandingSheet

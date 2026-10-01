@@ -6,6 +6,7 @@ import { useLocale } from '@/i18n/LocaleProvider'
 import { useShell } from '@/components/AppShell'
 import { maskEmail, maskPhoneE164 } from '@/lib/masking'
 import { PrivateCodeSheet } from '@/components/PrivateCodeSheet'
+import { PhoneChangeSheet } from '@/components/PhoneChangeSheet'
 import { SecBlock } from '@/components/FormBits'
 import { RecoveryEmailSheet } from '@/components/RecoveryEmailSheet'
 import { fetchMyPrivateProfile, type MyPrivateProfile } from '@/lib/my-profile'
@@ -28,7 +29,7 @@ export default function AuthHubPage() {
   const [profile, setProfile] = useState<Profile | null>(null)
   const [bioAvailable, setBioAvailable] = useState(false)
   const [bioCount, setBioCount] = useState(0)
-  const [sheet, setSheet] = useState<null | 'code' | 'email' | 'bio'>(null)
+  const [sheet, setSheet] = useState<null | 'code' | 'email' | 'bio' | 'phone'>(null)
 
   async function load() {
     const {
@@ -94,7 +95,8 @@ export default function AuthHubPage() {
           value={maskPhoneE164(phone)}
           tag={{ label: t.authHub.tagVerified, verified: true }}
           action={t.authHub.change}
-          onAction={() => alert('Change-number flow: pendiente de diseño (Master Handoff §16)')}
+          // Work Order 02, 10.2: codigo privado, biometrico y un codigo al numero nuevo.
+          onAction={() => setSheet('phone')}
         />
 
         {/* 2 · Email de recuperación */}
@@ -148,6 +150,13 @@ export default function AuthHubPage() {
         )}
       </div>
 
+      <PhoneChangeSheet
+        open={sheet === 'phone'}
+        onClose={() => setSheet(null)}
+        onChanged={() => load()}
+        hasFactors={hasCode && bioCount > 0}
+      />
+
       <PrivateCodeSheet
         open={sheet === 'code'}
         onClose={() => setSheet(null)}
@@ -156,6 +165,7 @@ export default function AuthHubPage() {
           load()
         }}
         emailVerified={emailVerified}
+        hasCode={hasCode}
       />
 
       <RecoveryEmailSheet

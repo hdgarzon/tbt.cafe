@@ -1,6 +1,8 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { stripe } from '@/lib/stripe'
 import { notify } from '@/lib/notify'
+import { getRules } from '@/lib/rules'
+import { transferWindowMs } from '@/lib/rules-shape'
 
 /**
  * El barrido diario de las transferencias que nadie respondió — Transfer
@@ -22,8 +24,6 @@ import { notify } from '@/lib/notify'
  * retenido es la versión del error que nadie va a mirar.
  */
 
-export const HOLD_WINDOW_MS = 24 * 3600 * 1000
-
 const BATCH = 100
 
 type WorkRef = { title: string | null; tbt_id: string | null }
@@ -39,7 +39,8 @@ type OpenTransfer = {
 export async function lapseUnansweredTransfers(
   admin: SupabaseClient
 ): Promise<{ checked: number; lapsed: number; skipped: number }> {
-  const cutoff = new Date(Date.now() - HOLD_WINDOW_MS).toISOString()
+  // La misma ventana que respond, de configuracion (Work Order 02, 1.2).
+  const cutoff = new Date(Date.now() - transferWindowMs(await getRules())).toISOString()
 
   const { data, error } = await admin
     .from('transfers')

@@ -24,6 +24,8 @@ export type NotificationCategory = 'tbt' | 'security' | 'transactional' | 'suppo
  */
 const ALWAYS_ON = new Set([
   'payout_destination',
+  // Work Order 02, 10: un numero cambiado, un factor nuevo o quitado, un codigo restablecido.
+  'security_change',
   'payout_failed',
   'suspicious',
   'ticket_system',
@@ -35,6 +37,8 @@ const CATEGORY_OF: Record<string, NotificationCategory> = {
   favorites: 'tbt',
   surge: 'tbt',
   new_from_followed: 'tbt',
+  // Declarada y sin disparar (Work Order 02, Stage 12): ninguna fuente de
+  // eventos sabe hoy desde donde se autentica alguien. No se inventa una.
   new_location: 'security',
   new_device: 'security',
   suspicious: 'security',
@@ -52,6 +56,14 @@ const CATEGORY_OF: Record<string, NotificationCategory> = {
   payout_completed: 'payouts',
   payout_failed: 'payouts',
   payout_destination: 'security',
+  // Work Order 02, 2.6: aprobado, rechazado, suspendido, reintegrado.
+  selling_status: 'transactional',
+  // Work Order 02, 4: el resto del ciclo de una oferta.
+  offer_withdrawn: 'transactional',
+  offer_expired: 'transactional',
+  offer_cancelled: 'transactional',
+  offer_holder_ready: 'transactional',
+  security_change: 'security',
 }
 
 /**

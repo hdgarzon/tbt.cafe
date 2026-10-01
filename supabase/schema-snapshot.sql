@@ -84,7 +84,7 @@ do $$ begin
 exception when duplicate_object then null; end $$;
 
 do $$ begin
-  create type public.transfer_type as enum ('automatic', 'manual', 'gift');
+  create type public.transfer_type as enum ('automatic', 'manual', 'gift', 'sale', 'restoring');
 exception when duplicate_object then null; end $$;
 
 do $$ begin
@@ -135,7 +135,16 @@ create table if not exists public.profiles (
   collector_website text,
   covered_registrations_granted integer default 0 not null,
   payout_country text,
-  signature_strokes jsonb
+  signature_strokes jsonb,
+  -- 066 · Work Order 02 Stage 10.2
+  phone_changed_at timestamptz,
+  phone_change_pending text,
+  phone_change_pending_at timestamptz,
+  phone_change_pending_id uuid,
+  -- 069 · Chains 01 Stage 1.3
+  credited_name_confirmed_at timestamptz,
+  -- 071 · Chains 01 Stage 2: the random creator code
+  creator_code text
 );
 
 create table if not exists public.works (
@@ -191,7 +200,12 @@ create table if not exists public.works (
   provenance_hash text,
   image_sha256 text,
   plagiarism_scan_id uuid,
-  signature_strokes jsonb
+  signature_strokes jsonb,
+  -- 070 · Chains 01 Stage 8
+  recording_hash text,
+  registered_asset_links text[],
+  -- 071 · Chains 01 Stage 2
+  mint_signature text
 );
 
 comment on column public.works.mint_address is
@@ -233,7 +247,11 @@ create table if not exists public.work_commerce (
   updated_at timestamp with time zone default now(),
   availability text default 'not_for_sale'::text not null,
   taking_offers boolean default false not null,
-  royalty_locked boolean default false not null
+  royalty_locked boolean default false not null,
+  -- 060 · Work Order 02 Stage 3
+  royalty_locked_at timestamptz,
+  royalty_locked_by uuid references public.ownership_history(id) on delete restrict,
+  frozen_offer_id uuid references public.offers(id) on delete set null
 );
 
 create table if not exists public.titles (
@@ -303,7 +321,20 @@ create table if not exists public.ownership_history (
   sequence_number integer default 1 not null,
   created_at timestamp with time zone default now() not null,
   record_uri text,
-  record_hash text
+  record_hash text,
+  -- 062 · Chains 01 Stage 3: a code per acquisition, the naming choice
+  holder_code integer not null check (holder_code between 10000 and 99999),
+  holder_named boolean not null default false,
+  holder_public_name text,
+  -- 067 · the transfer a restoring row undoes
+  restoring_of uuid[],
+  -- 068 · Chains 01 Stage 4.5
+  token_move_signature text,
+  token_moved_at timestamptz,
+  -- 071 · Chains 01 Stage 2: the transfer this row came from
+  transfer_id uuid,
+  constraint holder_code_unique_in_work unique (work_id, holder_code),
+  constraint holder_named_has_name check (not holder_named or holder_public_name is not null)
 );
 
 create table if not exists public.transfers (
@@ -329,7 +360,11 @@ create table if not exists public.transfers (
   is_two_phase boolean default false not null,
   stripe_payment_intent_id text,
   authorized_at timestamp with time zone,
-  outcome text
+  outcome text,
+  -- 063 · Work Order 02 Stage 5
+  value_kind text check (value_kind in ('declared', 'gift', 'sale', 'restoring')),
+  declared_value_confirmed_at timestamptz,
+  holder_named boolean
 );
 
 create table if not exists public.tbt_payments (
@@ -512,7 +547,77 @@ create table if not exists public.platform_config (
   payout_platform_pct numeric(6,4) default 0.0230 not null,
   biometric_threshold numeric(12,2) default 500 not null,
   three_ds_threshold numeric(12,2) default 1000 not null,
-  tbt_id_blocklist text[] not null default '{}'
+  tbt_id_blocklist text[] not null default '{}',
+  -- 058 · Work Order 02 Stage 1: configuration is the single source
+  service_fee_buyer numeric(12,2) not null default 8.00,
+  service_fee_seller numeric(12,2) not null default 8.00,
+  service_fee_royalty numeric(12,2) not null default 8.00,
+  registration_fee numeric(12,2) not null default 8.00,
+  transfer_fee numeric(12,2) not null default 8.00,
+  settlement_days_top integer not null default 30,
+  settlement_top_threshold numeric(12,2) not null default 10000,
+  first_payout_hold_days integer not null default 30,
+  first_payout_clean_sales integer not null default 2,
+  first_payout_max_days integer not null default 90,
+  absorption_threshold numeric(12,2) not null default 250,
+  writeoff_months integer not null default 24,
+  royalty_pct_ceiling numeric(5,2) not null default 90,
+  royalty_pct_warning numeric(5,2) not null default 50,
+  royalty_floor_pct numeric(5,2) not null default 10,
+  royalty_floor_min numeric(12,2) not null default 50,
+  transfer_window_hours integer not null default 48,
+  offer_max_hours integer not null default 72,
+  offer_payment_window_hours integer not null default 24,
+  offer_auto_cancel_days integer not null default 4,
+  offer_near_expiry_fraction numeric(4,3) not null default 0.10,
+  offer_message_max integer not null default 500,
+  title_link_days integer not null default 30,
+  title_link_warning_day integer not null default 25,
+  velocity_count_per_hour integer not null default 3,
+  velocity_outbound_24h numeric(12,2) not null default 25000,
+  velocity_new_pair_days integer not null default 30,
+  velocity_new_pair_threshold numeric(12,2) not null default 5000,
+  phone_change_days integer not null default 30,
+  three_ds_registration_exempt boolean not null default true,
+  payout_cost_bank numeric(12,2) not null default 1.50,
+  payout_cost_usdc numeric(12,2) not null default 1.00,
+  seller_payout_delay_days integer not null default 7,
+  usdc_enabled boolean not null default false,
+  scan_warn numeric(4,3) not null default 0.75,
+  scan_block numeric(4,3) not null default 0.90,
+  scan_processor_url text not null default 'https://tbt-image-processor.fly.dev',
+  pause_registration boolean not null default false,
+  pause_registration_message jsonb not null default jsonb_build_object(
+    'en', 'Registration is paused for a moment. Everything else works as usual.',
+    'es', 'El registro está en pausa por un momento. Todo lo demás funciona con normalidad.',
+    'pt', 'O registro está pausado por um momento. O resto funciona normalmente.',
+    'fr', 'L''enregistrement est suspendu pour un moment. Tout le reste fonctionne normalement.'),
+  pause_selling boolean not null default false,
+  pause_selling_message jsonb not null default jsonb_build_object(
+    'en', 'Sales are paused for a moment. Offers and transfers work as usual.',
+    'es', 'Las ventas están en pausa por un momento. Ofertas y transferencias funcionan con normalidad.',
+    'pt', 'As vendas estão pausadas por um momento. Ofertas e transferências funcionam normalmente.',
+    'fr', 'Les ventes sont suspendues pour un moment. Les offres et transferts fonctionnent normalement.'),
+  pause_offers boolean not null default false,
+  pause_offers_message jsonb not null default jsonb_build_object(
+    'en', 'Offers are paused for a moment.',
+    'es', 'Las ofertas están en pausa por un momento.',
+    'pt', 'As ofertas estão pausadas por um momento.',
+    'fr', 'Les offres sont suspendues pour un moment.'),
+  pause_transfers boolean not null default false,
+  pause_transfers_message jsonb not null default jsonb_build_object(
+    'en', 'New transfers are paused for a moment. Pending ones can still be accepted.',
+    'es', 'Las transferencias nuevas están en pausa por un momento. Las pendientes aún se pueden aceptar.',
+    'pt', 'Novas transferências estão pausadas por um momento. As pendentes ainda podem ser aceitas.',
+    'fr', 'Les nouveaux transferts sont suspendus pour un moment. Ceux en attente peuvent encore être acceptés.'),
+  pause_payouts boolean not null default false,
+  pause_payouts_message jsonb not null default jsonb_build_object(
+    'en', 'Payout collection is paused for a moment. Your earnings are safe.',
+    'es', 'El cobro está en pausa por un momento. Tus ganancias están seguras.',
+    'pt', 'Os repasses estão pausados por um momento. Seus ganhos estão seguros.',
+    'fr', 'Les versements sont suspendus pour un moment. Vos gains sont en sécurité.'),
+  -- 074 · Chains 01 Stage 10: the prototype example IDs, never issued
+  tbt_id_reserved text[] default '{}'::text[] not null
 );
 
 create table if not exists public.covered_registrations (
@@ -570,9 +675,62 @@ create table if not exists public.payout_destinations (
   destination text not null,
   destination_masked text not null,
   network text,
-  is_default boolean default false not null,
   verified_at timestamp with time zone default now() not null,
   created_at timestamp with time zone default now() not null
+);
+
+-- 059 · Work Order 02 Stage 2: the seller state and the provider countries
+create table if not exists public.provider_countries (
+  country text primary key check (country ~ '^[A-Z]{2}$'),
+  provider text not null default 'stripe',
+  merchant boolean not null default false,
+  payout_bank boolean not null default false,
+  payout_usdc boolean not null default false,
+  enabled boolean not null default true,
+  updated_at timestamptz not null default now()
+);
+
+create table if not exists public.seller_accounts (
+  user_id uuid primary key references auth.users(id) on delete restrict,
+  status text not null default 'not_applied'
+    check (status in ('not_applied', 'pending', 'declined', 'active', 'paused_self')),
+  suspended_at timestamptz,
+  suspended_reason text,
+  suspended_by uuid references auth.users(id) on delete restrict,
+  provider text not null default 'stripe',
+  country text references public.provider_countries(country) on delete restrict,
+  charge_path text check (charge_path in ('direct', 'platform')),
+  entity_type text check (entity_type in ('individual', 'sole_proprietor', 'company', 'institution')),
+  applied_at timestamptz,
+  approved_at timestamptz,
+  approved_by uuid references auth.users(id) on delete restrict,
+  declined_reason text,
+  remembered_listings uuid[] not null default '{}',
+  -- 064 · Work Order 02 Stage 6.3
+  clean_sales integer not null default 0,
+  first_clean_sale_at timestamptz,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  constraint seller_suspension_whole check (
+    (suspended_at is null and suspended_reason is null and suspended_by is null)
+    or (suspended_at is not null and suspended_reason is not null and suspended_by is not null)
+  )
+);
+
+-- 066 · Work Order 02 Stage 10.4
+create table if not exists public.velocity_holds (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references auth.users(id) on delete cascade,
+  action text not null check (action in ('purchase', 'offer_accept', 'transfer_initiate')),
+  amount numeric(12,2),
+  work_id uuid references public.works(id) on delete set null,
+  counterparty_id uuid references auth.users(id) on delete set null,
+  status text not null default 'held' check (status in ('held', 'released', 'declined', 'used')),
+  reason text,
+  ticket_ref text,
+  released_at timestamptz,
+  release_expires_at timestamptz,
+  created_at timestamptz not null default now()
 );
 
 create table if not exists public.payout_connect_accounts (
@@ -620,6 +778,25 @@ create table if not exists public.payout_earnings (
   collected_at timestamp with time zone
 );
 
+-- 073 · Chains 01 Stage 7.3: what the recovery sweep could not finish
+create table if not exists public.chain_recovery_failures (
+  id uuid default gen_random_uuid() not null primary key,
+  work_id uuid not null references public.works (id) on delete cascade,
+  step text not null check (step in ('seal', 'move', 'provenance')),
+  subject_id uuid not null,
+  first_failed_at timestamptz default now() not null,
+  last_failed_at timestamptz default now() not null,
+  attempts integer default 1 not null,
+  last_error text,
+  ticket_ref text,
+  unique (work_id, step, subject_id)
+);
+
+-- 071 · Chains 01 Stage 2.1 d: the list of record kinds, one row per kind
+create table if not exists public.chain_record_kinds (
+  kind text not null primary key
+);
+
 create table if not exists public.chain_anchors (
   record_hash text not null,
   record_kind text not null,
@@ -631,7 +808,10 @@ create table if not exists public.chain_anchors (
   upgrade_attempts integer default 0 not null,
   last_attempt_at timestamp with time zone,
   created_at timestamp with time zone default now() not null,
-  updated_at timestamp with time zone default now() not null
+  updated_at timestamp with time zone default now() not null,
+  -- 072 · Chains 01 Stage 6.3: the published proof, and the work it anchors
+  proof_record_id text,
+  tbt_id text
 );
 
 comment on table public.chain_anchors is
@@ -734,7 +914,30 @@ create table if not exists public.offers (
   currency text default 'USD'::text not null,
   status text default 'open'::text not null,
   solicited boolean default false not null,
-  created_at timestamp with time zone default now() not null
+  created_at timestamp with time zone default now() not null,
+  -- 061 · Work Order 02 Stage 4
+  duration_hours integer not null,
+  expires_at timestamptz not null,
+  message text,
+  response_message text,
+  responded_at timestamptz,
+  accepted_at timestamptz,
+  payment_due_at timestamptz,
+  auto_cancel_at timestamptz,
+  closed_at timestamptz,
+  close_reason text,
+  halfway_reminded_at timestamptz,
+  near_reminded_at timestamptz,
+  suspended boolean not null default false
+);
+
+create table if not exists public.offer_events (
+  id uuid primary key default gen_random_uuid(),
+  offer_id uuid not null references public.offers(id) on delete cascade,
+  event text not null,
+  actor_id uuid references auth.users(id) on delete set null,
+  detail jsonb not null default '{}'::jsonb,
+  created_at timestamptz not null default now()
 );
 
 create table if not exists public.roast_questions (
@@ -809,7 +1012,7 @@ alter table public.work_commerce add constraint work_commerce_pkey PRIMARY KEY (
 alter table public.work_commerce add constraint work_commerce_work_id_key UNIQUE (work_id);
 alter table public.work_commerce add constraint work_commerce_work_id_fkey FOREIGN KEY (work_id) REFERENCES works(id) ON DELETE CASCADE;
 alter table public.work_commerce add constraint work_commerce_availability_check CHECK ((availability = ANY (ARRAY['for_sale'::text, 'reserved'::text, 'not_for_sale'::text])));
-alter table public.work_commerce add constraint valid_royalty_percentage CHECK (((royalty_type <> 'percentage'::royalty_type) OR ((royalty_value >= (0)::numeric) AND (royalty_value <= (50)::numeric))));
+alter table public.work_commerce add constraint valid_royalty_percentage CHECK (((royalty_type <> 'percentage'::royalty_type) OR ((royalty_value >= (0)::numeric) AND (royalty_value <= (90)::numeric))));
 alter table public.work_commerce add constraint valid_royalty_fixed CHECK (((royalty_type <> 'fixed'::royalty_type) OR (royalty_value >= (0)::numeric)));
 
 alter table public.titles add constraint titles_pkey PRIMARY KEY (id);
@@ -824,6 +1027,7 @@ alter table public.title_files add constraint title_files_pkey PRIMARY KEY (titl
 alter table public.title_files add constraint title_files_title_id_fkey FOREIGN KEY (title_id) REFERENCES titles(id) ON DELETE CASCADE;
 alter table public.profiles add constraint profiles_signature_strokes_array CHECK (((signature_strokes IS NULL) OR (jsonb_typeof(signature_strokes) = 'array'::text)));
 alter table public.works add constraint works_signature_strokes_array CHECK (((signature_strokes IS NULL) OR (jsonb_typeof(signature_strokes) = 'array'::text)));
+alter table public.works add constraint works_recording_hash_shape CHECK (((recording_hash IS NULL) OR (recording_hash ~ '^sha256:[0-9a-f]{64}$'::text)));
 
 alter table public.context_snapshots add constraint context_snapshots_pkey PRIMARY KEY (id);
 alter table public.context_snapshots add constraint context_snapshots_work_id_fkey FOREIGN KEY (work_id) REFERENCES works(id) ON DELETE CASCADE;
@@ -831,8 +1035,8 @@ alter table public.context_snapshots add constraint context_snapshots_work_id_fk
 alter table public.ownership_history add constraint ownership_history_pkey PRIMARY KEY (id);
 alter table public.ownership_history add constraint ownership_history_work_id_fkey FOREIGN KEY (work_id) REFERENCES works(id) ON DELETE CASCADE;
 alter table public.ownership_history add constraint ownership_history_owner_user_id_fkey FOREIGN KEY (owner_user_id) REFERENCES profiles(id) ON DELETE SET NULL;
-alter table public.ownership_history add constraint ownership_history_event_type_check CHECK ((event_type = ANY (ARRAY['creation'::text, 'transfer'::text])));
-alter table public.ownership_history add constraint ownership_history_transfer_type_check CHECK ((transfer_type = ANY (ARRAY['sale'::text, 'gift'::text, NULL::text])));
+alter table public.ownership_history add constraint ownership_history_event_type_check CHECK ((event_type = ANY (ARRAY['creation'::text, 'transfer'::text, 'restoring'::text])));
+alter table public.ownership_history add constraint ownership_history_transfer_type_check CHECK ((transfer_type = ANY (ARRAY['sale'::text, 'gift'::text, 'restoring'::text])));
 
 alter table public.transfers add constraint transfers_pkey PRIMARY KEY (id);
 alter table public.transfers add constraint transfers_work_id_fkey FOREIGN KEY (work_id) REFERENCES works(id) ON DELETE RESTRICT;
@@ -879,7 +1083,7 @@ alter table public.tickets add constraint tickets_ref_key UNIQUE (ref);
 alter table public.tickets add constraint tickets_subject_user_fkey FOREIGN KEY (subject_user) REFERENCES auth.users(id) ON DELETE CASCADE;
 alter table public.tickets add constraint tickets_assigned_to_fkey FOREIGN KEY (assigned_to) REFERENCES auth.users(id) ON DELETE SET NULL;
 alter table public.tickets add constraint tickets_origin_check CHECK ((origin = ANY (ARRAY['human'::text, 'system'::text, 'ai_escalation'::text])));
-alter table public.tickets add constraint tickets_category_check CHECK ((category = ANY (ARRAY['payments'::text, 'payouts'::text, 'transfers'::text, 'registration'::text, 'authentication'::text, 'other'::text])));
+alter table public.tickets add constraint tickets_category_check CHECK ((category = ANY (ARRAY['payments'::text, 'payouts'::text, 'transfers'::text, 'registration'::text, 'authentication'::text, 'other'::text, 'claim'::text, 'report'::text, 'dispute'::text])));
 alter table public.tickets add constraint tickets_severity_check CHECK ((severity = ANY (ARRAY['financial'::text, 'secondary'::text])));
 alter table public.tickets add constraint tickets_status_check CHECK ((status = ANY (ARRAY['open'::text, 'answered'::text, 'resolved'::text, 'closed'::text])));
 alter table public.ticket_replies add constraint ticket_replies_pkey PRIMARY KEY (id);
@@ -899,6 +1103,21 @@ alter table public.platform_config add constraint platform_config_settlement_hig
 alter table public.platform_config add constraint platform_config_payout_platform_pct_check CHECK ((payout_platform_pct >= (0)::numeric));
 alter table public.platform_config add constraint platform_config_biometric_threshold_check CHECK ((biometric_threshold >= (0)::numeric));
 alter table public.platform_config add constraint platform_config_three_ds_threshold_check CHECK ((three_ds_threshold >= (0)::numeric));
+alter table public.platform_config add constraint rules_fees_non_negative check (service_fee_buyer >= 0 and service_fee_seller >= 0 and service_fee_royalty >= 0 and registration_fee >= 0 and transfer_fee >= 0);
+alter table public.platform_config add constraint rules_thresholds_non_negative check (settlement_top_threshold >= 0 and absorption_threshold >= 0 and velocity_outbound_24h >= 0 and velocity_new_pair_threshold >= 0 and payout_cost_bank >= 0 and payout_cost_usdc >= 0 and royalty_floor_min >= 0 and royalty_floor_pct >= 0);
+alter table public.platform_config add constraint rules_days_positive check (settlement_days_top > 0 and first_payout_hold_days >= 0 and first_payout_clean_sales >= 0 and first_payout_max_days >= first_payout_hold_days and writeoff_months > 0 and offer_max_hours > 0 and offer_payment_window_hours > 0 and offer_auto_cancel_days > 0 and offer_message_max > 0 and velocity_count_per_hour > 0 and velocity_new_pair_days >= 0 and phone_change_days >= 0 and seller_payout_delay_days >= 0);
+alter table public.platform_config add constraint rules_transfer_window check (transfer_window_hours > 0 and transfer_window_hours < 168);
+alter table public.platform_config add constraint rules_royalty_ceiling check (royalty_pct_ceiling >= 0 and royalty_pct_ceiling <= 90);
+alter table public.platform_config add constraint rules_royalty_warning check (royalty_pct_warning <= royalty_pct_ceiling);
+alter table public.platform_config add constraint rules_near_expiry check (offer_near_expiry_fraction > 0 and offer_near_expiry_fraction < 1);
+alter table public.platform_config add constraint rules_scan_fractions check (scan_warn > 0 and scan_warn <= scan_block and scan_block <= 1);
+alter table public.platform_config add constraint rules_title_link check (title_link_warning_day > 0 and title_link_warning_day < title_link_days);
+alter table public.platform_config add constraint rules_scan_url check (scan_processor_url ~ '^https://');
+alter table public.platform_config add constraint rules_pause_registration_message check (pause_registration_message ?& array['en', 'es', 'pt', 'fr']);
+alter table public.platform_config add constraint rules_pause_selling_message check (pause_selling_message ?& array['en', 'es', 'pt', 'fr']);
+alter table public.platform_config add constraint rules_pause_offers_message check (pause_offers_message ?& array['en', 'es', 'pt', 'fr']);
+alter table public.platform_config add constraint rules_pause_transfers_message check (pause_transfers_message ?& array['en', 'es', 'pt', 'fr']);
+alter table public.platform_config add constraint rules_pause_payouts_message check (pause_payouts_message ?& array['en', 'es', 'pt', 'fr']);
 alter table public.covered_registrations add constraint covered_registrations_pkey PRIMARY KEY (id);
 alter table public.covered_registrations add constraint covered_registrations_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES auth.users(id) ON DELETE CASCADE;
 alter table public.covered_registrations add constraint covered_registrations_work_id_fkey FOREIGN KEY (work_id) REFERENCES works(id) ON DELETE SET NULL;
@@ -909,6 +1128,7 @@ alter table public.payout_methods add constraint payout_methods_pkey PRIMARY KEY
 alter table public.payout_methods add constraint payout_methods_provider_check CHECK ((provider = ANY (ARRAY['stripe_connect_stablecoin'::text, 'stripe_connect_bank'::text, 'other'::text])));
 alter table public.payout_methods add constraint payout_methods_dest_field_type_check CHECK ((dest_field_type = ANY (ARRAY['wallet_address'::text, 'bank_account'::text, 'pix_key'::text, 'phone'::text, 'email'::text])));
 alter table public.payout_destinations add constraint payout_destinations_pkey PRIMARY KEY (id);
+alter table public.payout_destinations add constraint payout_destinations_one_per_method UNIQUE (user_id, method_id);
 alter table public.payout_destinations add constraint payout_destinations_user_id_fkey FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE;
 alter table public.payout_destinations add constraint payout_destinations_method_id_fkey FOREIGN KEY (method_id) REFERENCES payout_methods(id);
 alter table public.payout_connect_accounts add constraint payout_connect_accounts_pkey PRIMARY KEY (user_id);
@@ -926,10 +1146,13 @@ alter table public.payout_earnings add constraint payout_earnings_work_id_fkey F
 alter table public.payout_earnings add constraint payout_earnings_payout_block_id_fkey FOREIGN KEY (payout_block_id) REFERENCES payout_blocks(id) ON DELETE SET NULL;
 alter table public.payout_earnings add constraint payout_earnings_amount_check CHECK ((amount > (0)::numeric));
 alter table public.payout_earnings add constraint payout_earnings_source_check CHECK ((source = ANY (ARRAY['sale'::text, 'royalty'::text, 'transfer'::text, 'offer'::text])));
-alter table public.payout_earnings add constraint payout_earnings_state_check CHECK ((state = ANY (ARRAY['pending'::text, 'available'::text, 'collected'::text])));
+alter table public.payout_earnings add constraint payout_earnings_state_check CHECK ((state = ANY (ARRAY['pending'::text, 'available'::text, 'collected'::text, 'reserved'::text])));
 alter table public.payout_earnings add constraint payout_earnings_hold_reason_check CHECK ((hold_reason = ANY (ARRAY['settlement_window'::text, 'awaiting_counterparty'::text])));
 alter table public.chain_anchors add constraint chain_anchors_pkey PRIMARY KEY (record_hash);
-alter table public.chain_anchors add constraint chain_anchors_record_kind_check CHECK ((record_kind = ANY (ARRAY['registration'::text, 'provenance'::text, 'amendment'::text])));
+alter table public.chain_anchors add constraint chain_anchors_record_kind_fkey FOREIGN KEY (record_kind) REFERENCES chain_record_kinds(kind);
+alter table public.ownership_history add constraint ownership_history_transfer_id_fkey FOREIGN KEY (transfer_id) REFERENCES transfers(id) ON DELETE SET NULL;
+alter table public.profiles add constraint profiles_creator_code_shape CHECK (((creator_code IS NULL) OR (creator_code ~ '^cr_[0-9abcdefghjkmnpqrstvwxyz]{10}$'::text)));
+alter table public.profiles add constraint profiles_creator_code_unique UNIQUE (creator_code);
 alter table public.chain_anchors add constraint chain_anchors_status_check CHECK ((status = ANY (ARRAY['pending'::text, 'confirmed'::text, 'failed'::text])));
 alter table public.payment_disputes add constraint payment_disputes_pkey PRIMARY KEY (provider_ref);
 alter table public.payment_disputes add constraint payment_disputes_work_id_fkey FOREIGN KEY (work_id) REFERENCES works(id) ON DELETE SET NULL;
@@ -964,7 +1187,10 @@ alter table public.curations add constraint curations_meaning_check CHECK (((mea
 alter table public.offers add constraint offers_pkey PRIMARY KEY (id);
 alter table public.offers add constraint offers_work_id_fkey FOREIGN KEY (work_id) REFERENCES works(id) ON DELETE CASCADE;
 alter table public.offers add constraint offers_from_user_fkey FOREIGN KEY (from_user) REFERENCES auth.users(id) ON DELETE CASCADE;
-alter table public.offers add constraint offers_status_check CHECK ((status = ANY (ARRAY['open'::text, 'accepted'::text, 'declined'::text, 'withdrawn'::text, 'expired'::text])));
+alter table public.offers add constraint offers_status_check CHECK ((status = ANY (ARRAY['open'::text, 'accepted'::text, 'declined'::text, 'withdrawn'::text, 'expired'::text, 'cancelled'::text, 'completed'::text])));
+alter table public.offers add constraint offers_duration_check CHECK ((duration_hours = ANY (ARRAY[24, 48, 72])));
+alter table public.offers add constraint offers_amount_positive CHECK ((amount > (0)::numeric));
+alter table public.offers add constraint offers_message_length CHECK ((((message IS NULL) OR (char_length(message) <= 2000)) AND ((response_message IS NULL) OR (char_length(response_message) <= 2000))));
 alter table public.roast_questions add constraint roast_questions_pkey PRIMARY KEY (id);
 alter table public.roast_questions add constraint roast_questions_user_id_fkey FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE;
 alter table public.roast_questions add constraint roast_questions_body_check CHECK (((length(TRIM(BOTH FROM body)) >= 1) AND (length(TRIM(BOTH FROM body)) <= 2000)));
@@ -1044,7 +1270,6 @@ create index if not exists provider_events_failures_idx ON public.provider_event
 
 create index if not exists payout_destinations_user_idx ON public.payout_destinations USING btree (user_id);
 create index if not exists payout_destinations_method_idx ON public.payout_destinations USING btree (method_id);
-create unique index if not exists payout_destinations_default_idx ON public.payout_destinations USING btree (user_id) WHERE is_default;
 create index if not exists payout_connect_accounts_account_idx ON public.payout_connect_accounts USING btree (account_id);
 create index if not exists payout_blocks_user_idx ON public.payout_blocks USING btree (user_id, created_at DESC);
 create index if not exists payout_blocks_method_idx ON public.payout_blocks USING btree (method_id);
@@ -1132,7 +1357,6 @@ create policy "Creadores pueden crear obras" on public.works for insert with che
 create policy "Creadores y propietarios pueden editar obras" on public.works for update using (((auth.uid() = creator_id) OR (auth.uid() = current_owner_id)));
 
 create policy "Commerce visible para obras accesibles" on public.work_commerce for select using ((EXISTS ( SELECT 1 FROM works w WHERE ((w.id = work_commerce.work_id) AND ((w.status = 'certified'::work_status) OR (w.creator_id = auth.uid()) OR (w.current_owner_id = auth.uid()))))));
-create policy "Creadores pueden gestionar commerce" on public.work_commerce for all using ((EXISTS ( SELECT 1 FROM works w WHERE ((w.id = work_commerce.work_id) AND (w.creator_id = auth.uid())))));
 
 create policy "Titulos son publicos" on public.titles for select using (true);
 
@@ -1153,7 +1377,12 @@ create policy "Users can create their own payments" on public.tbt_payments for i
 create policy "admin reads own membership" on public.admin_members for select using ((auth.uid() = user_id));
 create policy "audit readable by viewers" on public.admin_audit_log for select using (admin_has('audit.view'::text));
 create policy "pending readable by admins" on public.admin_pending_approvals for select using (admin_has('dashboard.view'::text));
-create policy "own credentials" on public.webauthn_credentials for all using ((auth.uid() = user_id)) with check ((auth.uid() = user_id));
+create policy "own credentials read" on public.webauthn_credentials for select using ((user_id = ( SELECT auth.uid() AS uid)));
+alter table public.velocity_holds enable row level security;
+-- 071: the list of record kinds — service role only.
+alter table public.chain_record_kinds enable row level security;
+alter table public.chain_recovery_failures enable row level security;
+create policy "own holds read" on public.velocity_holds for select using ((user_id = ( SELECT auth.uid() AS uid)));
 create policy "own challenges" on public.webauthn_challenges for all using ((auth.uid() = user_id)) with check ((auth.uid() = user_id));
 create policy "own money action auth readable" on public.money_action_auth for select using ((( SELECT auth.uid() AS uid) = user_id));
 
@@ -1188,7 +1417,12 @@ create policy "own favorites" on public.favorites for all using ((auth.uid() = u
 create policy "read public or own" on public.curations for select using ((is_public OR (auth.uid() = author_id)));
 create policy "write own curation" on public.curations for all using ((auth.uid() = author_id)) with check ((auth.uid() = author_id));
 create policy "offer parties read" on public.offers for select using (((auth.uid() = from_user) OR (auth.uid() = ( SELECT w.current_owner_id FROM works w WHERE (w.id = offers.work_id)))));
-create policy "offerer writes" on public.offers for insert with check ((auth.uid() = from_user));
+alter table public.offer_events enable row level security;
+create policy "offer parties read events" on public.offer_events for select using ((EXISTS ( SELECT 1 FROM (offers o JOIN works w ON ((w.id = o.work_id))) WHERE ((o.id = offer_events.offer_id) AND ((( SELECT auth.uid() AS uid) = o.from_user) OR (( SELECT auth.uid() AS uid) = w.current_owner_id))))));
 create policy "roast questions readable" on public.roast_questions for select using ((NOT hidden));
+alter table public.provider_countries enable row level security;
+alter table public.seller_accounts enable row level security;
+create policy "provider countries readable" on public.provider_countries for select using (true);
+create policy "sellers read their own" on public.seller_accounts for select using ((user_id = ( SELECT auth.uid() AS uid)));
 -- roast_questions no tiene politica de insercion desde la 048: el envio esta apagado hasta que exista moderacion.
 

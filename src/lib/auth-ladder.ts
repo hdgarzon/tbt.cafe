@@ -46,10 +46,11 @@ export type LadderThresholds = {
 }
 
 /**
- * Los valores del spec. Son solo el arranque: viven en `platform_config` y el
- * Área 2 §5.2 los declara configurables por administración sin desplegar.
+ * Si la configuracion no se puede leer, se pide todo: un fallo de red no debe
+ * abrir la puerta, y los valores viven solo en `platform_config` (Work Order
+ * 02, 1.2). El servidor decide igual por su cuenta.
  */
-export const LADDER_DEFAULTS: LadderThresholds = { biometric: 500, threeDS: 1000 }
+const STRICTEST: LadderThresholds = { biometric: 0, threeDS: 0 }
 
 export type LadderRequirement = {
   biometric: boolean
@@ -70,7 +71,7 @@ export type LadderRequirement = {
 export function resolveLadder(
   action: MoneyAction,
   amount: number | null,
-  thresholds: LadderThresholds = LADDER_DEFAULTS
+  thresholds: LadderThresholds
 ): LadderRequirement {
   if (UNCONDITIONAL.includes(action)) {
     return { biometric: true, threeDS: false, privateCode: true, thresholds }
@@ -85,22 +86,18 @@ export function resolveLadder(
   }
 }
 
-/**
- * Umbrales vigentes. Si la lectura falla se cae a los del spec en vez de a
- * "no pedir nada": un fallo de red no debe abrir la puerta.
- */
+/** Umbrales vigentes. Si la lectura falla, los mas estrictos. */
 export async function fetchLadderThresholds(): Promise<LadderThresholds> {
   const { data, error } = await supabase
     .from('platform_config')
     .select('biometric_threshold, three_ds_threshold')
     .maybeSingle()
 
-  if (error || !data) return LADDER_DEFAULTS
-
-  return {
-    biometric: Number(data.biometric_threshold ?? LADDER_DEFAULTS.biometric),
-    threeDS: Number(data.three_ds_threshold ?? LADDER_DEFAULTS.threeDS),
-  }
+  if (error || !data) return STRICTEST
+  const biometric = Number(data.biometric_threshold)
+  const threeDS = Number(data.three_ds_threshold)
+  if (!Number.isFinite(biometric) || !Number.isFinite(threeDS)) return STRICTEST
+  return { biometric, threeDS }
 }
 
 /* ──────────────────────────────────────────────────────────────────────────

@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from 'next/server'
 import { verifyTwoFactors } from '@/lib/two-factor'
 import { disburseBlock } from '@/lib/payout-disburse'
 import { notifyPayoutDestinationChanged } from '@/lib/payout-destination-notice'
+import { assertNotPaused, getRules } from '@/lib/rules'
+import { railsFor, type RailCountry } from '@/lib/payout-rails'
+import type { EntityType } from '@/lib/seller'
 
 /**
  * Cobro de un bloque de payout — Backend Spec 02 §4, y Spec 01 §5.1.
@@ -47,6 +50,12 @@ export async function POST(request: NextRequest) {
         earningIds?: string[]
       }
 
+    // Stage 11: ningun cobro nuevo con los pagos en pausa; uno en curso termina.
+    {
+      const paused = await assertNotPaused('payouts')
+      if (paused) return NextResponse.json(paused, { status: 423 })
+    }
+
     if (typeof methodId !== 'string' || !methodId) {
       return NextResponse.json({ error: 'method_required' }, { status: 400 })
     }
@@ -58,6 +67,54 @@ export async function POST(request: NextRequest) {
     const gate = await verifyTwoFactors(token, { code, biometricProof })
     if (!gate.ok) return NextResponse.json(gate.body, { status: gate.status })
     const { userId, admin } = gate
+
+    /*
+     * Work Order 02, 7.2, 7.5, 7.6: por donde puede cobrar esta persona, con la
+     * misma regla que la hoja. Sin rail no se cobra; un rail que su pais no
+     * permite se rechaza; una institucion no cobra aqui.
+     */
+    const [{ data: profile }, { data: seller }, { data: method }, rules] = await Promise.all([
+      admin.from('profiles').select('payout_country').eq('id', userId).maybeSingle(),
+      admin.from('seller_accounts').select('entity_type').eq('user_id', userId).maybeSingle(),
+      admin.from('payout_methods').select('provider').eq('id', methodId).maybeSingle(),
+      getRules(),
+    ])
+    const country = profile?.payout_country ?? null
+    const { data: countryRow } = country
+      ? await admin.from('provider_countries').select('payout_bank, payout_usdc, enabled').eq('country', country).maybeSingle()
+      : { data: null }
+    const entityType = ((seller as { entity_type?: EntityType } | null)?.entity_type ?? null)
+
+    // 7.5: empresas e instituciones cobran por solicitud; las ganancias quedan reservadas en ella.
+    if (entityType === 'company' || entityType === 'institution') {
+      const { data: ticket, error: ticketError } = await admin
+        .from('tickets')
+        .insert({
+          origin: 'system',
+          category: 'payouts',
+          severity: 'secondary',
+          subject: 'Institution payout request',
+          body: `Payout requested for ${earningIds.length} earning(s).`,
+          subject_user: userId,
+          context: { kind: 'institution_payout', earning_ids: earningIds, method_id: methodId },
+        })
+        .select('ref')
+        .single()
+      if (ticketError || !ticket) return NextResponse.json({ error: 'collect_failed' }, { status: 500 })
+      await admin
+        .from('payout_earnings')
+        .update({ state: 'reserved', hold_reason: 'institution_request' })
+        .in('id', earningIds)
+        .eq('user_id', userId)
+        .eq('state', 'available')
+      return NextResponse.json({ status: 'institution', ref: ticket.ref })
+    }
+
+    const rails = railsFor((countryRow as RailCountry) ?? null, rules, entityType)
+    if (!rails.length) return NextResponse.json({ error: 'not_covered', country }, { status: 409 })
+    if (!method || (rails as string[]).indexOf(method.provider) === -1) {
+      return NextResponse.json({ error: 'rail_not_allowed' }, { status: 409 })
+    }
 
     // El destino completo se guarda solo si la persona escribió uno nuevo; el
     // enmascarado es lo único que viaja al bloque y a la pantalla.
@@ -93,30 +150,29 @@ export async function POST(request: NextRequest) {
     // acaban de verificarse arriba, así que este es el momento legítimo.
     if (typeof destination === 'string' && destination.trim()) {
       const typed = destination.trim()
+      // Un destino por metodo (7.1): el anterior es el de ESTE metodo.
       const { data: previous } = await admin
         .from('payout_destinations')
         .select('id, method_id, destination')
         .eq('user_id', userId)
-        .eq('is_default', true)
+        .eq('method_id', methodId)
         .maybeSingle()
 
       // Volver a escribir el destino que ya estaba no es un cambio, y no se avisa.
-      if (!previous || previous.method_id !== methodId || previous.destination !== typed) {
-        await admin.from('payout_destinations').update({ is_default: false }).eq('user_id', userId)
-        const { data: saved, error: saveError } = await admin.from('payout_destinations').insert({
-          user_id: userId,
-          method_id: methodId,
-          destination: typed,
-          destination_masked: masked,
-          is_default: true,
-        }).select('id').single()
+      if (!previous || previous.destination !== typed) {
+        const { data: saved, error: saveError } = await admin
+          .from('payout_destinations')
+          .upsert(
+            { user_id: userId, method_id: methodId, destination: typed, destination_masked: masked },
+            { onConflict: 'user_id,method_id' }
+          )
+          .select('id')
+          .single()
 
         if (saveError || !saved) {
-          // El cobro sigue: el bloque ya existe y no depende de esta fila. Pero el
-          // anterior vuelve a ser el destino, y no se avisa de un cambio que no
-          // quedó guardado.
+          // El cobro sigue: el bloque ya existe y no depende de esta fila. No se
+          // avisa de un cambio que no quedó guardado.
           console.error('[payouts/collect] destination save failed:', saveError)
-          if (previous) await admin.from('payout_destinations').update({ is_default: true }).eq('id', previous.id)
         } else {
           await notifyPayoutDestinationChanged(admin, {
             userId,

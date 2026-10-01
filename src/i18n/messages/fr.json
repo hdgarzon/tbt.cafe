@@ -70,12 +70,14 @@
     "footNote1": "tbt.cafe — Transbit × BROCHA",
     "footNote2": "Jetons Transférables Facturables",
     "help": "Aide",
+    "selling": "Vendre",
     "payouts": "Versements",
     "offersMade": "Émises",
     "offersReceived": "Reçues",
     "transfersIn": "Entrants",
     "transfersOut": "Sortants",
-    "purchased": "Achetées"
+    "purchased": "Achetées",
+    "payoutMethods": "Modes de versement"
   },
   "auth": {
     "termsPrefix": "J'accepte les",
@@ -385,12 +387,25 @@
     "linkArweave": "Arweave",
     "linkOts": "Preuve",
     "anchorPending": "ancrage en cours",
-    "anchorConfirmed": "bloc {height}",
+    "anchorConfirmed": "ancré dans Bitcoin, bloc {height}",
     "anchorFailed": "l'ancrage a échoué",
     "anchorNote": "L'ancrage à Bitcoin prend quelques heures et se termine tout seul.",
     "verifyNote": "Chaque enregistrement peut être vérifié sans nous : téléchargez la preuve et vérifiez-la contre l'enregistrement.",
     "eventSale": "Vendue",
-    "eventGift": "Offerte"
+    "eventGift": "Offerte",
+    "saleLocked": "La vente nécessite une approbation.",
+    "saleLockedCta": "Aller à Vendre",
+    "frozen": "Une offre a été acceptée. Cette œuvre est en attente jusqu'au {date}.",
+    "privateCollector": "Collectionneur privé · {code}",
+    "eventRestoring": "Rendue au vendeur",
+    "linksHeading": "Liens",
+    "linksAsRegistered": "Tels que fournis à l'enregistrement",
+    "linkAdd": "Ajouter",
+    "linkRemove": "Retirer le lien",
+    "linkSaveFailed": "Nous n'avons pas pu enregistrer les liens.",
+    "recordingHeading": "Enregistrement",
+    "linkTx": "Transaction",
+    "linkProofRecord": "Preuve sur Arweave"
   },
   "info": {
     "value": "Valeur",
@@ -460,11 +475,11 @@
     "payAndSend": "Payer et envoyer le transfert",
     "payAmountAndSend": "Payer {amount} et envoyer le transfert",
     "securedByStripe": "Sécurisé par Stripe",
-    "authoriseNote": "Votre carte sera autorisée mais non débitée tant que le destinataire n'aura pas accepté. S'il n'accepte pas sous 24 heures, ou si vous annulez, l'autorisation est libérée et rien n'est prélevé.",
+    "authoriseNote": "Votre carte sera autorisée, sans débit, jusqu'à l'acceptation du destinataire. Sans acceptation sous {hours} heures, l'autorisation est libérée.",
     "fillAll": "Remplissez tous les champs",
     "authorizing": "Autorisation de votre carte…",
     "sentTitle": "Transfert envoyé",
-    "sentBody": "{amount} a été autorisé sur votre carte. Il ne sera pas prélevé tant que {name} n'aura pas accepté. Il a 24 heures pour répondre.",
+    "sentBody": "{amount} a été autorisé sur votre carte. Il ne sera pas prélevé tant que {name} n'aura pas accepté. Il a {hours} heures pour répondre.",
     "recipient": "Destinataire",
     "done": "Terminé",
     "errors": {
@@ -476,7 +491,8 @@
       "invalidPhone": "Vérifiez le numéro de téléphone.",
       "invalidValue": "Vérifiez la valeur."
     },
-    "creatorRoyaltyFixed": "Redevance du créateur"
+    "creatorRoyaltyFixed": "Redevance du créateur",
+    "elsewhere": "Vendue hors de tbt.cafe ? Saisissez le prix convenu. Il est inscrit dans l'historique de l'œuvre comme valeur déclarée et la redevance est calculée dessus."
   },
   "transferAccept": {
     "loading": "Chargement…",
@@ -493,7 +509,7 @@
     "rejectedTitle": "Refusé",
     "rejectedBody": "La carte de l'expéditeur n'a jamais été débitée.",
     "lapsedTitle": "Ce transfert a expiré",
-    "lapsedBody": "Il n'a pas été accepté sous 24 heures. Demandez à l'expéditeur de le renvoyer.",
+    "lapsedBody": "Il n'a pas été accepté sous {hours} heures. Demandez à l'expéditeur de le renvoyer.",
     "alreadyResolvedTitle": "Déjà traité",
     "alreadyResolvedBody": "Ce transfert n'attend plus de réponse.",
     "needSignInTitle": "Authentifiez-vous pour continuer",
@@ -503,7 +519,11 @@
       "lapsed": "Ce transfert a expiré.",
       "captureFailed": "Nous n'avons pas pu finaliser le paiement. Rien n'a été débité — demandez à l'expéditeur de renvoyer.",
       "respondFailed": "Une erreur s'est produite. Réessayez."
-    }
+    },
+    "declared": "Valeur déclarée · {amount} USD · déclarée par {sender}",
+    "gift": "Don · aucune valeur déclarée",
+    "confirmNote": "En acceptant, vous confirmez cette valeur dans l'historique de l'œuvre.",
+    "wrongNumber": "Ce transfert a été envoyé à un autre numéro."
   },
   "purchase": {
     "successWorking": "Finalisation de votre achat…",
@@ -570,7 +590,7 @@
     "activitySub": "Événements de provenance des œuvres que vous avez créées ou possédées",
     "activityEmpty": "Aucune activité pour l'instant.",
     "brewsSub": "Œuvres que vous avez enregistrées",
-    "brewsEmpty": "Pas encore de brews. Enregistrer une œuvre l'ajoutera ici avec ses frais de 8 $.",
+    "brewsEmpty": "Pas encore de brews. Enregistrer une œuvre l'ajoutera ici avec ses frais de {fee} $.",
     "brewRow": "Enregistrée · frais {fee}",
     "offersSub": "Offres faites et reçues",
     "offersEmpty": "Pas encore d'offres. Les offres sur vos œuvres, et celles que vous avez faites, apparaissent ici.",
@@ -589,6 +609,8 @@
     "offerStatusDeclined": "refusée",
     "offerStatusWithdrawn": "retirée",
     "offerStatusExpired": "expirée",
+    "offerStatusCancelled": "annulée",
+    "offerStatusCompleted": "terminée",
     "transactionsSub": "Transferts envoyés ou reçus",
     "transactionsEmpty": "Aucune transaction pour l'instant.",
     "needSignIn": "Authentifiez-vous pour voir ceci.",
@@ -907,7 +929,9 @@
     "coveredNoteLast": "Celle-ci est pour nous — c'est votre dernier enregistrement gratuit.",
     "promoApplied": "{value} de réduction appliquée.",
     "promoAppliedFixed": "{value} USD de réduction appliquée.",
-    "promoNotAccepted": "Ce code n'est pas valable pour ce paiement."
+    "promoNotAccepted": "Ce code n'est pas valable pour ce paiement.",
+    "creditedNameLabel": "Crédité sous le nom",
+    "creditedNameNote": "Ce nom figure dans le registre permanent de chaque œuvre que vous enregistrez. Il ne pourra pas être retiré."
   },
   "help": {
     "title": "Aide",
@@ -978,13 +1002,13 @@
       "transfers_accepted": "Votre transfert de « {title} » a été accepté.",
       "transfers_declined": "Votre transfert de « {title} » a été refusé. Rien n’a été prélevé.",
       "transfers_lapsed": "Votre transfert de « {title} » n’a pas été accepté à temps. Rien n’a été prélevé.",
-      "offer_received": "Vous avez reçu une offre.",
-      "offer_accepted": "Votre offre a été acceptée.",
-      "offer_declined": "Votre offre a été refusée.",
-      "offer_expiring": "Une offre va bientôt expirer.",
+      "offer_received": "Nouvelle offre pour {title} : {amount} USD.",
+      "offer_accepted": "Votre offre pour {title} a été acceptée. Payez sous {hours} heures.",
+      "offer_declined": "Votre offre pour {title} a été refusée.",
+      "offer_expiring": "L'offre pour {title} expire dans {time}.",
       "new_location": "Authentification depuis un nouveau lieu.",
       "new_device": "Authentification depuis un nouvel appareil.",
-      "suspicious": "Activité suspecte détectée.",
+      "suspicious": "Nous avons demandé une vérification supplémentaire pour votre dernière action.",
       "views_created": "Une de vos œuvres attire l'attention.",
       "views_collection": "Une œuvre de votre collection attire l'attention.",
       "favorites": "Activité sur l'un de vos favoris.",
@@ -994,7 +1018,22 @@
       "payout_released": "{amount} USD pour « {title} » ont terminé leur période d'attente et sont prêts à être perçus.",
       "payout_completed": "Votre perception de {amount} USD est terminée.",
       "payout_failed": "Un versement de {amount} USD n'a pas pu être effectué.",
-      "payout_destination": "La destination de vos versements a changé pour {to}."
+      "payout_destination": "La destination de vos versements a changé pour {to}.",
+      "selling_status_approved": "Vous êtes approuvé pour vendre. Configurez vos paiements.",
+      "selling_status_declined": "Votre demande de vente n'a pas été approuvée.",
+      "selling_status_suspended": "tbt.cafe a suspendu vos ventes.",
+      "selling_status_reinstated": "Vous pouvez vendre à nouveau.",
+      "offer_received_unapproved": "Nouvelle offre pour {title} : {amount} USD. Pour accepter, demandez à vendre.",
+      "offer_received_message": "Nouvelle offre pour {title} : {amount} USD. Elle contient un message.",
+      "offer_received_unapproved_message": "Nouvelle offre pour {title} : {amount} USD. Pour accepter, demandez à vendre. Elle contient un message.",
+      "offer_withdrawn": "L'offre pour {title} a été retirée.",
+      "offer_expired": "L'offre pour {title} a expiré.",
+      "offer_cancelled": "L'offre pour {title} a été annulée.",
+      "offer_holder_ready": "Le propriétaire de {title} peut désormais vendre. Vous pouvez faire une nouvelle offre.",
+      "security_change_phone": "Votre numéro tbt.cafe a été modifié. Ce n'est pas vous ? Ouvrez une demande d'aide maintenant.",
+      "security_change_factor": "Un facteur de sécurité de votre authentification tbt.cafe a changé. Ce n'est pas vous ? Ouvrez une demande d'aide maintenant.",
+      "security_change_reset": "Votre code privé a été réinitialisé. Vous en créerez un nouveau lors de votre prochain versement ou transfert.",
+      "transfers_readdressed": "Un transfert de {title} vous attend."
     }
   },
   "payouts": {
@@ -1084,7 +1123,11 @@
       "active": "Prêt à recevoir",
       "restricted": "Stripe demande autre chose",
       "rejected": "Stripe a refusé ce compte"
-    }
+    },
+    "chooseMethod": "Comment voulez-vous être payé cette fois ?",
+    "recovered": "Solde régularisé",
+    "institution": "Les versements aux institutions sont gérés par notre équipe. Nous avons ouvert une demande.",
+    "notCovered": "Les versements n'atteignent pas encore {country}. Vos gains restent les vôtres et sont conservés d'ici là."
   },
   "ladder": {
     "title": "Confirmez que c'est vous",
@@ -1107,6 +1150,32 @@
     "askPlaceholder": "Posez une question sur cet article",
     "postFailed": "La publication n'a pas abouti.",
     "someone": "Quelqu'un"
+  },
+  "selling": {
+    "intro": "Vendre une œuvre nécessite une approbation. Enregistrer, transférer, offrir et percevoir des redevances, non.",
+    "apply": "Demander à vendre",
+    "applyCountry": "Pays",
+    "applyEntity": "Vous vendez en tant que",
+    "entity": {
+      "individual": "Particulier",
+      "sole_proprietor": "Entrepreneur individuel",
+      "company": "Société",
+      "institution": "Galerie, musée ou succession"
+    },
+    "applyAgree": "J'accepte les conditions de vente.",
+    "pending": "Votre demande est en cours d'examen. Nous vous tiendrons informé.",
+    "declined": "Votre demande n'a pas été approuvée : {reason}",
+    "setup": "Approuvée. Configurez vos paiements pour commencer à vendre.",
+    "activeDirect": "Vous pouvez vendre. Les ventes sont versées sur votre compte Stripe.",
+    "activePlatform": "Vous pouvez vendre. tbt.cafe encaisse chaque vente et vous verse le montant une fois réglé.",
+    "notCovered": "La vente n'est pas encore disponible en {country}. Vos gains restent les vôtres et sont conservés jusqu'à ce que les versements atteignent votre pays.",
+    "pause": "Suspendre les ventes",
+    "pauseConfirm": "Vos œuvres en vente sont retirées. Les ventes en cours se terminent ; les offres ouvertes expirent.",
+    "paused": "Ventes suspendues.",
+    "resume": "Reprendre les ventes",
+    "restoreTitle": "Remettre en vente ?",
+    "suspended": "tbt.cafe a suspendu vos ventes : {reason}",
+    "suspendedHelp": "Ouvrir une demande d'aide"
   },
   "titleLink": {
     "kicker": "Votre titre",
@@ -1233,5 +1302,48 @@
     "provenancePlaceholder": "Comment elle vous est parvenue, qui l’avait avant, tout ce qui étaie votre version.",
     "bondedIssued": "Titre bonded émis",
     "saveFailed": "Nous n’avons pas pu enregistrer ce que vous nous avez dit du créateur. Réessayez."
+  },
+  "royalty": {
+    "warnHigh": "Au-delà de {pct} %, cette redevance est permanente et rendra la revente difficile.",
+    "floor": "Prix minimum avec cette redevance : {amount} USD",
+    "priceLifted": "Prix relevé à {amount} USD pour couvrir la redevance.",
+    "locked": "Fixée au premier changement de propriétaire. Elle ne peut plus changer."
+  },
+  "offer": {
+    "title": "Faire une offre",
+    "amount": "Offre (USD)",
+    "duration": "Valable",
+    "hours": "{hours} heures",
+    "message": "Message (facultatif)",
+    "elsewhere": "Accord conclu ailleurs ? L'œuvre passe quand même par un transfert ici, les redevances s'appliquent et tbt.cafe ne protège pas les paiements effectués hors plateforme.",
+    "unapproved": "Le propriétaire ne peut pas encore vendre. S'il n'est pas approuvé avant l'expiration de votre offre, elle expirera ; nous vous préviendrons dès qu'il le sera.",
+    "notCovered": "Les ventes ne sont pas encore disponibles dans le pays du propriétaire.",
+    "belowFloor": "L'offre minimale pour cette œuvre est de {amount} USD.",
+    "send": "Envoyer l'offre",
+    "respond": "Répondre à l'offre",
+    "accept": "Accepter",
+    "decline": "Refuser",
+    "reply": "Réponse (facultatif)",
+    "needApproval": "Pour accepter, vous devez être approuvé pour vendre.",
+    "withdraw": "Retirer l'offre",
+    "withdrawConfirm": "Retirer votre offre pour {title} ?",
+    "acceptedBuyer": "Acceptée. Payez sous {hours} heures.",
+    "pay": "Payer {amount} USD",
+    "expiresIn": "Expire dans {time}",
+    "sellerCancel": "Annuler pour non-paiement",
+    "report": "Signaler",
+    "reportConfirm": "Signaler ce message à tbt.cafe ?",
+    "reported": "Signalé. Notre équipe va l'examiner."
+  },
+  "holder": {
+    "nameQuestion": "Afficher mon nom dans le registre permanent de cette œuvre ?",
+    "nameNote": "Une fois publié, un nom ne peut plus être retiré, même si vous choisissez plus tard l'anonymat."
+  },
+  "phone": {
+    "change": "Changer de numéro",
+    "changeNote": "Il vous faudra votre code privé, votre biométrie et un code envoyé au nouveau numéro.",
+    "rateLimited": "Vous pourrez changer de numéro à nouveau le {date}.",
+    "noFactor": "Pas de code privé ni de biométrie ? Ouvrez une demande d'aide et nous vous vérifierons.",
+    "changed": "Votre numéro a été modifié."
   }
 }

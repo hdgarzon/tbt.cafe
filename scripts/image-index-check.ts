@@ -57,7 +57,7 @@ ok(
   const src = code(readIf('src/lib/image-index.ts'))
 
   ok('existe indexCertifiedImage', /export async function indexCertifiedImage\(/.test(src))
-  ok('lee la URL dentro de la funcion, no al importar', /function indexCertifiedImage[\s\S]*process\.env\.TBT_IMAGE_PROCESSOR_URL/.test(src))
+  ok('lee la URL dentro de la funcion, no al importar', /function indexCertifiedImage[\s\S]*await getRules\(\)/.test(src))
   ok('trae los bytes con la guarda de origen compartida', src.includes("fetchStoredImageBytes(params.mediaUrl)"))
   ok('importa el helper de bytes', /from '@\/lib\/image-bytes'/.test(src))
   ok('calcula la sha256 en el servidor', src.includes("computeImageSha256Hex(bytes)"))

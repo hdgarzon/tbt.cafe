@@ -186,7 +186,8 @@ export function SlideMenu({ open, onClose }: { open: boolean; onClose: () => voi
       children: [
         { label: t.menu.profile, href: '/profile' },
         { label: t.menu.authentication, href: '/settings/authentication' },
-        { label: t.menu.payouts, href: '/settings/payouts' },
+        { label: t.menu.selling, href: '/settings/selling' },
+        { label: t.menu.payoutMethods, href: '/settings/payouts' },
         { label: t.menu.notifications, href: '/settings/notifications' },
         { label: t.menu.help, href: '/help' },
       ],

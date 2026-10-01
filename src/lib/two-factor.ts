@@ -35,7 +35,8 @@ export type TwoFactorSuccess = {
 
 export async function verifyTwoFactors(
   token: string | undefined,
-  input: { code?: string; biometricProof?: string }
+  input: { code?: string; biometricProof?: string },
+  opts: { biometric?: boolean } = {}
 ): Promise<TwoFactorSuccess | TwoFactorFailure> {
   if (!token) {
     return { ok: false, status: 401, body: { error: 'not_authenticated' } }
@@ -97,6 +98,8 @@ export async function verifyTwoFactors(
 
   await admin.rpc('private_code_clear_failures', { who: user.id })
 
+  if (opts.biometric === false) return { ok: true, userId: user.id, admin }
+
   if (!input.biometricProof) {
     return { ok: false, status: 428, body: { error: 'biometric_required' } }
   }
@@ -112,4 +115,13 @@ export async function verifyTwoFactors(
   }
 
   return { ok: true, userId: user.id, admin }
+}
+
+/**
+ * Solo el codigo privado, con el mismo bloqueo por intentos. Para quitar un
+ * biometrico (Work Order 02, 10.1): el factor que se quita no puede ser el que
+ * autoriza quitarlo.
+ */
+export function verifyPrivateCode(token: string | undefined, code: string | undefined) {
+  return verifyTwoFactors(token, { code }, { biometric: false })
 }

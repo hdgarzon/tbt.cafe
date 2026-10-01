@@ -38,6 +38,8 @@ export type CreatorProfileRow = {
   creator_type: 'individual' | 'group' | 'corporation'
   legal_name: string | null
   public_alias: string | null
+  /** Chains 01 1.3: el nombre acreditado ya se confirmo. */
+  credited_name_confirmed_at?: string | null
   collective_name: string | null
   lead_representative: string | null
   entity_name: string | null
@@ -59,7 +61,7 @@ export async function fetchCreatorProfile(userId: string): Promise<CreatorProfil
     supabase
       .from('profiles')
       .select(
-        'creator_type, public_alias, collective_name, lead_representative, entity_name, credentials, social_linkedin, social_website, social_instagram, bio'
+        'creator_type, public_alias, collective_name, lead_representative, entity_name, credentials, social_linkedin, social_website, social_instagram, bio, credited_name_confirmed_at'
       )
       .eq('id', userId)
       .maybeSingle(),
@@ -426,10 +428,9 @@ export async function createDraftWork(
     if (thumb) chainImageUrl = (await uploadWorksMedia(userId, thumb, 'thumb_'))?.url ?? null
   }
 
-  let audioVideoUrl: string | null = null
-  if (input.audioVideoFile) {
-    audioVideoUrl = (await uploadWorksMedia(userId, input.audioVideoFile, 'av_'))?.url ?? null
-  }
+  // Chains 01, 8.1: el hash de la grabacion se guarda y va al registro.
+  const recording = input.audioVideoFile ? await uploadWorksMedia(userId, input.audioVideoFile, 'av_') : null
+  const audioVideoUrl = recording?.url ?? null
 
   let seriesId = input.seriesId
   if (!seriesId && input.newSeriesName?.trim()) {
@@ -506,6 +507,7 @@ export async function createDraftWork(
       asset_links: input.assetLinks.filter((l) => l.trim()),
       about_work: input.aboutWork,
       audio_video_url: audioVideoUrl,
+      recording_hash: recording?.hash ?? null,
       audio_video_type: input.audioVideoFile ? input.audioVideoType : null,
       payment_status: 'pending',
       market_price: input.marketPrice || null,

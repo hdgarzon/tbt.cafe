@@ -6,6 +6,7 @@ import { getExplorerUrl } from '@/lib/solana/config'
 import { isProduction, assertServerEnv } from '@/lib/app-env'
 import { authenticate } from '@/lib/route-auth'
 import { notify } from '@/lib/notify'
+import { moveTokenForOwnership } from '@/lib/token-move'
 import { issueTitle } from '@/lib/titles/issue'
 
 /**
@@ -198,6 +199,12 @@ export async function POST(request: NextRequest) {
       console.error('Error reopening the work for transfer:', reopenError)
     }
 
+    // 5.3: una transferencia de dos fases se completa solo con su clase de
+    // valor y la confirmacion de quien la recibio.
+    if (transfer.is_two_phase && (!transfer.value_kind || !transfer.declared_value_confirmed_at)) {
+      return NextResponse.json({ error: 'valueNotConfirmed' }, { status: 409 })
+    }
+
     // Get the current sequence number for this work
     const { count: historyCount } = await supabase
       .from('ownership_history')
@@ -206,9 +213,21 @@ export async function POST(request: NextRequest) {
 
     const sequenceNumber = (historyCount || 0) + 1
 
-    // Build the new owner name from the transfer form
-    const newOwnerName = transfer.new_owner_name || 'Unknown'
+    /*
+     * El nombre de quien recibe sale de SU perfil, nunca de lo que tecleo quien
+     * envio (Work Order 02 5.8, Chains 01 1.2): `new_owner_name` sirve para
+     * dirigir la transferencia y no llega a ningun registro. Si se nombra en el
+     * registro permanente lo decide la persona al aceptar (5.5); sin eleccion,
+     * no se nombra (Chains 01 3.3).
+     */
+    const { data: recipient } = await serviceClient
+      .from('profiles')
+      .select('public_alias, display_name')
+      .eq('id', transfer.to_owner_id)
+      .maybeSingle()
+    const newOwnerName = recipient?.public_alias || recipient?.display_name || 'Unknown'
     const previousOwnerName = transfer.from_owner_name || 'Unknown'
+    const holderNamed = (transfer as { holder_named?: boolean | null }).holder_named === true
 
     // Record in ownership_history.
     // Service-role write: ownership_history is the immutable provenance
@@ -221,12 +240,17 @@ export async function POST(request: NextRequest) {
         owner_user_id: transfer.to_owner_id,
         event_type: 'transfer',
         previous_owner_name: previousOwnerName,
-        transfer_type: transfer.transfer_type || 'sale',
+        // El historial dice venta o regalo: una compra viene como 'automatic' (067).
+        transfer_type: transfer.transfer_type === 'automatic' ? 'sale' : transfer.transfer_type || 'sale',
         price: transfer.payment_amount || null,
         currency: transfer.payment_currency || 'USD',
         sequence_number: sequenceNumber,
+        // Chains 01 2.3: de aqui sale la clase de valor del registro.
+        transfer_id: transfer.id,
+        holder_named: holderNamed,
+        holder_public_name: holderNamed ? newOwnerName : null,
       })
-      .select('id')
+      .select('id, holder_code, holder_named, holder_public_name')
       .single()
 
     /**
@@ -277,62 +301,33 @@ export async function POST(request: NextRequest) {
     /*
      * ── Item 7 · pasos 2 y 3: el eslabon de procedencia ──────────────────
      *
-     * `prior_record` es el hash del eslabon anterior y `registration_record`
-     * la URI del registro sellado al certificar. Los dos son obligatorios a
-     * partir de la secuencia 2: `provenanceRecord` rechaza una cadena rota
-     * antes de publicarla, que es donde tiene que rechazarla.
+     * Lo compone `publishProvenance` desde la base (Chains 01 2.3): el
+     * titular como eligio, la clase de valor de la transferencia, la regalia
+     * si se bloqueo aqui, y el eslabon anterior por su hash.
      *
-     * NO lleva `solana_signature`. Una transferencia no firma ninguna
-     * transaccion —la propiedad se mueve en la base, no en la cadena— y poner
-     * ahi cualquier otro identificador seria afirmar una transaccion que no
-     * existe.
+     * Chains 01 4.5: antes del eslabon se mueve el token a la tenencia nueva, y
+     * su firma va en el registro. Si el movimiento no sale, el eslabon espera:
+     * la propiedad ya cambio en el registro y el barrido reintenta.
      *
      * Como todo lo de cadena, va en su propio try/catch: el pago ya se
      * capturo y la propiedad ya cambio de manos.
      */
     if (historyRow?.id) {
       try {
-        const { data: chainSource } = await supabase
-          .from('works')
-          .select('registration_record_uri')
-          .eq('id', transfer.work_id)
-          .single()
+        // Primero el token; la procedencia lleva su firma (orden: mover, registrar, anclar).
+        const moveSignature = await moveTokenForOwnership(serviceClient, {
+          workId: transfer.work_id,
+          tbtId: transfer.work.tbt_id,
+          fromSequence: sequenceNumber - 1,
+          toSequence: sequenceNumber,
+          historyId: historyRow.id,
+        })
 
-        const { data: priorLink } = await supabase
-          .from('ownership_history')
-          .select('record_hash')
-          .eq('work_id', transfer.work_id)
-          .eq('sequence_number', sequenceNumber - 1)
-          .maybeSingle()
-
-        if (chainSource?.registration_record_uri && priorLink?.record_hash) {
-          const { provenanceRecord } = await import('@/lib/chain/records')
-          const { pseudonymFor } = await import('@/lib/chain/pseudonym')
-          const { publishRecord } = await import('@/lib/chain/arweave')
-
-          const published = await publishRecord(
-            provenanceRecord({
-              tbtId: transfer.work.tbt_id,
-              sequence: sequenceNumber,
-              event: transfer.transfer_type === 'gift' ? 'gift' : 'sale',
-              from: { name: previousOwnerName, id: pseudonymFor(transfer.from_owner_id) },
-              to: { name: newOwnerName, id: pseudonymFor(transfer.to_owner_id) },
-              occurredAt: new Date(),
-              priorRecord: priorLink.record_hash,
-              registrationRecord: chainSource.registration_record_uri,
-            }) as never
-          )
-
-          await serviceClient
-            .from('ownership_history')
-            .update({ record_uri: published.uri, record_hash: published.hash })
-            .eq('id', historyRow.id)
-
-          console.log(`Provenance record published: ${published.uri}`)
-        } else {
-          // Una obra sin registro sellado o sin eslabon previo no puede tener
-          // cadena. Se dice y se sigue; el traspaso ya es valido sin ella.
-          console.log('[chain] sin registro de registración o sin eslabón previo: no se publica procedencia')
+        // Sin firma el eslabon espera: la propiedad ya cambio y el barrido reintenta.
+        if (moveSignature) {
+          const { publishProvenance } = await import('@/lib/chain/provenance-publish')
+          const outcome = await publishProvenance(serviceClient, historyRow.id)
+          console.log('[chain] procedencia de la transferencia:', outcome)
         }
       } catch (chainError) {
         console.error('[chain] no se pudo publicar la procedencia:', chainError)

@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useLocale } from '@/i18n/LocaleProvider'
 import { money } from '@/lib/fees'
+import { arweaveUrl } from '@/lib/chain/gateways'
 import {
   fetchOwnershipHistory,
   fetchLedger,
@@ -58,7 +59,7 @@ function Anchor({ anchor, t }: { anchor: LedgerEntry['anchor']; t: ReturnType<ty
   return <span className="text-[10.5px] text-placeholder">{t.work.anchorPending}</span>
 }
 
-/** Los enlaces de un registro: Arweave, la prueba, y en su caso Solana. */
+/** Los enlaces de un evento: Arweave, Solana, el ancla y su prueba (Chains 01, 8.3). */
 function RecordLinks({
   entry,
   mintAddress,
@@ -68,7 +69,7 @@ function RecordLinks({
   mintAddress?: string | null
   t: ReturnType<typeof useLocale>['t']
 }) {
-  if (!entry.recordUri && !entry.recordHash) return null
+  if (!entry.recordUri && !entry.recordHash && !entry.solanaSignature) return null
 
   const network = process.env.NEXT_PUBLIC_SOLANA_NETWORK || 'devnet'
   const cluster = network === 'mainnet-beta' ? '' : `?cluster=${network}`
@@ -78,15 +79,26 @@ function RecordLinks({
       {entry.recordUri && (
         <ExternalLink href={entry.recordUri}>{t.work.linkArweave}</ExternalLink>
       )}
+      {/* La registración abre el activo, cuyo dueño es hoy la dirección de
+          tenencia; cada cambio de dueño abre la transacción que movió el token. */}
       {mintAddress && (
         <ExternalLink href={`https://explorer.solana.com/address/${mintAddress}${cluster}`}>
           {t.work.linkSolana}
+        </ExternalLink>
+      )}
+      {entry.solanaSignature && (
+        <ExternalLink href={`https://explorer.solana.com/tx/${entry.solanaSignature}${cluster}`}>
+          {t.work.linkTx}
         </ExternalLink>
       )}
       {/* La descarga solo donde hay ancla confirmada: una prueba pendiente aún
           no demuestra nada que un tercero pueda comprobar. */}
       {entry.recordHash && entry.anchor?.status === 'confirmed' && (
         <ExternalLink href={`/api/chain/ots/${entry.recordHash}`}>{t.work.linkOts}</ExternalLink>
+      )}
+      {/* Chains 01 6.4: la misma prueba, publicada en Arweave junto al registro. */}
+      {entry.anchor?.proofRecordId && (
+        <ExternalLink href={arweaveUrl(entry.anchor.proofRecordId)}>{t.work.linkProofRecord}</ExternalLink>
       )}
       <Anchor anchor={entry.anchor} t={t} />
     </div>
@@ -109,9 +121,9 @@ export function HistoryTab({ workId, tbtId }: { workId: string; tbtId: string })
   const [ledger, setLedger] = useState<Ledger | null>(null)
 
   useEffect(() => {
-    fetchOwnershipHistory(workId).then(setEvents)
+    fetchOwnershipHistory(workId, t.work.privateCollector).then(setEvents)
     fetchLedger(tbtId).then(setLedger)
-  }, [workId, tbtId])
+  }, [workId, tbtId, t.work.privateCollector])
 
   if (events === null) return <p className="text-[13px] text-ink-soft py-2">{t.work.loading}</p>
   if (events.length === 0) return <p className="text-[13px] text-ink-soft py-2">{t.myCollections.activityEmpty}</p>
@@ -132,7 +144,9 @@ export function HistoryTab({ workId, tbtId }: { workId: string; tbtId: string })
             <div className="flex-1 min-w-0">
               <div className="flex items-baseline justify-between gap-2.5">
                 <span className="text-[12px] font-medium text-ink">
-                  {record?.transferType === 'gift'
+                  {e.event === 'restoring'
+                    ? t.work.eventRestoring
+                    : record?.transferType === 'gift'
                     ? t.work.eventGift
                     : record?.event === 'transfer'
                       ? t.work.eventSale

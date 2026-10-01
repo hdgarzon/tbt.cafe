@@ -70,12 +70,14 @@
     "footNote1": "tbt.cafe — Transbit × BROCHA",
     "footNote2": "Transferable Billable Tokens",
     "help": "Help",
+    "selling": "Selling",
     "payouts": "Payouts",
     "offersMade": "Made",
     "offersReceived": "Received",
     "transfersIn": "In",
     "transfersOut": "Out",
-    "purchased": "Purchased"
+    "purchased": "Purchased",
+    "payoutMethods": "Payout Methods"
   },
   "auth": {
     "termsPrefix": "I agree to the",
@@ -385,12 +387,25 @@
     "linkArweave": "Arweave",
     "linkOts": "Proof",
     "anchorPending": "anchoring",
-    "anchorConfirmed": "block {height}",
+    "anchorConfirmed": "anchored to Bitcoin, block {height}",
     "anchorFailed": "anchor failed",
     "anchorNote": "Anchoring to Bitcoin takes a few hours and completes on its own.",
     "verifyNote": "Every record can be checked without us: download the proof and verify it against the record.",
     "eventSale": "Sold",
-    "eventGift": "Given"
+    "eventGift": "Given",
+    "saleLocked": "Selling needs approval.",
+    "saleLockedCta": "Go to Selling",
+    "frozen": "An offer was accepted. This work is on hold until {date}.",
+    "privateCollector": "Private collector · {code}",
+    "eventRestoring": "Returned to seller",
+    "linksHeading": "Links",
+    "linksAsRegistered": "As provided at registration",
+    "linkAdd": "Add",
+    "linkRemove": "Remove link",
+    "linkSaveFailed": "We couldn't save the links.",
+    "recordingHeading": "Recording",
+    "linkTx": "Transaction",
+    "linkProofRecord": "Proof on Arweave"
   },
   "info": {
     "value": "Value",
@@ -460,11 +475,11 @@
     "payAndSend": "Pay & send transfer",
     "payAmountAndSend": "Pay {amount} & send transfer",
     "securedByStripe": "Secured by Stripe",
-    "authoriseNote": "Your card will be authorised but not charged until the recipient accepts. If they don't accept within 24 hours, or you cancel, the hold is released and nothing is taken.",
+    "authoriseNote": "Your card will be authorised, not charged, until the recipient accepts. If they don't accept within {hours} hours, the hold is released.",
     "fillAll": "Fill in every field",
     "authorizing": "Authorising your card…",
     "sentTitle": "Transfer sent",
-    "sentBody": "{amount} has been authorised on your card. It will not be collected until {name} accepts. They have 24 hours to respond.",
+    "sentBody": "{amount} has been authorised on your card. It will not be collected until {name} accepts. They have {hours} hours to respond.",
     "recipient": "Recipient",
     "done": "Done",
     "errors": {
@@ -476,7 +491,8 @@
       "invalidPhone": "Check the phone number.",
       "invalidValue": "Check the value."
     },
-    "creatorRoyaltyFixed": "Creator royalty"
+    "creatorRoyaltyFixed": "Creator royalty",
+    "elsewhere": "Sold outside tbt.cafe? Enter the price you agreed. It's recorded in this work's history as a declared value, and any royalty is calculated on it."
   },
   "transferAccept": {
     "loading": "Loading…",
@@ -493,7 +509,7 @@
     "rejectedTitle": "Declined",
     "rejectedBody": "The sender's card was never charged.",
     "lapsedTitle": "This transfer has expired",
-    "lapsedBody": "It was not accepted within 24 hours. Ask the sender to send it again.",
+    "lapsedBody": "It wasn't accepted within {hours} hours. Ask the sender to send it again.",
     "alreadyResolvedTitle": "Already handled",
     "alreadyResolvedBody": "This transfer isn't waiting on a response anymore.",
     "needSignInTitle": "Authenticate to continue",
@@ -503,7 +519,11 @@
       "lapsed": "This transfer has expired.",
       "captureFailed": "We couldn't complete the payment. Nothing was charged — try asking the sender to resend.",
       "respondFailed": "Something went wrong. Please try again."
-    }
+    },
+    "declared": "Declared value · {amount} USD · declared by {sender}",
+    "gift": "Gift · no value declared",
+    "confirmNote": "Accepting confirms this value in the work's history.",
+    "wrongNumber": "This transfer was sent to a different number."
   },
   "purchase": {
     "successWorking": "Completing your purchase…",
@@ -570,7 +590,7 @@
     "activitySub": "Provenance events for works you've created or owned",
     "activityEmpty": "No activity yet.",
     "brewsSub": "Works you've registered",
-    "brewsEmpty": "No brews yet. Registering a work will list it here with its $8 fee.",
+    "brewsEmpty": "No brews yet. Registering a work will list it here with its ${fee} fee.",
     "brewRow": "Registered · fee {fee}",
     "offersSub": "Offers made and received",
     "offersEmpty": "No offers yet. Offers on your works, and ones you've made, appear here.",
@@ -589,6 +609,8 @@
     "offerStatusDeclined": "declined",
     "offerStatusWithdrawn": "withdrawn",
     "offerStatusExpired": "expired",
+    "offerStatusCancelled": "cancelled",
+    "offerStatusCompleted": "completed",
     "transactionsSub": "Transfers you've sent or received",
     "transactionsEmpty": "No transactions yet.",
     "needSignIn": "Authenticate to see this.",
@@ -907,7 +929,9 @@
     "coveredNoteLast": "This one is on us — it's your last free registration.",
     "promoApplied": "{value} off applied.",
     "promoAppliedFixed": "{value} USD off applied.",
-    "promoNotAccepted": "That code is not valid for this payment."
+    "promoNotAccepted": "That code is not valid for this payment.",
+    "creditedNameLabel": "Credited as",
+    "creditedNameNote": "This name goes on the permanent record of every work you register. It cannot be removed later."
   },
   "help": {
     "title": "Help",
@@ -978,13 +1002,13 @@
       "transfers_accepted": "Your transfer of “{title}” was accepted.",
       "transfers_declined": "Your transfer of “{title}” was declined. Nothing was charged.",
       "transfers_lapsed": "Your transfer of “{title}” was not accepted in time. Nothing was charged.",
-      "offer_received": "You received an offer.",
-      "offer_accepted": "Your offer was accepted.",
-      "offer_declined": "Your offer was declined.",
-      "offer_expiring": "An offer is about to expire.",
+      "offer_received": "New offer on {title}: {amount} USD.",
+      "offer_accepted": "Your offer on {title} was accepted. Pay within {hours} hours.",
+      "offer_declined": "Your offer on {title} was declined.",
+      "offer_expiring": "The offer on {title} expires in {time}.",
       "new_location": "Authentication from a new location.",
       "new_device": "Authentication from a new device.",
-      "suspicious": "Suspicious activity detected.",
+      "suspicious": "We asked for an extra check on your last action.",
       "views_created": "A work you created is getting attention.",
       "views_collection": "A work in your collection is getting attention.",
       "favorites": "Activity on one of your favourites.",
@@ -994,7 +1018,22 @@
       "payout_released": "{amount} USD from “{title}” finished its waiting period and is ready to collect.",
       "payout_completed": "Your collection of {amount} USD completed.",
       "payout_failed": "A payout of {amount} USD could not be completed.",
-      "payout_destination": "Your payout destination was changed to {to}."
+      "payout_destination": "Your payout destination was changed to {to}.",
+      "selling_status_approved": "You're approved to sell. Set up how you get paid.",
+      "selling_status_declined": "Your application to sell wasn't approved.",
+      "selling_status_suspended": "Selling was paused by tbt.cafe.",
+      "selling_status_reinstated": "You can sell again.",
+      "offer_received_unapproved": "New offer on {title}: {amount} USD. To accept, apply to sell.",
+      "offer_received_message": "New offer on {title}: {amount} USD. It includes a message.",
+      "offer_received_unapproved_message": "New offer on {title}: {amount} USD. To accept, apply to sell. It includes a message.",
+      "offer_withdrawn": "The offer on {title} was withdrawn.",
+      "offer_expired": "The offer on {title} expired.",
+      "offer_cancelled": "The offer on {title} was cancelled.",
+      "offer_holder_ready": "The owner of {title} can now sell. You can make a new offer.",
+      "security_change_phone": "Your tbt.cafe number was changed. Not you? Open a help request now.",
+      "security_change_factor": "A security factor on your tbt.cafe authentication changed. Not you? Open a help request now.",
+      "security_change_reset": "Your private code was reset. You'll set a new one at your next payout or transfer.",
+      "transfers_readdressed": "A transfer of {title} is waiting for you."
     }
   },
   "payouts": {
@@ -1084,7 +1123,11 @@
       "active": "Ready to receive",
       "restricted": "Stripe needs something else",
       "rejected": "Stripe declined this account"
-    }
+    },
+    "chooseMethod": "How do you want to be paid this time?",
+    "recovered": "Balance settled",
+    "institution": "Payouts to institutions are handled by our team. We've opened a request.",
+    "notCovered": "Payouts don't reach {country} yet. Your earnings stay yours and are kept until they do."
   },
   "ladder": {
     "title": "Confirm it's you",
@@ -1107,6 +1150,32 @@
     "askPlaceholder": "Ask a question about this article",
     "postFailed": "That could not be posted.",
     "someone": "Someone"
+  },
+  "selling": {
+    "intro": "Selling a work needs approval. Registering, transfers, gifts and royalties don't.",
+    "apply": "Apply to sell",
+    "applyCountry": "Country",
+    "applyEntity": "Selling as",
+    "entity": {
+      "individual": "An individual",
+      "sole_proprietor": "A sole proprietor",
+      "company": "A company",
+      "institution": "A gallery, museum or estate"
+    },
+    "applyAgree": "I agree to the selling terms.",
+    "pending": "Your application is being reviewed. We'll let you know.",
+    "declined": "Your application wasn't approved: {reason}",
+    "setup": "Approved. Set up how you get paid to start selling.",
+    "activeDirect": "You can sell. Sales are paid to your Stripe account.",
+    "activePlatform": "You can sell. tbt.cafe collects each sale and pays you after it settles.",
+    "notCovered": "Selling isn't available in {country} yet. Your earnings stay yours and are kept until payouts reach your country.",
+    "pause": "Pause selling",
+    "pauseConfirm": "Your listed works come off sale. Sales in progress complete; open offers lapse.",
+    "paused": "Selling is paused.",
+    "resume": "Resume selling",
+    "restoreTitle": "Put these back on sale?",
+    "suspended": "Selling is paused by tbt.cafe: {reason}",
+    "suspendedHelp": "Open a help request"
   },
   "titleLink": {
     "kicker": "Your title",
@@ -1233,5 +1302,48 @@
     "provenancePlaceholder": "How it came to you, who had it before, anything that supports the claim.",
     "bondedIssued": "Bonded title issued",
     "saveFailed": "We couldn't save what you told us about the creator. Please try again."
+  },
+  "royalty": {
+    "warnHigh": "Above {pct}%, this royalty is permanent and will make resale difficult.",
+    "floor": "Minimum price with this royalty: {amount} USD",
+    "priceLifted": "Price raised to {amount} USD to cover the royalty.",
+    "locked": "Locked at the first change of ownership. It can never change."
+  },
+  "offer": {
+    "title": "Make an offer",
+    "amount": "Offer (USD)",
+    "duration": "Open for",
+    "hours": "{hours} hours",
+    "message": "Message (optional)",
+    "elsewhere": "Agreed terms elsewhere? The work still moves by transfer here, royalties apply, and tbt.cafe doesn't protect payments made outside it.",
+    "unapproved": "The owner isn't set up to sell yet. If they aren't approved before your offer expires, it lapses — we'll let you know when they are.",
+    "notCovered": "Sales aren't available yet in the owner's country.",
+    "belowFloor": "The lowest offer this work can take is {amount} USD.",
+    "send": "Send offer",
+    "respond": "Respond to offer",
+    "accept": "Accept",
+    "decline": "Decline",
+    "reply": "Reply (optional)",
+    "needApproval": "To accept, you need approval to sell.",
+    "withdraw": "Withdraw offer",
+    "withdrawConfirm": "Withdraw your offer on {title}?",
+    "acceptedBuyer": "Accepted. Pay within {hours} hours.",
+    "pay": "Pay {amount} USD",
+    "expiresIn": "Expires in {time}",
+    "sellerCancel": "Cancel for non-payment",
+    "report": "Report",
+    "reportConfirm": "Report this message to tbt.cafe?",
+    "reported": "Reported. Our team will look at it."
+  },
+  "holder": {
+    "nameQuestion": "Show my name on the permanent record for this work?",
+    "nameNote": "Once published, a name cannot be removed, even if you later choose to be anonymous."
+  },
+  "phone": {
+    "change": "Change phone number",
+    "changeNote": "You'll need your private code, biometric and a code sent to the new number.",
+    "rateLimited": "You can change your number again on {date}.",
+    "noFactor": "No private code or biometric set? Open a help request and we'll verify you.",
+    "changed": "Your number was changed."
   }
 }

@@ -1,5 +1,7 @@
 import { notFound } from 'next/navigation'
-import { LEGAL_DOCS, LEGAL_UPDATED, legalDoc } from '@/lib/legal-content'
+import { LEGAL_UPDATED, legalDoc } from '@/lib/legal-content'
+import { getPublicRules } from '@/lib/rules'
+import { fillDeep, proseValues } from '@/lib/prose'
 
 /**
  * /legal/[doc] — legalPage del prototipo.
@@ -13,14 +15,17 @@ import { LEGAL_DOCS, LEGAL_UPDATED, legalDoc } from '@/lib/legal-content'
  * un lector sin JavaScript lo vean igual.
  */
 
-export function generateStaticParams() {
-  return LEGAL_DOCS.map((d) => ({ doc: d.slug }))
-}
+/*
+ * Las cifras del texto vienen de configuracion (Work Order 02, 1.4): la pagina
+ * se genera en la primera visita y se regenera cada minuto.
+ */
+export const revalidate = 60
 
 export default async function LegalPage(props: { params: Promise<{ doc: string }> }) {
   const params = await props.params;
-  const doc = legalDoc(params.doc)
-  if (!doc) notFound()
+  const found = legalDoc(params.doc)
+  if (!found) notFound()
+  const doc = fillDeep(found, proseValues(await getPublicRules()))
 
   return (
     <div className="px-4 pt-6 pb-10">

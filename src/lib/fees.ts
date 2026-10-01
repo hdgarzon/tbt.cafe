@@ -1,3 +1,5 @@
+import type { Rules } from '@/lib/rules-shape'
+
 /**
  * Modelo de dinero — Backend Spec 01 §1 y §2 (7 ago 2026).
  * Fuente de verdad única para precios, regalías y tarifas en toda la app.
@@ -16,24 +18,26 @@
  * se debe completa sea cual sea el valor, incluso en una donación de valor cero.
  */
 
+/**
+ * La tarifa de tarjeta de Stripe: lo unico que se queda en codigo (Work Order
+ * 02, §3 «Never in configuration»). Es de Stripe, no nuestra.
+ *
+ * Todo lo demas —las tarifas de servicio, el piso, el porcentaje de payout—
+ * vive en `platform_config` y llega aqui como `FeeRules`, leido por
+ * `getRules()` en el servidor o `useRules()` en el navegador. Un mismo $8 con
+ * dos casas es exactamente como una mitad del producto acaba cobrando lo que la
+ * otra no muestra.
+ */
 export const FEE = {
-  /** Tarifa de servicio, cobrada a cada lado de una venta. */
-  service: 8,
   stripePct: 0.029,
   stripeFlat: 0.3,
-  /** Comisión de cobro de payout (§1.4), no de venta. */
-  payoutRate: 0.023,
 } as const
 
-/**
- * La tarifa en centavos, que es como cobra Stripe.
- *
- * Deriva de `FEE.service` en vez de repetir el numero. El backend llevaba su
- * propio `pricing.ts` con 800 escrito aparte, y un mismo $8 con dos casas es
- * exactamente como una mitad del producto acaba cobrando lo que la otra no
- * muestra. Cuando las rutas de Stripe crucen, resuelven por aqui.
- */
-export const SERVICE_FEE_CENTS = Math.round(FEE.service * 100)
+/** Lo que estas funciones necesitan de las reglas. `Rules` lo cumple entero. */
+export type FeeRules = Pick<Rules, 'fees' | 'royalty'>
+
+/** Un monto en dolares, en centavos, que es como cobra Stripe. */
+export const cents = (usd: number): number => Math.round(usd * 100)
 
 /** Moneda de las tarifas de plataforma. */
 export const PLATFORM_CURRENCY = 'usd' as const
@@ -62,18 +66,13 @@ export function royaltyAmountOf(r: Royalty, value: number): number {
  * (§2.3): ahí paga el emisor y ve el costo completo antes de confirmar.
  */
 /**
- * El piso que una regalia fija le pone a la obra.
- *
- * Con nombre porque no vive solo aqui: el asistente lo explica, y el modulo de
- * conocimiento interpola estas constantes en vez de escribir «5%» y «$25» a
- * mano en cuatro idiomas. Dos veces en este proyecto una regla de dinero cambio
- * en el codigo mientras la documentacion se quedaba atras.
+ * El piso que una regalia fija le pone a la obra (D-8): la regalia mas el mayor
+ * entre `royalty_floor_pct` de la regalia y `royalty_floor_min`. De
+ * configuracion: el asistente y la pagina lo leen de la misma fila.
  */
-export const ROYALTY_FLOOR = { pct: 0.05, min: 25 } as const
-
-export function minPriceFor(r: Royalty): number {
+export function minPriceFor(r: Royalty, rules: Pick<Rules, 'royalty'>): number {
   if (r.type !== 'fixed' || !r.value) return 0
-  return r.value + Math.max(r.value * ROYALTY_FLOOR.pct, ROYALTY_FLOOR.min)
+  return r.value + Math.max(r.value * (rules.royalty.floorPct / 100), rules.royalty.floorMin)
 }
 
 export type Quote = {
@@ -99,21 +98,20 @@ export type Quote = {
  *   45,000  10% 4,500  45,008.00        131.03  40,360.97
  *    5,000  fija 1,200  5,008.00         35.33   3,756.67
  */
-export function quote(price: number, r: Royalty): Quote {
+export function quote(price: number, r: Royalty, rules: Pick<Rules, 'fees'>): Quote {
   const royalty = royaltyAmountOf(r, price)
-  const processing = (royalty + FEE.service) * FEE.stripePct + FEE.stripeFlat
+  const { serviceBuyer, serviceSeller } = rules.fees
+  const processing = (royalty + serviceSeller) * FEE.stripePct + FEE.stripeFlat
   return {
     price,
     royalty,
-    buyerTotal: price + FEE.service,
-    service: FEE.service,
+    buyerTotal: price + serviceBuyer,
+    service: serviceBuyer,
     processing,
-    sellerNet: price - royalty - FEE.service - processing,
-    platformFee: FEE.service * 2,
+    sellerNet: price - royalty - serviceSeller - processing,
+    platformFee: serviceBuyer + serviceSeller,
   }
 }
-
-export const XFER_FEE = FEE.service
 
 export type TransferQuote = {
   value: number
@@ -131,15 +129,16 @@ export type TransferQuote = {
  * Una transferencia puede valer cero. Con regalía porcentual la regalía es
  * entonces cero; con regalía fija se debe completa igual.
  */
-export function transferQuote(value: number, r: Royalty, senderIsCreator: boolean): TransferQuote {
+export function transferQuote(value: number, r: Royalty, senderIsCreator: boolean, rules: Pick<Rules, 'fees'>): TransferQuote {
   const royalty = senderIsCreator ? 0 : royaltyAmountOf(r, value)
-  const processing = (royalty + XFER_FEE) * FEE.stripePct + FEE.stripeFlat
-  return { value, royalty, transferFee: XFER_FEE, processing, total: royalty + XFER_FEE + processing }
+  const transferFee = rules.fees.transfer
+  const processing = (royalty + transferFee) * FEE.stripePct + FEE.stripeFlat
+  return { value, royalty, transferFee, processing, total: royalty + transferFee + processing }
 }
 
 /** Lo que le queda al creador de una regalía — §1.3. El proveedor absorbe el procesamiento. */
-export function royaltyPayout(royaltyAmount: number): number {
-  return royaltyAmount - FEE.service
+export function royaltyPayout(royaltyAmount: number, rules: Pick<Rules, 'fees'>): number {
+  return royaltyAmount - rules.fees.serviceRoyalty
 }
 
 export type PayoutQuote = { gross: number; payoutFee: number; methodFee: number; net: number }
@@ -159,15 +158,13 @@ export function methodFeeOf(m: MethodFees, gross: number): number {
  * Cobro de un bloque de payout — §1.4. `methodFee` sale del registro de métodos
  * de pago (Área 2 §3), que depende del país y del método.
  *
- * `platformPct` también viene del registro. El 2.3% de FEE.payoutRate es solo
- * el valor por defecto: el spec lo declara configurable por administración
- * (§5.2), así que una llamada que ya tiene la fila del método debe pasar el
- * suyo en vez de asumir la constante.
+ * `platformPct` también viene del registro o de `payout_platform_pct`; ya no
+ * hay un valor por defecto en codigo (Work Order 02, 1.2).
  */
 export function payoutQuote(
   gross: number,
   methodFee: number,
-  platformPct: number = FEE.payoutRate
+  platformPct: number
 ): PayoutQuote {
   const payoutFee = gross * platformPct
   return { gross, payoutFee, methodFee, net: gross - payoutFee - methodFee }
