@@ -69,6 +69,22 @@ export default function WorkPage({ params, scannedAt = null }: { params: { tbtId
   const [holderNamed, setHolderNamed] = useState(false)
   const [payAmount, setPayAmount] = useState<number | null>(null)
 
+  async function openPrepay(amount: number, workId: string) {
+    const {
+      data: { session },
+    } = await supabase.auth.getSession()
+    if (!session) return openAuth()
+    const res = await fetch(`/api/purchase/context?workId=${encodeURIComponent(workId)}`, {
+      headers: { Authorization: `Bearer ${session.access_token}` },
+    })
+    const ctx = await res.json().catch(() => null)
+    if (!res.ok || !ctx) return setMsg(t.work.errors.buyFailed)
+    setPurchaseCtx({ firstPurchase: ctx.firstPurchase, path: ctx.path, sellerName: ctx.sellerName })
+    // 0.8a: preseleccionado por el interruptor de anonimato.
+    setHolderNamed(ctx.nameByDefault === true)
+    setPrepay({ amount })
+  }
+
   const load = useCallback(async () => {
     const {
       data: { user },
@@ -125,22 +141,6 @@ export default function WorkPage({ params, scannedAt = null }: { params: { tbtId
     setMsg('')
     if (!connected) return openAuth()
     openPrepay(c.initial_price ?? 0, work!.id)
-  }
-
-  async function openPrepay(amount: number, workId: string) {
-    const {
-      data: { session },
-    } = await supabase.auth.getSession()
-    if (!session) return openAuth()
-    const res = await fetch(`/api/purchase/context?workId=${encodeURIComponent(workId)}`, {
-      headers: { Authorization: `Bearer ${session.access_token}` },
-    })
-    const ctx = await res.json().catch(() => null)
-    if (!res.ok || !ctx) return setMsg(t.work.errors.buyFailed)
-    setPurchaseCtx({ firstPurchase: ctx.firstPurchase, path: ctx.path, sellerName: ctx.sellerName })
-    // 0.8a: preseleccionado por el interruptor de anonimato.
-    setHolderNamed(ctx.nameByDefault === true)
-    setPrepay({ amount })
   }
 
   async function buyAuthorized(biometricProof: string | null) {
