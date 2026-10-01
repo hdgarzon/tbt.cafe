@@ -1,7 +1,7 @@
 import { readFileSync } from 'fs'
 import { join } from 'path'
 import { ROAST_ARTICLES } from '../src/lib/roast-content'
-import { quote } from '../src/lib/fees'
+import { saleQuote } from '../src/lib/fees'
 import { testRules } from './rules-fixture'
 
 /**
@@ -19,17 +19,16 @@ const ok = (label: string, cond: boolean, detail = '') => {
 }
 const article = (id: string) => JSON.stringify(ROAST_ARTICLES.find((a) => a.id === id) ?? {})
 
-// ---- Selling
-// The 12,000 example (processing on the full charge, net 10,443.47) and whose
-// name is on the card statement are Stage 0 economics: they go in with Stage 0.
-// Until then the example in Roast must be the arithmetic the product does today.
+// ---- Selling (with Stage 0: the 12,000 example and the card statement)
 const selling = article('selling')
 ok('selling: approval and the Selling menu item', /needs approval/.test(selling) && /<b>Selling<\/b>/.test(selling))
+ok('selling: whose name is on the card statement', /card statement/.test(selling))
+ok('selling: the 12,000 example', /12,008\.00/.test(selling) && /348\.53/.test(selling) && /1,200\.00/.test(selling) && /10,443\.47/.test(selling))
+ok('selling: the old 18,000 example is gone', !/18,000/.test(selling))
 {
-  const q = quote(18000, { type: 'percentage', value: 10 }, testRules())
-  ok('selling: the example in Roast is what fees.ts computes today',
-     /16,139\.27/.test(selling) && Math.abs(q.sellerNet - 16139.27) < 0.005 && Math.abs(q.processing - 52.73) < 0.005, JSON.stringify(q))
-  ok('selling: no Stage 0 figure ahead of Stage 0', !/10,443\.47/.test(selling) && !/348\.53/.test(selling))
+  // The example is the arithmetic the product does.
+  const q = saleQuote({ price: 12000, royalty: { type: 'percentage', value: 10 }, path: 'direct' }, testRules())
+  ok('the example matches fees.ts', q.buyerTotal === 12008 && q.processing === 348.53 && q.sellerNet === 10443.47, JSON.stringify(q))
 }
 
 // ---- Offers
@@ -65,7 +64,7 @@ ok('safe: private-code reset by help request', /help request/.test(safe) && /pri
 const k = readFileSync(join(__dirname, '..', 'src/lib/assistant/knowledge.ts'), 'utf8')
 ok('assistant: an offers entry', /id: 'offers'/.test(k))
 ok('assistant: selling needs approval', /needs approval/.test(k))
-ok('assistant: no Stage 0 figure ahead of Stage 0', !/10,443\.47|10\.443,47|10 443,47/.test(k))
+ok('assistant: the 12,000 example in four languages', (k.match(/10,443\.47|10\.443,47|10 443,47/g) ?? []).length >= 4)
 ok('assistant: transfers confirm the declared value and cover sales elsewhere', /confirms the declared value/.test(k) && /sold elsewhere|made elsewhere/.test(k))
 ok('assistant: payouts by USDC or bank', /USDC/.test(k) && !/PayPal/.test(k))
 

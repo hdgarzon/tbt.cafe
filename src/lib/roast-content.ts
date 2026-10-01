@@ -388,20 +388,25 @@ export const ROAST_ARTICLES: RoastArticle[] = [
       },
       {
         "kind": "p",
-        "html": "When a sale completes, three things come out of the sale price: the creator’s royalty, a <b>${seller_fee} service fee</b>, and card processing of <b>2.9% + $0.30</b> calculated on the royalty and fee together. The rest is your payout."
+        "html": "When a sale completes, three things come out of the sale price: the creator’s royalty, a <b>${seller_fee} service fee</b>, and card processing of <b>2.9% + $0.30</b> on the full charge — the price plus the buyer’s service fee. The rest is your payout."
       },
       {
         "kind": "x",
-        "title": "Selling at 18,000 USD, 10% royalty",
+        "title": "A 12,000 USD sale with 10% royalty",
         "rows": [
           {
-            "label": "Sale price",
-            "value": "18,000.00 USD",
+            "label": "Buyer pays",
+            "value": "12,008.00 USD",
+            "total": false
+          },
+          {
+            "label": "Card processing, on the full charge",
+            "value": "348.53 USD",
             "total": false
           },
           {
             "label": "Royalty to creator",
-            "value": "1,800.00 USD",
+            "value": "1,200.00 USD",
             "total": false
           },
           {
@@ -410,13 +415,8 @@ export const ROAST_ARTICLES: RoastArticle[] = [
             "total": false
           },
           {
-            "label": "Card processing",
-            "value": "52.73 USD",
-            "total": false
-          },
-          {
             "label": "Your payout",
-            "value": "16,139.27 USD",
+            "value": "10,443.47 USD",
             "total": true
           }
         ]
@@ -427,7 +427,7 @@ export const ROAST_ARTICLES: RoastArticle[] = [
       },
       {
         "kind": "p",
-        "html": "Your payout does not vanish into a balance somewhere. It accumulates in <b>Payouts</b>, where you collect it when you choose — more on that in “Collecting your payouts.”"
+        "html": "<b>Whose name is on the buyer’s card statement</b> depends on your country. Where we support it, the sale is charged on your own Stripe account: the statement shows your name and your payout goes straight to that account. Elsewhere, tbt.cafe charges the card on your behalf: the statement shows tbt.cafe, and your payout accumulates in <b>Payouts</b> once the sale settles — more on that in “Collecting your payouts.” The purchase screen tells the buyer which name will appear."
       }
     ]
   },

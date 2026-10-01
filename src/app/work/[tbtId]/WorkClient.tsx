@@ -9,7 +9,7 @@ import { EmbeddedCheckoutSheet } from '@/components/EmbeddedCheckoutSheet'
 import { fetchWorkFull, ownerRole, royaltyOf, type WorkFull } from '@/lib/work-data'
 import { makeOffer, fetchOfferContext } from '@/lib/offers-data'
 import { durationsFor, DEFAULT_DURATION } from '@/lib/offers'
-import { quote, money, minPriceFor } from '@/lib/fees'
+import { saleQuote, money, minPriceFor } from '@/lib/fees'
 import { WorkActions } from '@/components/WorkActions'
 import { ProfileTab } from '@/components/work/ProfileTab'
 import { InfoTab } from '@/components/work/InfoTab'
@@ -329,7 +329,8 @@ export default function WorkPage({ params, scannedAt = null }: { params: { tbtId
             {(() => {
               const v = parseFloat(offerAmount.replace(/[^0-9.]/g, ''))
               if (!isFinite(v) || v <= 0 || !rules) return null
-              const q = quote(v, royaltyOf(c), rules)
+              // Lo que paga el comprador no depende de la via de cobro.
+              const q = saleQuote({ price: v, royalty: royaltyOf(c), path: 'platform' }, rules)
               return (
                 <div className="mt-3 pt-3 border-t border-hairline">
                   <div className="flex items-center justify-between text-[13px] font-medium">
@@ -337,7 +338,7 @@ export default function WorkPage({ params, scannedAt = null }: { params: { tbtId
                     <span className="text-ink">{money(q.buyerTotal)} USD</span>
                   </div>
                   <p className="text-[10.5px] text-placeholder mt-1.5 leading-[1.5]">
-                    {t.work.offerRoyaltyNote.replace('{royalty}', money(q.royalty))}
+                    {t.work.offerRoyaltyNote.replace('{royalty}', money(q.royaltyGross))}
                   </p>
                 </div>
               )
@@ -407,7 +408,7 @@ export default function WorkPage({ params, scannedAt = null }: { params: { tbtId
           // compra no añade nada.
           recap={{
             what: work.title,
-            amount: rules ? `${money(quote(c.initial_price ?? 0, royaltyOf(c), rules).buyerTotal)} USD` : '—',
+            amount: rules ? `${money(saleQuote({ price: c.initial_price ?? 0, royalty: royaltyOf(c), path: 'platform' }, rules).buyerTotal)} USD` : '—',
           }}
         />
       )}
