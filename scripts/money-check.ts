@@ -76,6 +76,16 @@ const mig = name ? read(`supabase/migrations/${name}`) : ''
 ok('a stage0_sale migration exists', !!name)
 ok('complete_sale is idempotent: a replay changes nothing', /if v_transfer\.payment_status = 'completed' then/.test(mig))
 ok('complete_sale locks the row', /for update/.test(mig))
+// Two deliveries of one event can both pass the payment_status read before
+// either commits; the row lock serialises them, and only the one that
+// completed the sale may move the token, open a ticket or issue the title.
+ok('complete_sale says whether this call completed the sale',
+   /returns jsonb/.test(mig) &&
+   /'completed', false/.test(mig) && /'completed', true/.test(mig))
+ok('a replay that lost the race does no after-work',
+   /if \(!done\.completed\) return \{ status: 'already'/.test(sale) &&
+   sale.indexOf('if (!done.completed)') < sale.indexOf('moveTokenForOwnership(') &&
+   sale.indexOf('if (!done.completed)') < sale.indexOf("from('tickets')"))
 ok('complete_sale is not a public endpoint', /revoke execute on function public\.complete_sale\([^)]*\) from public, anon, authenticated/.test(mig))
 const money = ['transfers', 'payout_earnings', 'payout_blocks', 'tbt_payments']
 for (let i = 0; i < money.length; i++) {

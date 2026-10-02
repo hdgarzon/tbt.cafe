@@ -75,7 +75,7 @@ export async function completeSale(sessionId: string, account: string | null = n
   const intent = session.payment_intent as Stripe.PaymentIntent | null
   const charge = (intent?.latest_charge ?? null) as Stripe.Charge | null
 
-  const { data: historyId, error } = await admin.rpc('complete_sale', {
+  const { data: result, error } = await admin.rpc('complete_sale', {
     p_transfer: transfer.id,
     p_amounts: {
       buyer_total: q.buyerTotal,
@@ -91,7 +91,13 @@ export async function completeSale(sessionId: string, account: string | null = n
     },
     p_three_ds: threeDsSatisfied(charge),
   })
-  if (error || !historyId) throw new Error(`complete_sale failed for ${transfer.id}: ${error?.message ?? 'no history row'}`)
+  const done = result as { history_id: string | null; completed: boolean } | null
+  if (error || !done?.history_id) throw new Error(`complete_sale failed for ${transfer.id}: ${error?.message ?? 'no history row'}`)
+  // Dos entregas del mismo evento pueden pasar la lectura de arriba a la vez;
+  // la que llego segunda espero el bloqueo y la encontro hecha. El token, el
+  // ticket, el titulo y los avisos son de la que la completo.
+  if (!done.completed) return { status: 'already', transferId: transfer.id }
+  const historyId = done.history_id
 
   // Lo cobrado debe ser lo cotizado; si no, se completa y se mira.
   if (session.amount_total !== cents(q.buyerTotal)) {
