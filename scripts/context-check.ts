@@ -12,7 +12,7 @@ const ok = (label: string, cond: boolean, detail = '') => {
 const read = (p: string) => readFileSync(join(__dirname, '..', p), 'utf8')
 const ctx = read('src/app/api/generate-context/route.ts')
 const complete = read('src/app/api/complete-tbt/route.ts')
-const nft = read('src/lib/solana/nft.ts')
+const nft = read('src/lib/solana/token.ts')
 
 // ---- el origen: sin proveedor, no se fabrica una medicion
 {

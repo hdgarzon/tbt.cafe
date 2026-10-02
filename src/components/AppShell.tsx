@@ -1,6 +1,8 @@
 'use client'
 
 import { createContext, useContext, useEffect, useState } from 'react'
+import { OfferSheet } from '@/components/offers/OfferSheet'
+import { PauseBanner } from '@/components/PauseBanner'
 import { Header } from '@/components/Header'
 import { Footer } from '@/components/Footer'
 import { SlideMenu } from '@/components/SlideMenu'
@@ -41,6 +43,11 @@ type ShellValue = {
   openAuth: (options?: { resume?: () => void }) => void
   /** Abre el cajón de menú — el prototipo vuelve al Menú desde /profile. */
   openMenu: () => void
+  /**
+   * Abre la hoja de una oferta en el sitio (Work Order 02, 4.12): nadie sale
+   * del hub para responder. Un enlace `?offer=<id>` (SMS, e-Mail) hace lo mismo.
+   */
+  openOffer: (offerId: string) => void
 }
 
 const ShellContext = createContext<ShellValue | null>(null)
@@ -57,6 +64,18 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const [maskedPhone, setMaskedPhone] = useState<string | null>(null)
   const [menuOpen, setMenuOpen] = useState(false)
   const [authOpen, setAuthOpen] = useState(false)
+  const [offerId, setOfferId] = useState<string | null>(null)
+
+  // `?offer=<id>` abre la hoja al llegar y se limpia: recargar no la reabre.
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    const id = params.get('offer')
+    if (!id) return
+    setOfferId(id)
+    params.delete('offer')
+    const rest = params.toString()
+    window.history.replaceState({}, '', window.location.pathname + (rest ? `?${rest}` : ''))
+  }, [])
   /*
    * La acción que quedó a medias esperando sesión.
    *
@@ -154,7 +173,16 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
   return (
     <ShellContext.Provider
-      value={{ connected, maskedPhone, openAuth, openMenu: () => setMenuOpen(true) }}
+      value={{
+        connected,
+        maskedPhone,
+        openAuth,
+        openMenu: () => setMenuOpen(true),
+        openOffer: (id: string) => {
+          setNotifOpen(false)
+          setOfferId(id)
+        },
+      }}
     >
       <Header
         connected={connected}
@@ -176,6 +204,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         onNotifications={() => setNotifOpen(true)}
       />
 
+      <PauseBanner />
+
       {/* pb-[90px] libera el pie fijo de 30px con aire por debajo */}
       <main className="flex-1 pb-[90px]">{children}</main>
 
@@ -189,6 +219,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       <StandingSheet open={notifOpen} onClose={() => setNotifOpen(false)}>
         <SupportPanel compact />
       </StandingSheet>
+
+      <OfferSheet offerId={offerId} onClose={() => setOfferId(null)} />
 
       <AuthSheet
         open={authOpen}

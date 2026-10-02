@@ -6,7 +6,7 @@ import { supabase } from '@/lib/supabase'
  * solicitada sobre una obra que no está en venta queden ambas registradas.
  */
 
-export type OfferStatus = 'open' | 'accepted' | 'declined' | 'withdrawn' | 'expired'
+export type OfferStatus = 'open' | 'accepted' | 'declined' | 'withdrawn' | 'expired' | 'cancelled' | 'completed'
 
 export type MyOffer = {
   id: string
@@ -20,25 +20,46 @@ export type MyOffer = {
   created_at: string
 }
 
-/** Envía una oferta. `solicited` refleja si la obra estaba en venta al momento de ofertar. */
+/**
+ * Envía una oferta por /api/offers (Work Order 02, 4.2): el navegador ya no
+ * escribe `offers` (061). La duracion y el mensaje son opcionales.
+ */
 export async function makeOffer(
   workId: string,
   amount: number,
-  solicited: boolean
-): Promise<{ error?: string }> {
+  _solicited?: boolean,
+  opts: { durationHours?: number; message?: string } = {}
+): Promise<{ error?: string; floor?: number; id?: string }> {
   const {
-    data: { user },
-  } = await supabase.auth.getUser()
-  if (!user) return { error: 'needSignIn' }
-
-  const { error } = await supabase.from('offers').insert({
-    work_id: workId,
-    from_user: user.id,
-    amount,
-    currency: 'USD',
-    solicited,
+    data: { session },
+  } = await supabase.auth.getSession()
+  if (!session) return { error: 'needSignIn' }
+  const res = await fetch('/api/offers', {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${session.access_token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ workId, amount, durationHours: opts.durationHours, message: opts.message }),
   })
-  return error ? { error: error.message } : {}
+  const json = await res.json().catch(() => ({}))
+  return res.ok ? { id: json.id } : { error: json.error ?? 'offer_failed', floor: json.floor }
+}
+
+/** Una accion sobre una oferta: accept, decline, withdraw, cancel o report. */
+export async function actOnOffer(
+  offerId: string,
+  action: 'accept' | 'decline' | 'withdraw' | 'cancel' | 'report',
+  opts: { reply?: string; which?: 'message' | 'response' } = {}
+): Promise<{ error?: string; ref?: string }> {
+  const {
+    data: { session },
+  } = await supabase.auth.getSession()
+  if (!session) return { error: 'needSignIn' }
+  const res = await fetch(`/api/offers/${offerId}`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${session.access_token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ action, ...opts }),
+  })
+  const json = await res.json().catch(() => ({}))
+  return res.ok ? { ref: json.ref } : { error: json.error ?? 'offer_failed' }
 }
 
 /** Ofertas hechas por el usuario actual, más recientes primero. */
@@ -68,4 +89,44 @@ export async function fetchMyOffers(): Promise<MyOffer[]> {
       created_at: o.created_at,
     }
   })
+}
+
+/** La oferta vista por una de sus dos partes — /api/offers/[id] (4.12). */
+export type OfferDetail = {
+  id: string
+  role: 'holder' | 'offerer'
+  work: { title: string; tbtId: string }
+  counterparty: string | null
+  amount: number
+  status: OfferStatus
+  suspended: boolean
+  durationHours: number
+  createdAt: string
+  expiresAt: string
+  acceptedAt: string | null
+  paymentDueAt: string | null
+  autoCancelAt: string | null
+  closedAt: string | null
+  closeReason: string | null
+  message: string | null
+  responseMessage: string | null
+  holderApproved: boolean
+  payAvailable: boolean
+}
+
+export async function fetchOffer(offerId: string): Promise<OfferDetail | null> {
+  const {
+    data: { session },
+  } = await supabase.auth.getSession()
+  if (!session) return null
+  const res = await fetch(`/api/offers/${offerId}`, { headers: { Authorization: `Bearer ${session.access_token}` } })
+  return res.ok ? ((await res.json()) as OfferDetail) : null
+}
+
+/** Lo que se avisa antes de ofertar (S-2, sin cobertura) y si la obra esta congelada. */
+export async function fetchOfferContext(
+  workId: string
+): Promise<{ holderApproved: boolean; holderCovered: boolean; frozenUntil: string | null } | null> {
+  const res = await fetch(`/api/offers?workId=${encodeURIComponent(workId)}`)
+  return res.ok ? await res.json() : null
 }

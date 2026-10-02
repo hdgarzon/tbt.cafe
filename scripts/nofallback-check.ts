@@ -1,4 +1,4 @@
-import { readdirSync, readFileSync, statSync } from 'fs'
+import { existsSync, readdirSync, readFileSync, statSync } from 'fs'
 import { join } from 'path'
 
 /**
@@ -39,7 +39,8 @@ ok('no uploadMetadata( or generateNftMetadata( under src/', offenders.length ===
 const oldName = files.filter((f) => readFileSync(f, 'utf8').includes('mintTBTNft('))
 ok('mintTBTNft is gone', oldName.length === 0, oldName.map((f) => f.slice(root.length + 1)).join(', '))
 
-const nft = readFileSync(join(root, 'src/lib/solana/nft.ts'), 'utf8')
+ok('the legacy mint module is gone', !existsSync(join(root, 'src/lib/solana/nft.ts')), 'Chains 01, 4.1: nft.ts becomes token.ts')
+const nft = readFileSync(join(root, 'src/lib/solana/token.ts'), 'utf8')
 const sig = /export async function mintTitleToken\(([\s\S]*?)\)\s*:/.exec(nft)
 ok('mintTitleToken exists', !!sig)
 ok('the record URI is required, not optional',
@@ -49,9 +50,11 @@ ok('the token URI is the record URI', /uri: registrationRecordUri/.test(nft))
 ok('the mint takes no price, location or weather',
    !/marketPrice|creationLocation|creationWeather|royaltyPercentage/.test(nft))
 
-const route = readFileSync(join(root, 'src/app/api/complete-tbt/route.ts'), 'utf8')
+// El mint vive en lib/chain/seal.ts: lo llaman la certificacion y el barrido.
+const route = readFileSync(join(root, 'src/lib/chain/seal.ts'), 'utf8')
 const call = route.indexOf('await mintTitleToken(')
-ok('complete-tbt calls mintTitleToken', call > 0)
+ok('the seal calls mintTitleToken', call > 0 && readFileSync(join(root, 'src/app/api/complete-tbt/route.ts'), 'utf8').includes('sealOnChain('))
+ok('from the Core module', route.includes("await import('@/lib/solana/token')"))
 const guardAt = route.lastIndexOf('if (!recordUri) throw', call)
 ok('the call is reached only with a record URI', guardAt > 0 && call - guardAt < 400,
    'a work without a record waits for the sweep')

@@ -14,9 +14,7 @@
  * puede desfasarse respecto del costo que realmente se asumió.
  */
 import { supabase } from '@/lib/supabase'
-import { FEE } from '@/lib/fees'
 
-export const REGISTRATION_FEE = FEE.service
 
 export type CoveredStatus = {
   /** Si esta registración la paga tbt.cafe. */

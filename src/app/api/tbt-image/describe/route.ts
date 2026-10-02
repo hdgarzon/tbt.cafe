@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { authenticate } from '@/lib/route-auth'
+import { getRules } from '@/lib/rules'
 
 /**
  * Descripcion de una imagen — alimenta la categoria sugerida en Espresso sin
@@ -32,7 +33,8 @@ export async function POST(req: NextRequest) {
   const auth = await authenticate(req)
   if (!auth.ok) return NextResponse.json(auth.body, { status: auth.status })
 
-  const url = process.env.TBT_IMAGE_PROCESSOR_URL
+  const { scanProcessorUrl } = await getRules()
+  const url = scanProcessorUrl
   const key = process.env.TBT_IMAGE_PROCESSOR_API_KEY
 
   if (!url || !key) {

@@ -10,7 +10,7 @@ import {
   fetchEarnings,
   fetchPayoutMethods,
   fetchPayoutCountry,
-  fetchDefaultDestination,
+  fetchDestinations,
   fetchConnectAccount,
   startConnectOnboarding,
   pendingOf,
@@ -38,7 +38,9 @@ export default function PayoutSettingsPage() {
   const [loading, setLoading] = useState(true)
   const [signedIn, setSignedIn] = useState(true)
   const [methods, setMethods] = useState<PayoutMethod[]>([])
-  const [destination, setDestination] = useState<PayoutDestination | null>(null)
+  // Un destino por metodo (Work Order 02, 7.1); ninguno es «por defecto».
+  const [destinations, setDestinations] = useState<PayoutDestination[]>([])
+  const [editingMethod, setEditingMethod] = useState<string | null>(null)
   const [pending, setPending] = useState<Earning[]>([])
   const [editing, setEditing] = useState(false)
   const [connect, setConnect] = useState<ConnectAccount | null>(null)
@@ -58,13 +60,13 @@ export default function PayoutSettingsPage() {
     const payoutCountry = await fetchPayoutCountry(user.id)
     const [list, saved, earnings, account] = await Promise.all([
       fetchPayoutMethods(payoutCountry),
-      fetchDefaultDestination(user.id),
+      fetchDestinations(user.id),
       fetchEarnings(user.id),
       fetchConnectAccount(user.id),
     ])
     setCountry(payoutCountry)
     setMethods(list)
-    setDestination(saved)
+    setDestinations(saved)
     setPending(pendingOf(earnings))
     setConnect(account)
     setLoading(false)
@@ -105,9 +107,6 @@ export default function PayoutSettingsPage() {
     return <SignInGate message={t.myCollections.needSignIn} />
   }
 
-  const activeMethod = destination
-    ? methods.find((m) => m.id === destination.methodId)
-    : (methods[0] ?? null)
 
   // Un registro vacío se dice con todas las letras — nunca un selector vacío
   // ni un método por defecto que va a fallar (Spec 02 §3.3).
@@ -119,7 +118,7 @@ export default function PayoutSettingsPage() {
         <a href="/" className="back-link">
           ← {t.purchase.home}
         </a>
-        <h1 className="page-title">{t.payouts.title}</h1>
+        <h1 className="page-title">{t.menu.payoutMethods}</h1>
         <div className="page-sub">{t.payouts.sub}</div>
 
         <div className="mt-[26px]">
@@ -152,33 +151,27 @@ export default function PayoutSettingsPage() {
             <p className="py-6 text-[13px] leading-[1.7] text-ink-soft">{t.payouts.noMethods}</p>
           ) : (
             <>
-              <SecBlock
-                label={t.payouts.defaultMethod}
-                value={
-                  activeMethod
-                    ? translateKey(t, activeMethod.displayNameKey, activeMethod.id)
-                    : '—'
-                }
-                tag={{
-                  label: activeMethod ? translateKey(t, activeMethod.settlementEstimateKey) : t.payouts.notSet,
-                  verified: Boolean(destination),
-                }}
-                action={t.payouts.change}
-                onAction={() => setEditing(true)}
-                hint={t.payouts.methodHint}
-              />
-
-              <SecBlock
-                label={t.payouts.destination}
-                value={destination?.masked ?? '—'}
-                tag={{
-                  label: destination ? t.payouts.collected : t.payouts.notSet,
-                  verified: Boolean(destination),
-                }}
-                action={t.payouts.change}
-                onAction={() => setEditing(true)}
-                hint={t.payouts.destHint}
-              />
+              {/* 7.1: cada metodo con su destino; el metodo se elige en cada cobro. */}
+              {methods.map((m) => {
+                const dest = destinations.find((d) => d.methodId === m.id) ?? null
+                return (
+                  <SecBlock
+                    key={m.id}
+                    label={translateKey(t, m.displayNameKey, m.id)}
+                    value={dest?.masked ?? '—'}
+                    tag={{
+                      label: dest ? translateKey(t, m.settlementEstimateKey) : t.payouts.notSet,
+                      verified: Boolean(dest),
+                    }}
+                    action={t.payouts.change}
+                    onAction={() => {
+                      setEditingMethod(m.id)
+                      setEditing(true)
+                    }}
+                    hint={t.payouts.destHint}
+                  />
+                )
+              })}
             </>
           )}
 
@@ -230,8 +223,8 @@ export default function PayoutSettingsPage() {
       <DestinationSheet
         open={editing}
         onClose={() => setEditing(false)}
-        methods={methods}
-        current={destination}
+        methods={methods.filter((m) => m.id === editingMethod)}
+        current={destinations.find((d) => d.methodId === editingMethod) ?? null}
         onSaved={async () => {
           setEditing(false)
           await load()

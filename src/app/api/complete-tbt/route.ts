@@ -1,10 +1,13 @@
 import { NextRequest, NextResponse, after } from 'next/server'
 import { createAdminClient } from '@/lib/supabase-admin'
 import { indexCertifiedImage } from '@/lib/image-index'
+import { issueTitle } from '@/lib/titles/issue'
 import { isProduction, assertServerEnv } from '@/lib/app-env'
 import { wasDelivered } from '@/lib/notification-outcome'
 import { stripe } from '@/lib/stripe'
-import { resolveCoveredRegistration, REGISTRATION_FEE } from '@/lib/covered-registrations'
+import { resolveCoveredRegistration } from '@/lib/covered-registrations'
+import { getRules, assertNotPaused } from '@/lib/rules'
+import { minPriceFor } from '@/lib/fees'
 import { fileSystemTicket } from '@/lib/system-tickets'
 import { notify } from '@/lib/notify'
 import { recordProviderEvent } from '@/lib/provider-events'
@@ -42,6 +45,13 @@ export async function POST(request: NextRequest) {
 
     const auth = await authenticate(request)
     if (!auth.ok) return NextResponse.json(auth.body, { status: auth.status })
+
+    // Stage 11: una registracion cubierta empieza aqui y se pausa aqui. Una ya
+    // pagada (con sesion) se completa siempre: pausar no deja a nadie pagado y sin registro.
+    if (!sessionId) {
+      const paused = await assertNotPaused('registration')
+      if (paused) return NextResponse.json(paused, { status: 423 })
+    }
     const { supabase, user, token } = auth
     console.log('Authenticated user:', user.id)
 
@@ -234,15 +244,27 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Create work_commerce record
-    const { error: commerceError } = await supabase
+    // La fila de comercio de la obra. Con el service role: el navegador ya no
+    // escribe work_commerce (060). El techo y el piso de configuracion se
+    // aplican aqui igual que en /api/work/commerce (Work Order 02, 3.4, 3.5).
+    const commerceRules = await getRules()
+    const registeredType = commProData.royaltyType === 'none' ? null : commProData.royaltyType
+    const registeredValue = registeredType
+      ? Math.min(parseFloat(commProData.royaltyValue || '0') || 0, registeredType === 'percentage' ? commerceRules.royalty.pctCeiling : Infinity)
+      : 0
+    const askedPrice = commProData.marketPrice ? parseFloat(commProData.marketPrice) || 0 : 0
+    // Un precio de 0 es «sin precio»: no se sube; uno puesto por debajo del piso, si.
+    const registeredPrice = registeredType === 'fixed' && askedPrice > 0
+      ? Math.max(askedPrice, minPriceFor({ type: 'fixed', value: registeredValue }, commerceRules))
+      : askedPrice
+    const { error: commerceError } = await createAdminClient()
       .from('work_commerce')
       .upsert({
         work_id: workId,
-        initial_price: commProData.marketPrice ? parseFloat(commProData.marketPrice) : 0,
+        initial_price: registeredPrice,
         currency: commProData.currency || 'USD',
-        royalty_type: commProData.royaltyType === 'none' ? null : commProData.royaltyType,
-        royalty_value: commProData.royaltyType !== 'none' ? parseFloat(commProData.royaltyValue || '0') : 0,
+        royalty_type: registeredType,
+        royalty_value: registeredValue,
         is_for_sale: true,
       }, { onConflict: 'work_id' })
 
@@ -275,256 +297,53 @@ export async function POST(request: NextRequest) {
       .eq('id', workId)
       .single()
 
-    // Emitir el titulo. Incrementar version y enlazar supersedes es el Step 14.
-    const { error: titleError } = await supabase
-      .from('titles')
-      .insert({
-        work_id: workId,
-        owner_id: user.id,
-        qr_code_data: `${process.env.NEXT_PUBLIC_APP_URL}/work/${updatedWork?.tbt_id || workId}`,
-        version: 1,
-      })
-
-    if (titleError) {
-      console.warn('Title insert error:', titleError)
+    /*
+     * La firma del creador se congela en la obra al certificar (Title Spec 02
+     * §5 c): nunca cambia para esta obra aunque el creador redibuje la suya.
+     * Solo si la obra todavía no tiene una — un segundo paso por aquí no la pisa.
+     */
+    const { data: signer } = await createAdminClient()
+      .from('profiles')
+      .select('signature_strokes')
+      .eq('id', user.id)
+      .single()
+    if (signer?.signature_strokes) {
+      await createAdminClient()
+        .from('works')
+        .update({ signature_strokes: signer.signature_strokes })
+        .eq('id', workId)
+        .is('signature_strokes', null)
     }
+
+    /*
+     * Emitir el título (Work Order 01 Stage 5). Lo emite el servidor: la 055
+     * cerró la inserción desde el cliente. El render tarda unos segundos en Fly,
+     * así que va en `after()` — el creador no lo espera y el despliegue sí. Una
+     * clave por hecho hace que un reintento de esta ruta no emita dos títulos.
+     */
+    after(() =>
+      issueTitle(createAdminClient(), {
+        workId,
+        holderId: user.id,
+        event: 'REGISTERED',
+        eventDate: new Date(),
+        sourceKey: `registration:${workId}`,
+      }).then((outcome) => console.log('[title] registro:', outcome))
+    )
 
     console.log('TBT certified with ID:', updatedWork?.tbt_id)
 
-    // Mint NFT on Solana — single-wallet model (project wallet owns all NFTs)
+    // Las cadenas: registro, mint a la tenencia <TBT ID>-1 y procedencia (lib/chain/seal).
     let mintAddress = ''
-    let mintSignature = ''
     let solscanUrl = ''
     
     try {
-      const { mintTitleToken } = await import('@/lib/solana/nft')
+      const { sealOnChain } = await import('@/lib/chain/seal')
       const { getExplorerUrl } = await import('@/lib/solana/config')
-      
-      const { data: workWithCreator } = await supabase
-        .from('works')
-        .select(`
-          *,
-          creator:profiles!works_creator_id_fkey(display_name, public_alias, creator_type),
-          context:context_snapshots(location_name)
-        `)
-        .eq('id', workId)
-        .single()
-      
-      if (workWithCreator && !workWithCreator.mint_address) {
-        const creatorInfo = workWithCreator.creator as any
-        const creatorName = creatorInfo?.public_alias || creatorInfo?.display_name || 'Unknown Artist'
-        
-        const ctxData = Array.isArray(workWithCreator.context) ? workWithCreator.context[0] : workWithCreator.context
-        
-        // Solo el TBT ID: el mint ya no publica nada propio (Chains 01, 1.1).
-        const workNftData = {
-          tbtId: workWithCreator.tbt_id || updatedWork?.tbt_id,
-        }
-        
-        /*
-         * ── Item 6, paso 3: el registro sube ANTES del mint ──────────────
-         *
-         * La URI que se escribe en cadena tiene que apuntar a algo que ya
-         * exista, asi que este orden no es preferencia.
-         *
-         * Y se GUARDA antes de mintear. El spec avisa de que si el mint falla
-         * despues de la subida el registro queda sin referencia —recuperable—
-         * pero que jamas hay que reintentar la subida: dos registros de
-         * registracion para un TBT sin enlace `supersedes` entre ellos es la
-         * unica forma que este modelo no sabe expresar. Guardarla es lo que
-         * permite reintentar el MINT contra ella.
-         *
-         * Una obra sin registro publicado NO se acuna (Chains 01, 1.1): el
-         * camino que subia metadata propia publicaba precio, lugar y nombres
-         * sin pasar por assertNoIdentifiers. Espera al barrido de
-         * recuperacion (Stage 7), con su ticket de sistema.
-         */
-        let recordUri: string | undefined = workWithCreator.registration_record_uri ?? undefined
-
-        if (!recordUri && workWithCreator.content_hash) {
-          try {
-            const { registrationRecord } = await import('@/lib/chain/records')
-            const { pseudonymFor } = await import('@/lib/chain/pseudonym')
-            const { publishRecord } = await import('@/lib/chain/arweave')
-
-            /*
-             * ── Item 10: la imagen sube ANTES del registro ────────────────
-             *
-             * Por lo mismo que el registro sube antes del mint: el registro la
-             * NOMBRA, y nombrar algo que todavia no existe deja una direccion
-             * permanente hacia un 404.
-             *
-             * Solo se publica lo que el creador eligio en el Sello. La columna
-             * viene por defecto en 'none', asi que una ruta que se olvide del
-             * campo no publica nada — y las 58 obras anteriores a esta decision
-             * tampoco.
-             *
-             * Su fallo NO tumba el registro: lleva su propio catch y la obra se
-             * certifica igual, con el hash del contenido, que es lo que hace
-             * verificable al certificado. La imagen es legibilidad, no prueba.
-             *
-             * Y si el registro sale sin ella, ya no se le anade: queda sellado,
-             * y sumarle algo despues seria una enmienda (Item 5), no un
-             * reintento. Es el precio correcto — el registro no cambia.
-             */
-            let image: { uri: string; hash: string; kind: 'thumbnail' | 'full' | 'reduced' } | undefined
-            const choice = workWithCreator.chain_image as string | null
-            // Chains 01, 5.4: `full` cuya fuente no es el original es la copia bajo el techo.
-            const kind =
-              choice === 'full' && workWithCreator.chain_image_url && workWithCreator.chain_image_url !== workWithCreator.media_url ? 'reduced' : choice
-
-            if (kind === 'thumbnail' || kind === 'full' || kind === 'reduced') {
-              if (workWithCreator.chain_image_uri && workWithCreator.chain_image_hash) {
-                // Ya subida en un intento anterior. Se reutiliza, nunca se
-                // republica: dos copias de la misma obra en un almacen
-                // permanente no son un estado que este modelo sepa expresar.
-                image = {
-                  uri: workWithCreator.chain_image_uri,
-                  hash: workWithCreator.chain_image_hash,
-                  kind,
-                }
-              } else if (workWithCreator.chain_image_url) {
-                try {
-                  const { publishWorkImage } = await import('@/lib/chain/publish-image')
-                  const pub = await publishWorkImage({
-                    sourceUrl: workWithCreator.chain_image_url,
-                    kind,
-                    tbtId: workNftData.tbtId,
-                  })
-
-                  await createAdminClient()
-                    .from('works')
-                    .update({ chain_image_uri: pub.uri, chain_image_hash: pub.hash })
-                    .eq('id', workId)
-
-                  image = { uri: pub.uri, hash: pub.hash, kind }
-                  console.log(`Work image published (${choice}): ${pub.uri}`)
-                } catch (imageError) {
-                  console.error('[chain] no se pudo publicar la imagen:', imageError)
-                }
-              }
-            }
-
-            const published = await publishRecord(
-              registrationRecord({
-                tbtId: workNftData.tbtId,
-                sequence: 1,
-                contentHash: workWithCreator.content_hash,
-                creator: {
-                  name: creatorName,
-                  id: pseudonymFor(workWithCreator.creator_id),
-                  type: (creatorInfo?.creator_type ?? 'individual') as 'individual' | 'group' | 'corporation',
-                },
-                work: {
-                  title: workWithCreator.title,
-                  year: new Date(workWithCreator.creation_date || workWithCreator.created_at).getUTCFullYear(),
-                  category: workWithCreator.category ?? undefined,
-                  technique: workWithCreator.technique ?? undefined,
-                  originality: (workWithCreator.originality_type ?? 'original') as 'original' | 'derivative' | 'authorized_edition',
-                },
-                context: {
-                  statement: workWithCreator.context_summary ?? undefined,
-                  city: ctxData?.location_name ?? undefined,
-                },
-                ...(image ? { image } : {}),
-                sealedAt: new Date(workWithCreator.certified_at || workWithCreator.created_at),
-              }) as never
-            )
-
-            await createAdminClient()
-              .from('works')
-              .update({
-                registration_record_uri: published.uri,
-                registration_record_hash: published.hash,
-              })
-              .eq('id', workId)
-
-            recordUri = published.uri
-            console.log(`Registration record published: ${published.uri}`)
-          } catch (chainError) {
-            // La cadena no puede tumbar una certificacion que ya se cobro.
-            console.error('[chain] no se pudo publicar el registro:', chainError)
-          }
-        }
-
-        if (!recordUri) throw new Error('No registration record published; the title token waits for the recovery sweep.')
-
-        const mintResult = await mintTitleToken(workNftData, recordUri)
-        mintAddress = mintResult.mintAddress
-        mintSignature = mintResult.signature
-        solscanUrl = getExplorerUrl(mintAddress)
-        
-        await supabase
-          .from('works')
-          .update({
-            mint_address: mintAddress,
-            token_uri: mintResult.tokenUri,
-            blockchain: 'solana',
-            nft_status: 'minted'
-          })
-          .eq('id', workId)
-        
-        // Record first owner in ownership_history (creator = first owner).
-        // Service-role write: ownership_history is the immutable provenance
-        // chain (RLS: public read, service-role-only writes).
-        const { data: firstOwner } = await createAdminClient()
-          .from('ownership_history')
-          .insert({
-            work_id: workId,
-            owner_name: creatorName,
-            owner_user_id: user.id,
-            event_type: 'creation',
-            sequence_number: 1,
-          })
-          .select('id')
-          .single()
-
-        /*
-         * ── Item 6, paso 5: procedencia, secuencia 1 ────────────────────
-         *
-         * `event: creation` y sin `prior_record`: es el origen de la cadena, y
-         * `provenanceRecord` rechaza que la secuencia 1 lleve uno.
-         *
-         * Va DESPUES del mint porque lleva dentro la firma de Solana, que
-         * antes no existe. Si falla, la obra queda minteada y con su registro
-         * de registracion; le faltara el primer eslabon de procedencia, que se
-         * puede publicar despues contra los mismos datos.
-         */
-        if (recordUri && firstOwner?.id) {
-          try {
-            const { provenanceRecord } = await import('@/lib/chain/records')
-            const { pseudonymFor } = await import('@/lib/chain/pseudonym')
-            const { publishRecord } = await import('@/lib/chain/arweave')
-
-            const published = await publishRecord(
-              provenanceRecord({
-                tbtId: workNftData.tbtId,
-                sequence: 1,
-                event: 'creation',
-                to: { name: creatorName, id: pseudonymFor(workWithCreator.creator_id) },
-                occurredAt: new Date(workWithCreator.certified_at || workWithCreator.created_at),
-                solanaSignature: mintSignature,
-                registrationRecord: recordUri,
-              }) as never
-            )
-
-            await createAdminClient()
-              .from('ownership_history')
-              .update({ record_uri: published.uri, record_hash: published.hash })
-              .eq('id', firstOwner.id)
-
-            console.log(`Provenance record published: ${published.uri}`)
-          } catch (chainError) {
-            console.error('[chain] no se pudo publicar la procedencia:', chainError)
-          }
-        }
-
-        console.log('NFT minted successfully:', mintAddress)
-      } else if (workWithCreator?.mint_address) {
-        mintAddress = workWithCreator.mint_address
-        solscanUrl = getExplorerUrl(mintAddress)
-        console.log('NFT already minted:', mintAddress)
-      }
+      const sealed = await sealOnChain(createAdminClient(), workId)
+      mintAddress = sealed.mintAddress
+      solscanUrl = getExplorerUrl(mintAddress)
+      console.log(sealed.alreadyMinted ? 'NFT already minted:' : 'NFT minted successfully:', mintAddress)
     } catch (mintError: any) {
       console.warn('Error minting NFT:', mintError?.message || mintError)
       void recordProviderEvent({
@@ -689,7 +508,8 @@ export async function POST(request: NextRequest) {
       const { error: ledgerError } = await createAdminClient().from('covered_registrations').insert({
         creator_id: work.creator_id,
         work_id: workId,
-        amount: REGISTRATION_FEE,
+        // Lo que se habria cobrado, de configuracion (Work Order 02, 1.2).
+        amount: (await getRules()).fees.registration,
         reason: coveredReason,
       })
       if (ledgerError) console.error('Covered registration ledger write failed:', ledgerError)

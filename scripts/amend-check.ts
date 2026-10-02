@@ -22,7 +22,8 @@ const throws = (label: string, fn: () => unknown) => {
   try { fn(); ok(label, false, 'no lanzó') } catch { ok(label, true) }
 }
 
-const AR = 'https://arweave.net/3Bq9original'
+const AR_ID = '3Bq9xY7kLmN2pQ4rS6tU8vW0xZ1aB3cD5eF7gH9iJ0k'
+const AR = `https://arweave.net/${AR_ID}`
 const A = pseudonymFor('5b84cf07-6516-4873-bfdd-379805913c4d')
 const B = pseudonymFor('51272678-0000-4000-8000-000000000000')
 
@@ -72,7 +73,7 @@ const meta = { supersedes: AR, reason: '  Título mal escrito.  ', decidedBy: { 
   const next = amendRecord(current, { year: 2026 }, meta)
   ok('se declara enmienda', next.type === 'amendment')
   ok('la secuencia sube de uno', next.sequence === 2, 'el orden es por entero, nunca por fecha')
-  ok('nombra a quien supersede', next.supersedes === AR)
+  ok('nombra a quien supersede, por ID desnudo', next.supersedes === AR_ID)
   ok('es de clase minor', next.amendment_class === 'minor')
   ok('el motivo se publica sin espacios sobrantes', next.amendment_reason === 'Título mal escrito.')
   ok('van las dos personas', JSON.stringify(next.decided_by) === JSON.stringify({ initiator: A, approver: B }))
@@ -116,9 +117,9 @@ const meta = { supersedes: AR, reason: '  Título mal escrito.  ', decidedBy: { 
 // ---- la cadena se camina hacia atrás
 {
   const second = amendRecord(current, { title: 'Nocturno' }, meta)
-  const third = amendRecord(second, { city: 'Bogotá' }, { ...meta, supersedes: 'https://arweave.net/second' })
+  const third = amendRecord(second, { city: 'Bogotá' }, { ...meta, supersedes: 'https://arweave.net/5Cr0yZ8lMnO3qR5sT7uV9wX1yA2bC4dE6fG8hI0jK1l' })
   ok('la segunda enmienda es la secuencia 3', third.sequence === 3)
-  ok('y supersede a la anterior', third.supersedes === 'https://arweave.net/second')
+  ok('y supersede a la anterior', third.supersedes === '5Cr0yZ8lMnO3qR5sT7uV9wX1yA2bC4dE6fG8hI0jK1l')
   ok('conservando la corrección anterior', (third.work as Record<string, unknown>).title === 'Nocturno',
      'se enmienda lo publicado, no lo que diga la base')
 }
@@ -167,7 +168,7 @@ const meta = { supersedes: AR, reason: '  Título mal escrito.  ', decidedBy: { 
 
 const read = (p: string) => readFileSync(join(process.cwd(), p), 'utf8')
 const route = read('src/app/api/admin/works/amend/route.ts')
-const nft = read('src/lib/solana/nft.ts')
+const nft = read('src/lib/solana/token.ts')
 const mig = read('supabase/migrations/038_work_amendments.sql')
 const page = read('src/app/admin/page.tsx')
 
@@ -180,7 +181,7 @@ const page = read('src/app/admin/page.tsx')
   ok('publica antes de mover nada nuestro',
      route.indexOf('publishRecord(') < route.indexOf("from('works').update("))
   ok('guarda la URI nueva antes de repuntar la cadena',
-     route.indexOf('registration_record_uri: published.uri') < route.indexOf('repointNft('))
+     route.indexOf('registration_record_uri: published.uri') < route.indexOf('repointTitleToken('))
   ok('un repunte fallido no tumba la enmienda',
      route.includes("console.error('[chain] la enmienda se publicó pero el NFT no se repuntó:'"))
   ok('una obra sin registro no se puede enmendar', route.includes("'no_registration_record'"))
@@ -191,10 +192,11 @@ const page = read('src/app/admin/page.tsx')
 }
 
 {
-  const fn = nft.slice(nft.indexOf('export async function repointNft'))
-  ok('repuntar solo mueve la URI', fn.includes('update({ nftOrSft: nft, uri })'),
+  const fn = nft.slice(nft.indexOf('export async function repointTitleToken'))
+  const call = fn.slice(fn.indexOf('await update(umi, {'), fn.indexOf('}).sendAndConfirm'))
+  ok('repuntar solo mueve la URI', call.includes('uri,') && !call.includes('name:'),
      'reescribir el nombre arriesga un truncamiento a cambio de nada')
-  ok('y no toca un activo inmutable', fn.includes('!nft.isMutable'))
+  ok('lo firma la autoridad', call.includes('authority: auth'))
   ok('el updateNftMetadata muerto ya no está', !nft.includes('export async function updateNftMetadata'))
 }
 

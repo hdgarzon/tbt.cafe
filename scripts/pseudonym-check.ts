@@ -62,24 +62,31 @@ const OTHER = '7393fadd-77b1-4399-9bd9-2dee166b68be'
   ok('un registro limpio pasa', !threw)
 }
 
-// ---- los registros de verdad, ya seudonimizados
+// ---- los registros de verdad: el creador por su codigo, el titular por su eleccion
 {
   const reg = registrationRecord({
     tbtId: 'RRO5501', sequence: 1,
     contentHash: 'sha256:' + 'a'.repeat(64),
-    creator: { name: 'Sara Alarcón', id: pseudonymFor(UUID), type: 'individual' },
+    creator: { name: 'Sara Alarcón', id: 'cr_7k2m9q4x8z', type: 'individual' },
     work: { title: 'Nocturno', year: 2026, originality: 'original' },
     sealedAt: new Date(Date.UTC(2026, 7, 26)),
   })
   ok('el registro de registración no lleva UUID', !UUID_RE.test(canonicalize(reg)))
+  throws('ni acepta el seudonimo calculable del UUID', () => registrationRecord({
+    tbtId: 'RRO5501', sequence: 1, contentHash: 'sha256:' + 'a'.repeat(64),
+    creator: { name: 'Sara Alarcón', id: pseudonymFor(UUID), type: 'individual' },
+    work: { title: 'Nocturno', year: 2026, originality: 'original' }, sealedAt: new Date(Date.UTC(2026, 7, 26)),
+  }))
 
   const prov = provenanceRecord({
-    tbtId: 'RRO5501', sequence: 2, event: 'sale',
-    from: { name: 'Sara', id: pseudonymFor(UUID) },
-    to: { name: 'Diego', id: pseudonymFor(OTHER) },
+    tbtId: 'RRO5501', sequence: 2, titleNumber: 'RRO5501-2', event: 'sale',
+    holder: { privateCollector: 48213 },
+    holdingAddress: 'F9ieqDeu9tk2eBeMLXdRdtyagHVhdR9uNbqqJBjPgg3q',
+    value: { kind: 'sale', amount_cents: 100000, currency: 'USD' },
     occurredAt: new Date(Date.UTC(2026, 7, 27)),
-    priorRecord: 'sha256:' + 'b'.repeat(64),
-    registrationRecord: 'https://arweave.net/abc',
+    solanaSignature: 'sig',
+    priorRecord: 'b'.repeat(64),
+    registrationRecord: 'https://arweave.net/3Bq9xY7kLmN2pQ4rS6tU8vW0xZ1aB3cD5eF7gH9iJ0k',
   })
   ok('el de procedencia tampoco', !UUID_RE.test(canonicalize(prov)))
 }
@@ -88,16 +95,14 @@ const OTHER = '7393fadd-77b1-4399-9bd9-2dee166b68be'
 {
   const read = (rel: string) => readFileSync(join(__dirname, '..', rel), 'utf8')
 
-  const tbt = read('src/app/api/complete-tbt/route.ts')
-  const xfer = read('src/app/api/complete-transfer/route.ts')
+  const tbt = read('src/lib/chain/seal.ts')
+  const pub = read('src/lib/chain/provenance-publish.ts')
   const ar = read('src/lib/chain/arweave.ts')
 
-  ok('la certificación seudonimiza al creador', !/id: workWithCreator\.creator_id\b/.test(tbt))
-  // `[^_]` a proposito: `current_owner_id:` y `owner_user_id:` son escrituras
-  // a la base, no al registro, y contienen la misma subcadena.
-  ok('la transferencia seudonimiza a las dos partes',
-     !/[^_]id: transfer\.(from|to)_owner_id\b/.test(xfer))
-  ok('y ambas usan pseudonymFor', tbt.includes('pseudonymFor(') && xfer.includes('pseudonymFor('))
+  // `[^_]`: `owner_user_id:` es una escritura a la base, no al registro.
+  ok('la certificación no publica el UUID del creador', !/[^_]id: workWithCreator\.creator_id\b/.test(tbt))
+  ok('la certificación usa el codigo del creador', tbt.includes('creatorCodeFor('))
+  ok('la procedencia no lleva ids de persona', !/_owner_id/.test(pub) && !/owner_user_id/.test(pub))
   ok('nada sube sin pasar la guarda', ar.includes('assertNoIdentifiers(record)'),
      'es el único punto por el que pasa todo lo que llega a Arweave')
 }

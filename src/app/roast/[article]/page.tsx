@@ -1,7 +1,9 @@
 import { notFound } from 'next/navigation'
-import { ROAST_ARTICLES, roastArticle } from '@/lib/roast-content'
+import { roastArticle } from '@/lib/roast-content'
 import { RoastBody } from '@/components/RoastBody'
 import { RoastQuestions } from '@/components/RoastQuestions'
+import { getPublicRules } from '@/lib/rules'
+import { fillDeep, proseValues } from '@/lib/prose'
 
 /**
  * /roast/[article] — un artículo.
@@ -10,14 +12,18 @@ import { RoastQuestions } from '@/components/RoastQuestions'
  * bloque de preguntas, que es lo único interactivo de la página.
  */
 
-export function generateStaticParams() {
-  return ROAST_ARTICLES.map((a) => ({ article: a.id }))
-}
+/*
+ * Las cifras del texto vienen de configuracion (Work Order 02, 1.4): la pagina
+ * se genera en la primera visita y se regenera cada minuto, en vez de
+ * prerenderizarse en el build con los valores de ese momento.
+ */
+export const revalidate = 60
 
 export default async function RoastArticlePage(props: { params: Promise<{ article: string }> }) {
   const params = await props.params;
-  const article = roastArticle(params.article)
-  if (!article) notFound()
+  const found = roastArticle(params.article)
+  if (!found) notFound()
+  const article = fillDeep(found, proseValues(await getPublicRules()))
 
   return (
     <div className="px-4 pt-6 pb-10">

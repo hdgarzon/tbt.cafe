@@ -53,13 +53,20 @@ export function EmbeddedCheckoutSheet({
   clientSecret,
   onClose,
   recap,
+  stripeAccount = null,
 }: {
   clientSecret: string
   onClose: () => void
   recap?: PaymentRecap
+  /** Work Order 02, 0.3b: en la via directa la sesion vive en la cuenta del vendedor. */
+  stripeAccount?: string | null
 }) {
   const { t } = useLocale()
   const options = useMemo(() => ({ clientSecret }), [clientSecret])
+  const stripe = useMemo(
+    () => (stripeAccount && publishableKey ? loadStripe(publishableKey, { stripeAccount }) : stripePromise),
+    [stripeAccount]
+  )
 
   return (
     <div className="fixed inset-0 z-[60] flex flex-col bg-paper">
@@ -93,8 +100,8 @@ export function EmbeddedCheckoutSheet({
       )}
 
       <div className="flex-1 overflow-y-auto">
-        {stripePromise ? (
-          <EmbeddedCheckoutProvider stripe={stripePromise} options={options}>
+        {stripe ? (
+          <EmbeddedCheckoutProvider stripe={stripe} options={options}>
             <EmbeddedCheckout />
           </EmbeddedCheckoutProvider>
         ) : (

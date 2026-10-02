@@ -3,8 +3,10 @@ import { createAdminClient } from '@/lib/supabase-admin'
 import { stripe } from '@/lib/stripe'
 import { authenticate } from '@/lib/route-auth'
 import { notify } from '@/lib/notify'
+import { getRules } from '@/lib/rules'
+import { transferWindowMs } from '@/lib/rules-shape'
+import { samePhone } from '@/lib/transfer-value'
 
-const HOLD_WINDOW_MS = 24 * 3600 * 1000
 
 /**
  * Avisa a quien envió que la transferencia no siguió. La clave lleva el motivo:
@@ -45,7 +47,7 @@ export async function POST(request: NextRequest) {
     if (!auth.ok) return NextResponse.json(auth.body, { status: auth.status })
     const { user } = auth
 
-    const { transferId, action } = await request.json()
+    const { transferId, action, showName } = await request.json()
     if (!transferId || (action !== 'accept' && action !== 'reject')) {
       return NextResponse.json({ error: 'invalidRequest' }, { status: 400 })
     }
@@ -53,7 +55,7 @@ export async function POST(request: NextRequest) {
     const service = createAdminClient()
     const { data: transfer, error } = await service
       .from('transfers')
-      .select('id, work_id, from_owner_id, is_two_phase, payment_status, outcome, stripe_payment_intent_id, authorized_at, work:works(current_owner_id, title, tbt_id)')
+      .select('id, work_id, from_owner_id, is_two_phase, payment_status, outcome, stripe_payment_intent_id, authorized_at, new_owner_phone, value_kind, work:works(current_owner_id, title, tbt_id)')
       .eq('id', transferId)
       .single()
     if (error || !transfer) return NextResponse.json({ error: 'transferNotFound' }, { status: 404 })
@@ -65,6 +67,11 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'notYetAuthorized' }, { status: 409 })
     }
 
+    // 5.2: solo responde el numero al que se envio. Nada revela cual era.
+    if (!samePhone(user.phone ? `+${user.phone.replace(/^\+/, '')}` : null, transfer.new_owner_phone)) {
+      return NextResponse.json({ error: 'wrongNumber' }, { status: 403 })
+    }
+
     // Ownership-drift guard, same spirit as /api/complete-transfer: the
     // sender named on this transfer must still own the work.
     const work = Array.isArray(transfer.work) ? transfer.work[0] : transfer.work
@@ -73,7 +80,7 @@ export async function POST(request: NextRequest) {
     }
 
     const elapsed = Date.now() - new Date(transfer.authorized_at).getTime()
-    if (elapsed > HOLD_WINDOW_MS) {
+    if (elapsed > transferWindowMs(await getRules())) {
       // Card holds do not reliably survive past 24h — release cleanly rather
       // than risk a capture failure the sender wasn't told about. Ask them
       // to resend (Transfer Companion, "24 HOURS IS NOT ARBITRARY").
@@ -117,6 +124,9 @@ export async function POST(request: NextRequest) {
       .from('transfers')
       .update({
         to_owner_id: user.id,
+        // 5.3: tocar Aceptar confirma el valor declarado; 5.5: su eleccion de nombre.
+        declared_value_confirmed_at: new Date().toISOString(),
+        holder_named: showName === true,
         payment_status: 'completed',
         payment_reference: transfer.stripe_payment_intent_id,
         outcome: 'accepted',
@@ -144,6 +154,15 @@ export async function POST(request: NextRequest) {
       console.error('CRITICAL: capture succeeded but complete-transfer failed', {
         transferId,
         completeBody,
+      })
+      // 0.7c: no solo el log. Un ticket de pagos, para que alguien lo termine.
+      await createAdminClient().from('tickets').insert({
+        origin: 'system',
+        category: 'payments',
+        severity: 'primary',
+        subject: `Transfer captured but not finalised: ${transferId}`,
+        body: 'The card was captured on acceptance and the ownership change did not complete. Finish it by hand.',
+        context: { kind: 'captured_not_finalized', transfer_id: transferId, response: completeBody ?? null },
       })
       return NextResponse.json({ error: 'ownershipTransferFailed', capturedButNotFinalized: true }, { status: 500 })
     }

@@ -1,9 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase-admin'
 import { enforceLadder } from '@/lib/auth-ladder-server'
+import { lastRecordedValue, valueKindOf } from '@/lib/transfer-value'
 import { stripe } from '@/lib/stripe'
 import { transferQuote, type Royalty, type RoyaltyType } from '@/lib/fees'
 import { authenticate } from '@/lib/route-auth'
+import { getRules, assertNotPaused } from '@/lib/rules'
 
 /**
  * Fase 1 del transfer de dos fases (tbt.cafe Build Spec 02 / Transfer &
@@ -23,6 +25,12 @@ export async function POST(request: NextRequest) {
   try {
     const auth = await authenticate(request)
     if (!auth.ok) return NextResponse.json(auth.body, { status: auth.status })
+
+    // Stage 11: ninguna transferencia nueva; las pendientes se pueden aceptar igual.
+    {
+      const paused = await assertNotPaused('transfers')
+      if (paused) return NextResponse.json(paused, { status: 423 })
+    }
     const { user } = auth
 
     const body = await request.json()
@@ -77,13 +85,15 @@ export async function POST(request: NextRequest) {
 
     const { data: work, error: workError } = await service
       .from('works')
-      .select('id, tbt_id, title, creator_id, current_owner_id, commerce:work_commerce(royalty_type, royalty_value, royalty_locked)')
+      .select('id, tbt_id, title, creator_id, current_owner_id, commerce:work_commerce(royalty_type, royalty_value, royalty_locked, frozen_offer_id)')
       .eq('id', workId)
       .single()
     if (workError || !work) return NextResponse.json({ error: 'workNotFound' }, { status: 404 })
     if (work.current_owner_id !== user.id) return NextResponse.json({ error: 'notOwner' }, { status: 403 })
 
     const commerce = Array.isArray(work.commerce) ? work.commerce[0] : work.commerce
+    // Una oferta aceptada congela la obra hasta que se pague o se cancele (4.3).
+    if (commerce?.frozen_offer_id) return NextResponse.json({ error: 'work_frozen' }, { status: 409 })
 
     /**
      * Los terminos canonicos de una regalia son `royalty_type` + `royalty_value`
@@ -109,7 +119,7 @@ export async function POST(request: NextRequest) {
       value: Number(commerce?.royalty_value ?? 0),
     }
     const senderIsCreator = work.creator_id === user.id
-    const quote = transferQuote(recordedValue, terms, senderIsCreator)
+    const quote = transferQuote(recordedValue, terms, senderIsCreator, await getRules())
 
     // One open two-phase transfer per work at a time (partial index enforces
     // this is cheap to check; a second authorisation on the same work before
@@ -135,24 +145,22 @@ export async function POST(request: NextRequest) {
      * La escalera — Spec 01 §5.1. Iniciar una transferencia es una acción de
      * vendedor y entra por el mismo escalón de $500 que una compra.
      *
-     * SIN 3DS EN ESTA RUTA, a propósito. Va con `capture_method: 'manual'`, y
-     * el §8 lista el comportamiento de 3DS bajo captura manual como pendiente
-     * de verificar contra la documentación viva de Stripe. Meterlo a ciegas
-     * puede romper la retención de la autorización, que es dinero real
-     * retenido a alguien. El biométrico no tiene esa ambigüedad y sí se exige.
+     * 3DS en la autorizacion (Work Order 02, 0.6b): la autenticacion ocurre al
+     * autorizar y la captura al aceptar debe pasar sin un segundo desafio. Se
+     * prueba en modo test antes de desplegar; si la captura manual no admite
+     * la solicitud, o la captura tras 48 horas pide otro desafio, se para y se
+     * pregunta. El biometrico se exige ademas, como siempre.
      *
-     * NOTA para producto: aquí el monto lo DECLARA el emisor, no sale de la
-     * base como en la compra. Declarar cero baja del umbral y evita el
-     * biométrico — un secuestro de cuenta podría sacar una obra valiosa
-     * declarándola regalo. El spec gatea por monto y eso es lo implementado;
-     * cerrar ese hueco es una decisión de producto, emparentada con los
-     * límites de velocidad del §5.5, que el §9 deja sin decidir.
+     * El monto lo DECLARA el emisor. Declarar cero bajaba del umbral y evitaba
+     * el biometrico: un secuestro de cuenta podia sacar una obra valiosa
+     * declarandola regalo. Work Order 02 5.7 lo cierra: la escalera mira el
+     * mayor entre lo declarado y el ultimo valor registrado de la obra.
      */
     const ladder = await enforceLadder({
       admin: service,
       userId: user.id,
       action: 'transfer_initiate',
-      amount: recordedValue,
+      amount: Math.max(recordedValue, await lastRecordedValue(service, workId)),
       workId,
       biometricProof,
     })
@@ -168,12 +176,21 @@ export async function POST(request: NextRequest) {
         from_owner_name: fromOwnerName,
         to_owner_id: null,
         transfer_type: recordedValue > 0 ? 'sale' : 'gift',
+        // 5.3: declarado por quien envia, o regalo sin valor.
+        value_kind: valueKindOf(recordedValue),
         new_owner_name: recipientName.trim(),
         new_owner_phone: recipientPhone,
         payment_status: 'pending',
         payment_amount: recordedValue,
         payment_currency: 'USD',
         is_two_phase: true,
+        // Stage 9: el recibo lee lo guardado y nunca recalcula (0.9c).
+        buyer_total: quote.total,
+        processing: quote.processing,
+        royalty_gross: quote.royalty,
+        platform_take: quote.transferFee,
+        charge_path: 'platform',
+        provider: 'stripe',
       })
       .select('id')
       .single()
@@ -229,6 +246,7 @@ export async function POST(request: NextRequest) {
         payment_method_types: ['card' as const],
         line_items: lineItems,
         payment_intent_data: { capture_method: 'manual' as const },
+        payment_method_options: { card: { request_three_d_secure: 'any' as const } },
         metadata: {
           type: 'transfer',
           flow: 'two_phase',

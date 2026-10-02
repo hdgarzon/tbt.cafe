@@ -16,7 +16,7 @@ const record = registrationRecord({
   tbtId: 'RRO5501',
   sequence: 1,
   contentHash: 'sha256:9f2c3d4e5a6b7c8d9e0f1a2b3c4d5e6f708192a3b4c5d6e7f8091a2b3c4d5e6f',
-  creator: { name: 'Sara Alarcón', id: 'cr_8812', type: 'individual' },
+  creator: { name: 'Sara Alarcón', id: 'cr_7k2m9q4x8z', type: 'individual' },
   work: {
     title: 'Nocturno en Medellín', year: 2026, category: 'painting',
     technique: 'oil on canvas', originality: 'original',

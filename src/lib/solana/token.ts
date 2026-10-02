@@ -25,9 +25,9 @@ import { assertDistinctSecrets, assertPayerCanMint, readSecret } from './keys'
 /**
  * El token del titulo sobre Metaplex Core — Chains 01, Stage 4 (opcion C).
  *
- * Reemplaza a `nft.ts` (Metaplex JS). Todavia NO esta conectado al registro:
- * espera a que existan la clave de autoridad y la coleccion (Stage 7 y 4.2).
- * Hasta entonces `complete-tbt` sigue usando `nft.ts`.
+ * Reemplaza a `nft.ts` (Metaplex JS). `complete-tbt` acuna con esto y las
+ * enmiendas repuntan con esto. Necesita SOLANA_AUTHORITY_PRIVATE_KEY y
+ * TBT_COLLECTION_ADDRESS (Stage 7 y 4.2).
  *
  * Tres claves distintas en cada operacion, y ninguna es la del dueno:
  *  - el payer paga las comisiones;

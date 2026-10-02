@@ -11,7 +11,7 @@
  */
 import { createAdminClient } from '@/lib/supabase-admin'
 
-export type Provider = 'stripe' | 'twilio' | 'solana' | 'gemini' | 'resend' | 'image_processor'
+export type Provider = 'stripe' | 'twilio' | 'solana' | 'gemini' | 'resend' | 'image_processor' | 'title_renderer' | 'scheduler'
 
 /**
  * Código corto y estable para agrupar.

@@ -113,7 +113,8 @@ ok('ningún módulo se cae al importarse por un secreto de ejecución', offender
 // Y las dos que ya se arreglaron, para que no vuelvan.
 const read = (p: string) => readFileSync(join(process.cwd(), p), 'utf8')
 {
-  const hook = read('src/app/api/stripe/webhook/route.ts')
+  // Los manejadores del webhook viven en lib/stripe-events.ts desde la 0.3c.
+  const hook = read('src/app/api/stripe/webhook/route.ts') + read('src/lib/stripe-events.ts')
   ok('el webhook construye su cliente al usarlo', hook.includes('client ??= createAdminClient()'))
   ok('y usa el único service-role del proyecto', !hook.includes("from '@supabase/supabase-js'"))
 

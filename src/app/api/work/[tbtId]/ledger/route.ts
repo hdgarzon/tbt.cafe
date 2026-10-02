@@ -13,6 +13,10 @@ import { createAdminClient } from '@/lib/supabase-admin'
  * que el cliente no puede unirla por su cuenta. Abrirla entera daria acceso a
  * enumerar todas las anclas del sistema; esto devuelve las de UNA obra, con la
  * forma que la pagina necesita y nada mas.
+ *
+ * Sin nombres de titulares: la ruta es publica y `owner_name` es el nombre real
+ * aunque la persona eligiera no ser nombrada (Chains 01, 3.2). La pagina los
+ * toma de la historia, que ya aplica esa eleccion.
  */
 export const dynamic = 'force-dynamic'
 
@@ -20,6 +24,7 @@ type Anchor = {
   status: string
   blockHeight: number | null
   attestedAt: string | null
+  proofRecordId: string | null
 }
 
 export async function GET(_request: NextRequest, props: { params: Promise<{ tbtId: string }> }) {
@@ -40,7 +45,7 @@ export async function GET(_request: NextRequest, props: { params: Promise<{ tbtI
 
     const { data: history } = await admin
       .from('ownership_history')
-      .select('id, event_type, owner_name, previous_owner_name, transfer_type, sequence_number, created_at, record_uri, record_hash')
+      .select('id, event_type, transfer_type, sequence_number, created_at, record_uri, record_hash, token_move_signature')
       .eq('work_id', work.id)
       .order('sequence_number', { ascending: false })
 
@@ -54,7 +59,7 @@ export async function GET(_request: NextRequest, props: { params: Promise<{ tbtI
     if (hashes.length > 0) {
       const { data: anchors } = await admin
         .from('chain_anchors')
-        .select('record_hash, status, block_height, attested_at')
+        .select('record_hash, status, block_height, attested_at, proof_record_id')
         .in('record_hash', hashes)
 
       for (const a of anchors ?? []) {
@@ -62,6 +67,8 @@ export async function GET(_request: NextRequest, props: { params: Promise<{ tbtI
           status: a.status,
           blockHeight: a.block_height,
           attestedAt: a.attested_at,
+          // Chains 01 6.4: la prueba publicada en Arweave, por su ID.
+          proofRecordId: a.proof_record_id,
         })
       }
     }
@@ -88,12 +95,12 @@ export async function GET(_request: NextRequest, props: { params: Promise<{ tbtI
         sequence: h.sequence_number,
         event: h.event_type,
         transferType: h.transfer_type,
-        actor: h.owner_name,
-        from: h.previous_owner_name,
         occurredAt: h.created_at,
         recordUri: h.record_uri,
         recordHash: h.record_hash,
         anchor: anchorsByHash.get(h.record_hash ?? '') ?? null,
+        // Chains 01, 8.3: la transaccion que movio el token en este cambio.
+        solanaSignature: h.token_move_signature,
       })),
     })
   } catch (error) {

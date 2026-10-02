@@ -5,15 +5,21 @@ import { supabase } from '@/lib/supabase'
 import { useLocale } from '@/i18n/LocaleProvider'
 import { fetchBrews, type BrewRow } from '@/lib/history-data'
 import { LedgerRow } from '@/components/LedgerRow'
+import { ReceiptSheet } from '@/components/ReceiptSheet'
 import { money } from '@/lib/fees'
 import { SignInGate } from '@/components/SignInGate'
+import { useRules } from '@/lib/rules-public'
 
 const plural = (n: number, one: string, many: string) => (n === 1 ? one : many).replace('{n}', String(n))
 
 /** /history/brews — obras que el usuario certificó, con su tarifa de $8 (Build Spec 02, ÍTEM 6). */
 export default function BrewsPage() {
   const { t } = useLocale()
+  // La tarifa es de configuracion (Work Order 02, 1.4).
+  const rules = useRules()
   const [loading, setLoading] = useState(true)
+  // Stage 9: cada fila abre su recibo.
+  const [receiptId, setReceiptId] = useState<string | null>(null)
   const [signedIn, setSignedIn] = useState(true)
   const [rows, setRows] = useState<BrewRow[]>([])
 
@@ -46,7 +52,7 @@ export default function BrewsPage() {
       <div className="page-sub">{t.myCollections.brewsSub}</div>
 
       {rows.length === 0 ? (
-        <p className="page-note">{t.myCollections.brewsEmpty}</p>
+        <p className="page-note">{t.myCollections.brewsEmpty.replace('{fee}', rules ? money(rules.fees.registration) : '—')}</p>
       ) : (
         <>
           <p className="text-[12px] text-ink-soft mt-4">
@@ -56,7 +62,7 @@ export default function BrewsPage() {
             {rows.map((r) => (
               <LedgerRow
                 key={r.id}
-                href={`/work/${r.tbtId}`}
+                onClick={() => setReceiptId(r.id)}
                 title={r.title}
                 what={t.myCollections.brewRow.replace('{fee}', `$${money(r.fee)}`)}
                 amount="—"
@@ -66,6 +72,7 @@ export default function BrewsPage() {
           </div>
         </>
       )}
+      {receiptId && <ReceiptSheet kind="registration" id={receiptId} onClose={() => setReceiptId(null)} />}
     </div>
   )
 }

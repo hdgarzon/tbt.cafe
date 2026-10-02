@@ -20,7 +20,8 @@
  * se quedaban atrás, produciendo material seguro de sí mismo y equivocado.
  * Derivarlas hace que esa deriva no pueda ocurrir.
  */
-import { FEE as PLATFORM, ROYALTY_FLOOR } from '@/lib/fees'
+import { PROCESSING_PCT, saleQuote } from '@/lib/fees'
+import type { Rules } from '@/lib/rules-shape'
 
 export type Locale = 'en' | 'es' | 'pt' | 'fr'
 
@@ -31,14 +32,38 @@ export type KnowledgeDoc = {
   body: Record<Locale, string>
 }
 
-const FEE = PLATFORM.service
-const COVERED = 10
-/** El piso de una regalia fija y el procesamiento, derivados igual que la tarifa. */
-const FLOOR_PCT = ROYALTY_FLOOR.pct * 100
-const FLOOR_MIN = ROYALTY_FLOOR.min
-const STRIPE_PCT = PLATFORM.stripePct * 100
+/** Lo que la base de conocimiento lee de la configuracion (Work Order 02, 1.4). */
+export type KnowledgeRules = Pick<Rules, 'fees' | 'royalty' | 'covered' | 'transferWindowHours' | 'offers'>
 
-export const KNOWLEDGE: KnowledgeDoc[] = [
+/**
+ * Los documentos, con las cifras de la fila vigente. Una funcion y no una
+ * constante: si el panel cambia una tarifa, el asistente la cuenta en la
+ * siguiente pregunta, sin desplegar.
+ */
+export function knowledgeFor(rules: KnowledgeRules): KnowledgeDoc[] {
+const FEE = rules.fees.registration
+const COVERED = rules.covered.count
+/** El piso de una regalia fija y el procesamiento, derivados igual que la tarifa. */
+const FLOOR_PCT = rules.royalty.floorPct
+const FLOOR_MIN = rules.royalty.floorMin
+const STRIPE_PCT = PROCESSING_PCT
+const HOURS = rules.transferWindowHours
+const OFFER_MAX = rules.offers.maxHours
+const PAY_HOURS = rules.offers.paymentWindowHours
+/*
+ * El ejemplo de venta (Set 5.3): se calcula, no se escribe. Si una tarifa
+ * cambia en configuracion, el ejemplo del asistente cambia con ella.
+ */
+const EX_PCT = 10
+const EX = saleQuote({ price: 12000, royalty: { type: 'percentage', value: EX_PCT }, path: 'direct' }, rules)
+const SEP: Record<Locale, [string, string]> = { en: [',', '.'], es: ['.', ','], pt: ['.', ','], fr: [' ', ','] }
+const amt = (l: Locale, n: number, decimals = true) => {
+  const [int, dec] = n.toFixed(2).split('.')
+  const grouped = int.replace(/\B(?=(\d{3})+(?!\d))/g, SEP[l][0])
+  return decimals ? `${grouped}${SEP[l][1]}${dec}` : grouped
+}
+
+return [
   {
     /*
      * COMO se registra, que no es lo mismo que CUANTO cuesta.
@@ -79,10 +104,10 @@ export const KNOWLEDGE: KnowledgeDoc[] = [
       fr: ['versement', 'versements', 'encaisser', 'retirer', 'règlement', 'disponible', 'en attente'],
     },
     body: {
-      en: `What you earn appears under Payouts. A royalty from a purchase arrives as pending and waits out a settlement window, which is longer for large sales; the exact date is shown next to the amount. A royalty from a transfer or an accepted offer does not wait at all — the counterparty accepting is the condition, so it lands available immediately. The service fee of $${FEE} is taken out of the royalty before it is recorded. Paying out charges the platform rate plus whatever the method itself costs, which depends on your country and the method you chose; the screen quotes both before you confirm. You choose the destination in Settings, and payment runs through Stripe Connect, to a bank account or in USDC. Nobody is ever paid a royalty on their own sale.`,
-      es: `Lo que ganas aparece en Cobros. Una regalía de una compra entra como pendiente y espera una ventana de liquidación, más larga en ventas grandes; la fecha exacta se muestra junto al monto. Una regalía de una transferencia o de una oferta aceptada no espera nada — la aceptación de la contraparte ES la condición, así que entra disponible de inmediato. La tarifa de servicio de $${FEE} se descuenta de la regalía antes de anotarla. Cobrar cuesta la tasa de la plataforma más lo que cueste el método, que depende de tu país y de cuál elegiste; la pantalla cotiza las dos antes de que confirmes. El destino se elige en Ajustes, y el pago va por Stripe Connect, a una cuenta bancaria o en USDC. Nadie cobra regalía por su propia venta.`,
-      pt: `O que você ganha aparece em Saques. Um royalty de uma compra entra como pendente e aguarda uma janela de liquidação, mais longa em vendas grandes; a data exata aparece ao lado do valor. Um royalty de uma transferência ou de uma oferta aceita não espera — a aceitação da contraparte É a condição, então entra disponível na hora. A taxa de serviço de $${FEE} é descontada do royalty antes de registrá-lo. Sacar custa a taxa da plataforma mais o que o método cobrar, o que depende do seu país e do método escolhido; a tela cota as duas antes de você confirmar. O destino se escolhe em Ajustes, e o pagamento vai pela Stripe Connect, para uma conta bancária ou em USDC. Ninguém recebe royalty pela própria venda.`,
-      fr: `Ce que vous gagnez apparaît dans Versements. Une redevance issue d'un achat arrive en attente et patiente le temps d'un règlement, plus long pour les ventes importantes ; la date exacte est affichée à côté du montant. Une redevance issue d'un transfert ou d'une offre acceptée n'attend pas — l'acceptation de la contrepartie EST la condition, elle est donc disponible immédiatement. Les frais de service de $${FEE} sont déduits de la redevance avant son enregistrement. Encaisser coûte le taux de la plateforme plus ce que coûte le moyen choisi, qui dépend de votre pays ; l'écran chiffre les deux avant confirmation. La destination se choisit dans Réglages, et le paiement passe par Stripe Connect, vers un compte bancaire ou en USDC. Personne ne touche de redevance sur sa propre vente.`,
+      en: `What you earn appears under Payouts. A royalty from a purchase arrives as pending and waits out a settlement window, which is longer for large sales; the exact date is shown next to the amount. A royalty from a transfer or an accepted offer does not wait at all — the counterparty accepting is the condition, so it lands available immediately. The service fee of $${FEE} is taken out of the royalty before it is recorded. Paying out charges the platform rate plus whatever the method itself costs, which depends on your country and the method you chose; the screen quotes both before you confirm. Payment runs through Stripe Connect, to a bank account or in USDC, and you choose the method each time you collect. Where payouts don't reach your country yet, your earnings are kept until they do. Galleries, museums and estates are paid by our team, on request. Nobody is ever paid a royalty on their own sale.`,
+      es: `Lo que ganas aparece en Cobros. Una regalía de una compra entra como pendiente y espera una ventana de liquidación, más larga en ventas grandes; la fecha exacta se muestra junto al monto. Una regalía de una transferencia o de una oferta aceptada no espera nada — la aceptación de la contraparte ES la condición, así que entra disponible de inmediato. La tarifa de servicio de $${FEE} se descuenta de la regalía antes de anotarla. Cobrar cuesta la tasa de la plataforma más lo que cueste el método, que depende de tu país y de cuál elegiste; la pantalla cotiza las dos antes de que confirmes. El pago va por Stripe Connect, a una cuenta bancaria o en USDC, y eliges el método cada vez que cobras. Donde los cobros aún no llegan a tu país, tus ganancias se guardan hasta que lleguen. Galerías, museos y sucesiones cobran a través de nuestro equipo, a pedido. Nadie cobra regalía por su propia venta.`,
+      pt: `O que você ganha aparece em Saques. Um royalty de uma compra entra como pendente e aguarda uma janela de liquidação, mais longa em vendas grandes; a data exata aparece ao lado do valor. Um royalty de uma transferência ou de uma oferta aceita não espera — a aceitação da contraparte É a condição, então entra disponível na hora. A taxa de serviço de $${FEE} é descontada do royalty antes de registrá-lo. Sacar custa a taxa da plataforma mais o que o método cobrar, o que depende do seu país e do método escolhido; a tela cota as duas antes de você confirmar. O pagamento vai pela Stripe Connect, para uma conta bancária ou em USDC, e você escolhe o método a cada saque. Onde os saques ainda não chegam ao seu país, seus ganhos ficam guardados até chegarem. Galerias, museus e espólios recebem por meio da nossa equipe, mediante pedido. Ninguém recebe royalty pela própria venda.`,
+      fr: `Ce que vous gagnez apparaît dans Versements. Une redevance issue d'un achat arrive en attente et patiente le temps d'un règlement, plus long pour les ventes importantes ; la date exacte est affichée à côté du montant. Une redevance issue d'un transfert ou d'une offre acceptée n'attend pas — l'acceptation de la contrepartie EST la condition, elle est donc disponible immédiatement. Les frais de service de $${FEE} sont déduits de la redevance avant son enregistrement. Encaisser coûte le taux de la plateforme plus ce que coûte le moyen choisi, qui dépend de votre pays ; l'écran chiffre les deux avant confirmation. Le paiement passe par Stripe Connect, vers un compte bancaire ou en USDC, et vous choisissez le moyen à chaque encaissement. Là où les versements n'arrivent pas encore dans votre pays, vos gains sont conservés jusqu'à ce qu'ils y arrivent. Les galeries, musées et successions sont payés par notre équipe, sur demande. Personne ne touche de redevance sur sa propre vente.`,
     },
   },
   {
@@ -109,10 +134,10 @@ export const KNOWLEDGE: KnowledgeDoc[] = [
       fr: ['vente', 'vendre', 'acheteur paie', 'frais de service', 'combien je reçois', 'traitement'],
     },
     body: {
-      en: `On a sale the buyer pays the price plus $${FEE}. The seller has $${FEE} deducted as well — the service fee is charged on both sides, $${FEE * 2} per sale to the platform. Card processing is (royalty + $${FEE}) x ${STRIPE_PCT}% + $0.30 and is borne by the seller only; it is never added to the buyer. The seller receives price − royalty − $${FEE} − processing.`,
-      es: `En una venta el comprador paga el precio más $${FEE}. Al vendedor también se le descuentan $${FEE} — la tarifa de servicio se cobra en ambos lados, $${FEE * 2} por venta para la plataforma. El procesamiento de tarjeta es (regalía + $${FEE}) x ${STRIPE_PCT}% + $0,30 y lo absorbe solo el vendedor; nunca se le suma al comprador. El vendedor recibe precio − regalía − $${FEE} − procesamiento.`,
-      pt: `Em uma venda o comprador paga o preço mais $${FEE}. Do vendedor também são descontados $${FEE} — a taxa de serviço é cobrada dos dois lados, $${FEE * 2} por venda para a plataforma. O processamento do cartão é (royalty + $${FEE}) x ${STRIPE_PCT}% + $0,30 e é absorvido só pelo vendedor; nunca é somado ao comprador. O vendedor recebe preço − royalty − $${FEE} − processamento.`,
-      fr: `Lors d'une vente, l'acheteur paie le prix plus $${FEE}. Le vendeur se voit aussi déduire $${FEE} — les frais de service sont prélevés des deux côtés, $${FEE * 2} par vente pour la plateforme. Les frais de carte sont (redevance + $${FEE}) x ${STRIPE_PCT} % + $0,30 et sont supportés uniquement par le vendeur ; ils ne sont jamais ajoutés à l'acheteur. Le vendeur reçoit prix − redevance − $${FEE} − frais.`,
+      en: `Selling a work needs approval: apply from Selling in the menu. Registering, transferring, gifting and receiving royalties need none. On a sale the buyer pays the price plus $${FEE}. The seller has $${FEE} deducted as well — the service fee is charged on both sides, $${FEE * 2} per sale to the platform. Card processing is ${STRIPE_PCT}% of the full charge (price + $${FEE}) plus $0.30, borne by the seller only; it is never added to the buyer. The seller receives price − royalty − $${FEE} − processing. Example: ${amt('en', EX.price, false)} USD at ${EX_PCT}% — the buyer pays ${amt('en', EX.buyerTotal)}, processing ${amt('en', EX.processing)}, royalty ${amt('en', EX.royaltyGross)}, service fee ${amt('en', EX.serviceSeller)}, the seller nets ${amt('en', EX.sellerNet)}. Depending on the seller's country, the card is charged on the seller's own Stripe account (the statement shows the seller's name) or by tbt.cafe on the seller's behalf (the statement shows tbt.cafe); the purchase screen says which.`,
+      es: `Vender una obra necesita aprobación: se solicita desde Vender en el menú. Registrar, transferir, regalar y recibir regalías no la necesitan. En una venta el comprador paga el precio más $${FEE}. Al vendedor también se le descuentan $${FEE} — la tarifa de servicio se cobra en ambos lados, $${FEE * 2} por venta para la plataforma. El procesamiento de tarjeta es el ${STRIPE_PCT}% del cargo completo (precio + $${FEE}) más $0,30, y lo absorbe solo el vendedor; nunca se le suma al comprador. El vendedor recibe precio − regalía − $${FEE} − procesamiento. Ejemplo: ${amt('es', EX.price, false)} USD al ${EX_PCT}%: el comprador paga ${amt('es', EX.buyerTotal)}, procesamiento ${amt('es', EX.processing)}, regalía ${amt('es', EX.royaltyGross)}, tarifa de servicio ${amt('es', EX.serviceSeller)}, el vendedor recibe ${amt('es', EX.sellerNet)}. Según el país del vendedor, la tarjeta se cobra en la propia cuenta de Stripe del vendedor (el estado de cuenta muestra su nombre) o la cobra tbt.cafe en su nombre (muestra tbt.cafe); la pantalla de compra dice cuál.`,
+      pt: `Vender uma obra exige aprovação: peça em Vender, no menu. Registrar, transferir, presentear e receber royalties não exigem. Em uma venda o comprador paga o preço mais $${FEE}. Do vendedor também são descontados $${FEE} — a taxa de serviço é cobrada dos dois lados, $${FEE * 2} por venda para a plataforma. O processamento do cartão é ${STRIPE_PCT}% da cobrança inteira (preço + $${FEE}) mais $0,30, absorvido só pelo vendedor; nunca é somado ao comprador. O vendedor recebe preço − royalty − $${FEE} − processamento. Exemplo: ${amt('pt', EX.price, false)} USD a ${EX_PCT}%: o comprador paga ${amt('pt', EX.buyerTotal)}, processamento ${amt('pt', EX.processing)}, royalty ${amt('pt', EX.royaltyGross)}, taxa de serviço ${amt('pt', EX.serviceSeller)}, o vendedor recebe ${amt('pt', EX.sellerNet)}. Conforme o país do vendedor, o cartão é cobrado na própria conta Stripe do vendedor (a fatura mostra o nome dele) ou pela tbt.cafe em nome dele (mostra tbt.cafe); a tela de compra diz qual.`,
+      fr: `Vendre une œuvre nécessite une approbation : la demande se fait depuis Vendre dans le menu. Enregistrer, transférer, offrir et recevoir des redevances n'en demandent pas. Lors d'une vente, l'acheteur paie le prix plus $${FEE}. Le vendeur se voit aussi déduire $${FEE} — les frais de service sont prélevés des deux côtés, $${FEE * 2} par vente pour la plateforme. Les frais de carte sont de ${STRIPE_PCT} % du montant débité entier (prix + $${FEE}) plus $0,30, supportés uniquement par le vendeur ; ils ne sont jamais ajoutés à l'acheteur. Le vendeur reçoit prix − redevance − $${FEE} − frais. Exemple : ${amt('fr', EX.price, false)} USD à ${EX_PCT} % — l'acheteur paie ${amt('fr', EX.buyerTotal)}, frais de carte ${amt('fr', EX.processing)}, redevance ${amt('fr', EX.royaltyGross)}, frais de service ${amt('fr', EX.serviceSeller)}, le vendeur reçoit ${amt('fr', EX.sellerNet)}. Selon le pays du vendeur, la carte est débitée sur le propre compte Stripe du vendeur (le relevé affiche son nom) ou par tbt.cafe pour son compte (le relevé affiche tbt.cafe) ; l'écran d'achat indique lequel.`,
     },
   },
   {
@@ -154,10 +179,25 @@ export const KNOWLEDGE: KnowledgeDoc[] = [
       fr: ['transfert', 'transférer', 'envoyer un tbt', 'cadeau', 'destinataire', 'coût du transfert'],
     },
     body: {
-      en: `On a transfer the sender pays; there is no buyer. The cost is the royalty plus $${FEE} plus processing of (royalty + $${FEE}) x ${STRIPE_PCT}% + $0.30. A transfer value may be zero — with a percentage royalty the royalty is then zero, but a fixed royalty is still owed in full. Transfers carry no minimum price floor, because the sender is the paying party and sees the full cost before committing.`,
-      es: `En una transferencia paga el emisor; no hay comprador. El costo es la regalía más $${FEE} más el procesamiento de (regalía + $${FEE}) x ${STRIPE_PCT}% + $0,30. El valor de una transferencia puede ser cero: con regalía porcentual la regalía es entonces cero, pero una regalía fija se debe completa igual. Las transferencias no llevan piso de precio, porque quien paga es el emisor y ve el costo completo antes de confirmar.`,
-      pt: `Numa transferência quem paga é o remetente; não há comprador. O custo é o royalty mais $${FEE} mais o processamento de (royalty + $${FEE}) x ${STRIPE_PCT}% + $0,30. O valor de uma transferência pode ser zero: com royalty percentual o royalty é então zero, mas um royalty fixo continua devido integralmente. Transferências não têm piso de preço, porque quem paga é o remetente e vê o custo completo antes de confirmar.`,
-      fr: `Lors d'un transfert, c'est l'expéditeur qui paie ; il n'y a pas d'acheteur. Le coût est la redevance plus $${FEE} plus les frais de (redevance + $${FEE}) x ${STRIPE_PCT} % + $0,30. La valeur d'un transfert peut être nulle : avec une redevance en pourcentage elle est alors nulle, mais une redevance fixe reste due en totalité. Les transferts n'ont pas de prix plancher, car l'expéditeur est la partie payante et voit le coût complet avant de confirmer.`,
+      en: `On a transfer the sender pays; there is no buyer. The cost is the royalty plus $${FEE} plus processing of (royalty + $${FEE}) x ${STRIPE_PCT}% + $0.30. A transfer value may be zero — with a percentage royalty the royalty is then zero, but a fixed royalty is still owed in full. Transfers carry no minimum price floor, because the sender is the paying party and sees the full cost before committing. A transfer must be accepted within ${HOURS} hours, and the recipient sees and confirms the declared value before accepting. A sale made elsewhere — in person, at auction, through a gallery — completes here as a transfer: the sender declares the price, it is recorded publicly in the work's history, and any royalty is calculated on it. tbt.cafe is not a party to that sale.`,
+      es: `En una transferencia paga el emisor; no hay comprador. El costo es la regalía más $${FEE} más el procesamiento de (regalía + $${FEE}) x ${STRIPE_PCT}% + $0,30. El valor de una transferencia puede ser cero: con regalía porcentual la regalía es entonces cero, pero una regalía fija se debe completa igual. Las transferencias no llevan piso de precio, porque quien paga es el emisor y ve el costo completo antes de confirmar. Una transferencia debe aceptarse dentro de ${HOURS} horas, y el destinatario ve y confirma el valor declarado antes de aceptar. Una venta hecha fuera — en persona, en una subasta, a través de una galería — se completa aquí como transferencia: el emisor declara el precio, queda registrado públicamente en el historial de la obra y la regalía, si la hay, se calcula sobre él. tbt.cafe no es parte de esa venta.`,
+      pt: `Numa transferência quem paga é o remetente; não há comprador. O custo é o royalty mais $${FEE} mais o processamento de (royalty + $${FEE}) x ${STRIPE_PCT}% + $0,30. O valor de uma transferência pode ser zero: com royalty percentual o royalty é então zero, mas um royalty fixo continua devido integralmente. Transferências não têm piso de preço, porque quem paga é o remetente e vê o custo completo antes de confirmar. Uma transferência precisa ser aceita em até ${HOURS} horas, e o destinatário vê e confirma o valor declarado antes de aceitar. Uma venda feita fora — pessoalmente, em leilão, por uma galeria — se conclui aqui como transferência: o remetente declara o preço, ele fica registrado publicamente no histórico da obra e o royalty, se houver, é calculado sobre ele. A tbt.cafe não é parte dessa venda.`,
+      fr: `Lors d'un transfert, c'est l'expéditeur qui paie ; il n'y a pas d'acheteur. Le coût est la redevance plus $${FEE} plus les frais de (redevance + $${FEE}) x ${STRIPE_PCT} % + $0,30. La valeur d'un transfert peut être nulle : avec une redevance en pourcentage elle est alors nulle, mais une redevance fixe reste due en totalité. Les transferts n'ont pas de prix plancher, car l'expéditeur est la partie payante et voit le coût complet avant de confirmer. Un transfert doit être accepté dans les ${HOURS} heures, et le destinataire voit et confirme la valeur déclarée avant d'accepter. Une vente conclue ailleurs — en personne, aux enchères, par une galerie — se finalise ici comme un transfert : l'expéditeur déclare le prix, il est enregistré publiquement dans l'historique de l'œuvre et la redevance éventuelle est calculée dessus. tbt.cafe n'est pas partie à cette vente.`,
+    },
+  },
+  {
+    id: 'offers',
+    terms: {
+      en: ['offer', 'offers', 'make an offer', 'accept an offer', 'counteroffer', 'bid'],
+      es: ['oferta', 'ofertas', 'hacer una oferta', 'aceptar una oferta', 'contraoferta', 'puja'],
+      pt: ['oferta', 'ofertas', 'fazer uma oferta', 'aceitar uma oferta', 'contraproposta', 'lance'],
+      fr: ['offre', 'offres', 'faire une offre', 'accepter une offre', 'contre-offre', 'enchère'],
+    },
+    body: {
+      en: `An offer is a proposed price; no money moves when it is made. It stands for up to ${OFFER_MAX} hours, with an optional message. When the owner accepts, the work is frozen for that offer — its price and availability can't change and other open offers wait — and the buyer has ${PAY_HOURS} hours to pay; if they don't, the offer lapses and the work is free again. Messages with offers are private between the two parties, may be reviewed by tbt.cafe, and can be reported. If the owner isn't approved to sell yet, they can't accept until they are; an offer that expires first lapses, and the buyer is told when the owner is approved. Offers live in History → Offers.`,
+      es: `Una oferta es un precio propuesto; al hacerla no se mueve dinero. Vale hasta ${OFFER_MAX} horas, con un mensaje opcional. Cuando el dueño la acepta, la obra queda congelada para esa oferta —su precio y su disponibilidad no cambian y las demás ofertas abiertas esperan— y el comprador tiene ${PAY_HOURS} horas para pagar; si no paga, la oferta vence y la obra queda libre. Los mensajes de las ofertas son privados entre las dos partes, tbt.cafe puede revisarlos y se pueden reportar. Si el dueño aún no está aprobado para vender, no puede aceptar hasta estarlo; una oferta que vence antes caduca, y al comprador se le avisa cuando el dueño queda aprobado. Las ofertas están en Historial → Ofertas.`,
+      pt: `Uma oferta é um preço proposto; ao fazê-la nenhum dinheiro se move. Vale por até ${OFFER_MAX} horas, com uma mensagem opcional. Quando o dono aceita, a obra fica congelada para essa oferta — preço e disponibilidade não mudam e as outras ofertas abertas esperam — e o comprador tem ${PAY_HOURS} horas para pagar; se não pagar, a oferta caduca e a obra fica livre. As mensagens das ofertas são privadas entre as duas partes, a tbt.cafe pode revisá-las e elas podem ser denunciadas. Se o dono ainda não está aprovado para vender, não pode aceitar até estar; uma oferta que vence antes caduca, e o comprador é avisado quando o dono for aprovado. As ofertas ficam em Histórico → Ofertas.`,
+      fr: `Une offre est un prix proposé ; aucun argent ne bouge quand elle est faite. Elle vaut jusqu'à ${OFFER_MAX} heures, avec un message facultatif. Quand le propriétaire l'accepte, l'œuvre est gelée pour cette offre — son prix et sa disponibilité ne changent plus et les autres offres ouvertes attendent — et l'acheteur a ${PAY_HOURS} heures pour payer ; sinon l'offre expire et l'œuvre redevient libre. Les messages des offres sont privés entre les deux parties, tbt.cafe peut les consulter et ils peuvent être signalés. Si le propriétaire n'est pas encore approuvé pour vendre, il ne peut pas accepter avant de l'être ; une offre qui expire avant devient caduque, et l'acheteur est prévenu quand le propriétaire est approuvé. Les offres se trouvent dans Historique → Offres.`,
     },
   },
   {
@@ -199,13 +239,14 @@ export const KNOWLEDGE: KnowledgeDoc[] = [
       fr: ['connexion', 'authentification', 'code privé', 'biométrie', 'compte', 'perdu mon téléphone'],
     },
     body: {
-      en: `tbt.cafe has authentication, not accounts. Access is by mobile number with an SMS one-time code, optionally with biometrics per device. The private code is a separate knowledge factor that gates money movement; it is stored hashed, so it can be reset through the recovery email but never recovered. An email address is optional in general, but genuinely required to acquire a TBT or to collect payouts.`,
-      es: `tbt.cafe tiene autenticación, no cuentas. El acceso es por número de móvil con un código de un solo uso por SMS, y opcionalmente con biometría por dispositivo. El código privado es un factor aparte que protege el movimiento de dinero; se guarda cifrado, así que se puede restablecer por el correo de recuperación pero nunca recuperar. El correo es opcional en general, pero sí es obligatorio para adquirir un TBT o para cobrar.`,
-      pt: `O tbt.cafe tem autenticação, não contas. O acesso é por número de celular com um código de uso único por SMS, e opcionalmente com biometria por dispositivo. O código privado é um fator separado que protege a movimentação de dinheiro; é armazenado com hash, então pode ser redefinido pelo e-mail de recuperação, nunca recuperado. O e-mail é opcional em geral, mas realmente necessário para adquirir um TBT ou para receber pagamentos.`,
-      fr: `tbt.cafe dispose d'une authentification, pas de comptes. L'accès se fait par numéro de mobile avec un code à usage unique par SMS, et éventuellement par biométrie sur chaque appareil. Le code privé est un facteur distinct qui protège les mouvements d'argent ; il est stocké haché, donc réinitialisable via l'e-mail de récupération mais jamais récupérable. L'e-mail est facultatif en général, mais réellement requis pour acquérir un TBT ou pour percevoir des versements.`,
+      en: `tbt.cafe has authentication, not accounts. Access is by mobile number with an SMS one-time code, optionally with biometrics per device. The private code is a separate knowledge factor that gates money movement; it is stored hashed, so it can never be recovered — if it is forgotten, open a help request. An e-Mail address is optional, and never required to own, sell or collect.`,
+      es: `tbt.cafe tiene autenticación, no cuentas. El acceso es por número de móvil con un código de un solo uso por SMS, y opcionalmente con biometría por dispositivo. El código privado es un factor aparte que protege el movimiento de dinero; se guarda cifrado, así que nunca se puede recuperar — si se olvida, abre una solicitud de ayuda. El e-Mail es opcional, y nunca es obligatorio para poseer, vender o cobrar.`,
+      pt: `O tbt.cafe tem autenticação, não contas. O acesso é por número de celular com um código de uso único por SMS, e opcionalmente com biometria por dispositivo. O código privado é um fator separado que protege a movimentação de dinheiro; é armazenado com hash, então nunca pode ser recuperado — se for esquecido, abra uma solicitação de ajuda. O e-mail é opcional, e nunca é obrigatório para possuir, vender ou receber.`,
+      fr: `tbt.cafe dispose d'une authentification, pas de comptes. L'accès se fait par numéro de mobile avec un code à usage unique par SMS, et éventuellement par biométrie sur chaque appareil. Le code privé est un facteur distinct qui protège les mouvements d'argent ; il est stocké haché, donc jamais récupérable — en cas d'oubli, ouvrez une demande d'aide. L'e-mail est facultatif, et jamais requis pour posséder, vendre ou percevoir.`,
     },
   },
 ]
+}
 
 /**
  * Recuperación por idioma de la pregunta. Buscar en español contra contenido en
@@ -215,9 +256,9 @@ export const KNOWLEDGE: KnowledgeDoc[] = [
  * asistente NO sabe y lo dice, en vez de inventar una estructura de tarifas
  * verosímil.
  */
-export function retrieve(question: string, locale: Locale, limit = 3): KnowledgeDoc[] {
+export function retrieve(question: string, locale: Locale, rules: KnowledgeRules, limit = 3): KnowledgeDoc[] {
   const q = question.toLowerCase()
-  const scored = KNOWLEDGE.map((doc) => {
+  const scored = knowledgeFor(rules).map((doc) => {
     let score = 0
     for (const term of doc.terms[locale]) {
       if (q.includes(term.toLowerCase())) score += term.length

@@ -1,4 +1,4 @@
-import { existsSync, readFileSync } from 'fs'
+import { existsSync, readdirSync, readFileSync } from 'fs'
 import { join } from 'path'
 import { emailCopyFor, type Locale } from '../src/lib/email-templates'
 
@@ -102,7 +102,7 @@ const count = (s: string, needle: string) => s.split(needle).length - 1
   const src = code(readIf('src/lib/transfer-lapse.ts'))
   const respond = code(read('src/app/api/transfer/respond/route.ts'))
 
-  ok('la misma ventana que respond', src.includes('HOLD_WINDOW_MS = 24 * 3600 * 1000') && respond.includes('HOLD_WINDOW_MS = 24 * 3600 * 1000'))
+  ok('la misma ventana que respond, de configuracion', src.includes('transferWindowMs(await getRules())') && respond.includes('transferWindowMs(await getRules())'))
 
   const q = src.indexOf(".from('transfers')")
   const query = q > -1 ? src.slice(q, q + 700) : ''
@@ -146,6 +146,39 @@ const count = (s: string, needle: string) => s.split(needle).length - 1
     const feed = JSON.parse(read(`src/i18n/messages/${l}.json`)).feed.events.payout_released as string
     ok(`${l}: el feed dice importe y obra`, typeof feed === 'string' && feed.includes('{amount}') && feed.includes('{title}'))
   }
+}
+
+// ══ Work Order 02, Stage 6 — el programador, la liquidación y las ganancias ══
+{
+  const dir = join(__dirname, '..', 'supabase/migrations')
+  const name = readdirSync(dir).filter((f) => /_scheduler\.sql$/.test(f)).sort().pop()
+  ok('una migración del programador existe', !!name)
+  const mig = name ? readFileSync(join(dir, name), 'utf8').replace(/^\s*--.*$/gm, '') : ''
+  ok('pg_cron y pg_net', /create extension if not exists pg_cron/.test(mig) && /create extension if not exists pg_net/.test(mig))
+  ok('un trabajo cada 15 minutos a /api/cron/sweep', /cron\.schedule\(\s*'tbt-sweep',\s*'\*\/15 \* \* \* \*'/.test(mig) && /\/api\/cron\/sweep/.test(mig))
+  ok('el secreto sale del Vault, nunca del texto', /vault\.decrypted_secrets/.test(mig) && /name = 'cron_secret'/.test(mig) && !/Bearer [A-Za-z0-9]{8,}/.test(mig))
+  ok('la dirección también', /name = 'app_url'/.test(mig))
+
+  // 6.2 tres escalones
+  ok('el tercer escalón', /settlement_top_threshold[\s\S]{0,120}settlement_days_top/.test(mig))
+  ok('una regalía de transferencia u oferta queda disponible al instante', /when p_source in \('transfer', 'offer'\) then null/.test(mig))
+  // 6.3 la retención del primer cobro
+  ok('el vendedor cuenta sus ventas limpias', /add column if not exists clean_sales integer not null default 0/.test(mig) && /add column if not exists first_clean_sale_at timestamptz/.test(mig))
+  ok('una venta se libera en lo más tardío entre su escalón y la retención', /p_source = 'sale'[\s\S]{0,900}greatest\(/.test(mig) && /first_payout_hold_days/.test(mig))
+  ok('la retención solo mientras es nuevo', /first_payout_clean_sales/.test(mig) && /first_payout_max_days/.test(mig))
+  ok('una regalía nunca lleva retención', !/p_source = 'royalty'[\s\S]{0,200}first_payout_hold_days/.test(mig))
+  // 6.4 una disputa congela su dinero
+  ok('una disputa abierta impide cobrar lo de ese cargo',
+     /create trigger earnings_frozen_by_dispute\s+before update on public\.payout_earnings/.test(mig) && /'earnings_disputed'/.test(mig) && /status not in \('won', 'lost', 'warning_closed'\)/.test(mig))
+
+  // 6.1 la ruta
+  const sweep = readIf('src/app/api/cron/sweep/route.ts')
+  ok('la ruta del barrido existe y es dinámica', sweep.includes("export const dynamic = 'force-dynamic'") && sweep.includes('export const maxDuration = '))
+  const gate = sweep.indexOf('cronAuthorised(')
+  ok('comprueba el secreto antes de tocar la base', gate > -1 && sweep.indexOf('createAdminClient()') > gate)
+  const parts = ['sweepOffers(', 'lapseUnansweredTransfers(', 'releaseDuePayoutEarnings(', 'countCleanSales(']
+  for (let i = 0; i < parts.length; i++) ok(`corre ${parts[i].slice(0, -1)}`, sweep.includes(parts[i]))
+  ok('cada barrido en su propio try, con su resultado en provider_events', (sweep.match(/await step\(/g) ?? []).length >= parts.length && /recordProviderEvent\(/.test(sweep))
 }
 
 console.log(bad === 0 ? '\ntodo en orden' : `\n${bad} fallo(s)`)

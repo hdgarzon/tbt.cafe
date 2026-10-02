@@ -1,7 +1,11 @@
 import { readFileSync } from 'fs'
 import { join } from 'path'
-import { retrieve, KNOWLEDGE, type Locale } from '../src/lib/assistant/knowledge'
-import { FEE, ROYALTY_FLOOR } from '../src/lib/fees'
+import { retrieve, knowledgeFor, type Locale } from '../src/lib/assistant/knowledge'
+import { testRules } from './rules-fixture'
+
+// Reglas con cifras inusuales: si el texto las repite, vienen de la fila.
+const RULES = testRules({ registration_fee: 11, royalty_floor_pct: 12, royalty_floor_min: 70, covered_brews_count: 7 })
+const KNOWLEDGE = knowledgeFor(RULES)
 import { parseReply, callWithRetry } from '../src/lib/assistant/provider'
 
 /**
@@ -33,7 +37,7 @@ const dict = (l: Locale) =>
     const suggestions: string[] = dict(locale).assistant?.suggestions ?? []
     ok(`${locale}: hay preguntas sugeridas`, suggestions.length > 0)
     for (const q of suggestions) {
-      const hits = retrieve(q, locale)
+      const hits = retrieve(q, locale, RULES)
       ok(`${locale}: «${q}»`, hits.length > 0,
          'la aplicación la sugiere y la base no tiene nada que responder')
     }
@@ -59,7 +63,7 @@ const dict = (l: Locale) =>
 {
   const src = readFileSync(join(process.cwd(), 'src/lib/assistant/knowledge.ts'), 'utf8')
   const body = src
-    .slice(src.indexOf('export const KNOWLEDGE'))
+    .slice(src.indexOf('export function knowledgeFor'))
     .replace(/\/\*[\s\S]*?\*\//g, '')
     .replace(/\/\/.*$/gm, '')
 
@@ -71,7 +75,7 @@ const dict = (l: Locale) =>
   ok('ningún porcentaje escrito a mano', pct.length === 0, pct.join(', '))
 
   ok('la tarifa viene de FEE', body.includes('${FEE}'))
-  ok('el piso viene de ROYALTY_FLOOR',
+  ok('el piso viene de la configuracion',
      body.includes('${FLOOR_MIN}') && body.includes('${FLOOR_PCT}'))
   ok('el procesamiento viene de stripePct', body.includes('${STRIPE_PCT}'))
 }
@@ -79,11 +83,11 @@ const dict = (l: Locale) =>
 // ---- y los valores derivados son los que el resto del sistema usa
 {
   const reg = KNOWLEDGE.find((d) => d.id === 'registration_fee')!
-  ok('la tarifa que se cuenta es la que se cobra', reg.body.en.includes(`$${FEE.service}`))
+  ok('la tarifa que se cuenta es la de la fila', reg.body.en.includes('$11'))
   const roy = KNOWLEDGE.find((d) => d.id === 'royalties')!
   ok('el piso que se cuenta es el que se aplica',
-     roy.body.en.includes(`$${ROYALTY_FLOOR.min}`) &&
-     roy.body.en.includes(`${ROYALTY_FLOOR.pct * 100}%`))
+     roy.body.en.includes('$70') &&
+     roy.body.en.includes('12%'))
 }
 
 // ---- una respuesta cortada no tumba la conversación

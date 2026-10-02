@@ -14,7 +14,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { authenticate } from '@/lib/route-auth'
 import { createAdminClient } from '@/lib/supabase-admin'
 import { loadAdmin, can, hasValidStepUp, STEP_UP_HEADER } from '@/lib/admin/guard'
-import { transferQuote, FEE, type Royalty } from '@/lib/fees'
+import { transferQuote, PROCESSING_RULE, type Royalty } from '@/lib/fees'
+import { getRules, type Rules } from '@/lib/rules'
 
 
 
@@ -32,8 +33,8 @@ import { transferQuote, FEE, type Royalty } from '@/lib/fees'
  */
 const round = (n: number) => Math.round(n * 100) / 100
 
-function breakdown(value: number, royalty: Royalty) {
-  const q = transferQuote(value, royalty, false)
+function breakdown(value: number, royalty: Royalty, rules: Rules) {
+  const q = transferQuote(value, royalty, false, rules)
   return {
     value: q.value,
     royalty: round(q.royalty),
@@ -62,6 +63,7 @@ export async function GET(request: NextRequest) {
     // escritas para el cliente final —sus propios tickets, sus propias obras— y
     // aplicadas al equipo le esconderían justo lo que tiene que ver.
     const supabase = createAdminClient()
+    const rules = await getRules()
     const url = new URL(request.url)
     const type = url.searchParams.get('type') ?? 'all'
     const status = url.searchParams.get('status')
@@ -91,7 +93,7 @@ export async function GET(request: NextRequest) {
           outcome: t.outcome,
           royaltyPaid: t.royalty_paid,
           // El importe de regalía ya viene resuelto y guardado en la fila.
-          money: breakdown(Number(t.sale_price ?? 0), { type: 'fixed', value: Number(t.royalty_amount ?? 0) }),
+          money: breakdown(Number(t.sale_price ?? 0), { type: 'fixed', value: Number(t.royalty_amount ?? 0) }, rules),
           stripe: {
             session: t.stripe_checkout_session_id,
             paymentIntent: t.stripe_payment_intent_id,
@@ -131,10 +133,10 @@ export async function GET(request: NextRequest) {
       // El modelo vigente, en la respuesta, para que la pantalla no reimplemente
       // ni reafirme cifras por su cuenta.
       model: {
-        serviceFee: FEE.service,
+        serviceFee: rules.fees.serviceBuyer,
         chargedOnBothSides: true,
-        platformPerSale: FEE.service * 2,
-        processing: `(royalty + ${FEE.service}) x ${FEE.stripePct} + ${FEE.stripeFlat}`,
+        platformPerSale: rules.fees.serviceBuyer + rules.fees.serviceSeller,
+        processing: PROCESSING_RULE,
         processingBorneBy: 'seller',
       },
       // Las ventas directas aún no tienen su propia tabla: viven como

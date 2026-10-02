@@ -60,32 +60,33 @@ export async function POST(request: NextRequest) {
       .from('payout_destinations')
       .select('id, method_id, destination')
       .eq('user_id', userId)
-      .eq('is_default', true)
+      .eq('method_id', methodId)
       .maybeSingle()
 
     // Guardar otra vez el mismo destino no es un cambio: ni fila nueva ni un aviso
     // que alarme a la persona por algo que no pasó.
-    if (previous && previous.method_id === methodId && previous.destination === destination.trim()) {
+    if (previous && previous.destination === destination.trim()) {
       return NextResponse.json({ masked: destinationMasked, methodId })
     }
 
-    // Un solo destino por defecto (índice único parcial): se baja el anterior
-    // antes de subir el nuevo.
-    await admin.from('payout_destinations').update({ is_default: false }).eq('user_id', userId)
-
-    const { data: saved, error } = await admin.from('payout_destinations').insert({
-      user_id: userId,
-      method_id: methodId,
-      destination: destination.trim(),
-      destination_masked: destinationMasked,
-      network: network ?? null,
-      is_default: true,
-    }).select('id').single()
+    // Un destino por metodo (Work Order 02, 7.1): se reemplaza el de este metodo.
+    const { data: saved, error } = await admin
+      .from('payout_destinations')
+      .upsert(
+        {
+          user_id: userId,
+          method_id: methodId,
+          destination: destination.trim(),
+          destination_masked: destinationMasked,
+          network: network ?? null,
+        },
+        { onConflict: 'user_id,method_id' }
+      )
+      .select('id')
+      .single()
 
     if (error || !saved) {
-      console.error('[payouts/destination] insert failed:', error)
-      // El anterior ya se bajó: sin esto la persona se queda sin destino.
-      if (previous) await admin.from('payout_destinations').update({ is_default: true }).eq('id', previous.id)
+      console.error('[payouts/destination] save failed:', error)
       return NextResponse.json({ error: 'save_failed' }, { status: 500 })
     }
 

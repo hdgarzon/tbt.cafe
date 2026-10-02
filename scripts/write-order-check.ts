@@ -9,8 +9,9 @@ const ok = (label: string, cond: boolean, detail = '') => {
   console.log(`${cond ? 'ok  ' : 'FAIL'} ${label}${detail && !cond ? ` — ${detail}` : ''}`)
 }
 
-const src = readFileSync(join(__dirname, '..', 'src/app/api/complete-tbt/route.ts'), 'utf8')
-const nft = readFileSync(join(__dirname, '..', 'src/lib/solana/nft.ts'), 'utf8')
+// La certificacion sella por lib/chain/seal.ts, que tambien usa el barrido (Chains 01 7.3).
+const src = readFileSync(join(__dirname, '..', 'src/lib/chain/seal.ts'), 'utf8')
+const nft = readFileSync(join(__dirname, '..', 'src/lib/solana/token.ts'), 'utf8')
 
 const at = (needle: string) => src.indexOf(needle)
 
@@ -47,7 +48,8 @@ const at = (needle: string) => src.indexOf(needle)
 
 // ---- procedencia: origen sin prior_record, y después del mint
 {
-  const prov = at("event: 'creation'")
+  // Chains 01 2.3: la creacion pasa por el publicador, con la firma del mint.
+  const prov = at('publishProvenance(admin, firstOwner.id, { solanaSignature: mintSignature })')
   const mint = at('await mintTitleToken(')
   ok('la procedencia se publica después del mint', prov > mint, 'lleva la firma de Solana dentro')
   ok('la secuencia 1 no lleva prior_record', !/sequence: 1[\s\S]{0,300}priorRecord/.test(src))
@@ -58,9 +60,8 @@ const at = (needle: string) => src.indexOf(needle)
 {
   ok('el nombre en cadena es el TBT ID', nft.includes('name: work.tbtId'),
      'el título puede pasar el tope de 32 bytes con un acento')
-  ok('la regalía en cadena es cero', nft.includes('sellerFeeBasisPoints: 0'),
+  ok('el token no lleva regalía (Chains 01, 4.4: la lleva el registro)', !/Royalties|sellerFeeBasisPoints/.test(nft),
      'un número público que contradice work_commerce')
-  ok('ya no se fija en 500', !nft.includes('sellerFeeBasisPoints: 500'))
   ok('el mint exige la URI del registro', /mintTitleToken\([\s\S]{0,300}registrationRecordUri: string/.test(nft))
 }
 
@@ -79,22 +80,28 @@ const xfer = readFileSync(join(__dirname, '..', 'src/app/api/complete-transfer/r
 
 // ---- la cadena de procedencia se encadena de verdad
 {
-  ok('lleva el eslabón anterior', xfer.includes('priorRecord: priorLink.record_hash'))
-  ok('y el registro sellado', xfer.includes('registrationRecord: chainSource.registration_record_uri'))
+  // Chains 01 2.3: el eslabon lo compone un solo sitio, desde la base.
+  const pub = readFileSync(join(__dirname, '..', 'src/lib/chain/provenance-publish.ts'), 'utf8')
+  ok('lleva el eslabón anterior', pub.includes('priorRecord = prior.record_hash') && pub.includes('priorRecord,'))
+  ok('y el registro sellado', pub.includes('registrationRecord: work.registration_record_uri'))
   ok('el anterior se busca por secuencia', xfer.includes('sequenceNumber - 1'))
 }
 
 // ---- una transferencia no firma nada
 {
-  const block = xfer.slice(xfer.indexOf('provenanceRecord({'), xfer.indexOf('publishRecord') + 4000)
-  ok('la procedencia de transferencia no lleva firma', !block.includes('solanaSignature'),
-     'la propiedad se mueve en la base, no en la cadena')
+  const pub2 = readFileSync(join(__dirname, '..', 'src/lib/chain/provenance-publish.ts'), 'utf8')
+  // Chains 01 4.5 reemplaza la regla anterior: el token se mueve, y el eslabon
+  // lleva la firma de ESE movimiento, nunca otro identificador.
+  ok('la procedencia de transferencia lleva la firma del movimiento',
+     /if \(moveSignature\) \{/.test(xfer) && pub2.includes('row.token_move_signature'))
+  ok('el token se mueve antes del eslabon', xfer.indexOf('await moveTokenForOwnership(') > -1 && xfer.indexOf('await moveTokenForOwnership(') < xfer.indexOf('publishProvenance('))
+  ok('sin movimiento, el eslabon espera', /if \(moveSignature\) \{/.test(xfer) && pub2.includes("reason: 'no_signature'"))
 }
 
 // ---- y la firma que SÍ existe es una firma
 {
-  const nftSrc = readFileSync(join(__dirname, '..', 'src/lib/solana/nft.ts'), 'utf8')
-  ok('el mint devuelve la firma de la transacción', nftSrc.includes('signature: response.signature'))
+  ok('el mint devuelve la firma de la transacción', nft.includes('signature: signatureOf(result)'))
+  ok('y la procedencia la recibe', src.includes('solanaSignature: mintSignature'))
   ok('la certificación ya no manda la dirección del mint',
      !src.includes('solanaSignature: mintAddress'),
      'una direccion de cuenta en un campo que significa firma')

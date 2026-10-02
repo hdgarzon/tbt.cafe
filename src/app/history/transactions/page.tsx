@@ -4,6 +4,7 @@ import { useEffect, useState, useMemo, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import { useLocale, type Dictionary } from '@/i18n/LocaleProvider'
+import { ReceiptSheet } from '@/components/ReceiptSheet'
 import { SignInGate } from '@/components/SignInGate'
 
 /**
@@ -17,6 +18,7 @@ type Transfer = {
   from_owner_id: string
   to_owner_id: string
   sale_price: number | null
+  transfer_type: string | null
   status: 'pending' | 'payment_pending' | 'completed' | 'cancelled'
   initiated_at: string
   completed_at: string | null
@@ -37,6 +39,8 @@ function TransfersLedger() {
   const [transfers, setTransfers] = useState<Transfer[]>([])
   const [workTitles, setWorkTitles] = useState<Record<string, string>>({})
   const [workTbtIds, setWorkTbtIds] = useState<Record<string, string>>({})
+  // Stage 9: quien envio ve su recibo; una compra que vendio, el de venta.
+  const [receipt, setReceipt] = useState<{ kind: 'sale' | 'transfer'; id: string } | null>(null)
 
   useEffect(() => {
     ;(async () => {
@@ -52,7 +56,7 @@ function TransfersLedger() {
 
       const { data: rows } = await supabase
         .from('transfers')
-        .select('id, work_id, from_owner_id, to_owner_id, sale_price, status, initiated_at, completed_at')
+        .select('id, work_id, from_owner_id, to_owner_id, sale_price, transfer_type, status, initiated_at, completed_at')
         .or(`from_owner_id.eq.${user.id},to_owner_id.eq.${user.id}`)
         .order('initiated_at', { ascending: false })
 
@@ -112,8 +116,8 @@ function TransfersLedger() {
           {shown.map((x) => {
             const outgoing = x.from_owner_id === userId
             return (
+              <div key={x.id}>
               <a
-                key={x.id}
                 href={workTbtIds[x.work_id] ? `/work/${workTbtIds[x.work_id]}` : undefined}
                 className="flex items-start justify-between gap-3 py-4 border-b border-hairline hover:bg-paper-warm transition-colors -mx-1 px-1"
               >
@@ -131,10 +135,21 @@ function TransfersLedger() {
                   {STATUS_KEY[x.status] ? t.myCollections[STATUS_KEY[x.status]!] : x.status}
                 </span>
               </a>
+              {outgoing && (
+                <button
+                  type="button"
+                  onClick={() => setReceipt({ kind: x.transfer_type === 'automatic' ? 'sale' : 'transfer', id: x.id })}
+                  className="text-[11px] underline text-ink-soft mt-1 mb-2"
+                >
+                  {t.receipt.open}
+                </button>
+              )}
+              </div>
             )
           })}
         </div>
       )}
+      {receipt && <ReceiptSheet kind={receipt.kind} id={receipt.id} onClose={() => setReceipt(null)} />}
     </div>
   )
 }

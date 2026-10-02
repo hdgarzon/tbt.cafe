@@ -1,4 +1,7 @@
 import { supabase } from '@/lib/supabase'
+import { fetchPublicRules } from '@/lib/rules-public'
+import { railsFor, type RailCountry } from '@/lib/payout-rails'
+import type { EntityType } from '@/lib/seller'
 import { methodFeeOf, payoutQuote, type PayoutQuote } from '@/lib/fees'
 
 /**
@@ -48,19 +51,27 @@ export type PayoutMethod = {
  * que va a fallar.
  */
 export async function fetchPayoutMethods(country: string | null): Promise<PayoutMethod[]> {
-  const { data, error } = await supabase
-    .from('payout_methods')
-    .select('*')
-    .eq('enabled', true)
-    .order('sort_order', { ascending: true })
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  const [{ data, error }, { data: row }, { data: seller }, rules] = await Promise.all([
+    supabase.from('payout_methods').select('*').eq('enabled', true).order('sort_order', { ascending: true }),
+    country
+      ? supabase.from('provider_countries').select('payout_bank, payout_usdc, enabled').eq('country', country).maybeSingle()
+      : Promise.resolve({ data: null }),
+    user ? supabase.from('seller_accounts').select('entity_type').eq('user_id', user.id).maybeSingle() : Promise.resolve({ data: null }),
+    fetchPublicRules(),
+  ])
 
   if (error || !data) return []
+  // Work Order 02, 7.2: solo los rails que provider_countries permite a esta persona.
+  const allowed = railsFor((row as RailCountry) ?? null, rules, ((seller as { entity_type?: EntityType } | null)?.entity_type ?? null))
 
   return data
     .filter((m) => {
       const countries: string[] = m.countries ?? []
-      if (countries.includes('*')) return true
-      return country ? countries.includes(country) : false
+      if (!countries.includes('*') && !(country && countries.includes(country))) return false
+      return (allowed as string[]).indexOf(m.provider) !== -1
     })
     .map((m) => ({
       id: m.id,
@@ -250,25 +261,18 @@ export type PayoutDestination = {
   /** Nunca la dirección entera: en pantalla siempre va enmascarada. */
   masked: string
   network: string | null
-  isDefault: boolean
 }
 
-export async function fetchDefaultDestination(userId: string): Promise<PayoutDestination | null> {
+/**
+ * Los destinos guardados, uno por metodo (Work Order 02, 7.1). No hay uno «por
+ * defecto»: se elige el metodo en cada cobro.
+ */
+export async function fetchDestinations(userId: string): Promise<PayoutDestination[]> {
   const { data } = await supabase
     .from('payout_destinations')
-    .select('id, method_id, destination_masked, network, is_default')
+    .select('id, method_id, destination_masked, network')
     .eq('user_id', userId)
-    .eq('is_default', true)
-    .maybeSingle()
-
-  if (!data) return null
-  return {
-    id: data.id,
-    methodId: data.method_id,
-    masked: data.destination_masked,
-    network: data.network,
-    isDefault: data.is_default,
-  }
+  return (data ?? []).map((d) => ({ id: d.id, methodId: d.method_id, masked: d.destination_masked, network: d.network }))
 }
 
 /**

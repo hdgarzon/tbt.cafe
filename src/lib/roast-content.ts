@@ -39,35 +39,112 @@ export const ROAST_ARTICLES: RoastArticle[] = [
     "minutes": 4,
     "summary": "Transferable Billable Token — anchored on Bitcoin, sailing on Solana, treasured in Arweave.",
     "body": [
-      { "kind": "p", "html": "<b>TBT</b> stands for <b>Transferable Billable Token</b>." },
-      { "kind": "p", "html": "It lives across three blockchains at once — <b>anchored on Bitcoin, sailing on Solana, treasured in Arweave</b>. Each one does something the others cannot." },
+      {
+        "kind": "p",
+        "html": "<b>TBT</b> stands for <b>Transferable Billable Token</b>."
+      },
+      {
+        "kind": "p",
+        "html": "It lives across three blockchains at once — <b>anchored on Bitcoin, sailing on Solana, treasured in Arweave</b>. Each one does something the others cannot."
+      },
       {
         "kind": "triad",
         "rows": [
-          { "chain": "Bitcoin", "role": "Anchor", "detail": "An anchor is dropped at the moments that matter — registration, and every change of ownership. Each one timestamps a fingerprint of the record to the most durable chain there is, proving it existed when we say it did and has not been altered since — including by us." },
-          { "chain": "Solana", "role": "Sailing", "detail": "The token is minted here when a work is registered. It is public, so anyone can confirm the registration without asking us." },
-          { "chain": "Arweave", "role": "Treasured", "detail": "The record itself — title, creator, year, the statement made at registration — and, where the creator chooses to publish it, an image of the work. Stored permanently, paid once, with no subscription keeping it alive." }
+          {
+            "chain": "Bitcoin",
+            "role": "Anchor",
+            "detail": "An anchor is dropped at the moments that matter — registration, and every change of ownership. Each one timestamps a fingerprint of the record to the most durable chain there is, proving it existed when we say it did and has not been altered since — including by us."
+          },
+          {
+            "chain": "Solana",
+            "role": "Sailing",
+            "detail": "The token is minted here when a work is registered. It is public, so anyone can confirm the registration without asking us."
+          },
+          {
+            "chain": "Arweave",
+            "role": "Treasured",
+            "detail": "The record itself — title, creator, year, the statement made at registration — and, where the creator chooses to publish it, an image of the work. Stored permanently, paid once, with no subscription keeping it alive."
+          }
         ]
       },
-      { "kind": "p", "html": "Using all three together is <b>the first of its kind</b>. Most systems pick one chain and accept its weaknesses. A TBT takes what each does best: Bitcoin’s permanence, Solana’s speed, Arweave’s storage. The result is a record that is fast to move, cheap to keep, and effectively impossible to falsify." },
-      { "kind": "p", "html": "What the token carries is the point:" },
-      { "kind": "p", "html": "<b>Authorship.</b> Who made the work, and when. Sealed at registration and never rewritten — the title of authorship lives inside the token." },
-      { "kind": "p", "html": "<b>Ownership.</b> Who holds it now, and everyone who held it before. Each change is recorded and published to the permanent record, where it cannot be quietly rewritten." },
-      { "kind": "p", "html": "<b>History.</b> Every hand it has passed through, in order, with dates and values. Provenance that accumulates rather than resets." },
-      { "kind": "p", "html": "<b>Commercial terms.</b> Its price, its availability, and the creator’s royalty — which travels with the token permanently and pays out on every future sale. This is the <b>billable</b> part, and it is what a title alone could never do." },
-      { "kind": "p", "html": "So a title of authorship is one of the things a TBT holds. It is not the whole of what a TBT is." },
-      { "kind": "p", "html": "<b>Transferable</b> means it moves, and the moving is recorded. Sell it, gift it, pass it to an institution — each movement joins the history, is published to the permanent record, and is anchored to Bitcoin." },
-      { "kind": "p", "html": "<b>Billable</b> means it carries money. A price when it is for sale. A royalty that returns to the creator on every resale, <b>enforced at settlement</b> rather than left to the goodwill of whoever handles the next transaction. A work that keeps earning for the person who made it." },
-      { "kind": "mark", "which": "transbit", "caption": "Creator of the TBT" },
-      { "kind": "p", "html": "The TBT was not invented for art. It came from <b>finance</b>, and it is still used there." },
-      { "kind": "p", "html": "<b>Transb.it</b> built the TBT to manage transfers — value arriving in one form, such as a card payment or cash, and moving to another. The token manages the movement itself: what was paid, what is owed, where it is going, and what happens at each step. It is in use today with <b>banks, credit unions and cooperatives</b>." },
-      { "kind": "p", "html": "That is why it works for art. An artist can finally prove what is theirs, move ownership safely, and get paid every time it changes hands." },
-      { "kind": "mark", "which": "brocha", "caption": "The Artist Collective" },
-      { "kind": "p", "html": "<b>BROCHA</b> — the <i>Beautiful Rebellious Order of Champions for the Arts</i> — is a decentralised collective and creative movement founded by the painter <b>Sara Alarcón</b> in Medellín. BROCHA leads the cultural side of this work and curates the first TBT-certified collection." },
-      { "kind": "p", "html": "Sara’s leadership is the reason this is built the way it is: for the <b>artist with a phone</b>, without wallets, without jargon, without asking anyone to learn a new vocabulary in order to keep what is already theirs." },
-      { "kind": "p", "html": "<i>“TBTs aren’t about technology. They’re about dignity. It’s about making sure a girl drawing in a village has the same global power as someone in New York or London.”</i> — Sara Alarcón" },
-      { "kind": "p", "html": "The <b>Transferable Billable Token</b> was invented by <b>Federico Lara</b>, a futurist and technologist, and founder of Transb.it. tbt.cafe is the collaboration between Transb.it and BROCHA." },
-      { "kind": "p", "html": "One last thing, and it is the reason for all three chains: <b>none of this depends on tbt.cafe continuing to exist.</b> The token is on Solana, the record is treasured in Arweave, the timestamp is anchored to Bitcoin. If we disappear tomorrow, the record of what you hold survives." }
+      {
+        "kind": "p",
+        "html": "Using all three together is <b>the first of its kind</b>. Most systems pick one chain and accept its weaknesses. A TBT takes what each does best: Bitcoin’s permanence, Solana’s speed, Arweave’s storage. The result is a record that is fast to move, cheap to keep, and effectively impossible to falsify."
+      },
+      {
+        "kind": "p",
+        "html": "What the token carries is the point:"
+      },
+      {
+        "kind": "p",
+        "html": "<b>Authorship.</b> Who made the work, and when. Sealed at registration and never rewritten — the title of authorship lives inside the token."
+      },
+      {
+        "kind": "p",
+        "html": "<b>Ownership.</b> Who holds it now, and everyone who held it before. Each change is recorded and published to the permanent record, where it cannot be quietly rewritten."
+      },
+      {
+        "kind": "p",
+        "html": "<b>History.</b> Every hand it has passed through, in order, with dates and values. Provenance that accumulates rather than resets."
+      },
+      {
+        "kind": "p",
+        "html": "<b>Commercial terms.</b> Its price, its availability, and the creator’s royalty — which travels with the token permanently and pays out on every future sale. This is the <b>billable</b> part, and it is what a title alone could never do."
+      },
+      {
+        "kind": "p",
+        "html": "So a title of authorship is one of the things a TBT holds. It is not the whole of what a TBT is."
+      },
+      {
+        "kind": "p",
+        "html": "<b>Transferable</b> means it moves, and the moving is recorded. Sell it, gift it, pass it to an institution — each movement joins the history, is published to the permanent record, and is anchored to Bitcoin."
+      },
+      {
+        "kind": "p",
+        "html": "<b>Billable</b> means it carries money. A price when it is for sale. A royalty that returns to the creator on every resale, <b>enforced at settlement</b> rather than left to the goodwill of whoever handles the next transaction. A work that keeps earning for the person who made it."
+      },
+      {
+        "kind": "mark",
+        "which": "transbit",
+        "caption": "Creator of the TBT"
+      },
+      {
+        "kind": "p",
+        "html": "The TBT was not invented for art. It came from <b>finance</b>, and it is still used there."
+      },
+      {
+        "kind": "p",
+        "html": "<b>Transb.it</b> built the TBT to manage transfers — value arriving in one form, such as a card payment or cash, and moving to another. The token manages the movement itself: what was paid, what is owed, where it is going, and what happens at each step. It is in use today with <b>banks, credit unions and cooperatives</b>."
+      },
+      {
+        "kind": "p",
+        "html": "That is why it works for art. An artist can finally prove what is theirs, move ownership safely, and get paid every time it changes hands."
+      },
+      {
+        "kind": "mark",
+        "which": "brocha",
+        "caption": "The Artist Collective"
+      },
+      {
+        "kind": "p",
+        "html": "<b>BROCHA</b> — the <i>Beautiful Rebellious Order of Champions for the Arts</i> — is a decentralised collective and creative movement founded by the painter <b>Sara Alarcón</b> in Medellín. BROCHA leads the cultural side of this work and curates the first TBT-certified collection."
+      },
+      {
+        "kind": "p",
+        "html": "Sara’s leadership is the reason this is built the way it is: for the <b>artist with a phone</b>, without wallets, without jargon, without asking anyone to learn a new vocabulary in order to keep what is already theirs."
+      },
+      {
+        "kind": "p",
+        "html": "<i>“TBTs aren’t about technology. They’re about dignity. It’s about making sure a girl drawing in a village has the same global power as someone in New York or London.”</i> — Sara Alarcón"
+      },
+      {
+        "kind": "p",
+        "html": "The <b>Transferable Billable Token</b> was invented by <b>Federico Lara</b>, a futurist and technologist, and founder of Transb.it. tbt.cafe is the collaboration between Transb.it and BROCHA."
+      },
+      {
+        "kind": "p",
+        "html": "One last thing, and it is the reason for all three chains: <b>none of this depends on tbt.cafe continuing to exist.</b> The token is on Solana, the record is treasured in Arweave, the timestamp is anchored to Bitcoin. If we disappear tomorrow, the record of what you hold survives."
+      }
     ]
   },
   {
@@ -86,11 +163,11 @@ export const ROAST_ARTICLES: RoastArticle[] = [
       },
       {
         "kind": "p",
-        "html": "Registration costs a flat <b>$8</b>, plus card processing. That is the whole price. There is no subscription, no gas fee to worry about, no percentage of your work’s value."
+        "html": "Registration costs a flat <b>${fee}</b>, plus card processing. That is the whole price. There is no subscription, no gas fee to worry about, no percentage of your work’s value."
       },
       {
         "kind": "p",
-        "html": "<b>Your first ten registrations are on us.</b> The $8 is shown, and tbt.cafe covers it — you will see how many remain each time you register. After that, registration is charged normally."
+        "html": "<b>Your first ten registrations are on us.</b> The ${fee} is shown, and tbt.cafe covers it — you will see how many remain each time you register. After that, registration is charged normally."
       },
       {
         "kind": "x",
@@ -115,7 +192,7 @@ export const ROAST_ARTICLES: RoastArticle[] = [
       },
       {
         "kind": "p",
-        "html": "While a registration is covered, that total is <b>0.00 USD</b> to you — the fee is still $8, and tbt.cafe pays it."
+        "html": "While a registration is covered, that total is <b>0.00 USD</b> to you — the fee is still ${fee}, and tbt.cafe pays it."
       },
       {
         "kind": "p",
@@ -133,21 +210,69 @@ export const ROAST_ARTICLES: RoastArticle[] = [
     "minutes": 4,
     "summary": "What a bonded title is, why the word is there, and how it comes off.",
     "body": [
-      { "kind": "p", "html": "Most works are registered by the person who made them. Some are not. A painting bought at an estate sale, a piece inherited from a grandparent, a canvas whose artist died decades ago — these have owners, and they deserve a record, but nobody can ask the maker to confirm it." },
-      { "kind": "p", "html": "So tbt.cafe lets a <b>collector</b> register a work. What it issues is a <b>bonded title</b>." },
-      { "kind": "mark", "which": "transbit", "caption": "Why the word is there" },
-      { "kind": "p", "html": "A bonded title is a real title. It is valid, it transfers, it carries the same royalty machinery as any other. What the word marks is where the information came from: <b>the holder’s account of it, rather than the maker’s.</b>" },
-      { "kind": "p", "html": "This is borrowed from vehicle titles, where a car with an incomplete paper trail gets a bonded title rather than none at all. It is not a lesser document. It is an honest one, and the honesty is on its face where anyone can see it: the word <b>Bonded</b> sits before the word <b>Title</b> at the top." },
-      { "kind": "p", "html": "When you register someone else’s work you are asked what you know about them — whether they are living, where they worked, what they were known for, and how the work came to you. If nobody knows who made it, the creator is recorded as <b>Unattributed</b>, which is a real answer rather than a blank." },
-      { "kind": "p", "html": "None of that is verified at registration. That is precisely what the word admits." },
-      { "kind": "mark", "which": "brocha", "caption": "How the word comes off" },
-      { "kind": "p", "html": "A bonded title can become an ordinary one. tbt.cafe works with <b>certified authentication partners</b> — the local firms whose job is establishing whether a work is what it is claimed to be. They examine the piece, trace the creator or their estate, and obtain a sign-off." },
-      { "kind": "p", "html": "<b>If the creator is alive, they must sign off themselves.</b> Nobody can authenticate a living artist’s work over their head." },
-      { "kind": "p", "html": "When authentication succeeds a <b>new title is issued without the word Bonded</b>, and the old one is superseded — the same way a new title is issued every time a work changes hands." },
-      { "kind": "mark", "which": "transbit", "caption": "Where the royalty goes" },
-      { "kind": "p", "html": "On a bonded title the royalty accrues to the <b>collector who registered the work</b>. They bought it, held it, and did the work of bringing it onto the record. It is a <b>registrant royalty</b> rather than a creator royalty, and the platform names it that way so nobody is misled about whose it is." },
-      { "kind": "p", "html": "If authentication later finds the creator or their estate, the collector may <b>redirect</b> that royalty to them. The percentage itself does not change — it is locked, as every royalty is. What moves is where it is paid." },
-      { "kind": "p", "html": "And if a living creator finds their work registered by someone else, there is a way to say so. Every work page carries a route to <b>file a claim</b>, and a person reads it." }
+      {
+        "kind": "p",
+        "html": "Most works are registered by the person who made them. Some are not. A painting bought at an estate sale, a piece inherited from a grandparent, a canvas whose artist died decades ago — these have owners, and they deserve a record, but nobody can ask the maker to confirm it."
+      },
+      {
+        "kind": "p",
+        "html": "So tbt.cafe lets a <b>collector</b> register a work. What it issues is a <b>bonded title</b>."
+      },
+      {
+        "kind": "mark",
+        "which": "transbit",
+        "caption": "Why the word is there"
+      },
+      {
+        "kind": "p",
+        "html": "A bonded title is a real title. It is valid, it transfers, it carries the same royalty machinery as any other. What the word marks is where the information came from: <b>the holder’s account of it, rather than the maker’s.</b>"
+      },
+      {
+        "kind": "p",
+        "html": "This is borrowed from vehicle titles, where a car with an incomplete paper trail gets a bonded title rather than none at all. It is not a lesser document. It is an honest one, and the honesty is on its face where anyone can see it: the word <b>Bonded</b> sits before the word <b>Title</b> at the top."
+      },
+      {
+        "kind": "p",
+        "html": "When you register someone else’s work you are asked what you know about them — whether they are living, where they worked, what they were known for, and how the work came to you. If nobody knows who made it, the creator is recorded as <b>Unattributed</b>, which is a real answer rather than a blank."
+      },
+      {
+        "kind": "p",
+        "html": "None of that is verified at registration. That is precisely what the word admits."
+      },
+      {
+        "kind": "mark",
+        "which": "brocha",
+        "caption": "How the word comes off"
+      },
+      {
+        "kind": "p",
+        "html": "A bonded title can become an ordinary one. tbt.cafe works with <b>certified authentication partners</b> — the local firms whose job is establishing whether a work is what it is claimed to be. They examine the piece, trace the creator or their estate, and obtain a sign-off."
+      },
+      {
+        "kind": "p",
+        "html": "<b>If the creator is alive, they must sign off themselves.</b> Nobody can authenticate a living artist’s work over their head."
+      },
+      {
+        "kind": "p",
+        "html": "When authentication succeeds a <b>new title is issued without the word Bonded</b>, and the old one is superseded — the same way a new title is issued every time a work changes hands."
+      },
+      {
+        "kind": "mark",
+        "which": "transbit",
+        "caption": "Where the royalty goes"
+      },
+      {
+        "kind": "p",
+        "html": "On a bonded title the royalty accrues to the <b>collector who registered the work</b>. They bought it, held it, and did the work of bringing it onto the record. It is a <b>registrant royalty</b> rather than a creator royalty, and the platform names it that way so nobody is misled about whose it is."
+      },
+      {
+        "kind": "p",
+        "html": "If authentication later finds the creator or their estate, the collector may <b>redirect</b> that royalty to them. The percentage itself does not change — it is locked, as every royalty is. What moves is where it is paid."
+      },
+      {
+        "kind": "p",
+        "html": "And if a living creator finds their work registered by someone else, there is a way to say so. Every work page carries a route to <b>file a claim</b>, and a person reads it."
+      }
     ]
   },
   {
@@ -162,7 +287,7 @@ export const ROAST_ARTICLES: RoastArticle[] = [
       },
       {
         "kind": "p",
-        "html": "The royalty is <b>deducted from the sale price</b>, never added on top of it. If a work sells for 12,000 USD with a 10% royalty, the 1,200 comes out of the sale, to you — the buyer pays the 12,000 plus their own $8 service fee, and nothing more."
+        "html": "The royalty is <b>deducted from the sale price</b>, never added on top of it. If a work sells for 12,000 USD with a 10% royalty, the 1,200 comes out of the sale, to you — the buyer pays the 12,000 plus their own ${service_fee} service fee, and nothing more."
       },
       {
         "kind": "p",
@@ -201,7 +326,7 @@ export const ROAST_ARTICLES: RoastArticle[] = [
       },
       {
         "kind": "p",
-        "html": "Because a fixed royalty is owed in full whatever the price, a work carrying one has a <b>minimum price</b>: the royalty plus the greater of 5% or 25 USD. That floor covers the fees and keeps a sale from ever costing the seller money. Offers below it cannot be accepted."
+        "html": "Because a fixed royalty is owed in full whatever the price, a work carrying one has a <b>minimum price</b>: the royalty plus the greater of {floor_pct} or {floor_min} USD. That floor covers the fees and keeps a sale from ever costing the seller money. Offers below it cannot be accepted."
       },
       {
         "kind": "x",
@@ -251,28 +376,37 @@ export const ROAST_ARTICLES: RoastArticle[] = [
     "id": "selling",
     "title": "Selling a work",
     "minutes": 4,
-    "summary": "Availability states, what the buyer pays versus what you receive, and the full fee breakdown with real numbers.",
+    "summary": "Approval, availability states, what the buyer pays versus what you receive, and the full fee breakdown with real numbers.",
     "body": [
+      {
+        "kind": "p",
+        "html": "Selling a work <b>needs approval</b>. Registering, transferring, gifting and receiving royalties do not. Apply from <b>Selling</b> in the menu: you tell us your country and how you sell — as an individual, a business, or a gallery, museum or estate. Once you’re approved and set up to be paid, you can put a work up for sale, and you can pause selling yourself at any time."
+      },
       {
         "kind": "p",
         "html": "Every work you hold has an availability state, set from its Action tab: <b>For sale</b> (anyone can buy at your price), <b>Reserved</b> (visible but on hold), or <b>Not for sale</b>. Separately, you can choose to <b>take offers</b> — buyers propose a price and you decide."
       },
       {
         "kind": "p",
-        "html": "When a sale completes, three things come out of the sale price: the creator’s royalty, an <b>$8 service fee</b>, and card processing of <b>2.9% + $0.30</b> calculated on the royalty and fee together. The rest is your payout."
+        "html": "When a sale completes, three things come out of the sale price: the creator’s royalty, a <b>${seller_fee} service fee</b>, and card processing of <b>2.9% + $0.30</b> on the full charge — the price plus the buyer’s service fee. The rest is your payout."
       },
       {
         "kind": "x",
-        "title": "Selling at 18,000 USD, 10% royalty",
+        "title": "A 12,000 USD sale with 10% royalty",
         "rows": [
           {
-            "label": "Sale price",
-            "value": "18,000.00 USD",
+            "label": "Buyer pays",
+            "value": "12,008.00 USD",
+            "total": false
+          },
+          {
+            "label": "Card processing, on the full charge",
+            "value": "348.53 USD",
             "total": false
           },
           {
             "label": "Royalty to creator",
-            "value": "1,800.00 USD",
+            "value": "1,200.00 USD",
             "total": false
           },
           {
@@ -281,24 +415,19 @@ export const ROAST_ARTICLES: RoastArticle[] = [
             "total": false
           },
           {
-            "label": "Card processing",
-            "value": "52.73 USD",
-            "total": false
-          },
-          {
             "label": "Your payout",
-            "value": "16,139.27 USD",
+            "value": "10,443.47 USD",
             "total": true
           }
         ]
       },
       {
         "kind": "p",
-        "html": "The buyer pays the listed price plus their own flat <b>$8 service fee</b>. The <b>$8</b> shown above is yours as the seller — the service fee is charged on both sides of a sale, once to each party. The royalty and card processing come out of your side only."
+        "html": "The buyer pays the listed price plus their own flat <b>${service_fee} service fee</b>. The <b>${seller_fee}</b> shown above is yours as the seller — the service fee is charged on both sides of a sale, once to each party. The royalty and card processing come out of your side only."
       },
       {
         "kind": "p",
-        "html": "Your payout does not vanish into a balance somewhere. It accumulates in <b>Payouts</b>, where you collect it when you choose — more on that in “Collecting your payouts.”"
+        "html": "<b>Whose name is on the buyer’s card statement</b> depends on your country. Where we support it, the sale is charged on your own Stripe account: the statement shows your name and your payout goes straight to that account. Elsewhere, tbt.cafe charges the card on your behalf: the statement shows tbt.cafe, and your payout accumulates in <b>Payouts</b> once the sale settles — more on that in “Collecting your payouts.” The purchase screen tells the buyer which name will appear."
       }
     ]
   },
@@ -314,7 +443,7 @@ export const ROAST_ARTICLES: RoastArticle[] = [
       },
       {
         "kind": "p",
-        "html": "Your total is the <b>price plus a flat $8 service fee</b>. Nothing else is added. The creator’s royalty and the card processing come out of the <b>seller’s</b> side, not yours — so what you see before you confirm is exactly what your card is charged."
+        "html": "Your total is the <b>price plus a flat ${service_fee} service fee</b>. Nothing else is added. The creator’s royalty and the card processing come out of the <b>seller’s</b> side, not yours — so what you see before you confirm is exactly what your card is charged."
       },
       {
         "kind": "x",
@@ -343,7 +472,7 @@ export const ROAST_ARTICLES: RoastArticle[] = [
       },
       {
         "kind": "p",
-        "html": "Above certain amounts we ask for more proof that it is really you. From <b>500 USD</b> we ask for your biometric; from <b>1,000 USD</b> your bank verifies the payment as well. That second step also moves fraud liability to your bank, which protects you if a card is ever used without permission."
+        "html": "Above certain amounts we ask for more proof that it is really you. From <b>{biometric} USD</b> we ask for your biometric; from <b>1,000 USD</b> your bank verifies the payment as well. That second step also moves fraud liability to your bank, which protects you if a card is ever used without permission."
       },
       {
         "kind": "p",
@@ -359,7 +488,7 @@ export const ROAST_ARTICLES: RoastArticle[] = [
     "id": "offers",
     "title": "Making and receiving offers",
     "minutes": 3,
-    "summary": "How offers move, when money actually changes hands, and what the countdown means.",
+    "summary": "How long an offer stands, what accepting it freezes, the payment window, and the messages that travel with it.",
     "body": [
       {
         "kind": "p",
@@ -367,11 +496,23 @@ export const ROAST_ARTICLES: RoastArticle[] = [
       },
       {
         "kind": "p",
-        "html": "When a seller accepts an offer, the buyer gets a window to complete the purchase — you’ll see a countdown on the accepted offer. Only when the buyer confirms and pays does money move: the sale then settles exactly like any other sale, with the royalty and fees deducted from the agreed price."
+        "html": "You choose how long your offer stands, up to <b>{offer_max_hours} hours</b>, and you can add a short message. The owner can accept it, decline it, or let it expire."
       },
       {
         "kind": "p",
-        "html": "Offers you’ve made live in <b>Offers → Made</b>, where you can cancel them. Offers on your works live in <b>Offers → Received</b>, where you respond. A declined or expired offer simply ends — no charge to anyone."
+        "html": "When the owner accepts, the work is <b>frozen</b> for that offer: its price and availability can’t change, and any other open offers wait. The buyer then has <b>{offer_payment_hours} hours</b> to pay — you’ll see the countdown on the accepted offer. If payment doesn’t arrive in time, the offer lapses and the work is free again. Once paid, the sale settles exactly like any other, with the royalty and fees deducted from the agreed price."
+      },
+      {
+        "kind": "p",
+        "html": "Messages sent with offers are <b>private between the two of you</b>, and tbt.cafe may review them. Don’t use them to harass, deceive or break the law. Any message can be reported from the offer itself."
+      },
+      {
+        "kind": "p",
+        "html": "If the owner isn’t approved to sell yet, your offer still reaches them, but they can’t accept it until they are. If it expires first, it lapses — and we let you know when they’re approved, so you can offer again."
+      },
+      {
+        "kind": "p",
+        "html": "Your offers, made and received, live in <b>History → Offers</b>. A declined or expired offer simply ends — no charge to anyone."
       },
       {
         "kind": "p",
@@ -383,15 +524,15 @@ export const ROAST_ARTICLES: RoastArticle[] = [
     "id": "transfers",
     "title": "Transferring ownership",
     "minutes": 4,
-    "summary": "The two-phase card hold, the 24-hour window, and how the new title reaches the recipient.",
+    "summary": "The two-phase card hold, the {hours}-hour window, the declared value the recipient confirms, and sales made elsewhere.",
     "body": [
       {
         "kind": "p",
-        "html": "A transfer moves a work to a specific person — a sale you’ve arranged privately, or a gift. You name the recipient, their mobile number, and the value being recorded."
+        "html": "A transfer moves a work to a specific person — a sale you’ve arranged elsewhere, or a gift. You name the recipient, their mobile number, and the value being recorded."
       },
       {
         "kind": "p",
-        "html": "The sender pays the <b>Transfer Cost</b>: the creator’s royalty on the recorded value, an $8 transfer fee, and card processing on those two together."
+        "html": "The sender pays the <b>Transfer Cost</b>: the creator’s royalty on the recorded value, a ${transfer_fee} transfer fee, and card processing on those two together."
       },
       {
         "kind": "x",
@@ -421,11 +562,19 @@ export const ROAST_ARTICLES: RoastArticle[] = [
       },
       {
         "kind": "p",
-        "html": "Payment is <b>two-phase</b>. When you send the transfer, your card is <b>authorised but not charged</b> — the amount is held. Only when the recipient accepts is it captured. If they decline, or don’t respond within <b>24 hours</b>, or you cancel, the hold is released and nothing is taken."
+        "html": "Payment is <b>two-phase</b>. When you send the transfer, your card is <b>authorised but not charged</b> — the amount is held. Only when the recipient accepts is it captured. If they decline, or don’t respond within <b>{hours} hours</b>, or you cancel, the hold is released and nothing is taken."
+      },
+      {
+        "kind": "p",
+        "html": "The recipient sees the <b>declared value</b> before accepting, and confirms the declared value as part of accepting. That figure is what the work’s history records, publicly."
       },
       {
         "kind": "p",
         "html": "When a transfer completes, a <b>new title is issued to the recipient by email</b> — same as brewing. If they have no email address yet, the work is still theirs and the title waits: a text tells them to add one, and it is sent the moment they do."
+      },
+      {
+        "kind": "p",
+        "html": "<b>Sold somewhere else?</b> You can buy and sell works anywhere — in person, at auction, through a gallery or another marketplace. When the work changes hands, complete it here as a transfer. tbt.cafe isn’t a party to that sale and can’t protect it: payment and delivery are between you. Enter the price you agreed: it’s recorded in this work’s history as a declared value, and any royalty is calculated on it."
       }
     ]
   },
@@ -433,7 +582,7 @@ export const ROAST_ARTICLES: RoastArticle[] = [
     "id": "payouts",
     "title": "Collecting your payouts",
     "minutes": 3,
-    "summary": "Where your money accumulates, how collection works, and what the payout block on your receipt records.",
+    "summary": "Where your money accumulates, how collection works, and what reaches your country.",
     "body": [
       {
         "kind": "p",
@@ -441,33 +590,15 @@ export const ROAST_ARTICLES: RoastArticle[] = [
       },
       {
         "kind": "p",
-        "html": "Collecting takes two steps: verify (your itemised payouts, confirmed with a touch), then choose a method — <b>PayPal</b>, <b>USDT</b>, or <b>BTC</b>. A <b>2.3% payout fee</b> applies, plus the method’s own cost (PayPal’s 2.9% + $0.30, or the network fee for crypto)."
+        "html": "Payouts go through <b>Stripe Connect</b>, to a <b>bank account</b> or in <b>USDC</b>, depending on what reaches your country. You choose the method each time you collect — nothing is preselected. A <b>{payout_pct} payout fee</b> applies, plus the method’s own cost; both are shown before you confirm."
       },
       {
-        "kind": "x",
-        "title": "Collecting 10,756.67 USD via PayPal",
-        "rows": [
-          {
-            "label": "Gross payout",
-            "value": "10,756.67 USD",
-            "total": false
-          },
-          {
-            "label": "PayPal fee",
-            "value": "312.24 USD",
-            "total": false
-          },
-          {
-            "label": "Payout fee (2.3%)",
-            "value": "247.40 USD",
-            "total": false
-          },
-          {
-            "label": "You receive",
-            "value": "10,197.02 USD",
-            "total": true
-          }
-        ]
+        "kind": "p",
+        "html": "Collecting is confirmed with your private code and a touch. Where payouts don’t reach your country yet, your earnings are <b>kept</b> — in full, and still yours — until they do."
+      },
+      {
+        "kind": "p",
+        "html": "Galleries, museums and estates are paid by our team: collecting as an institution opens a request, and we arrange the payout with you."
       },
       {
         "kind": "p",
@@ -495,7 +626,7 @@ export const ROAST_ARTICLES: RoastArticle[] = [
       },
       {
         "kind": "p",
-        "html": "Because a fixed royalty is owed in full whatever the price, a work carrying one has a <b>minimum price</b>: the royalty plus the greater of 5% or 25 USD. That floor covers the fees and keeps a sale from ever costing the seller money."
+        "html": "Because a fixed royalty is owed in full whatever the price, a work carrying one has a <b>minimum price</b>: the royalty plus the greater of {floor_pct} or {floor_min} USD. That floor covers the fees and keeps a sale from ever costing the seller money."
       },
       {
         "kind": "x",
@@ -540,7 +671,7 @@ export const ROAST_ARTICLES: RoastArticle[] = [
       },
       {
         "kind": "p",
-        "html": "<b>Biometric</b> uses your device’s fingerprint or face. Nothing biometric ever leaves your device; we only ever learn that your device confirmed you. It is required from <b>500 USD</b>, and it is what stops someone using a session you left open."
+        "html": "<b>Biometric</b> uses your device’s fingerprint or face. Nothing biometric ever leaves your device; we only ever learn that your device confirmed you. It is required from <b>{biometric} USD</b>, and it is what stops someone using a session you left open."
       },
       {
         "kind": "p",
@@ -548,7 +679,11 @@ export const ROAST_ARTICLES: RoastArticle[] = [
       },
       {
         "kind": "p",
-        "html": "A <b>recovery email</b> lets you reset your private code if you forget it, and gives us a second way to reach you. It is optional in general, but required if you sell or collect — because without it, a forgotten code would lock you out of your own money."
+        "html": "An <b>e-Mail</b> address gives us a second way to reach you, and a second copy of every title link. It is optional — never required to own, sell or collect. If you ever forget your private code, open a help request: our team verifies you and resets it."
+      },
+      {
+        "kind": "p",
+        "html": "You can <b>change your phone number</b> from Settings. It takes your private code, your biometric, and a code sent to the new number. The moment it changes, your <b>old number</b> gets a text — so if it wasn’t you, you’ll know straight away."
       },
       {
         "kind": "p",

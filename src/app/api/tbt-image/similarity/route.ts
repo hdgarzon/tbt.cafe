@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { authenticate } from '@/lib/route-auth'
 import { recordProviderEvent } from '@/lib/provider-events'
 import { createAdminClient } from '@/lib/supabase-admin'
+import { getRules } from '@/lib/rules'
 
 /**
  * Deteccion de plagio por similitud semantica — Update Package 01, N9.
@@ -31,9 +32,6 @@ import { createAdminClient } from '@/lib/supabase-admin'
  * y las decisiones futuras tengan un rastro persistente.
  */
 
-const THRESHOLD_BLOCK = 0.9
-const THRESHOLD_WARN = 0.75
-
 const EXPECTED_EMBEDDING_DIM = 768
 
 /** El procesador calcula el embedding en CPU; en frio carga los pesos primero. */
@@ -46,7 +44,6 @@ export async function POST(req: NextRequest) {
   const auth = await authenticate(req)
   if (!auth.ok) return NextResponse.json(auth.body, { status: auth.status })
 
-  const url = process.env.TBT_IMAGE_PROCESSOR_URL
   const key = process.env.TBT_IMAGE_PROCESSOR_API_KEY
   const started = Date.now()
 
@@ -55,6 +52,16 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ status: 'unavailable', reason }, { status: 503 })
   }
 
+  // La direccion y los umbrales vienen de configuracion (Work Order 02, 1.3):
+  // restaurar la direccion desde el panel levanta el aviso sin desplegar.
+  let rules
+  try {
+    rules = await getRules()
+  } catch (error) {
+    return unavailable('setup', 'rules_unreadable', error)
+  }
+  const url = rules.scanProcessorUrl
+  const { warn: scanWarn, block: scanBlock } = rules.scan
   if (!url) return unavailable('setup', 'url_unset')
   if (!key) return unavailable('setup', 'key_missing')
 
@@ -122,7 +129,7 @@ export async function POST(req: NextRequest) {
     // 3. Decidir clear / warning / blocked por umbrales.
     const topScore = hits.length ? hits[0].score : 0
     const status: 'clear' | 'warning' | 'blocked' =
-      topScore >= THRESHOLD_BLOCK ? 'blocked' : topScore >= THRESHOLD_WARN ? 'warning' : 'clear'
+      topScore >= scanBlock ? 'blocked' : topScore >= scanWarn ? 'warning' : 'clear'
     const matches = status === 'clear' ? [] : hits.slice(0, 3)
     const scanId = await persistScan(admin, auth.user.id, status, topScore, matches)
 

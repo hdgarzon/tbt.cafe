@@ -9,10 +9,7 @@
  * muestra el estado pero no lo decide.
  */
 import type { SupabaseClient } from '@supabase/supabase-js'
-import { FEE } from '@/lib/fees'
 
-/** Lo que se habría cobrado por una registración. */
-export const REGISTRATION_FEE = FEE.service
 
 export type CoveredReason = 'first_n_allowance' | 'admin_grant'
 
