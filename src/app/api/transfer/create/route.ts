@@ -145,11 +145,11 @@ export async function POST(request: NextRequest) {
      * La escalera — Spec 01 §5.1. Iniciar una transferencia es una acción de
      * vendedor y entra por el mismo escalón de $500 que una compra.
      *
-     * SIN 3DS EN ESTA RUTA, a propósito. Va con `capture_method: 'manual'`, y
-     * el §8 lista el comportamiento de 3DS bajo captura manual como pendiente
-     * de verificar contra la documentación viva de Stripe. Meterlo a ciegas
-     * puede romper la retención de la autorización, que es dinero real
-     * retenido a alguien. El biométrico no tiene esa ambigüedad y sí se exige.
+     * 3DS en la autorizacion (Work Order 02, 0.6b): la autenticacion ocurre al
+     * autorizar y la captura al aceptar debe pasar sin un segundo desafio. Se
+     * prueba en modo test antes de desplegar; si la captura manual no admite
+     * la solicitud, o la captura tras 48 horas pide otro desafio, se para y se
+     * pregunta. El biometrico se exige ademas, como siempre.
      *
      * El monto lo DECLARA el emisor. Declarar cero bajaba del umbral y evitaba
      * el biometrico: un secuestro de cuenta podia sacar una obra valiosa
@@ -239,6 +239,7 @@ export async function POST(request: NextRequest) {
         payment_method_types: ['card' as const],
         line_items: lineItems,
         payment_intent_data: { capture_method: 'manual' as const },
+        payment_method_options: { card: { request_three_d_secure: 'any' as const } },
         metadata: {
           type: 'transfer',
           flow: 'two_phase',

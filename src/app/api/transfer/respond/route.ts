@@ -155,6 +155,15 @@ export async function POST(request: NextRequest) {
         transferId,
         completeBody,
       })
+      // 0.7c: no solo el log. Un ticket de pagos, para que alguien lo termine.
+      await createAdminClient().from('tickets').insert({
+        origin: 'system',
+        category: 'payments',
+        severity: 'primary',
+        subject: `Transfer captured but not finalised: ${transferId}`,
+        body: 'The card was captured on acceptance and the ownership change did not complete. Finish it by hand.',
+        context: { kind: 'captured_not_finalized', transfer_id: transferId, response: completeBody ?? null },
+      })
       return NextResponse.json({ error: 'ownershipTransferFailed', capturedButNotFinalized: true }, { status: 500 })
     }
 

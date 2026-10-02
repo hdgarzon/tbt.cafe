@@ -116,8 +116,9 @@ export async function offerDetail(userId: string, offerId: string) {
     message: offer.message,
     responseMessage: offer.response_message,
     holderApproved: canSell(seller),
-    // El pago de una oferta aceptada es del Stage 0; hasta entonces no se ofrece.
-    payAvailable: false,
+    // Stage 0: una oferta aceptada se paga mientras su ventana siga abierta.
+    payAvailable:
+      offer.status === 'accepted' && !!offer.payment_due_at && new Date(offer.payment_due_at).getTime() > Date.now() && canSell(seller),
   }
 }
 
@@ -394,5 +395,21 @@ export async function tellBuyersHolderReady(holderId: string) {
       data: { title: titleOf.get(o.work_id) ?? '', offerId: o.id },
       href: `/work/${tbtOf.get(o.work_id) ?? ''}`,
     })
+  }
+}
+
+// ── Una venta pagada (Work Order 02, 0.7a) ──────────────────────────────────
+
+/**
+ * Las demas ofertas abiertas sobre una obra vendida eran para el dueno
+ * anterior: se cierran. La oferta pagada, si la hubo, la cierra complete_sale.
+ */
+export async function closeOffersOnSale(workId: string) {
+  const db = createAdminClient()
+  const now = new Date().toISOString()
+  const { data: open } = await db.from('offers').select('id').eq('work_id', workId).eq('status', 'open')
+  for (const o of (open ?? []) as { id: string }[]) {
+    await db.from('offers').update({ status: 'cancelled', closed_at: now, close_reason: 'sold' }).eq('id', o.id).eq('status', 'open')
+    await logEvent(db, o.id, 'cancelled', null, { reason: 'sold' })
   }
 }

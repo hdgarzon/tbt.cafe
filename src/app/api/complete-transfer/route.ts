@@ -67,6 +67,11 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
 
+    // Work Order 02, 0.7b: una compra la completa el webhook (completeSale), nunca esta ruta.
+    if (transfer.transfer_type === 'automatic') {
+      return NextResponse.json({ error: 'completed_by_webhook' }, { status: 409 })
+    }
+
     // Check payment status with fallback to Stripe verification
     if (transfer.payment_status !== 'completed') {
       const { couponCode } = requestBody

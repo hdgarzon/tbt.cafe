@@ -1,18 +1,16 @@
 import type { Rules } from '@/lib/rules-shape'
 
 /**
- * Modelo de dinero — Backend Spec 01 §1 y §2 (7 ago 2026).
- * Fuente de verdad única para precios, regalías y tarifas en toda la app.
- *
- * Reemplaza el modelo anterior, en el que el comprador pagaba exactamente el
- * precio y el procesamiento se calculaba sobre el precio completo. Tres cambios:
+ * Modelo de dinero — Backend Spec 01 §1 y §2, y Work Order 02 Stage 0.1, que
+ * manda donde difieren. Fuente de verdad única para precios, regalías y
+ * tarifas en toda la app.
  *
  *  - El comprador paga `precio + 8`. La tarifa de servicio se cobra en AMBOS
- *    lados: $8 al comprador y $8 descontados al vendedor, $16 por venta.
- *  - El procesamiento se calcula sobre `regalía + 8`, no sobre el precio, y lo
- *    absorbe solo el vendedor. Nunca se le suma al comprador.
- *  - Desaparece el escalón del 2.3% sobre la parte por encima de $20,000. Ese
- *    2.3% ahora es la comisión de cobro de payouts (§1.4).
+ *    lados: $8 al comprador y $8 descontados al vendedor, y $8 del lado de la
+ *    regalía cuando la hay.
+ *  - El procesamiento es 2.9% del cargo entero más $0.30 y lo absorbe el
+ *    vendedor (0.1a). Nunca se le suma al comprador.
+ *  - El 2.3% es la comisión de cobro de payouts (§1.4).
  *
  * La regalía puede ser porcentaje o monto fijo. Una regalía fija es absoluta:
  * se debe completa sea cual sea el valor, incluso en una donación de valor cero.
@@ -32,6 +30,13 @@ export const FEE = {
   stripePct: 0.029,
   stripeFlat: 0.3,
 } as const
+
+/**
+ * La tarifa de tarjeta, para mostrarla: el panel y el asistente la leen de aqui
+ * y no la escriben a mano (Work Order 02, check:money).
+ */
+export const PROCESSING_PCT = FEE.stripePct * 100
+export const PROCESSING_RULE = `${PROCESSING_PCT}% x charge + $${FEE.stripeFlat.toFixed(2)}`
 
 /** Lo que estas funciones necesitan de las reglas. `Rules` lo cumple entero. */
 export type FeeRules = Pick<Rules, 'fees' | 'royalty'>
@@ -75,41 +80,77 @@ export function minPriceFor(r: Royalty, rules: Pick<Rules, 'royalty'>): number {
   return r.value + Math.max(r.value * (rules.royalty.floorPct / 100), rules.royalty.floorMin)
 }
 
-export type Quote = {
+/** La via de cobro de una venta (Work Order 02, 0.3 y 0.4). */
+export type ChargePath = 'direct' | 'platform'
+
+export type SaleQuote = {
+  path: ChargePath
   price: number
-  royalty: number
-  /** Lo que se le cobra al comprador: precio + tarifa de servicio. */
+  /** Lo que paga el comprador: precio + tarifa de servicio del comprador. Es el cargo. */
   buyerTotal: number
-  service: number
+  charge: number
+  serviceBuyer: number
+  serviceSeller: number
+  /** 2.9% x cargo + $0.30, redondeado hacia arriba desde medio centavo. */
   processing: number
+  royaltyGross: number
+  /** La regalia menos la tarifa del lado de la regalia; nunca negativa. */
+  royaltyEarning: number
+  /** Las tarifas de servicio que se queda tbt.cafe: $8 + $8, y $8 de la regalia si la hay. */
+  platformTake: number
   sellerNet: number
-  /** Lo que recibe la plataforma: $8 de cada lado. */
-  platformFee: number
+  /** Solo en la via directa (0.1b): regalia + las dos tarifas + procesamiento. */
+  applicationFee: number | null
 }
 
 /**
- * Desglose de una venta directa — §1.1.
+ * El desglose de una venta — Work Order 02, Stage 0.1. La unica aritmetica de
+ * una venta: ninguna ruta calcula una tarifa por su cuenta.
  *
- * Cifras de referencia que esta función debe reproducir exactas:
+ * Todo en centavos enteros, para que redondear y cuadrar sean exactos:
+ * comprador = vendedor + regalia neta + plataforma + procesamiento, siempre.
  *
- *   precio  regalía   comprador  procesamiento   vendedor
- *   12,000  10% 1,200  12,008.00         35.33  10,756.67
- *   18,000  10% 1,800  18,008.00         52.73  16,139.27
- *   45,000  10% 4,500  45,008.00        131.03  40,360.97
- *    5,000  fija 1,200  5,008.00         35.33   3,756.67
+ * Via directa: el cargo se hace en la cuenta del vendedor y la plataforma cobra
+ * `applicationFee` (0.1b); el procesamiento va dentro, porque Stripe se lo
+ * factura a la plataforma (fees_collector: 'application'). Via plataforma: el
+ * cargo entero cae en tbt.cafe y el neto del vendedor se vuelve una ganancia
+ * de venta (0.4b); las cifras son las mismas, sin app fee.
+ *
+ * Filas de referencia (0.1d), que check:fees reproduce al centavo:
+ *
+ *   precio  regalia     comprador  procesamiento  regalia neta  plataforma  vendedor   app fee
+ *   12,000  10% 1,200   12,008.00         348.53      1,192.00       24.00  10,443.47  1,564.53
+ *   18,000  10% 1,800   18,008.00         522.53      1,792.00       24.00  15,669.47  2,338.53
+ *   45,000  10% 4,500   45,008.00       1,305.53      4,492.00       24.00  39,186.47  5,821.53
+ *    5,000  fija 1,200   5,008.00         145.53      1,192.00       24.00   3,646.47  1,361.53
+ *    2,000  sin regalia  2,008.00          58.53             —       16.00   1,933.47     74.53
  */
-export function quote(price: number, r: Royalty, rules: Pick<Rules, 'fees'>): Quote {
-  const royalty = royaltyAmountOf(r, price)
-  const { serviceBuyer, serviceSeller } = rules.fees
-  const processing = (royalty + serviceSeller) * FEE.stripePct + FEE.stripeFlat
+export function saleQuote(input: { price: number; royalty: Royalty; path: ChargePath }, rules: Pick<Rules, 'fees'>): SaleQuote {
+  const priceC = cents(input.price)
+  const buyerC = cents(rules.fees.serviceBuyer)
+  const sellerC = cents(rules.fees.serviceSeller)
+  const chargeC = priceC + buyerC
+  // 2.9% x cargo + 30 centavos, medio centavo hacia arriba, en enteros.
+  const processingC = Math.floor((chargeC * 29 + 30_000 + 500) / 1000)
+  const royaltyC = cents(royaltyAmountOf(input.royalty, input.price))
+  const royaltySideC = Math.min(cents(rules.fees.serviceRoyalty), royaltyC)
+  const royaltyEarningC = royaltyC - royaltySideC
+  const platformC = buyerC + sellerC + royaltySideC
+  const sellerNetC = priceC - royaltyC - sellerC - processingC
+  const d = (c: number) => c / 100
   return {
-    price,
-    royalty,
-    buyerTotal: price + serviceBuyer,
-    service: serviceBuyer,
-    processing,
-    sellerNet: price - royalty - serviceSeller - processing,
-    platformFee: serviceBuyer + serviceSeller,
+    path: input.path,
+    price: d(priceC),
+    buyerTotal: d(chargeC),
+    charge: d(chargeC),
+    serviceBuyer: d(buyerC),
+    serviceSeller: d(sellerC),
+    processing: d(processingC),
+    royaltyGross: d(royaltyC),
+    royaltyEarning: d(royaltyEarningC),
+    platformTake: d(platformC),
+    sellerNet: d(sellerNetC),
+    applicationFee: input.path === 'direct' ? d(royaltyC + buyerC + sellerC + processingC) : null,
   }
 }
 

@@ -14,7 +14,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { authenticate } from '@/lib/route-auth'
 import { createAdminClient } from '@/lib/supabase-admin'
 import { loadAdmin, can, hasValidStepUp, STEP_UP_HEADER } from '@/lib/admin/guard'
-import { transferQuote, FEE, type Royalty } from '@/lib/fees'
+import { transferQuote, PROCESSING_RULE, type Royalty } from '@/lib/fees'
 import { getRules, type Rules } from '@/lib/rules'
 
 
@@ -136,7 +136,7 @@ export async function GET(request: NextRequest) {
         serviceFee: rules.fees.serviceBuyer,
         chargedOnBothSides: true,
         platformPerSale: rules.fees.serviceBuyer + rules.fees.serviceSeller,
-        processing: `(royalty + ${rules.fees.serviceSeller}) x ${FEE.stripePct} + ${FEE.stripeFlat}`,
+        processing: PROCESSING_RULE,
         processingBorneBy: 'seller',
       },
       // Las ventas directas aún no tienen su propia tabla: viven como

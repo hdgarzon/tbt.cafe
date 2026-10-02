@@ -95,7 +95,8 @@ const dispute = (over: Record<string, unknown> = {}): StripeEventLike => ({
 // ---- LA GUARDA: nada de esto le escribe a nadie
 {
   const lib = readFileSync(join(__dirname, '..', 'src/lib/disputes.ts'), 'utf8')
-  const hook = readFileSync(join(__dirname, '..', 'src/app/api/stripe/webhook/route.ts'), 'utf8')
+  // Los manejadores viven en lib/stripe-events.ts (0.3c); la ruta solo verifica la firma.
+  const hook = readFileSync(join(__dirname, '..', 'src/app/api/stripe/webhook/route.ts'), 'utf8') + readFileSync(join(__dirname, '..', 'src/lib/stripe-events.ts'), 'utf8')
   // Se afirma sobre la LLAMADA, no sobre el nombre: el modulo menciona
   // `fileSystemTicket` en prosa justamente para explicar por que no lo usa.
   ok('el módulo no abre tickets', !lib.includes('fileSystemTicket('))
@@ -122,7 +123,7 @@ const dispute = (over: Record<string, unknown> = {}): StripeEventLike => ({
   ok('el historial admite restoring', /event_type in \('creation', 'transfer', 'restoring'\)/.test(mig) && /transfer_type in \('sale', 'gift', 'restoring'\)/.test(mig))
 
   // 8.1 una disputa abre un ticket con su evidencia; su dinero ya se congela (6.4, 064)
-  const hookSrc = rd('src/app/api/stripe/webhook/route.ts')
+  const hookSrc = rd('src/app/api/stripe/webhook/route.ts') + rd('src/lib/stripe-events.ts')
   ok('el webhook abre el ticket de la disputa', /openDisputeTicket\(/.test(hookSrc))
   const t = rd('src/lib/dispute-ticket.ts')
   ok('en la categoría dispute, uno por disputa', /category: 'dispute'/.test(t) && /contains\('context', \{ dispute_ref:/.test(t))
