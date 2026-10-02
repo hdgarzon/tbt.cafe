@@ -5,6 +5,7 @@ import { supabase } from '@/lib/supabase'
 import { useLocale } from '@/i18n/LocaleProvider'
 import { fetchPurchased, type PurchaseRow } from '@/lib/history-data'
 import { LedgerRow } from '@/components/LedgerRow'
+import { ReceiptSheet } from '@/components/ReceiptSheet'
 import { money } from '@/lib/fees'
 import { SignInGate } from '@/components/SignInGate'
 
@@ -20,6 +21,8 @@ const plural = (n: number, one: string, many: string) => (n === 1 ? one : many).
 export default function PurchasedPage() {
   const { t } = useLocale()
   const [loading, setLoading] = useState(true)
+  // Stage 9: cada fila abre su recibo.
+  const [receiptId, setReceiptId] = useState<string | null>(null)
   const [signedIn, setSignedIn] = useState(true)
   const [rows, setRows] = useState<PurchaseRow[]>([])
 
@@ -62,7 +65,7 @@ export default function PurchasedPage() {
             {rows.map((r) => (
               <LedgerRow
                 key={r.id}
-                href={r.tbtId ? `/work/${r.tbtId}` : undefined}
+                onClick={() => setReceiptId(r.id)}
                 title={r.title}
                 what={t.myCollections.saleRow.replace('{name}', r.sellerName ?? t.work.unknownArtist)}
                 amount={`${money(r.amount)} USD`}
@@ -72,6 +75,7 @@ export default function PurchasedPage() {
           </div>
         </>
       )}
+      {receiptId && <ReceiptSheet kind="purchase" id={receiptId} onClose={() => setReceiptId(null)} />}
     </div>
   )
 }
