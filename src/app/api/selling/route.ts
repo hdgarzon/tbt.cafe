@@ -29,7 +29,7 @@ async function loadState(userId: string) {
     admin.from('seller_accounts').select(SELLER_COLUMNS).eq('user_id', userId).single(),
     admin.from('provider_countries').select('country, merchant, payout_bank, payout_usdc, enabled').eq('enabled', true).order('country'),
     admin.from('profiles').select('phone').eq('id', userId).single(),
-    admin.from('payout_connect_accounts').select('status, transfers_enabled').eq('user_id', userId).maybeSingle(),
+    admin.from('payout_connect_accounts').select('status, transfers_enabled, card_payments_enabled').eq('user_id', userId).maybeSingle(),
     getRules(),
   ])
 
@@ -42,7 +42,9 @@ async function loadState(userId: string) {
     covered: row?.country ? coverageFor(countryRow, rules) : null,
     suggestedCountry: countryFromPhone(profile?.phone ?? null),
     // El proveedor dice cuando la cuenta esta lista; la pantalla no lo supone (2.5).
-    providerReady: !!connect?.transfers_enabled,
+    // En la via directa, lista es poder cobrar tambien: card_payments activa (0.3a).
+    providerReady:
+      !!connect?.transfers_enabled && (row?.charge_path === 'direct' ? !!connect?.card_payments_enabled : true),
     sellingPaused: rules.pauses.selling.on,
   }
 }

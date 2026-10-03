@@ -5,6 +5,7 @@ import { openDisputeTicket } from '@/lib/dispute-ticket'
 import { getRules } from '@/lib/rules'
 import { completeSale } from '@/lib/complete-sale'
 import { stripe } from '@/lib/stripe'
+import { refreshConnectAccount } from '@/lib/payout-disburse'
 
 /**
  * Lo que hace tbt.cafe con cada evento de Stripe — los dos endpoints lo
@@ -76,6 +77,50 @@ export async function handleStripeEvent(event: Stripe.Event, account: string | n
        */
       if (!stored) {
         return { ok: false, error: 'dispute_not_recorded' }
+      }
+      break
+    }
+    /*
+     * 0.3c: la cuenta conectada cambio — capacidades activadas, retiradas o
+     * requisitos nuevos. No se lee el objeto del evento: se pregunta a Stripe
+     * por la cuenta v2, que es la fuente de las dos capacidades, y se guarda lo
+     * que diga. Repetirlo da el mismo resultado.
+     */
+    case 'account.updated': {
+      const accountId = (event.data.object as Stripe.Account).id
+      const { data: row } = await db()
+        .from('payout_connect_accounts')
+        .select('user_id')
+        .eq('account_id', accountId)
+        .maybeSingle()
+      // Una cuenta que no es de nadie aqui (pruebas, otra integracion) no se crea.
+      if (!row) break
+      let fresh: Awaited<ReturnType<typeof refreshConnectAccount>>
+      try {
+        fresh = await refreshConnectAccount(db(), row.user_id, accountId)
+      } catch (error) {
+        console.error('[account.updated] no se pudo refrescar', accountId, error)
+        return { ok: false, error: 'account_not_refreshed' }
+      }
+      /*
+       * 6.5: en la via directa el dinero de la venta cae en esta cuenta. El
+       * retraso hace que siga ahi cuando llega una disputa. Se fija en cuanto
+       * la cuenta puede cobrar, y se vuelve a fijar en cada evento: es el mismo
+       * valor, y asi un cambio de configuracion llega a la cuenta en su
+       * siguiente evento. Si Stripe lo rechaza, se pide el reenvio: una cuenta
+       * que cobra sin retraso es justo lo que 6.5 evita.
+       */
+      if (fresh.cardPaymentsEnabled) {
+        try {
+          const rules = await getRules()
+          await stripe.balanceSettings.update(
+            { payments: { settlement_timing: { delay_days_override: rules.payouts.sellerDelayDays } } },
+            { stripeAccount: accountId }
+          )
+        } catch (error) {
+          console.error('[account.updated] no se pudo fijar el retraso de pago', accountId, error)
+          return { ok: false, error: 'payout_delay_not_set' }
+        }
       }
       break
     }
