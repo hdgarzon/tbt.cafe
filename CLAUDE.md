@@ -75,6 +75,7 @@ npm run check:scan        # a scan that did not run is never clear; with the pro
 npm run check:imageindex  # indexing a certified image is awaited, recorded either way, and a failure opens a ticket
 npm run check:roastquestions # nobody can post a Roast question until moderation exists; reading stays open
 npm run check:stealth     # robots.txt disallows all and every page inherits noindex, until the launch checklist says otherwise
+npm run check:directpath  # a direct-path sale reaches only an account that can take it; its payout delay is set and never above 31
 ```
 
 Each guard is a plain script under `scripts/`, written BEFORE the module it

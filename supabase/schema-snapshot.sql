@@ -776,6 +776,7 @@ create table if not exists public.payout_connect_accounts (
   country text not null,
   status text default 'onboarding'::text not null,
   transfers_enabled boolean default false not null,
+  card_payments_enabled boolean default false not null,
   requirements_due text[] default '{}'::text[] not null,
   created_at timestamp with time zone default now() not null,
   updated_at timestamp with time zone default now() not null
@@ -1164,6 +1165,7 @@ alter table public.platform_config add constraint platform_config_three_ds_thres
 alter table public.platform_config add constraint rules_fees_non_negative check (service_fee_buyer >= 0 and service_fee_seller >= 0 and service_fee_royalty >= 0 and registration_fee >= 0 and transfer_fee >= 0);
 alter table public.platform_config add constraint rules_thresholds_non_negative check (settlement_top_threshold >= 0 and absorption_threshold >= 0 and velocity_outbound_24h >= 0 and velocity_new_pair_threshold >= 0 and payout_cost_bank >= 0 and payout_cost_usdc >= 0 and royalty_floor_min >= 0 and royalty_floor_pct >= 0);
 alter table public.platform_config add constraint rules_days_positive check (settlement_days_top > 0 and first_payout_hold_days >= 0 and first_payout_clean_sales >= 0 and first_payout_max_days >= first_payout_hold_days and writeoff_months > 0 and offer_max_hours > 0 and offer_payment_window_hours > 0 and offer_auto_cancel_days > 0 and offer_message_max > 0 and velocity_count_per_hour > 0 and velocity_new_pair_days >= 0 and phone_change_days >= 0 and seller_payout_delay_days >= 0);
+alter table public.platform_config add constraint rules_payout_delay_max check (seller_payout_delay_days <= 31);
 alter table public.platform_config add constraint rules_transfer_window check (transfer_window_hours > 0 and transfer_window_hours < 168);
 alter table public.platform_config add constraint rules_royalty_ceiling check (royalty_pct_ceiling >= 0 and royalty_pct_ceiling <= 90);
 alter table public.platform_config add constraint rules_royalty_warning check (royalty_pct_warning <= royalty_pct_ceiling);

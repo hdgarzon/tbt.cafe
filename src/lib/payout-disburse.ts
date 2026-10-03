@@ -37,16 +37,18 @@ import { notify } from '@/lib/notify'
  * antes de mover dinero. Preguntar ahi es exacto y no depende de que un evento
  * haya llegado.
  *
- * Un webhook sigue siendo util para avisar antes de que la persona lo intente.
- * Es una mejora, no un requisito de correccion.
+ * `account.updated` tambien la llama (lib/stripe-events.ts), para que la
+ * pantalla Vender y la via directa vean el estado sin esperar a un cobro. El
+ * webhook adelanta el dato; la pregunta antes de mover dinero sigue siendo la
+ * que decide.
  */
 export async function refreshConnectAccount(
   admin: SupabaseClient,
   userId: string,
   accountId: string
-): Promise<{ transfersEnabled: boolean; status: string }> {
+): Promise<{ transfersEnabled: boolean; cardPaymentsEnabled: boolean; status: string }> {
   const account = await stripe.v2.core.accounts.retrieve(accountId, {
-    include: ['configuration.recipient'],
+    include: ['configuration.merchant', 'configuration.recipient'],
   })
 
   const cap = account.configuration?.recipient?.capabilities?.stripe_balance?.stripe_transfers
@@ -62,10 +64,18 @@ export async function refreshConnectAccount(
           ? 'rejected'
           : 'onboarding'
 
+  /*
+   * Work Order 02, 0.3a: la via directa cobra en esta cuenta, y solo puede
+   * hacerlo con `card_payments` activa en la configuracion merchant. Una cuenta
+   * de la via de plataforma no la tiene ni la necesita: queda en false.
+   */
+  const cardPaymentsEnabled = account.configuration?.merchant?.capabilities?.card_payments?.status === 'active'
+
   await admin
     .from('payout_connect_accounts')
     .update({
       transfers_enabled: transfersEnabled,
+      card_payments_enabled: cardPaymentsEnabled,
       status,
       // Los codigos que Stripe da para explicar por que no esta activa. Se
       // guardan para poder decirle a la persona que le falta, en vez de un
@@ -75,7 +85,7 @@ export async function refreshConnectAccount(
     })
     .eq('user_id', userId)
 
-  return { transfersEnabled, status }
+  return { transfersEnabled, cardPaymentsEnabled, status }
 }
 
 export type DisburseResult =
