@@ -380,7 +380,17 @@ create table if not exists public.transfers (
   tax_amount numeric(12,2) default 0 not null,
   tax_party text default 'none' not null check (tax_party in ('buyer', 'seller', 'platform', 'none')),
   tax_country text,
-  tax_collected_by text default 'none' not null check (tax_collected_by in ('platform', 'seller', 'provider', 'none'))
+  tax_collected_by text default 'none' not null check (tax_collected_by in ('platform', 'seller', 'provider', 'none')),
+  -- 078 · Work Order 02 8.2: the refund
+  refund_state text check (refund_state in ('ledger', 'refunded', 'failed')),
+  refund_amount numeric(12,2),
+  refund_reason text,
+  refund_royalty_cancelled boolean,
+  refund_id text,
+  refund_fee_reversal_id text,
+  refunded_at timestamptz,
+  service_fee_refund_id text,
+  service_fee_refunded_at timestamptz
 );
 
 create table if not exists public.tbt_payments (
@@ -822,7 +832,9 @@ create table if not exists public.payout_earnings (
   tax_amount numeric(12,2) default 0 not null,
   tax_party text default 'none' not null check (tax_party in ('buyer', 'seller', 'platform', 'none')),
   tax_country text,
-  tax_collected_by text default 'none' not null check (tax_collected_by in ('platform', 'seller', 'provider', 'none'))
+  tax_collected_by text default 'none' not null check (tax_collected_by in ('platform', 'seller', 'provider', 'none')),
+  -- 078 · Work Order 02 8.2
+  cancelled_at timestamptz
 );
 
 -- 075 · Chains 01 Stage 7.2: the open balance alert, one per account
@@ -1204,7 +1216,7 @@ alter table public.payout_earnings add constraint payout_earnings_work_id_fkey F
 alter table public.payout_earnings add constraint payout_earnings_payout_block_id_fkey FOREIGN KEY (payout_block_id) REFERENCES payout_blocks(id) ON DELETE SET NULL;
 alter table public.payout_earnings add constraint payout_earnings_amount_check CHECK ((amount > (0)::numeric));
 alter table public.payout_earnings add constraint payout_earnings_source_check CHECK ((source = ANY (ARRAY['sale'::text, 'royalty'::text, 'transfer'::text, 'offer'::text])));
-alter table public.payout_earnings add constraint payout_earnings_state_check CHECK ((state = ANY (ARRAY['pending'::text, 'available'::text, 'collected'::text, 'reserved'::text])));
+alter table public.payout_earnings add constraint payout_earnings_state_check CHECK ((state = ANY (ARRAY['pending'::text, 'available'::text, 'collected'::text, 'reserved'::text, 'cancelled'::text])));
 alter table public.payout_earnings add constraint payout_earnings_hold_reason_check CHECK ((hold_reason = ANY (ARRAY['settlement_window'::text, 'awaiting_counterparty'::text])));
 alter table public.chain_anchors add constraint chain_anchors_pkey PRIMARY KEY (record_hash);
 alter table public.chain_anchors add constraint chain_anchors_record_kind_fkey FOREIGN KEY (record_kind) REFERENCES chain_record_kinds(kind);

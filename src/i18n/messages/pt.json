@@ -1007,6 +1007,7 @@
       "transfers": "Uma transferência precisa da sua atenção.",
       "purchases_bought": "Você comprou “{title}”. Agora é sua.",
       "purchases_sold": "“{title}” foi vendida.",
+      "purchases_refunded": "{amount} USD foram reembolsados por {title}.",
       "transfers_received": "“{title}” agora é sua: a transferência foi concluída.",
       "transfers_accepted": "Sua transferência de “{title}” foi aceita.",
       "transfers_declined": "Sua transferência de “{title}” foi recusada. Nada foi cobrado.",

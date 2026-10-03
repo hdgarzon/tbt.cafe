@@ -218,18 +218,22 @@ const purchases: Template = {
   en: (p) => pick({
     bought: { subject: `You bought “${p.title}”`, heading: 'It is yours now', body: `The purchase of “${p.title}” went through, and you are now its holder.`, cta: 'See the work' },
     sold: { subject: `“${p.title}” sold`, heading: 'Your work changed hands', body: `“${p.title}” was bought and now has a new holder.`, cta: 'See the work' },
+    refunded: { subject: `${p.amount} USD was refunded for “${p.title}”`, heading: 'Your refund', body: `${p.amount} USD was refunded for “${p.title}”.`, cta: 'See the work' },
   }, p.variant, { subject: `An update on “${p.title}”`, heading: 'A purchase completed', body: `There is an update on “${p.title}”.`, cta: 'See the work' }),
   es: (p) => pick({
     bought: { subject: `Compraste «${p.title}»`, heading: 'Ya es tuya', body: `La compra de «${p.title}» se completó y ahora eres quien la tiene.`, cta: 'Ver la obra' },
     sold: { subject: `Se vendió «${p.title}»`, heading: 'Tu obra cambió de manos', body: `Compraron «${p.title}» y ahora tiene un nuevo dueño.`, cta: 'Ver la obra' },
+    refunded: { subject: `Se reembolsaron ${p.amount} USD por «${p.title}»`, heading: 'Tu reembolso', body: `Se reembolsaron ${p.amount} USD por «${p.title}».`, cta: 'Ver la obra' },
   }, p.variant, { subject: `Novedades de «${p.title}»`, heading: 'Se completó una compra', body: `Hay novedades sobre «${p.title}».`, cta: 'Ver la obra' }),
   pt: (p) => pick({
     bought: { subject: `Você comprou “${p.title}”`, heading: 'Agora é sua', body: `A compra de “${p.title}” foi concluída e agora você é quem a detém.`, cta: 'Ver a obra' },
     sold: { subject: `“${p.title}” foi vendida`, heading: 'Sua obra mudou de mãos', body: `Compraram “${p.title}” e agora ela tem um novo dono.`, cta: 'Ver a obra' },
+    refunded: { subject: `${p.amount} USD foram reembolsados por “${p.title}”`, heading: 'Seu reembolso', body: `${p.amount} USD foram reembolsados por “${p.title}”.`, cta: 'Ver a obra' },
   }, p.variant, { subject: `Novidades sobre “${p.title}”`, heading: 'Uma compra foi concluída', body: `Há novidades sobre “${p.title}”.`, cta: 'Ver a obra' }),
   fr: (p) => pick({
     bought: { subject: `Vous avez acheté « ${p.title} »`, heading: 'Elle est à vous', body: `L'achat de « ${p.title} » est finalisé : vous en êtes désormais le détenteur.`, cta: "Voir l'œuvre" },
     sold: { subject: `« ${p.title} » a été vendue`, heading: 'Votre œuvre a changé de mains', body: `« ${p.title} » a été achetée et a désormais un nouveau détenteur.`, cta: "Voir l'œuvre" },
+    refunded: { subject: `${p.amount} USD ont été remboursés pour « ${p.title} »`, heading: 'Votre remboursement', body: `${p.amount} USD ont été remboursés pour « ${p.title} ».`, cta: "Voir l'œuvre" },
   }, p.variant, { subject: `Du nouveau pour « ${p.title} »`, heading: 'Un achat a été finalisé', body: `Il y a du nouveau pour « ${p.title} ».`, cta: "Voir l'œuvre" }),
 }
 
