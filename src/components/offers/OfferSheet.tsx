@@ -25,14 +25,23 @@ export function OfferSheet({ offerId, onClose }: { offerId: string | null; onClo
   const [confirmWithdraw, setConfirmWithdraw] = useState(false)
   const [confirmReport, setConfirmReport] = useState<'message' | 'response' | null>(null)
   const [reported, setReported] = useState(false)
+  // El reloj de las horas para pagar: se lee al llegar la oferta y en cada tick, no en el render.
+  const [now, setNow] = useState(() => Date.now())
 
-  async function load(id: string) {
-    const o = await fetchOffer(id)
+  function show(o: OfferDetail | null) {
     setOffer(o)
+    setNow(Date.now())
     if (!o) setMsg(t.transferAccept.errors.respondFailed)
   }
 
-  useEffect(() => {
+  async function load(id: string) {
+    show(await fetchOffer(id))
+  }
+
+  // Otra oferta, hoja limpia: se reinicia en el render, antes de pintar la anterior.
+  const [shownId, setShownId] = useState(offerId)
+  if (offerId !== shownId) {
+    setShownId(offerId)
     setOffer(null)
     setReply('')
     setMsg('')
@@ -40,20 +49,19 @@ export function OfferSheet({ offerId, onClose }: { offerId: string | null; onClo
     setConfirmWithdraw(false)
     setConfirmReport(null)
     setReported(false)
-    if (offerId) load(offerId)
+  }
+
+  useEffect(() => {
+    if (offerId) fetchOffer(offerId).then(show)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [offerId])
 
   const expiresIn = useCountdown(offer?.status === 'open' ? offer.expiresAt : null)
   const payDue = offer?.status === 'accepted' ? offer.paymentDueAt : null
   const payIn = useCountdown(payDue)
-  // El reloj de las horas para pagar se lee en el tick, no en el render.
-  const [now, setNow] = useState(() => Date.now())
   useEffect(() => {
     if (!payDue) return
-    const tick = () => setNow(Date.now())
-    tick()
-    const iv = setInterval(tick, 1000)
+    const iv = setInterval(() => setNow(Date.now()), 1000)
     return () => clearInterval(iv)
   }, [payDue])
 
