@@ -55,6 +55,8 @@ export type WorkFull = {
    * declarado en `bonded` (su nombre, o sin atribuir).
    */
   registered_as: 'creator' | 'collector'
+  /** Decision 94: fisica o digital, lo declara quien vende. Vacia en obras de antes de la 079. */
+  work_kind: 'physical' | 'digital' | null
   bonded: { name: string | null; unattributed: boolean; alias: string | null; city: string | null; status: string } | null
   commerce: WorkCommerce | null
   /** Pasaje de contexto generado al certificar (Spec 01) — user_edited_summary si existe, si no ai_summary. */
@@ -83,7 +85,7 @@ export async function fetchWorkFull(tbtId: string): Promise<WorkFull | null> {
     .from('works')
     .select(
       `id, tbt_id, title, description, category, technique, media_url, status,
-       certified_at, mint_address, is_featured, current_owner_id, creator_id, registered_as,
+       certified_at, mint_address, is_featured, current_owner_id, creator_id, registered_as, work_kind,
        asset_links, registered_asset_links, audio_video_url, audio_video_type,
        series:work_series(id, name, slug),
        bonded:bonded_creators(name, unattributed, alias, city, status),
@@ -223,7 +225,15 @@ export async function fetchOwnershipHistory(workId: string, privateLabel: string
  */
 async function updateCommerce(
   workId: string,
-  patch: { availability?: Availability; price?: number; takingOffers?: boolean; royalty?: { type: 'percentage' | 'fixed'; value: number } }
+  patch: {
+    availability?: Availability
+    price?: number
+    takingOffers?: boolean
+    royalty?: { type: 'percentage' | 'fixed'; value: number }
+    /** Decision 94: la clase de la obra y el reconocimiento de la primera publicacion. */
+    workKind?: 'physical' | 'digital'
+    sellerAcknowledged?: boolean
+  }
 ): Promise<{ error?: string; priceLifted?: number | null }> {
   const {
     data: { session },
@@ -238,8 +248,11 @@ async function updateCommerce(
   return res.ok ? { priceLifted: json.priceLifted ?? null } : { error: json.error ?? 'commerce_failed' }
 }
 
-export const saveAvailability = (workId: string, availability: Availability) =>
-  updateCommerce(workId, { availability })
+export const saveAvailability = (
+  workId: string,
+  availability: Availability,
+  listing?: { workKind?: 'physical' | 'digital'; sellerAcknowledged?: boolean }
+) => updateCommerce(workId, { availability, ...(listing ?? {}) })
 
 export const saveTakingOffers = (workId: string, takingOffers: boolean) =>
   updateCommerce(workId, { takingOffers })

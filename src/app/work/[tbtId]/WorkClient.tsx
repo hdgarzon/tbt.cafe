@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState, type ReactNode } from 'react'
 import { supabase } from '@/lib/supabase'
+import { planDelivery, type DeliveryChoice, type DeliveryAddress, type WorkKind } from '@/lib/delivery'
 import { useLocale } from '@/i18n/LocaleProvider'
 import { useShell } from '@/components/AppShell'
 import { LadderGate } from '@/components/LadderGate'
@@ -65,7 +66,18 @@ export default function WorkPage({ params, scannedAt = null }: { params: { tbtId
    * se paga: el precio de lista, o el monto de la oferta aceptada.
    */
   const [prepay, setPrepay] = useState<{ amount: number } | null>(null)
-  const [purchaseCtx, setPurchaseCtx] = useState<{ firstPurchase: boolean; path: 'direct' | 'platform'; sellerName: string | null } | null>(null)
+  const [purchaseCtx, setPurchaseCtx] = useState<{
+    firstPurchase: boolean
+    path: 'direct' | 'platform'
+    sellerName: string | null
+    // Decision 94: que preguntar sobre la entrega. Apagado, nada cambia.
+    deliveryLive: boolean
+    workKind: WorkKind | null
+    needsBuyerAck: boolean
+  } | null>(null)
+  const [deliveryChoice, setDeliveryChoice] = useState<DeliveryChoice | null>(null)
+  const [deliveryAddress, setDeliveryAddress] = useState<Partial<DeliveryAddress>>({})
+  const [deliveryConsent, setDeliveryConsent] = useState(false)
   const [holderNamed, setHolderNamed] = useState(false)
   const [payAmount, setPayAmount] = useState<number | null>(null)
 
@@ -79,7 +91,17 @@ export default function WorkPage({ params, scannedAt = null }: { params: { tbtId
     })
     const ctx = await res.json().catch(() => null)
     if (!res.ok || !ctx) return setMsg(t.work.errors.buyFailed)
-    setPurchaseCtx({ firstPurchase: ctx.firstPurchase, path: ctx.path, sellerName: ctx.sellerName })
+    setPurchaseCtx({
+      firstPurchase: ctx.firstPurchase,
+      path: ctx.path,
+      sellerName: ctx.sellerName,
+      deliveryLive: ctx.deliveryLive === true,
+      workKind: ctx.workKind ?? null,
+      needsBuyerAck: ctx.needsBuyerAck === true,
+    })
+    setDeliveryChoice(null)
+    setDeliveryAddress({})
+    setDeliveryConsent(false)
     // 0.8a: preseleccionado por el interruptor de anonimato.
     setHolderNamed(ctx.nameByDefault === true)
     setPrepay({ amount })
@@ -128,6 +150,9 @@ export default function WorkPage({ params, scannedAt = null }: { params: { tbtId
     : work.creator?.public_alias || work.creator?.display_name || t.work.unknownArtist
   const c = work.commerce!
   const shareUrl = `https://tbt.cafe/work/${work.tbt_id}`
+  // Decision 94: la misma regla que aplica el servidor. Aqui solo decide que pedir.
+  const deliveryInput = { choice: deliveryChoice, address: deliveryAddress, consent: deliveryConsent }
+  const deliveryReady = !purchaseCtx?.deliveryLive || planDelivery(purchaseCtx.workKind, deliveryInput).ok
 
   /**
    * Comprar exige biométrico desde $500 y biométrico + 3DS desde $1.000
@@ -159,10 +184,17 @@ export default function WorkPage({ params, scannedAt = null }: { params: { tbtId
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
         // Checkout embebido (Spec 01 §3.1): el comprador no sale de tbt.cafe.
-        body: JSON.stringify({ workId: work!.id, biometricProof, embedded: true, holderNamed }),
+        body: JSON.stringify({
+          workId: work!.id,
+          biometricProof,
+          embedded: true,
+          holderNamed,
+          delivery: purchaseCtx?.deliveryLive ? deliveryInput : undefined,
+          buyerAcknowledged: purchaseCtx?.needsBuyerAck === true,
+        }),
       })
       const body = await res.json()
-      if (!res.ok) throw new Error(body.error ?? t.work.errors.buyFailed)
+      if (!res.ok) throw new Error((t.delivery.errors as Record<string, string>)[body.error] ?? body.error ?? t.work.errors.buyFailed)
       // El client_secret monta el formulario aquí mismo. Si el backend no lo
       // mandó, se cae al redirect de siempre en vez de dejar al comprador sin
       // ninguna forma de pagar.
@@ -465,12 +497,50 @@ export default function WorkPage({ params, scannedAt = null }: { params: { tbtId
               <span>{t.holder.nameQuestion}</span>
             </label>
             <p className="text-[11px] leading-[1.5] text-ink-soft pl-6">{t.holder.nameNote}</p>
+            {/* Decision 94: la entrega de una obra fisica. Una digital no pregunta nada. */}
+            {purchaseCtx.deliveryLive && purchaseCtx.workKind !== 'digital' && (
+              <fieldset className="mt-5">
+                <legend className="text-[13px] font-medium text-ink mb-2">{t.delivery.choiceTitle}</legend>
+                {(['deliver', 'collect', 'none'] as const).map((choice) => (
+                  <label key={choice} className="flex items-center gap-2.5 py-1.5 text-[13px] text-ink">
+                    <input type="radio" name="delivery" checked={deliveryChoice === choice} onChange={() => setDeliveryChoice(choice)} />
+                    <span>{choice === 'deliver' ? t.delivery.choiceDeliver : choice === 'collect' ? t.delivery.choiceCollect : t.delivery.choiceNone}</span>
+                  </label>
+                ))}
+                {deliveryChoice === 'deliver' && (
+                  <div className="mt-3 flex flex-col gap-2">
+                    {(['name', 'line1', 'line2', 'city', 'region', 'postalCode', 'country'] as const).map((field) => (
+                      <input
+                        key={field}
+                        value={deliveryAddress[field] ?? ''}
+                        onChange={(e) => setDeliveryAddress((a) => ({ ...a, [field]: e.target.value }))}
+                        placeholder={t.delivery.address[field]}
+                        aria-label={t.delivery.address[field]}
+                        maxLength={field === 'country' ? 2 : 200}
+                        autoComplete={field === 'name' ? 'name' : field === 'line1' ? 'address-line1' : field === 'line2' ? 'address-line2' : field === 'city' ? 'address-level2' : field === 'region' ? 'address-level1' : field === 'postalCode' ? 'postal-code' : 'country'}
+                        className="w-full rounded-lg border border-hairline bg-paper px-3 py-2.5 text-[13px] text-ink outline-none focus:border-ink"
+                      />
+                    ))}
+                    <label className="flex items-start gap-2.5 mt-1 text-[12px] text-ink">
+                      <input type="checkbox" checked={deliveryConsent} onChange={(e) => setDeliveryConsent(e.target.checked)} className="mt-0.5" />
+                      <span>{t.delivery.addressConsent}</span>
+                    </label>
+                  </div>
+                )}
+              </fieldset>
+            )}
             {/* 0.8c: el nombre del estado de cuenta. */}
             <p className="text-[11.5px] text-ink-soft mt-4">
               {purchaseCtx.path === 'direct' && purchaseCtx.sellerName
                 ? t.purchase.statementSeller.replace('{seller}', purchaseCtx.sellerName)
                 : t.purchase.statementPlatform}
             </p>
+            {/* Decision 94: en la via directa, a quien se le compra y a quien se reclama. */}
+            {purchaseCtx.deliveryLive && purchaseCtx.path === 'direct' && (
+              <p className="text-[11.5px] text-ink-soft mt-2">{t.delivery.directNotice}</p>
+            )}
+            {/* Decision 94: una vez, en la primera compra; pagar lo acepta, como los Terms. */}
+            {purchaseCtx.needsBuyerAck && <p className="text-[11.5px] text-ink-soft mt-2">{t.delivery.buyerAck}</p>}
             {/* 0.8b: solo en la primera compra, sin casilla. */}
             {purchaseCtx.firstPurchase && (
               <p className="text-[11.5px] text-ink-soft mt-2">
@@ -488,7 +558,8 @@ export default function WorkPage({ params, scannedAt = null }: { params: { tbtId
                 setPrepay(null)
                 setLadderOpen(true)
               }}
-              className="mt-5 w-full rounded-xl bg-ink text-paper py-3 text-[13px] font-medium"
+              disabled={!deliveryReady}
+              className="mt-5 w-full rounded-xl bg-ink text-paper py-3 text-[13px] font-medium disabled:opacity-40"
             >
               {t.work.buy}
             </button>
