@@ -1425,9 +1425,8 @@ create policy "Creators can manage their context snapshots" on public.context_sn
 create policy "public read" on public.ownership_history for select using (true);
 
 create policy "Participantes pueden ver transferencias" on public.transfers for select using (((from_owner_id = auth.uid()) OR (to_owner_id = auth.uid())));
-create policy "Propietarios pueden iniciar transferencias" on public.transfers for insert with check ((from_owner_id = auth.uid()));
-create policy "Users can create transfers" on public.transfers for insert with check ((to_owner_id = auth.uid()));
-create policy "Participantes pueden actualizar transferencias" on public.transfers for update using (((from_owner_id = auth.uid()) OR (to_owner_id = auth.uid())));
+-- 080: la RLS filtra filas, no columnas. El cliente solo lee; toda escritura es del servidor.
+revoke insert, update, delete on public.transfers from anon, authenticated;
 
 create policy "Users can view their own payments" on public.tbt_payments for select using ((user_id = auth.uid()));
 create policy "Users can create their own payments" on public.tbt_payments for insert with check ((user_id = auth.uid()));
