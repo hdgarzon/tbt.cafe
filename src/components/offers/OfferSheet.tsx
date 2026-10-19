@@ -45,7 +45,17 @@ export function OfferSheet({ offerId, onClose }: { offerId: string | null; onClo
   }, [offerId])
 
   const expiresIn = useCountdown(offer?.status === 'open' ? offer.expiresAt : null)
-  const payIn = useCountdown(offer?.status === 'accepted' ? offer.paymentDueAt : null)
+  const payDue = offer?.status === 'accepted' ? offer.paymentDueAt : null
+  const payIn = useCountdown(payDue)
+  // El reloj de las horas para pagar se lee en el tick, no en el render.
+  const [now, setNow] = useState(() => Date.now())
+  useEffect(() => {
+    if (!payDue) return
+    const tick = () => setNow(Date.now())
+    tick()
+    const iv = setInterval(tick, 1000)
+    return () => clearInterval(iv)
+  }, [payDue])
 
   async function act(action: 'accept' | 'decline' | 'withdraw' | 'cancel' | 'report', which?: 'message' | 'response') {
     if (!offer) return
@@ -121,17 +131,6 @@ export function OfferSheet({ offerId, onClose }: { offerId: string | null; onClo
     )
   }
 
-  const MessageBlock = ({ text, which, reportable }: { text: string; which: 'message' | 'response'; reportable: boolean }) => (
-    <div className="rounded-xl border border-hairline bg-paper-warm px-3.5 py-3">
-      <p className="text-[13px] leading-[1.6] text-ink whitespace-pre-wrap break-words">{text}</p>
-      {reportable && !reported && (
-        <button type="button" onClick={() => setConfirmReport(which)} className="mt-2 text-[10.5px] underline text-ink-soft">
-          {t.offer.report}
-        </button>
-      )}
-    </div>
-  )
-
   return (
     <StandingSheet open={!!offerId} onClose={onClose} head={holder ? t.offer.respond : t.menu.offers} footer={footer}>
       {!offer ? (
@@ -149,7 +148,7 @@ export function OfferSheet({ offerId, onClose }: { offerId: string | null; onClo
           {open && <p className={line}>{t.offer.expiresIn.replace('{time}', expiresIn)}</p>}
           {accepted && !holder && (
             <p className="text-[13px] leading-[1.6] text-ink">
-              {t.offer.acceptedBuyer.replace('{hours}', String(Math.max(0, Math.ceil((new Date(offer.paymentDueAt ?? 0).getTime() - Date.now()) / 3_600_000))))}{' '}
+              {t.offer.acceptedBuyer.replace('{hours}', String(Math.max(0, Math.ceil((new Date(offer.paymentDueAt ?? 0).getTime() - now) / 3_600_000))))}{' '}
               <span className="tabular-nums">{payIn}</span>
             </p>
           )}
@@ -157,9 +156,9 @@ export function OfferSheet({ offerId, onClose }: { offerId: string | null; onClo
           {!open && !accepted && <p className={line}>{statusLabel(offer.status)}</p>}
 
           {/* El mensaje de quien oferto: entero para los dos; lo reporta quien lo recibe. */}
-          {offer.message && <MessageBlock text={offer.message} which="message" reportable={holder} />}
+          {offer.message && <MessageBlock text={offer.message} reportable={holder && !reported} reportLabel={t.offer.report} onReport={() => setConfirmReport('message')} />}
           {/* La respuesta de quien tiene la obra: la reporta quien oferto. */}
-          {offer.responseMessage && <MessageBlock text={offer.responseMessage} which="response" reportable={!holder} />}
+          {offer.responseMessage && <MessageBlock text={offer.responseMessage} reportable={!holder && !reported} reportLabel={t.offer.report} onReport={() => setConfirmReport('response')} />}
 
           {confirmReport && (
             <div className="flex items-center justify-between gap-3">
@@ -198,5 +197,18 @@ export function OfferSheet({ offerId, onClose }: { offerId: string | null; onClo
         </div>
       )}
     </StandingSheet>
+  )
+}
+
+function MessageBlock({ text, reportable, reportLabel, onReport }: { text: string; reportable: boolean; reportLabel: string; onReport: () => void }) {
+  return (
+    <div className="rounded-xl border border-hairline bg-paper-warm px-3.5 py-3">
+      <p className="text-[13px] leading-[1.6] text-ink whitespace-pre-wrap break-words">{text}</p>
+      {reportable && (
+        <button type="button" onClick={onReport} className="mt-2 text-[10.5px] underline text-ink-soft">
+          {reportLabel}
+        </button>
+      )}
+    </div>
   )
 }
