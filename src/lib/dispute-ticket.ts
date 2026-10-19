@@ -9,9 +9,10 @@ import type { SupabaseClient } from '@supabase/supabase-js'
  * congelado por la base mientras siga abierta (064). Uno por disputa, y a
  * ningun cliente se le avisa (8.5): es asunto de operaciones.
  *
- * Lo que aun no existe queda en null y dice por que: la aceptacion de los
- * Terminos (0.8b), el acuse de la confirmacion (0.9a) y el 3-D Secure cumplido
- * (0.6) llegan con el Stage 0.
+ * La evidencia lleva lo que el Stage 0 guarda: la aceptacion de los Terms
+ * (0.8b), el acuse de la confirmacion (0.9a) y el 3-D Secure cumplido (0.6d).
+ * Y desde la decision 94 (Amendment Delivery 01), la entrega de la venta: lo que
+ * eligio el comprador, su reconocimiento, y los datos del vendedor con su hora.
  */
 export async function openDisputeTicket(
   db: SupabaseClient,
@@ -24,11 +25,19 @@ export async function openDisputeTicket(
     d.workId ? db.from('works').select('tbt_id, title, mint_address, registration_record_uri, registration_record_hash, current_owner_id').eq('id', d.workId).maybeSingle() : Promise.resolve({ data: null }),
     d.workId ? db.from('titles').select('title_number, issued_at').eq('work_id', d.workId).order('issued_at', { ascending: false }).limit(1).maybeSingle() : Promise.resolve({ data: null }),
     d.workId ? db.from('ownership_history').select('sequence_number, event_type, record_uri, record_hash, created_at').eq('work_id', d.workId).order('sequence_number', { ascending: true }) : Promise.resolve({ data: null }),
-    d.transferId ? db.from('transfers').select('from_owner_id, to_owner_id, transfer_type, value_kind, payment_amount').eq('id', d.transferId).maybeSingle() : Promise.resolve({ data: null }),
-    d.userId && d.workId ? db.from('money_action_auth').select('action, satisfied_biometric, required_three_ds, created_at').eq('user_id', d.userId).eq('work_id', d.workId).order('created_at', { ascending: false }).limit(1).maybeSingle() : Promise.resolve({ data: null }),
+    d.transferId ? db.from('transfers').select('from_owner_id, to_owner_id, transfer_type, value_kind, payment_amount, confirmation_acknowledged_at').eq('id', d.transferId).maybeSingle() : Promise.resolve({ data: null }),
+    d.userId && d.workId ? db.from('money_action_auth').select('action, satisfied_biometric, required_three_ds, satisfied_three_ds, created_at').eq('user_id', d.userId).eq('work_id', d.workId).order('created_at', { ascending: false }).limit(1).maybeSingle() : Promise.resolve({ data: null }),
   ])
 
   const w = work as { tbt_id?: string; title?: string; mint_address?: string | null; registration_record_uri?: string | null; registration_record_hash?: string | null } | null
+
+  // Lo del comprador: los Terms, el reconocimiento de entrega y la entrega misma.
+  const buyerId = (transfer as { to_owner_id?: string } | null)?.to_owner_id ?? null
+  const [{ data: terms }, { data: deliveryAck }, { data: saleDelivery }] = await Promise.all([
+    buyerId ? db.from('terms_acceptances').select('terms_version, accepted_at, transfer_id').eq('user_id', buyerId).eq('kind', 'terms').order('accepted_at', { ascending: true }).limit(1).maybeSingle() : Promise.resolve({ data: null }),
+    buyerId ? db.from('terms_acceptances').select('terms_version, accepted_at').eq('user_id', buyerId).eq('kind', 'buyer_delivery').order('accepted_at', { ascending: true }).limit(1).maybeSingle() : Promise.resolve({ data: null }),
+    d.transferId ? db.from('sale_deliveries').select('work_kind, choice, address, address_consent_at, details_kind, details, details_submitted_at').eq('transfer_id', d.transferId).maybeSingle() : Promise.resolve({ data: null }),
+  ])
   await db.from('tickets').insert({
     origin: 'system',
     category: 'dispute',
@@ -52,10 +61,23 @@ export async function openDisputeTicket(
         registration: w ? { record_uri: w.registration_record_uri ?? null, record_hash: w.registration_record_hash ?? null, mint_address: w.mint_address ?? null } : null,
         provenance: history ?? [],
         satisfied_biometric: (auth as { satisfied_biometric?: boolean } | null)?.satisfied_biometric ?? null,
-        satisfied_three_ds: null,
-        terms_acceptance: null,
-        confirmation_acknowledged: null,
-        pending_from_stage_0: ['satisfied_three_ds', 'terms_acceptance', 'confirmation_acknowledged'],
+        satisfied_three_ds: (auth as { satisfied_three_ds?: boolean | null } | null)?.satisfied_three_ds ?? null,
+        terms_acceptance: terms ?? null,
+        confirmation_acknowledged: (transfer as { confirmation_acknowledged_at?: string | null } | null)?.confirmation_acknowledged_at ?? null,
+        // Decision 94: la entrega. tbt.cafe no responde por la obra fisica, pero
+        // lo que se eligio y lo que el vendedor dijo, con su hora, es evidencia.
+        delivery: saleDelivery
+          ? {
+              work_kind: (saleDelivery as { work_kind?: string }).work_kind ?? null,
+              choice: (saleDelivery as { choice?: string }).choice ?? null,
+              address: (saleDelivery as { address?: unknown }).address ?? null,
+              address_consent_at: (saleDelivery as { address_consent_at?: string | null }).address_consent_at ?? null,
+              details_kind: (saleDelivery as { details_kind?: string | null }).details_kind ?? null,
+              details: (saleDelivery as { details?: unknown }).details ?? null,
+              details_submitted_at: (saleDelivery as { details_submitted_at?: string | null }).details_submitted_at ?? null,
+            }
+          : null,
+        delivery_acknowledgment: deliveryAck ?? null,
       },
     },
   })

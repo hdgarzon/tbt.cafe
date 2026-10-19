@@ -8,6 +8,7 @@ import { fetchEarnings, sumOf, type Earning } from '@/lib/payout-data'
 import { ReceiptIcon } from '@/components/Brand'
 import { CollectSheet } from '@/components/CollectSheet'
 import { SignInGate } from '@/components/SignInGate'
+import { DIGITAL_METHODS, planDeliveryDetails, type DeliveryAddress, type DeliveryChoice, type DigitalMethod } from '@/lib/delivery'
 
 /**
  * /history/payouts — payoutPage del prototipo.
@@ -32,6 +33,7 @@ export default function PayoutsPage() {
   const [flashKey, setFlashKey] = useState(0)
   const [collecting, setCollecting] = useState(false)
   const [toast, setToast] = useState('')
+  const [userId, setUserId] = useState<string | null>(null)
 
   useEffect(() => {
     ;(async () => {
@@ -43,6 +45,7 @@ export default function PayoutsPage() {
         setLoading(false)
         return
       }
+      setUserId(user.id)
       const rows = await fetchEarnings(user.id)
       setEarnings(rows)
       // Todo lo cobrable arranca marcado, como en el prototipo: lo normal es
@@ -84,6 +87,9 @@ export default function PayoutsPage() {
       </a>
       <h1 className="page-title">{t.payouts.title}</h1>
       <div className="text-[11px] text-placeholder mt-1.5">{new Date().toLocaleDateString()}</div>
+
+      {/* Decision 94: las ventas que esperan los datos de entrega de quien vende. */}
+      {userId && <DeliveryRequests userId={userId} onSent={(msg) => setToast(msg)} />}
 
       {/* Barra de estadísticas + acciones (.txp-bar) */}
       <div className="flex items-center justify-between gap-3 mt-4 mb-1 pb-3 border-b border-hairline">
@@ -221,5 +227,146 @@ export default function PayoutsPage() {
         }}
       />
     </>
+  )
+}
+
+type DeliveryRequest = {
+  transfer_id: string
+  choice: DeliveryChoice
+  address: DeliveryAddress | null
+  created_at: string
+  work: { title: string | null } | { title: string | null }[] | null
+}
+
+/**
+ * Las ventas que esperan los datos de entrega de quien vende — Work Order 02,
+ * Amendment Delivery 01 (decision 94), Stage 7.
+ *
+ * La RLS de sale_deliveries solo deja leer al comprador y al vendedor de cada
+ * venta; aqui se piden las de quien vende. La direccion se ve aqui, con sesion,
+ * y no en ningun aviso. Con "entregamelo" en la via de plataforma, la ganancia
+ * de la venta espera estos datos (079); darlos la suelta (081).
+ *
+ * No va detras de DELIVERY_LIVE: solo hay filas si alguna venta las escribio.
+ */
+function DeliveryRequests({ userId, onSent }: { userId: string; onSent: (msg: string) => void }) {
+  const { t } = useLocale()
+  const d = t.delivery.details
+  const [rows, setRows] = useState<DeliveryRequest[]>([])
+  const [carrier, setCarrier] = useState<Record<string, string>>({})
+  const [tracking, setTracking] = useState<Record<string, string>>({})
+  const [method, setMethod] = useState<Record<string, DigitalMethod>>({})
+  const [note, setNote] = useState<Record<string, string>>({})
+  const [error, setError] = useState<Record<string, string>>({})
+  const [busy, setBusy] = useState<string | null>(null)
+
+  useEffect(() => {
+    let alive = true
+    supabase
+      .from('sale_deliveries')
+      .select('transfer_id, choice, address, created_at, work:works(title)')
+      .eq('seller_id', userId)
+      .is('details_submitted_at', null)
+      .neq('choice', 'none')
+      .order('created_at', { ascending: true })
+      .then(({ data }) => {
+        if (alive) setRows((data ?? []) as DeliveryRequest[])
+      })
+    return () => {
+      alive = false
+    }
+  }, [userId])
+
+  if (rows.length === 0) return null
+
+  async function send(r: DeliveryRequest) {
+    const input = { carrier: carrier[r.transfer_id], tracking: tracking[r.transfer_id], method: method[r.transfer_id], note: note[r.transfer_id] }
+    const plan = planDeliveryDetails(r.choice, input)
+    if (!plan.ok) return setError((e) => ({ ...e, [r.transfer_id]: t.delivery.detailsErrors[plan.error] }))
+    setBusy(r.transfer_id)
+    try {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession()
+      if (!session) return
+      const res = await fetch('/api/delivery/details', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
+        body: JSON.stringify({ transferId: r.transfer_id, ...input }),
+      })
+      const json = await res.json().catch(() => ({}))
+      if (!res.ok) {
+        const code = String(json.error ?? 'details_failed')
+        return setError((e) => ({ ...e, [r.transfer_id]: (t.delivery.detailsErrors as Record<string, string>)[code] ?? t.delivery.detailsErrors.details_failed }))
+      }
+      setRows((all) => all.filter((x) => x.transfer_id !== r.transfer_id))
+      onSent(d.sent)
+    } finally {
+      setBusy(null)
+    }
+  }
+
+  const field = 'w-full rounded-lg border border-hairline bg-paper px-3 py-2.5 text-[13px] text-ink outline-none focus:border-ink'
+
+  return (
+    <section className="mt-5 mb-2 rounded-xl border border-hairline p-4">
+      <h2 className="text-[13px] font-medium text-ink">{d.title}</h2>
+      <div className="mt-3 flex flex-col divide-y divide-hairline">
+        {rows.map((r) => {
+          const work = Array.isArray(r.work) ? r.work[0] : r.work
+          return (
+            <div key={r.transfer_id} className="py-3 first:pt-0 last:pb-0">
+              <div className="text-[13px] text-ink">{work?.title ?? ''}</div>
+              <div className="text-[11.5px] text-ink-soft mt-0.5">
+                {r.choice === 'deliver' ? d.choiceDeliver : r.choice === 'collect' ? d.choiceCollect : d.choiceDigital}
+              </div>
+              {r.choice === 'deliver' && r.address && (
+                <address className="not-italic text-[12px] leading-[1.5] text-ink mt-2">
+                  {[r.address.name, r.address.line1, r.address.line2, [r.address.postalCode, r.address.city].filter(Boolean).join(' '), r.address.region, r.address.country]
+                    .filter(Boolean)
+                    .map((line, i) => (
+                      <div key={i}>{line}</div>
+                    ))}
+                </address>
+              )}
+              {r.choice === 'deliver' && <p className="text-[11px] text-placeholder mt-1">{d.heldNote}</p>}
+
+              <div className="mt-2.5 flex flex-col gap-2">
+                {r.choice === 'deliver' && (
+                  <>
+                    <input value={carrier[r.transfer_id] ?? ''} onChange={(e) => setCarrier((v) => ({ ...v, [r.transfer_id]: e.target.value }))} placeholder={d.carrier} aria-label={d.carrier} maxLength={200} className={field} />
+                    <input value={tracking[r.transfer_id] ?? ''} onChange={(e) => setTracking((v) => ({ ...v, [r.transfer_id]: e.target.value }))} placeholder={d.tracking} aria-label={d.tracking} maxLength={200} className={field} />
+                  </>
+                )}
+                {r.choice === 'digital' && (
+                  <>
+                    <select value={method[r.transfer_id] ?? ''} onChange={(e) => setMethod((v) => ({ ...v, [r.transfer_id]: e.target.value as DigitalMethod }))} aria-label={d.method} className={field}>
+                      <option value="" disabled>
+                        {d.method}
+                      </option>
+                      {DIGITAL_METHODS.map((m) => (
+                        <option key={m} value={m}>
+                          {m === 'download_link' ? d.methodDownloadLink : m === 'file_sent' ? d.methodFileSent : d.methodEmail}
+                        </option>
+                      ))}
+                    </select>
+                    <input value={note[r.transfer_id] ?? ''} onChange={(e) => setNote((v) => ({ ...v, [r.transfer_id]: e.target.value }))} placeholder={d.note} aria-label={d.note} maxLength={200} className={field} />
+                  </>
+                )}
+                <button
+                  type="button"
+                  disabled={busy === r.transfer_id}
+                  onClick={() => send(r)}
+                  className="w-full rounded-lg bg-ink text-paper py-2.5 text-[12px] font-medium disabled:opacity-40"
+                >
+                  {r.choice === 'collect' ? d.collectedConfirm : d.submit}
+                </button>
+                {error[r.transfer_id] && <p className="text-[11px] text-t-red">{error[r.transfer_id]}</p>}
+              </div>
+            </div>
+          )
+        })}
+      </div>
+    </section>
   )
 }

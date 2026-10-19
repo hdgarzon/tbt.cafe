@@ -77,6 +77,7 @@ npm run check:roastquestions # nobody can post a Roast question until moderation
 npm run check:stealth     # robots.txt disallows all and every page inherits noindex, until the launch checklist says otherwise
 npm run check:delivery    # a sale whose buyer asked for delivery pays the seller only after delivery details; the address stays with the two parties
 npm run check:deliveryflow # no physical work is listed without its kind or bought without a delivery choice; it stays off while its wording awaits approval
+npm run check:deliverydetails # only the seller gives delivery details, they follow the buyer's choice, and giving them releases the hold in the same transaction
 ```
 
 Each guard is a plain script under `scripts/`, written BEFORE the module it

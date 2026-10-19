@@ -99,3 +99,34 @@ export function planListing(f: {
   if (!f.sellerAcknowledgedBefore && !f.acknowledgedNow) return { ok: false, error: 'seller_ack_required' }
   return { ok: true, workKind: patch, recordSellerAck: !f.sellerAcknowledgedBefore }
 }
+
+export type DigitalMethod = 'download_link' | 'file_sent' | 'email'
+export const DIGITAL_METHODS: readonly DigitalMethod[] = ['download_link', 'file_sent', 'email']
+
+export type DeliveryDetailsInput = { carrier?: string; tracking?: string; method?: string; note?: string }
+
+export type DeliveryDetailsPlan =
+  | { ok: true; kind: 'carrier' | 'collected' | 'digital'; details: Record<string, string> }
+  | { ok: false; error: 'carrier_required' | 'method_required' | 'no_details_needed' }
+
+/**
+ * Los datos que da quien vende despues de la venta (Stage 7). El tipo lo da lo
+ * que eligio el comprador, nunca lo que mande el navegador: con "entregamelo",
+ * transportista y guia; con "lo recojo", la confirmacion de la recogida, sin
+ * campos; con una obra digital, como se envio. "No hace falta entrega" no pide
+ * nada. La base vuelve a derivar el tipo de la eleccion (submit_delivery_details).
+ */
+export function planDeliveryDetails(choice: DeliveryChoice, input: DeliveryDetailsInput | null | undefined): DeliveryDetailsPlan {
+  if (choice === 'none') return { ok: false, error: 'no_details_needed' }
+  if (choice === 'collect') return { ok: true, kind: 'collected', details: {} }
+  if (choice === 'digital') {
+    const method = clean(input?.method)
+    if ((DIGITAL_METHODS as readonly string[]).indexOf(method) === -1) return { ok: false, error: 'method_required' }
+    const note = clean(input?.note)
+    return { ok: true, kind: 'digital', details: { method, ...(note ? { note } : {}) } }
+  }
+  const carrier = clean(input?.carrier)
+  const tracking = clean(input?.tracking)
+  if (!carrier || !tracking) return { ok: false, error: 'carrier_required' }
+  return { ok: true, kind: 'carrier', details: { carrier, tracking } }
+}
