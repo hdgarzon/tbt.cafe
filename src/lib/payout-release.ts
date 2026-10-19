@@ -37,6 +37,10 @@ export async function releaseDuePayoutEarnings(
     .from('payout_earnings')
     .update({ state: 'available', released_at: now, hold_reason: null })
     .eq('state', 'pending')
+    // Decision 94: una venta con entrega pedida espera los datos del vendedor.
+    // La base se niega a liberarla (079); filtrarla aqui evita que una sola
+    // tumbe la liberacion de todas.
+    .eq('awaiting_delivery_details', false)
     .not('releases_at', 'is', null)
     .lte('releases_at', now)
     .select('id')
