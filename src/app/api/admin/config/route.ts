@@ -33,6 +33,12 @@ function ruleValue(column: string, value: unknown): { ok: true; value: unknown }
   if (column.startsWith('pause_') || ['usdc_enabled', 'three_ds_registration_exempt', 'covered_brews_enabled'].indexOf(column) !== -1) {
     return typeof value === 'boolean' ? { ok: true, value } : { ok: false }
   }
+  // Decision 94: el plazo puede quedar vacio, y entonces no hay plazo.
+  if (column === 'delivery_details_deadline') {
+    if (value === null || value === '') return { ok: true, value: null }
+    const n = typeof value === 'number' ? value : Number(value)
+    return Number.isInteger(n) && n > 0 ? { ok: true, value: n } : { ok: false }
+  }
   if (column === 'scan_processor_url') {
     return typeof value === 'string' && /^https:\/\//.test(value.trim()) ? { ok: true, value: value.trim().replace(/\/+$/, '') } : { ok: false }
   }

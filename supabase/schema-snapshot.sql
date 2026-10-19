@@ -205,7 +205,9 @@ create table if not exists public.works (
   recording_hash text,
   registered_asset_links text[],
   -- 071 · Chains 01 Stage 2
-  mint_signature text
+  mint_signature text,
+  -- 079 · Amendment Delivery 01: lo declara el vendedor al publicar
+  work_kind text check (work_kind is null or work_kind in ('physical', 'digital'))
 );
 
 comment on column public.works.mint_address is
@@ -641,20 +643,25 @@ create table if not exists public.platform_config (
     'fr', 'Les versements sont suspendus pour un moment. Vos gains sont en sécurité.'),
   -- 074 · Chains 01 Stage 10: the prototype example IDs, never issued
   tbt_id_reserved text[] default '{}'::text[] not null,
+
+-- 075 · Chains 01 Stage 7.2: the payer's balance thresholds
+  balance_warning_days integer default 14 not null check (balance_warning_days > 0),
+  balance_urgent_days integer default 3 not null check (balance_urgent_days > 0),
+  balance_warning_floor_sol numeric default 0.5 not null check (balance_warning_floor_sol >= 0),
+  balance_urgent_floor_sol numeric default 0.2 not null check (balance_urgent_floor_sol >= 0),
+  -- 079 · Amendment Delivery 01: dias para los datos de entrega; vacio = sin plazo
+  delivery_details_deadline integer check (delivery_details_deadline is null or delivery_details_deadline > 0)
+);
+
   -- 076 · Work Order 02 Stage 0.8b: the first purchase accepts the Terms
 create table if not exists public.terms_acceptances (
   id uuid default gen_random_uuid() not null primary key,
   user_id uuid not null references auth.users (id) on delete cascade,
   transfer_id uuid references public.transfers (id) on delete set null,
   terms_version text not null,
-  accepted_at timestamptz default now() not null
-);
-
--- 075 · Chains 01 Stage 7.2: the payer's balance thresholds
-  balance_warning_days integer default 14 not null check (balance_warning_days > 0),
-  balance_urgent_days integer default 3 not null check (balance_urgent_days > 0),
-  balance_warning_floor_sol numeric default 0.5 not null check (balance_warning_floor_sol >= 0),
-  balance_urgent_floor_sol numeric default 0.2 not null check (balance_urgent_floor_sol >= 0)
+  accepted_at timestamptz default now() not null,
+  -- 079 · Amendment Delivery 01: una vez por tipo
+  kind text default 'terms' not null check (kind in ('terms', 'buyer_delivery', 'seller_delivery'))
 );
 
 create table if not exists public.covered_registrations (
@@ -822,7 +829,31 @@ create table if not exists public.payout_earnings (
   tax_amount numeric(12,2) default 0 not null,
   tax_party text default 'none' not null check (tax_party in ('buyer', 'seller', 'platform', 'none')),
   tax_country text,
-  tax_collected_by text default 'none' not null check (tax_collected_by in ('platform', 'seller', 'provider', 'none'))
+  tax_collected_by text default 'none' not null check (tax_collected_by in ('platform', 'seller', 'provider', 'none')),
+  -- 079 · Amendment Delivery 01: no pasa a available mientras sea true
+  awaiting_delivery_details boolean default false not null
+);
+
+-- 079 · Amendment Delivery 01: la entrega de cada venta. La escribe solo el servidor.
+create table if not exists public.sale_deliveries (
+  transfer_id uuid not null primary key references public.transfers (id) on delete cascade,
+  work_id uuid not null references public.works (id) on delete cascade,
+  buyer_id uuid not null references auth.users (id) on delete cascade,
+  seller_id uuid not null references auth.users (id) on delete cascade,
+  work_kind text not null check (work_kind in ('physical', 'digital')),
+  choice text not null check (choice in ('deliver', 'collect', 'none', 'digital')),
+  address jsonb,
+  address_consent_at timestamp with time zone,
+  details_kind text check (details_kind in ('carrier', 'collected', 'digital')),
+  details jsonb,
+  details_submitted_at timestamp with time zone,
+  overdue_opened_at timestamp with time zone,
+  created_at timestamp with time zone default now() not null,
+  check ((work_kind = 'digital') = (choice = 'digital')),
+  check (choice <> 'deliver' or (address is not null and address_consent_at is not null)),
+  check (choice = 'deliver' or (address is null and address_consent_at is null)),
+  check ((details is null) = (details_submitted_at is null)),
+  check ((details is null) = (details_kind is null))
 );
 
 -- 075 · Chains 01 Stage 7.2: the open balance alert, one per account
@@ -1392,6 +1423,7 @@ alter table public.payout_destinations enable row level security;
 alter table public.payout_connect_accounts enable row level security;
 alter table public.payout_blocks enable row level security;
 alter table public.payout_earnings enable row level security;
+alter table public.sale_deliveries enable row level security;
 alter table public.chain_anchors enable row level security;
 alter table public.payment_disputes enable row level security;
 alter table public.mms_deliveries enable row level security;
@@ -1468,6 +1500,7 @@ create policy "own destinations readable" on public.payout_destinations for sele
 create policy "own connect account readable" on public.payout_connect_accounts for select using ((( SELECT auth.uid() AS uid) = user_id));
 create policy "own blocks readable" on public.payout_blocks for select using ((( SELECT auth.uid() AS uid) = user_id));
 create policy "own earnings readable" on public.payout_earnings for select using ((( SELECT auth.uid() AS uid) = user_id));
+create policy "sale deliveries readable by the two parties" on public.sale_deliveries for select using ((( SELECT auth.uid() AS uid) = ANY (ARRAY[buyer_id, seller_id])));
 create policy "Users can view their MMS deliveries" on public.mms_deliveries for select using ((user_id = auth.uid()));
 create policy "Users can view their email deliveries" on public.email_deliveries for select using ((user_id = ( SELECT auth.uid() )));
 
