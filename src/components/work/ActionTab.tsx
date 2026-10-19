@@ -18,6 +18,7 @@ import { useRules } from '@/lib/rules-public'
 import { transferWindowMs } from '@/lib/rules-shape'
 import { supabase } from '@/lib/supabase'
 import { canSell, type SellerStatus } from '@/lib/seller'
+import { DELIVERY_LIVE, planListing, type WorkKind } from '@/lib/delivery'
 
 const LockIcon = () => (
   <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -56,6 +57,10 @@ export function ActionTab({
   const [transferring, setTransferring] = useState(false)
   const [pending, setPending] = useState<Transfer | null>(null)
   const [availability, setAvailability] = useState<Availability>(c.availability)
+  // Decision 94: la clase de la obra y, la primera vez, el reconocimiento de
+  // quien vende. Solo con DELIVERY_LIVE; apagado, publicar es como antes.
+  const [workKind, setWorkKind] = useState<WorkKind | null>(work.work_kind)
+  const [sellerAckNeeded, setSellerAckNeeded] = useState(false)
   // Locked, not hidden (Work Order 02, 2.8): sin estado de vendedor activo la
   // opcion de venta se ve bloqueada y lleva a Vender. La base rechaza igual.
   const [sellerOk, setSellerOk] = useState<boolean | null>(null)
@@ -162,6 +167,43 @@ export function ActionTab({
         </div>
       )}
 
+      {DELIVERY_LIVE && (
+        <div className="pb-5 mb-5 border-b border-hairline">
+          <div className="label-caps mb-2">{t.delivery.workKindLabel}</div>
+          <select
+            value={workKind ?? ''}
+            onChange={(e) => setWorkKind(e.target.value === 'digital' ? 'digital' : e.target.value === 'physical' ? 'physical' : null)}
+            className="w-full appearance-none border border-hairline rounded-lg bg-paper px-3 py-2.5 text-[13px] text-ink outline-none focus:border-ink transition-colors cursor-pointer"
+          >
+            <option value="" disabled>
+              —
+            </option>
+            <option value="physical">{t.delivery.workKindPhysical}</option>
+            <option value="digital">{t.delivery.workKindDigital}</option>
+          </select>
+          {/* Decision 94: una vez, en la primera publicacion; despues no se vuelve a pedir. */}
+          {sellerAckNeeded && (
+            <div className="mt-3 rounded-lg border border-hairline bg-paper-warm p-3">
+              <p className="text-[12px] leading-[1.55] text-ink">{t.delivery.sellerAck}</p>
+              <button
+                type="button"
+                onClick={async () => {
+                  const { error } = await saveAvailability(work.id, 'for_sale', { workKind: workKind ?? undefined, sellerAcknowledged: true })
+                  if (error) return flash((t.delivery.errors as Record<string, string>)[error] ?? error)
+                  setSellerAckNeeded(false)
+                  setAvailability('for_sale')
+                  flash(t.action.availability)
+                  onChanged()
+                }}
+                className="mt-2.5 w-full rounded-lg bg-ink text-paper py-2.5 text-[12px] font-medium"
+              >
+                {t.delivery.sellerAckConfirm}
+              </button>
+            </div>
+          )}
+        </div>
+      )}
+
       <div className="pb-5 mb-5 border-b border-hairline">
         <div className="label-caps mb-2">{t.action.availability}</div>
         <div className="flex items-center gap-3">
@@ -169,11 +211,20 @@ export function ActionTab({
             value={availability}
             onChange={async (e) => {
               const next = e.target.value as Availability
+              // La misma regla que la ruta: sin la clase de la obra no se pide nada al servidor.
+              if (DELIVERY_LIVE && next === 'for_sale') {
+                const local = planListing({ forSale: true, currentKind: work.work_kind, patchKind: workKind, sellerAcknowledgedBefore: true, acknowledgedNow: false })
+                if (!local.ok) return flash(t.delivery.errors[local.error])
+              }
               setAvailability(next)
-              const { error } = await saveAvailability(work.id, next)
+              const { error } = await saveAvailability(work.id, next, DELIVERY_LIVE ? { workKind: workKind ?? undefined } : undefined)
+              if (error === 'seller_ack_required') {
+                setAvailability(c.availability)
+                return setSellerAckNeeded(true)
+              }
               if (error) {
                 setAvailability(c.availability)
-                return flash(sellerOk === false && next === 'for_sale' ? t.work.saleLocked : error)
+                return flash(sellerOk === false && next === 'for_sale' ? t.work.saleLocked : (t.delivery.errors as Record<string, string>)[error] ?? error)
               }
               flash(t.action.availability)
               onChanged()
