@@ -63,6 +63,13 @@ const CATEGORY_OF: Record<string, NotificationCategory> = {
   offer_expired: 'transactional',
   offer_cancelled: 'transactional',
   offer_holder_ready: 'transactional',
+  // Decision 94 (Amendment Delivery 01). delivery_details_overdue esta declarada
+  // y sin disparar: la abre el barrido del plazo, que espera la decision sobre
+  // incidentes y casos. Sin plantilla de correo: solo feed hasta que el texto
+  // este aprobado.
+  delivery_requested: 'transactional',
+  delivery_details_received: 'transactional',
+  delivery_details_overdue: 'transactional',
   security_change: 'security',
 }
 
