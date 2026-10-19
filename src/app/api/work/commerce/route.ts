@@ -4,6 +4,8 @@ import { createAdminClient } from '@/lib/supabase-admin'
 import { getRules, assertNotPaused } from '@/lib/rules'
 import { planCommerce, type CommercePatch, type CommerceRow } from '@/lib/commerce'
 import type { SellerRow } from '@/lib/seller'
+import { DELIVERY_LIVE, planListing, type ListingPlan, type WorkKind } from '@/lib/delivery'
+import { deliveryAckVersion } from '@/lib/delivery-version'
 
 /**
  * POST /api/work/commerce — Work Order 02, Stage 3.1.
@@ -17,7 +19,7 @@ export async function POST(request: NextRequest) {
   const auth = await authenticate(request)
   if (!auth.ok) return NextResponse.json(auth.body, { status: auth.status })
 
-  const body = (await request.json().catch(() => ({}))) as { workId?: string } & CommercePatch
+  const body = (await request.json().catch(() => ({}))) as { workId?: string; workKind?: WorkKind; sellerAcknowledged?: boolean } & CommercePatch
   if (!body.workId) return NextResponse.json({ error: 'workId_required' }, { status: 400 })
   // Stage 11: poner en venta se pausa; quitar de la venta, nunca.
   if (body.availability === 'for_sale') {
@@ -27,7 +29,7 @@ export async function POST(request: NextRequest) {
 
   const admin = createAdminClient()
   const [{ data: work }, { data: row }, { data: seller }, rules] = await Promise.all([
-    admin.from('works').select('id, current_owner_id').eq('id', body.workId).maybeSingle(),
+    admin.from('works').select('id, current_owner_id, work_kind').eq('id', body.workId).maybeSingle(),
     admin
       .from('work_commerce')
       .select('availability, initial_price, taking_offers, royalty_type, royalty_value, royalty_locked, frozen_offer_id')
@@ -40,6 +42,28 @@ export async function POST(request: NextRequest) {
   if (!work || !row) return NextResponse.json({ error: 'not_found' }, { status: 404 })
   if (work.current_owner_id !== auth.user.id) return NextResponse.json({ error: 'not_holder' }, { status: 403 })
 
+  /*
+   * Decision 94 (Amendment Delivery 01): publicar pide la clase de la obra y, la
+   * primera vez, el reconocimiento de quien vende. Apagado hasta que sus textos
+   * esten aprobados (decision 75): ver DELIVERY_LIVE.
+   */
+  let listing: ListingPlan | null = null
+  if (DELIVERY_LIVE) {
+    const { count: acked } = await admin
+      .from('terms_acceptances')
+      .select('id', { count: 'exact', head: true })
+      .eq('user_id', auth.user.id)
+      .eq('kind', 'seller_delivery')
+    listing = planListing({
+      forSale: body.availability === 'for_sale',
+      currentKind: work.work_kind as WorkKind | null,
+      patchKind: body.workKind,
+      sellerAcknowledgedBefore: !!acked,
+      acknowledgedNow: body.sellerAcknowledged === true,
+    })
+    if (!listing.ok) return NextResponse.json({ error: listing.error }, { status: 409 })
+  }
+
   const plan = planCommerce(
     row as CommerceRow,
     { availability: body.availability, price: body.price, takingOffers: body.takingOffers, royalty: body.royalty },
@@ -47,6 +71,15 @@ export async function POST(request: NextRequest) {
     seller as Pick<SellerRow, 'status' | 'suspended_at'> | null
   )
   if (!plan.ok) return NextResponse.json({ error: plan.error }, { status: 409 })
+
+  // La clase es un hecho de la obra y el reconocimiento, de la persona: se
+  // escriben aunque el resto del cambio no mueva nada.
+  if (listing?.ok) {
+    if (listing.workKind) await admin.from('works').update({ work_kind: listing.workKind }).eq('id', body.workId)
+    if (listing.recordSellerAck) {
+      await admin.from('terms_acceptances').insert({ user_id: auth.user.id, kind: 'seller_delivery', terms_version: deliveryAckVersion('seller_delivery') })
+    }
+  }
   if (Object.keys(plan.update).length === 0) return NextResponse.json({ ok: true, priceLifted: null })
 
   const { error } = await admin.from('work_commerce').update(plan.update).eq('work_id', body.workId)

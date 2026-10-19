@@ -10,6 +10,8 @@ import { royaltyOf, type WorkCommerce } from '@/lib/work-data'
 import { canSell } from '@/lib/seller'
 import { appOrigin } from '@/lib/app-origin'
 import { planPurchase, termsVersion } from '@/lib/purchase'
+import { DELIVERY_LIVE, planDelivery, type DeliveryInput, type DeliveryPlan } from '@/lib/delivery'
+import { deliveryAckVersion } from '@/lib/delivery-version'
 
 /**
  * POST /api/stripe/create-purchase — la compra iniciada por el comprador.
@@ -40,6 +42,10 @@ export async function POST(request: NextRequest) {
     biometricProof?: string
     embedded?: boolean
     holderNamed?: boolean
+    /** Decision 94: la eleccion de entrega, para una obra fisica. */
+    delivery?: DeliveryInput
+    /** La primera compra muestra el reconocimiento; pagar lo acepta, como los Terms (0.8b). */
+    buyerAcknowledged?: boolean
   }
   if (!body.workId) return NextResponse.json({ error: 'workId_required' }, { status: 400 })
 
@@ -49,7 +55,7 @@ export async function POST(request: NextRequest) {
 
   const admin = createAdminClient()
   const rules = await getRules()
-  const { data: work } = await admin.from('works').select('id, title, status, current_owner_id').eq('id', body.workId).maybeSingle()
+  const { data: work } = await admin.from('works').select('id, title, status, current_owner_id, work_kind').eq('id', body.workId).maybeSingle()
   if (!work || work.status !== 'certified') return NextResponse.json({ error: 'not_found' }, { status: 404 })
 
   const [{ data: commerce }, { data: seller }] = await Promise.all([
@@ -77,6 +83,26 @@ export async function POST(request: NextRequest) {
     now: Date.now(),
   })
   if (!plan.ok) return NextResponse.json({ error: plan.error }, { status: plan.error === 'selling_paused' ? 423 : 409 })
+
+  /*
+   * Decision 94: una obra fisica no se compra sin eleccion de entrega, y la
+   * primera compra lleva el reconocimiento. Antes de la escalera y antes de
+   * crear nada: una compra que no puede seguir no deja fila. Apagado hasta que
+   * sus textos esten aprobados (decision 75).
+   */
+  let delivery: DeliveryPlan | null = null
+  let recordBuyerAck = false
+  if (DELIVERY_LIVE) {
+    delivery = planDelivery(work.work_kind, body.delivery)
+    if (!delivery.ok) return NextResponse.json({ error: delivery.error }, { status: 400 })
+    const { count: buyerAcked } = await admin
+      .from('terms_acceptances')
+      .select('id', { count: 'exact', head: true })
+      .eq('user_id', user.id)
+      .eq('kind', 'buyer_delivery')
+    if (!buyerAcked && body.buyerAcknowledged !== true) return NextResponse.json({ error: 'buyer_ack_required' }, { status: 400 })
+    recordBuyerAck = !buyerAcked
+  }
 
   const ladder = await enforceLadder({
     admin,
@@ -124,8 +150,32 @@ export async function POST(request: NextRequest) {
   if (transferError || !transfer) return NextResponse.json({ error: 'purchase_failed' }, { status: 500 })
 
   // 0.8b: la primera compra acepta los Terms al tocar Pagar.
-  const { count: accepted } = await admin.from('terms_acceptances').select('id', { count: 'exact', head: true }).eq('user_id', user.id)
+  // Solo los Terms: desde la 079 la tabla tambien guarda los reconocimientos de entrega.
+  const { count: accepted } = await admin.from('terms_acceptances').select('id', { count: 'exact', head: true }).eq('user_id', user.id).eq('kind', 'terms')
   if (!accepted) await admin.from('terms_acceptances').insert({ user_id: user.id, transfer_id: transfer.id, terms_version: termsVersion() })
+
+  // Decision 94: la entrega de esta venta. Sin la fila, la retencion de 079 no
+  // existiria y el vendedor cobraria sin dar datos: la venta no sigue.
+  if (delivery?.ok) {
+    const now = new Date().toISOString()
+    const { error: deliveryError } = await admin.from('sale_deliveries').insert({
+      transfer_id: transfer.id,
+      work_id: work.id,
+      buyer_id: user.id,
+      seller_id: work.current_owner_id,
+      work_kind: delivery.workKind,
+      choice: delivery.choice,
+      address: delivery.address,
+      address_consent_at: delivery.consent ? now : null,
+    })
+    if (deliveryError) {
+      console.error('[create-purchase] could not record the delivery choice:', transfer.id, deliveryError.message)
+      return NextResponse.json({ error: 'purchase_failed' }, { status: 500 })
+    }
+    if (recordBuyerAck) {
+      await admin.from('terms_acceptances').insert({ user_id: user.id, transfer_id: transfer.id, kind: 'buyer_delivery', terms_version: deliveryAckVersion('buyer_delivery') })
+    }
+  }
 
   const metadata = {
     kind: 'sale',
