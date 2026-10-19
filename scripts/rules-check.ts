@@ -35,8 +35,10 @@ const COLUMNS = [
   'payout_platform_pct', 'payout_cost_bank', 'payout_cost_usdc', 'seller_payout_delay_days', 'usdc_enabled',
   'scan_warn', 'scan_block', 'scan_processor_url',
   'pause_registration', 'pause_selling', 'pause_offers', 'pause_transfers', 'pause_payouts',
+  // Amendment Delivery 01 (decision 94): added in 079, not in the rules_config migration.
+  'delivery_details_deadline',
 ]
-const NEW_COLUMNS = COLUMNS.filter((c) => ['settlement_days_standard', 'settlement_days_high', 'settlement_high_threshold', 'payout_platform_pct', 'biometric_threshold'].indexOf(c) === -1)
+const NEW_COLUMNS = COLUMNS.filter((c) => ['settlement_days_standard', 'settlement_days_high', 'settlement_high_threshold', 'payout_platform_pct', 'biometric_threshold', 'delivery_details_deadline'].indexOf(c) === -1)
 const PAUSES = ['registration', 'selling', 'offers', 'transfers', 'payouts']
 
 const apiFiles: string[] = []
@@ -63,6 +65,8 @@ for (let i = 0; i < PAUSES.length; i++) {
      new RegExp(`pause_${PAUSES[i]}_message[\\s\\S]{0,120}jsonb`).test(mig) &&
      new RegExp(`check \\(pause_${PAUSES[i]}_message \\?& array\\['en', 'es', 'pt', 'fr'\\]\\)`).test(mig))
 }
+const delivery = readdirSync(migDir).filter((f) => /_delivery_foundation\.sql$/.test(f))[0]
+ok('the delivery deadline column exists (Amendment Delivery 01)', !!delivery && /add column if not exists delivery_details_deadline integer/.test(readFileSync(join(migDir, delivery), 'utf8')))
 ok('transfer window under 168 hours', /check \(transfer_window_hours > 0 and transfer_window_hours < 168\)/.test(mig))
 ok('royalty ceiling at most 90', /check \(royalty_pct_ceiling >= 0 and royalty_pct_ceiling <= 90\)/.test(mig))
 ok('the warning sits under the ceiling', /check \(royalty_pct_warning <= royalty_pct_ceiling\)/.test(mig))
