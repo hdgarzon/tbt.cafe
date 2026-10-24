@@ -93,8 +93,17 @@ export async function POST(request: NextRequest) {
   const path: ChargePath = seller?.charge_path === 'direct' ? 'direct' : 'platform'
   let account: string | null = null
   if (path === 'direct') {
-    const { data: connect } = await admin.from('payout_connect_accounts').select('account_id').eq('user_id', work.current_owner_id).maybeSingle()
-    if (!connect?.account_id) return NextResponse.json({ error: 'seller_not_ready' }, { status: 409 })
+    const { data: connect } = await admin
+      .from('payout_connect_accounts')
+      .select('account_id, card_payments_enabled')
+      .eq('user_id', work.current_owner_id)
+      .maybeSingle()
+    /*
+     * 0.3a: la cuenta tiene que poder tomar el cargo. Sin `card_payments`
+     * activa, Stripe lo rechazaria despues de que el comprador pulso Pagar; se
+     * rechaza aqui, antes de crear la transferencia y la sesion.
+     */
+    if (!connect?.account_id || !connect?.card_payments_enabled) return NextResponse.json({ error: 'seller_not_ready' }, { status: 409 })
     account = connect.account_id
   }
 
