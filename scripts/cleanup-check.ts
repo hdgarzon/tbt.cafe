@@ -37,5 +37,12 @@ ok('a table that does not exist yet is skipped, not guessed', /to_regclass/.test
 ok('the counts run again after execute', /after: every count should be zero/.test(s))
 ok('registered in package.json', /"cleanup:test-data"/.test(read('package.json')))
 
+// The CLI answers in JSON only when it thinks an agent is calling; a person at a
+// terminal gets a text table. The rehearsal of 26 October read that table as no
+// rows, called every table missing and counted 0 profiles out of 14.
+ok('the query asks for JSON explicitly', /'--output-format', 'json'/.test(s))
+ok('output it cannot read is an error, not an empty answer', /throw new Error\(`supabase db query: unreadable output/.test(s) && !/if \(start < 0\) return \[\]/.test(s))
+ok('it refuses to go on if it cannot see the works table', /if \(!present\.includes\('works'\)\) refuse\(/.test(s))
+
 console.log(bad === 0 ? '\nall good' : `\n${bad} failure(s)`)
 process.exit(bad === 0 ? 0 : 1)
