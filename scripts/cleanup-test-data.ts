@@ -2,6 +2,7 @@ import { execFileSync } from 'child_process'
 import { mkdtempSync, readFileSync, writeFileSync } from 'fs'
 import { tmpdir } from 'os'
 import { join } from 'path'
+import { queryRows } from './query-output'
 
 /**
  * Borrar los datos de prueba — Work Order Chains 01, Stage 10.
@@ -88,11 +89,13 @@ function runSql(sql: string): Array<Record<string, unknown>> {
   const dir = mkdtempSync(join(tmpdir(), 'tbt-cleanup-'))
   const file = join(dir, 'q.sql')
   writeFileSync(file, sql)
-  const out = execFileSync('supabase', ['db', 'query', '--linked', '-f', file], { encoding: 'utf8', maxBuffer: 64 * 1024 * 1024 })
-  const start = out.indexOf('{')
-  if (start < 0) return []
-  const parsed = JSON.parse(out.slice(start, out.lastIndexOf('}') + 1)) as { rows?: Array<Record<string, unknown>> }
-  return parsed.rows ?? []
+  // JSON siempre: sin la opcion, la CLI responde en JSON solo si cree que la
+  // llama un agente, y a una persona le da una tabla de texto.
+  const out = execFileSync('supabase', ['db', 'query', '--linked', '--output-format', 'json', '-f', file], {
+    encoding: 'utf8',
+    maxBuffer: 64 * 1024 * 1024,
+  })
+  return queryRows(out)
 }
 
 const countSql = (tables: string[]): string =>
@@ -132,6 +135,9 @@ async function main(): Promise<void> {
   const present = runSql(
     `select t from unnest(array[${BUCKETS.map(([t]) => `'${t}'`).join(', ')}]) as t where to_regclass('public.' || t) is not null`
   ).map((r) => String(r.t))
+  // Sin la tabla de obras no hay nada que contar ni borrar: es que la consulta
+  // no se leyo, no que la base este vacia.
+  if (!present.includes('works')) refuse('public.works is not visible: the query output was not read as expected; nothing done')
   const missing = BUCKETS.map(([t]) => t).filter((t) => !present.includes(t))
   if (missing.length) console.log(`not in this database yet, skipped: ${missing.join(', ')}`)
 
