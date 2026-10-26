@@ -32,8 +32,12 @@ shell.
 
 - [ ] Stages 1–9 merged; every `npm run check:*` passes; `npm run build` is green.
 - [ ] Every item above is done.
-- [ ] Open questions that touch the switch are answered (the hourly schedule,
-      question s; Turbo, 5.1).
+- [ ] Open questions that touch the switch are answered (Turbo, 5.1).
+- [ ] Migration 083 is applied and Vault holds `app_url` and `cron_secret`
+      (once, SQL editor, see 064). The three chain jobs then run hourly:
+      `tbt-anchor-upgrade` at :05, `tbt-chain-recovery` at :20,
+      `tbt-balance-alarm` at :40. Check one run of each in
+      `cron.job_run_details` and `net._http_response` (status 200, not 401).
 
 ## 11.2 Pause registration and transfers
 

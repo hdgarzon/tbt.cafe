@@ -16,7 +16,7 @@ import { thresholdsFor, levelFor, nextAlert, type AlertLevel, type BalanceLevel 
  * dispara la urgente por `raiseUrgent`.
  *
  * Los creditos de Turbo de la clave de almacenamiento se suman con la 5.1.
- * Sin programar: el horario espera la pregunta (s).
+ * Corre cada hora desde Supabase Cron (083).
  */
 
 const LAMPORTS_PER_SOL = 1_000_000_000

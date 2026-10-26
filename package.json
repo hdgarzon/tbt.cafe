@@ -72,6 +72,7 @@
     "check:money": "npx --yes tsx scripts/money-check.ts",
     "check:receipts": "npx --yes tsx scripts/receipts-check.ts",
     "check:switch": "npx --yes tsx scripts/switch-check.ts",
+    "check:chainjobs": "npx --yes tsx scripts/chain-jobs-check.ts",
     "chain:create-collection": "npx --yes tsx scripts/create-title-collection.ts",
     "check:imagevectors": "npx --yes tsx scripts/image-vectors-check.ts",
     "reindex:images": "npx --yes tsx scripts/reindex-images.ts",

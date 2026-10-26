@@ -23,7 +23,10 @@ const code = (s: string) => s.replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:])
 const route = code(read('src/app/api/cron/switch-readiness/route.ts'))
 ok('the readiness route exists', route.length > 0)
 ok('it needs CRON_SECRET', /if \(!secret \|\| request\.headers\.get\('authorization'\) !== `Bearer \$\{secret\}`\)/.test(route))
-ok('it only reads', !/\.insert\(|\.update\(|\.delete\(|\.upsert\(|sendAndConfirm|\.rpc\(/.test(route))
+// One RPC is allowed: it reads the cron schedule, which PostgREST does not expose.
+const rpcs = route.match(/\.rpc\(\s*'[^']*'/g) ?? []
+ok('it only reads', !/\.insert\(|\.update\(|\.delete\(|\.upsert\(|sendAndConfirm/.test(route) &&
+   rpcs.every((r) => /'chain_jobs_scheduled'$/.test(r)) && (route.match(/\.rpc\(/g) ?? []).length === rpcs.length)
 ok('it reports public addresses, never a secret', /\.slice\(32, 64\)/.test(route) && !/detail: (raw|secret|process\.env\[)/.test(route))
 ok('it checks the network', /SOLANA_NETWORK === 'mainnet-beta'/.test(route))
 ok('it checks the four keys are distinct', /assertDistinctSecrets\(/.test(route))
@@ -31,6 +34,9 @@ ok('it checks the collection is a Core account', /MPL_CORE_PROGRAM/.test(route))
 ok('it checks the working balance', /WORKING_BALANCE_LAMPORTS = 1_000_000_000/.test(route))
 ok('it checks the test data is gone', /from\('works'\)/.test(route) && /from\('image_vectors'\)/.test(route))
 ok('it checks the reserved IDs', /tbt_id_reserved/.test(route))
+ok('it checks the three chain jobs are scheduled', /\.rpc\('chain_jobs_scheduled'\)/.test(route) &&
+   /'tbt-anchor-upgrade'/.test(route) && /'tbt-chain-recovery'/.test(route) && /'tbt-balance-alarm'/.test(route))
+ok('and that each runs hourly and is active', /HOURLY = \/\^\\d\+ \\\* \\\* \\\* \\\*\$\//.test(route) && /\.active/.test(route))
 
 const script = code(read('scripts/create-title-collection.ts'))
 ok('the collection script exists', script.length > 0)
