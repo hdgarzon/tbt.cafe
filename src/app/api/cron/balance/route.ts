@@ -5,8 +5,8 @@ import { checkPayerBalance } from '@/lib/chain/balance'
 /**
  * GET /api/cron/balance — la alarma de saldo del payer (Chains 01, 7.2.2).
  *
- * Avisa a los operadores una vez por cruce de umbral. Construida y sin
- * programar: su horario espera la pregunta (s).
+ * Avisa a los operadores una vez por cruce de umbral. Corre cada hora desde
+ * Supabase Cron (083, `tbt-balance-alarm`).
  */
 export const dynamic = 'force-dynamic'
 
