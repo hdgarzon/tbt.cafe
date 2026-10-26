@@ -24,19 +24,6 @@ export function thresholdsFor(registrationsPerDay: number, r: BalanceRules): { w
   }
 }
 
-/**
- * Los creditos de la clave de almacenamiento — 7.2.2, con la 5.1.
- *
- * En la unidad del servicio (winc en Turbo, lamports en Irys devnet). Una
- * registracion puede pedir una imagen completa al techo de 8 MB; los registros y
- * las pruebas caben en lo gratuito. Los mismos dias que el payer, contando
- * nunca menos de una registracion al dia: el piso es en imagenes, no en SOL.
- */
-export function storageThresholdsFor(registrationsPerDay: number, r: BalanceRules, creditsPerRegistration: number): { warning: number; urgent: number } {
-  const perDay = Math.max(1, registrationsPerDay) * creditsPerRegistration
-  return { warning: Math.round(r.warningDays * perDay), urgent: Math.round(r.urgentDays * perDay) }
-}
-
 export function levelFor(lamports: number, t: { warning: number; urgent: number }): BalanceLevel {
   if (lamports < t.urgent) return 'urgent'
   if (lamports < t.warning) return 'warning'

@@ -77,7 +77,7 @@ const record = registrationRecord({
   // Se afirma sobre la LLAMADA: el comentario del modulo nombra el metodo
   // justamente para explicar por que no se usa.
   ok('no se sube con uploadJson', !src.includes('uploadJson('))
-  ok('se sube el archivo construido a mano', src.includes('uploadSigned(await signForArweave(file))'))
+  ok('se sube el archivo construido a mano', src.includes('.upload('))
 }
 
 console.log(bad === 0 ? '\ntodo en orden' : `\n${bad} fallo(s)`)

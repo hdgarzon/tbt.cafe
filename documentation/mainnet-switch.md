@@ -32,6 +32,7 @@ shell.
 
 - [ ] Stages 1–9 merged; every `npm run check:*` passes; `npm run build` is green.
 - [ ] Every item above is done.
+- [ ] Open questions that touch the switch are answered (Turbo, 5.1).
 - [ ] Migration 083 is applied and Vault holds `app_url` and `cron_secret`
       (once, SQL editor, see 064). The three chain jobs then run hourly:
       `tbt-anchor-upgrade` at :05, `tbt-chain-recovery` at :20,
@@ -64,20 +65,7 @@ In Vercel → Settings → Environment Variables, **Production only**:
 | `TBT_STORAGE_PRIVATE_KEY` | mainnet storage |
 | `TBT_TITLE_SIGNING_PRIVATE_KEY`, `TBT_TITLE_SIGNING_KEY_ID` | mainnet title signing |
 
-Uploads to Arweave go to ArDrive Turbo, signed by the storage key (Stage 5.1);
-there is no Turbo variable to set. The storage key pays from its Turbo credits,
-which the payer tops up in SOL. Once the keys are set, from the payer holder's
-shell (records and proofs under 105 KiB are free; an 8 MB image is about
-0.006 SOL, so 0.1 SOL covers about 16 full images):
-
-```bash
-SOLANA_NETWORK=mainnet-beta SOLANA_RPC_URL=… \
-SOLANA_PAYER_PRIVATE_KEY=… TBT_STORAGE_PRIVATE_KEY=… \
-npm run chain:storage-credits -- --network mainnet-beta --top-up 100000000 --execute
-```
-
-Without `--execute` it only shows the storage address, its credits and how many
-full images they pay for. The hourly balance alarm watches the same credits.
+Turbo configuration follows Stage 5.1 once its authorisation is answered.
 
 Create the mainnet collection once, from the authority holder's own shell:
 
