@@ -2,6 +2,7 @@ import { execFileSync } from 'child_process'
 import { mkdtempSync, readFileSync, writeFileSync } from 'fs'
 import { tmpdir } from 'os'
 import { join } from 'path'
+import { queryRows } from './query-output'
 
 /**
  * Borrar los datos de prueba — Work Order Chains 01, Stage 10.
@@ -94,14 +95,7 @@ function runSql(sql: string): Array<Record<string, unknown>> {
     encoding: 'utf8',
     maxBuffer: 64 * 1024 * 1024,
   })
-  let parsed: { rows?: Array<Record<string, unknown>> } | null = null
-  try {
-    parsed = JSON.parse(out.slice(out.indexOf('{'), out.lastIndexOf('}') + 1))
-  } catch {
-    parsed = null
-  }
-  if (!parsed || !Array.isArray(parsed.rows)) throw new Error(`supabase db query: unreadable output, nothing assumed:\n${out.slice(0, 500)}`)
-  return parsed.rows
+  return queryRows(out)
 }
 
 const countSql = (tables: string[]): string =>
