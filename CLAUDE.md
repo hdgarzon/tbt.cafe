@@ -76,6 +76,7 @@ npm run check:imageindex  # indexing a certified image is awaited, recorded eith
 npm run check:roastquestions # nobody can post a Roast question until moderation exists; reading stays open
 npm run check:stealth     # robots.txt disallows all and every page inherits noindex, until the launch checklist says otherwise
 npm run check:chainjobs   # the anchor upgrade, recovery sweep and balance alarm run hourly on Supabase Cron; Vercel keeps only the daily fallback
+npm run check:storage     # every Arweave upload is signed by the storage key, read back from the signed bytes; the old Metaplex library is gone
 ```
 
 Each guard is a plain script under `scripts/`, written BEFORE the module it
