@@ -1,8 +1,6 @@
-import { Readable } from 'stream'
 import { PublicKey } from '@solana/web3.js'
 import { base58 } from '@metaplex-foundation/umi/serializers'
 import { createData, SolanaSigner, type DataItem } from '@dha-team/arbundles'
-import { TurboFactory } from '@ardrive/turbo-sdk'
 import { SOLANA_NETWORK } from '@/lib/solana/config'
 import { readSecret } from '@/lib/solana/keys'
 
@@ -23,7 +21,9 @@ import { readSecret } from '@/lib/solana/keys'
  *    Turbo no tiene red de pruebas: cada subida suya es permanente en mainnet.
  *
  * Reemplaza al driver de Irys de la libreria vieja de Metaplex, que firmaba con
- * el payer.
+ * el payer. Turbo se llama por HTTP, sin su SDK: cargado como paquete externo,
+ * el SDK traia una copia sin empaquetar de @solana/web3.js que el runtime de
+ * Vercel no puede cargar (#183, revertido en #185).
  */
 
 /** A donde va el item firmado, por red. */
@@ -33,6 +33,7 @@ export const UPLOAD_SERVICE = {
 } as const
 
 const IRYS_DEVNET = UPLOAD_SERVICE.devnet
+const TURBO_UPLOAD = UPLOAD_SERVICE['mainnet-beta']
 
 export type ArweaveTag = { name: string; value: string }
 
@@ -68,24 +69,14 @@ export function signerOf(item: DataItem): string {
 
 /** Sube un item ya firmado y devuelve su ID de Arweave. */
 export async function uploadSigned(item: DataItem): Promise<string> {
-  const raw = item.getRaw()
-  let id: string
-
-  if (SOLANA_NETWORK === 'mainnet-beta') {
-    const res = await TurboFactory.unauthenticated({ token: 'solana' }).uploadSignedDataItem({
-      dataItemStreamFactory: () => Readable.from(raw),
-      dataItemSizeFactory: () => raw.length,
-    })
-    id = res.id
-  } else {
-    const res = await fetch(`${IRYS_DEVNET}/tx/solana`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/octet-stream' },
-      body: new Uint8Array(raw),
-    })
-    if (!res.ok) throw new Error(`arweave: Irys devnet refused the upload (${res.status}): ${(await res.text()).slice(0, 200)}`)
-    id = ((await res.json()) as { id: string }).id
-  }
+  const url = SOLANA_NETWORK === 'mainnet-beta' ? `${TURBO_UPLOAD}/v1/tx/solana` : `${IRYS_DEVNET}/tx/solana`
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/octet-stream' },
+    body: new Uint8Array(item.getRaw()),
+  })
+  if (!res.ok) throw new Error(`arweave: ${url} refused the upload (${res.status}): ${(await res.text()).slice(0, 200)}`)
+  const id = ((await res.json()) as { id: string }).id
 
   // El ID de un item es el hash de su firma: si el servicio devuelve otro, no
   // guardo lo que firmamos. Turbo lo escribe en base64url e Irys devnet en

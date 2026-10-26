@@ -86,7 +86,6 @@
     "check:collector": "npx --yes tsx scripts/collector-check.ts"
   },
   "dependencies": {
-    "@ardrive/turbo-sdk": "^2.1.2",
     "@dha-team/arbundles": "^1.1.0",
     "@metaplex-foundation/mpl-core": "^1.10.0",
     "@metaplex-foundation/umi": "^1.6.0",

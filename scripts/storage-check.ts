@@ -49,7 +49,15 @@ async function main() {
   for (let i = 0; i < files.length; i++) if (/from '@metaplex-foundation\/js'/.test(readFileSync(files[i], 'utf8'))) users.push(files[i])
   ok('nothing under src imports it', users.length === 0, users.join(', '))
   ok('the Irys driver module is gone', !existsSync(join(root, 'src/lib/chain/irys.ts')))
-  ok('the Turbo SDK is a dependency', !!(pkg.dependencies ?? {})['@ardrive/turbo-sdk'])
+  // The SDK, loaded as a server external package, required a CommonJS build of
+  // @solana/web3.js whose rpc-websockets requires an ESM-only uuid. Vercel's
+  // runtime refused it and every route on the upload path, registration
+  // included, answered 500 (#183, reverted in #185). Turbo is plain HTTP.
+  ok('the Turbo SDK is not a dependency', !(pkg.dependencies ?? {})['@ardrive/turbo-sdk'])
+  const sdkUsers: string[] = []
+  for (let i = 0; i < files.length; i++) if (/from '@ardrive\/turbo-sdk'/.test(readFileSync(files[i], 'utf8'))) sdkUsers.push(files[i])
+  ok('nothing under src imports it', sdkUsers.length === 0, sdkUsers.join(', '))
+  ok('no server external package keeps @solana/web3.js unbundled', !/serverExternalPackages/.test(read('next.config.mjs')))
 
   // ---- the storage key signs, and nothing else does
   const storageKey = Keypair.generate()
@@ -87,7 +95,7 @@ async function main() {
   const up = code(read('src/lib/chain/storage-upload.ts'))
   ok('it reads the storage key', /readSecret\('storage'\)/.test(up))
   ok('and no other key', !/readSecret\('(payer|authority|titleSigning)'\)/.test(up))
-  ok('mainnet sends the signed item to Turbo', /TurboFactory\.unauthenticated\(/.test(up) && /\.uploadSignedDataItem\(/.test(up))
+  ok('mainnet sends the signed item to Turbo', /\$\{TURBO_UPLOAD\}\/v1\/tx\/solana/.test(up))
   ok('devnet sends it to Irys devnet', /IRYS_DEVNET\}\/tx\/solana/.test(up))
   ok('the service must return the id that was signed', /if \(!sameId\(id, item\)\) throw/.test(up) && /return item\.id/.test(up))
   const { sameId } = await import('../src/lib/chain/storage-upload')
@@ -106,9 +114,9 @@ async function main() {
 
   // ---- the credits: topped up by the payer on mainnet, by the storage key on devnet
   const credits = code(read('src/lib/chain/storage-credits.ts'))
-  ok('Turbo credits are read for the storage address', /\.getBalance\(address\)/.test(credits))
+  ok('Turbo credits are read for the storage address', /\/v1\/account\/balance\/solana\?address=\$\{address\}/.test(credits))
   ok('the payer tops up Turbo for the storage address',
-     /readSecret\('payer'\)/.test(credits) && /turboCreditDestinationAddress: address/.test(credits))
+     /readSecret\('payer'\)/.test(credits) && /'turboCreditDestinationAddress=' \+ address/.test(credits) && /MEMO_PROGRAM/.test(credits))
   ok('devnet funds Irys from the storage key', /readSecret\('storage'\)/.test(credits) && /\/account\/balance\/solana/.test(credits))
   const script = code(read('scripts/storage-credits.ts'))
   ok('the top-up script only reads unless --execute', /process\.argv\.indexOf\('--execute'\) !== -1/.test(script))
