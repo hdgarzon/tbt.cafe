@@ -89,7 +89,13 @@ async function main() {
   ok('and no other key', !/readSecret\('(payer|authority|titleSigning)'\)/.test(up))
   ok('mainnet sends the signed item to Turbo', /TurboFactory\.unauthenticated\(/.test(up) && /\.uploadSignedDataItem\(/.test(up))
   ok('devnet sends it to Irys devnet', /IRYS_DEVNET\}\/tx\/solana/.test(up))
-  ok('the service must return the id that was signed', /!== item\.id/.test(up))
+  ok('the service must return the id that was signed', /if \(!sameId\(id, item\)\) throw/.test(up) && /return item\.id/.test(up))
+  const { sameId } = await import('../src/lib/chain/storage-upload')
+  const rawId = Buffer.from(item.rawId)
+  const { base58 } = await import('@metaplex-foundation/umi/serializers')
+  ok('the id matches in base64url (Turbo)', sameId(item.id, item))
+  ok('and in base58 (Irys)', sameId(base58.deserialize(new Uint8Array(rawId))[0], item))
+  ok('another id does not', !sameId(Buffer.alloc(32, 7).toString('base64url'), item) && !sameId('not-an-id', item))
 
   const ar = code(read('src/lib/chain/arweave.ts'))
   ok('uploadToArweave signs with the storage key and sends that item',

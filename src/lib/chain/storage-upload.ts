@@ -88,7 +88,19 @@ export async function uploadSigned(item: DataItem): Promise<string> {
   }
 
   // El ID de un item es el hash de su firma: si el servicio devuelve otro, no
-  // guardo lo que firmamos.
-  if (id !== item.id) throw new Error(`arweave: the service answered ${id} for the item signed as ${item.id}.`)
-  return id
+  // guardo lo que firmamos. Turbo lo escribe en base64url e Irys devnet en
+  // base58, asi que se comparan los 32 bytes y se guarda la forma de Arweave.
+  if (!sameId(id, item)) throw new Error(`arweave: the service answered ${id} for the item signed as ${item.id}.`)
+  return item.id
+}
+
+/** El mismo ID en base64url (Arweave, Turbo) o en base58 (Irys). */
+export function sameId(answered: string, item: DataItem): boolean {
+  const want = Buffer.from(item.rawId)
+  if (Buffer.from(answered, 'base64url').equals(want)) return true
+  try {
+    return Buffer.from(base58.serialize(answered)).equals(want)
+  } catch {
+    return false
+  }
 }
