@@ -10,7 +10,7 @@ import { assertPayerCanMint, MIN_LAMPORTS_FOR_MINT } from '../src/lib/solana/key
  * never below 0.5 SOL; urgent at about 3 days, never below 0.2 SOL. Each alert
  * fires once per crossing, to operators by SMS and email, and leaves a provider
  * event. A mint is not attempted below the one-mint minimum, and that fires the
- * urgent alert. Built, not scheduled: the hourly schedule waits on question (s).
+ * urgent alert. Scheduled hourly on Supabase Cron (083, question s).
  */
 
 let bad = 0
@@ -83,7 +83,9 @@ ok('a low balance at mint fires the urgent alert', /payer_balance_low/.test(read
 
 const route = read('src/app/api/cron/balance/route.ts')
 ok('the route needs CRON_SECRET', /if \(!secret \|\| request\.headers\.get\('authorization'\) !== `Bearer \$\{secret\}`\)/.test(route))
-ok('not scheduled on Vercel (question s)', !/cron\/balance/.test(read('vercel.json')))
+ok('not scheduled on Vercel', !/cron\/balance/.test(read('vercel.json')))
+const jobs = readdirSync(join(root, 'supabase/migrations')).filter((f) => /_chain_jobs\.sql$/.test(f)).map((f) => read(`supabase/migrations/${f}`)).join('\n')
+ok('scheduled hourly on Supabase (question s)', /cron\.schedule\(\s*'tbt-balance-alarm',\s*'\d+ \* \* \* \*'[\s\S]{0,400}\/api\/cron\/balance'/.test(jobs))
 
 console.log(bad === 0 ? '\nall good' : `\n${bad} failure(s)`)
 process.exit(bad === 0 ? 0 : 1)
