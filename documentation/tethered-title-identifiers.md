@@ -57,7 +57,7 @@ backups; see `documentation/chain-keys-procedure.md`.
 | --- | --- |
 | Collection address (Stage 4.2) | `EWCYT4EH9Zvxfna7L7CTx2219cJRWB2RP83My9nxodAt` |
 | Authority address (update authority and permanent transfer delegate) | `8RQ3BZXPMeCY9yUTHREK3wh5CtvCn589QaJETJEFjCFp` |
-| Storage key address (Stage 5.2) | `8qKcyR4Lju8XvZSBdLJVH8yiS2g1xPUauGoxQ8D6bA6b` — not signing uploads until Turbo (5.1) |
+| Storage key address (Stage 5.2) | `8qKcyR4Lju8XvZSBdLJVH8yiS2g1xPUauGoxQ8D6bA6b` — signs every upload since 5.1 (Irys devnet; Turbo on mainnet) |
 | Title-signing public key (Stage 9.1) | `9A8nQt7pdfo6brRFLnnbDrhZQzuBLE4AZQjMWnT6aZuX` |
 | Title-signing key ID | `ts-7a928033ee35eeb2` = `ts-` + first 16 hex of SHA-256 of the public key bytes |
 

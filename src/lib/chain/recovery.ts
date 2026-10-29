@@ -20,7 +20,7 @@ import { moveTokenForOwnership } from '@/lib/token-move'
  *  f     lo que lleva 24 horas fallando → un ticket de operador con la obra y
  *        el paso, uno solo.
  *
- * Sin programar: el horario espera la pregunta (s).
+ * Corre cada hora desde Supabase Cron (083, `tbt-chain-recovery`).
  */
 
 const BATCH = 20

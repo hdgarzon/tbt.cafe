@@ -23,9 +23,9 @@
  * registro no debe insinuarlo.
  */
 import { createHash } from 'crypto'
-import { toMetaplexFile } from '@metaplex-foundation/js'
 import { stripMetadata } from './strip-metadata'
 import { uploadToArweave } from './arweave'
+import { arweaveFile } from './storage-upload'
 import { PUBLISH_CEILING_BYTES } from './reduce-image'
 
 /** Lo que un creador puede elegir. `none` es lo que vale cuando nadie eligio. */
@@ -133,16 +133,13 @@ export async function publishWorkImage(opts: {
   const ext = clean.mediaType === 'image/png' ? 'png' : 'jpg'
 
   const uri = await uploadToArweave(
-    toMetaplexFile(clean.bytes, `${opts.tbtId}-${opts.kind}.${ext}`, {
-      contentType: clean.mediaType,
-      tags: [
-        { name: IMAGE_TAGS.app, value: 'tbt.cafe' },
-        { name: IMAGE_TAGS.tbtId, value: opts.tbtId },
-        { name: IMAGE_TAGS.kind, value: opts.kind },
-        { name: IMAGE_TAGS.hash, value: hash },
-        { name: 'Content-Type', value: clean.mediaType },
-      ],
-    })
+    arweaveFile(clean.bytes, `${opts.tbtId}-${opts.kind}.${ext}`, clean.mediaType, [
+      { name: IMAGE_TAGS.app, value: 'tbt.cafe' },
+      { name: IMAGE_TAGS.tbtId, value: opts.tbtId },
+      { name: IMAGE_TAGS.kind, value: opts.kind },
+      { name: IMAGE_TAGS.hash, value: hash },
+      { name: 'Content-Type', value: clean.mediaType },
+    ])
   )
 
   return { uri, hash, kind: opts.kind, bytes: clean.bytes.length }

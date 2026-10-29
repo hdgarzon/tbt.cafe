@@ -75,7 +75,10 @@
     "check:money": "npx --yes tsx scripts/money-check.ts",
     "check:receipts": "npx --yes tsx scripts/receipts-check.ts",
     "check:switch": "npx --yes tsx scripts/switch-check.ts",
+    "check:chainjobs": "npx --yes tsx scripts/chain-jobs-check.ts",
+    "check:storage": "npx --yes tsx scripts/storage-check.ts",
     "chain:create-collection": "npx --yes tsx scripts/create-title-collection.ts",
+    "chain:storage-credits": "npx --yes tsx scripts/storage-credits.ts",
     "check:imagevectors": "npx --yes tsx scripts/image-vectors-check.ts",
     "reindex:images": "npx --yes tsx scripts/reindex-images.ts",
     "check:tbtid": "npx --yes tsx scripts/tbt-id-check.ts",
@@ -86,7 +89,7 @@
     "check:collector": "npx --yes tsx scripts/collector-check.ts"
   },
   "dependencies": {
-    "@metaplex-foundation/js": "^0.20.1",
+    "@dha-team/arbundles": "^1.1.0",
     "@metaplex-foundation/mpl-core": "^1.10.0",
     "@metaplex-foundation/umi": "^1.6.0",
     "@metaplex-foundation/umi-bundle-defaults": "^1.6.0",
