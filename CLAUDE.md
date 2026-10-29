@@ -75,6 +75,7 @@ npm run check:scan        # a scan that did not run is never clear; with the pro
 npm run check:imageindex  # indexing a certified image is awaited, recorded either way, and a failure opens a ticket
 npm run check:roastquestions # nobody can post a Roast question until moderation exists; reading stays open
 npm run check:stealth     # robots.txt disallows all and every page inherits noindex, until the launch checklist says otherwise
+npm run check:transfersrls # nobody rewrites a transfer from the browser: no client write policy or privilege, no session-bound write
 npm run check:chainjobs   # the anchor upgrade, recovery sweep and balance alarm run hourly on Supabase Cron; Vercel keeps only the daily fallback
 npm run check:storage     # every Arweave upload is signed by the storage key, read back from the signed bytes; the old Metaplex library is gone
 ```
