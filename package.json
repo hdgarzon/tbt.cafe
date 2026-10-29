@@ -51,6 +51,7 @@
     "check:rules": "npx --yes tsx scripts/rules-check.ts",
     "check:prose": "npx --yes tsx scripts/prose-check.ts",
     "check:seller": "npx --yes tsx scripts/seller-check.ts",
+    "check:directpath": "npx --yes tsx scripts/direct-path-check.ts",
     "check:lock": "npx --yes tsx scripts/lock-check.ts",
     "check:offers": "npx --yes tsx scripts/offers-check.ts",
     "check:holdercode": "npx --yes tsx scripts/holder-code-check.ts",

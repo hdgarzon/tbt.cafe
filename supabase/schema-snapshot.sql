@@ -786,6 +786,7 @@ create table if not exists public.payout_connect_accounts (
   country text not null,
   status text default 'onboarding'::text not null,
   transfers_enabled boolean default false not null,
+  card_payments_enabled boolean default false not null,
   requirements_due text[] default '{}'::text[] not null,
   created_at timestamp with time zone default now() not null,
   updated_at timestamp with time zone default now() not null
