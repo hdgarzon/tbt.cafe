@@ -1007,6 +1007,7 @@
       "transfers": "A transfer needs your attention.",
       "purchases_bought": "You bought “{title}”. It is yours now.",
       "purchases_sold": "“{title}” sold.",
+      "purchases_refunded": "{amount} USD was refunded for {title}.",
       "transfers_received": "“{title}” is yours now: the transfer went through.",
       "transfers_accepted": "Your transfer of “{title}” was accepted.",
       "transfers_declined": "Your transfer of “{title}” was declined. Nothing was charged.",

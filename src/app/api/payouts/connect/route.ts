@@ -26,10 +26,20 @@ import { APP_URL } from '@/lib/app-env'
  * de fees y perdidas: rechaza la combinacion contraria con
  * `account_controller_express_dash_without_application_losses_or_fees`.
  *
- * `configuration.recipient` es la persona correcta: estos vendedores reciben
- * regalias, no procesan cargos. La capacidad `stripe_transfers` es la que
- * habilita recibir transferencias, y tarda en activarse — por eso el estado
- * vive en la tabla y lo refresca el webhook, en vez de suponerse aqui.
+ * `configuration.recipient` es la base de todos: recibir regalias y cobrar por
+ * bloques. La capacidad `stripe_transfers` es la que habilita recibir
+ * transferencias, y tarda en activarse — por eso el estado vive en la tabla y
+ * lo refresca `account.updated`, en vez de suponerse aqui.
+ *
+ * LA VIA DIRECTA (Work Order 02, 0.3a y 2.5)
+ *
+ * Un vendedor aprobado en la via directa cobra en su propia cuenta, y para eso
+ * necesita ademas `configuration.merchant` con `card_payments` pedida. Se pide
+ * al crear la cuenta si ya esta aprobado, y se anade a la que existe si llego
+ * antes como receptor de regalias: Stripe la acepta sobre una cuenta v2 de
+ * receptor con la plataforma como responsable de fees y perdidas (sandbox, 1
+ * de octubre). El enlace pide entonces las dos configuraciones juntas. Quien
+ * esta en la via de plataforma no la necesita y no se le pide.
  */
 export async function POST(request: NextRequest) {
   try {
@@ -39,11 +49,17 @@ export async function POST(request: NextRequest) {
     const { country } = (await request.json().catch(() => ({}))) as { country?: string }
     const admin = createAdminClient()
 
-    const { data: existing } = await admin
-      .from('payout_connect_accounts')
-      .select('account_id, status, country')
-      .eq('user_id', auth.user.id)
-      .maybeSingle()
+    const [{ data: existing }, { data: seller }] = await Promise.all([
+      admin
+        .from('payout_connect_accounts')
+        .select('account_id, status, country')
+        .eq('user_id', auth.user.id)
+        .maybeSingle(),
+      admin.from('seller_accounts').select('status, charge_path').eq('user_id', auth.user.id).maybeSingle(),
+    ])
+
+    // La via la fija la aprobacion desde provider_countries (2.3); aqui solo se lee.
+    const direct = seller?.status === 'active' && seller?.charge_path === 'direct'
 
     let accountId = existing?.account_id
 
@@ -83,12 +99,13 @@ export async function POST(request: NextRequest) {
           recipient: {
             capabilities: { stripe_balance: { stripe_transfers: { requested: true } } },
           },
+          ...(direct ? { merchant: { capabilities: { card_payments: { requested: true } } } } : {}),
         },
         defaults: {
           responsibilities: { fees_collector: 'application', losses_collector: 'application' },
         },
         dashboard: 'express',
-        include: ['configuration.recipient', 'identity', 'requirements'],
+        include: ['configuration.merchant', 'configuration.recipient', 'identity', 'requirements'],
       },
       /*
        * Clave estable por persona, no la que el SDK genera por intento.
@@ -120,6 +137,15 @@ export async function POST(request: NextRequest) {
         console.error(`[payouts/connect] cuenta ${accountId} creada pero no guardada:`, error)
         return NextResponse.json({ error: 'account_not_saved' }, { status: 500 })
       }
+    } else if (direct) {
+      /*
+       * La cuenta ya existia como receptora. Se le anade la configuracion
+       * merchant; pedirla otra vez sobre una que ya la tiene no cambia nada,
+       * asi que no hace falta mirar antes.
+       */
+      await stripe.v2.core.accounts.update(accountId, {
+        configuration: { merchant: { capabilities: { card_payments: { requested: true } } } },
+      })
     }
 
     const link = await stripe.v2.core.accountLinks.create({
@@ -127,7 +153,7 @@ export async function POST(request: NextRequest) {
       use_case: {
         type: 'account_onboarding',
         account_onboarding: {
-          configurations: ['recipient'],
+          configurations: direct ? ['merchant', 'recipient'] : ['recipient'],
           // Vuelve aqui si el enlace caduca; Stripe los emite de un solo uso.
           refresh_url: `${APP_URL}/settings/payouts?connect=refresh`,
           return_url: `${APP_URL}/settings/payouts?connect=done`,
