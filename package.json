@@ -52,6 +52,7 @@
     "check:rules": "npx --yes tsx scripts/rules-check.ts",
     "check:prose": "npx --yes tsx scripts/prose-check.ts",
     "check:seller": "npx --yes tsx scripts/seller-check.ts",
+    "check:directpath": "npx --yes tsx scripts/direct-path-check.ts",
     "check:lock": "npx --yes tsx scripts/lock-check.ts",
     "check:offers": "npx --yes tsx scripts/offers-check.ts",
     "check:holdercode": "npx --yes tsx scripts/holder-code-check.ts",
@@ -84,7 +85,8 @@
     "check:titleissue": "npx --yes tsx scripts/title-issue-check.ts",
     "check:legalinterim": "npx --yes tsx scripts/legal-interim-check.ts",
     "check:email": "npx --yes tsx scripts/email-verification-check.ts",
-    "check:collector": "npx --yes tsx scripts/collector-check.ts"
+    "check:collector": "npx --yes tsx scripts/collector-check.ts",
+    "check:transfersrls": "npx --yes tsx scripts/transfers-rls-check.ts"
   },
   "dependencies": {
     "@dha-team/arbundles": "^1.1.0",
