@@ -164,5 +164,18 @@ export async function completeSale(sessionId: string, account: string | null = n
     href,
   })
 
+  // Decision 94: quien vende se entera de lo que pidio el comprador. La
+  // direccion no viaja en el aviso: se ve en Cobros, con sesion.
+  const { data: saleDelivery } = await admin.from('sale_deliveries').select('choice').eq('transfer_id', transfer.id).maybeSingle()
+  if (saleDelivery && saleDelivery.choice !== 'none') {
+    await notify(admin, {
+      userId: transfer.from_owner_id,
+      eventKey: 'delivery_requested',
+      dedupeKey: `${transfer.id}:delivery_requested`,
+      data: { title, choice: saleDelivery.choice },
+      href: '/history/payouts',
+    })
+  }
+
   return { status: 'completed', historyId, transferId: transfer.id }
 }

@@ -1040,6 +1040,9 @@
       "offer_expired": "L'offre pour {title} a expiré.",
       "offer_cancelled": "L'offre pour {title} a été annulée.",
       "offer_holder_ready": "Le propriétaire de {title} peut désormais vendre. Vous pouvez faire une nouvelle offre.",
+      "delivery_requested": "[pending approval] feed.events.delivery_requested",
+      "delivery_details_received": "[pending approval] feed.events.delivery_details_received",
+      "delivery_details_overdue": "[pending approval] feed.events.delivery_details_overdue",
       "security_change_phone": "Votre numéro tbt.cafe a été modifié. Ce n'est pas vous ? Ouvrez une demande d'aide maintenant.",
       "security_change_factor": "Un facteur de sécurité de votre authentification tbt.cafe a changé. Ce n'est pas vous ? Ouvrez une demande d'aide maintenant.",
       "security_change_reset": "Votre code privé a été réinitialisé. Vous en créerez un nouveau lors de votre prochain versement ou transfert.",
@@ -1418,6 +1421,33 @@
       "work_kind_required": "[pending approval] delivery.errors.work_kind_required",
       "seller_ack_required": "[pending approval] delivery.errors.seller_ack_required",
       "buyer_ack_required": "[pending approval] delivery.errors.buyer_ack_required"
+    },
+    "details": {
+      "title": "[pending approval] delivery.details.title",
+      "none": "[pending approval] delivery.details.none",
+      "choiceDeliver": "[pending approval] delivery.details.choiceDeliver",
+      "choiceCollect": "[pending approval] delivery.details.choiceCollect",
+      "choiceDigital": "[pending approval] delivery.details.choiceDigital",
+      "carrier": "[pending approval] delivery.details.carrier",
+      "tracking": "[pending approval] delivery.details.tracking",
+      "method": "[pending approval] delivery.details.method",
+      "methodDownloadLink": "[pending approval] delivery.details.methodDownloadLink",
+      "methodFileSent": "[pending approval] delivery.details.methodFileSent",
+      "methodEmail": "[pending approval] delivery.details.methodEmail",
+      "note": "[pending approval] delivery.details.note",
+      "submit": "[pending approval] delivery.details.submit",
+      "collectedConfirm": "[pending approval] delivery.details.collectedConfirm",
+      "sent": "[pending approval] delivery.details.sent",
+      "heldNote": "[pending approval] delivery.details.heldNote"
+    },
+    "detailsErrors": {
+      "carrier_required": "[pending approval] delivery.detailsErrors.carrier_required",
+      "method_required": "[pending approval] delivery.detailsErrors.method_required",
+      "no_details_needed": "[pending approval] delivery.detailsErrors.no_details_needed",
+      "not_found": "[pending approval] delivery.detailsErrors.not_found",
+      "not_seller": "[pending approval] delivery.detailsErrors.not_seller",
+      "sale_not_completed": "[pending approval] delivery.detailsErrors.sale_not_completed",
+      "details_failed": "[pending approval] delivery.detailsErrors.details_failed"
     }
   }
 }
