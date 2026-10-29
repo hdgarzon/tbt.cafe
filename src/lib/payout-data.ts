@@ -220,6 +220,8 @@ export async function fetchEarnings(userId: string): Promise<Earning[]> {
     .from('payout_earnings')
     .select('id, source, work_id, amount, state, releases_at, hold_reason, created_at, work:works(tbt_id, title)')
     .eq('user_id', userId)
+    // Una ganancia anulada por un reembolso (8.2) ya no es de nadie: no se lista.
+    .neq('state', 'cancelled')
     .order('created_at', { ascending: false })
 
   return (data ?? []).map((e) => {

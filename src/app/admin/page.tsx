@@ -127,6 +127,17 @@ const APPLY: Record<string, (a: Approval) => { url: string; body: Record<string,
       approvalId: a.id,
     },
   }),
+  // Work Order 02, 8.2: el reembolso de una venta, o la tarifa del comprador con su ticket.
+  'transactions.refund': (a) => ({
+    url: '/api/admin/refunds',
+    body: {
+      transferId: (a.payload as { transferId?: string })?.transferId,
+      kind: (a.payload as { kind?: string })?.kind,
+      ticketRef: (a.payload as { ticketRef?: string })?.ticketRef,
+      reason: a.reason,
+      approvalId: a.id,
+    },
+  }),
   'velocity.release': (a) => ({
     url: '/api/admin/velocity-holds',
     body: {
