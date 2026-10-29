@@ -77,6 +77,7 @@ npm run check:roastquestions # nobody can post a Roast question until moderation
 npm run check:stealth     # robots.txt disallows all and every page inherits noindex, until the launch checklist says otherwise
 npm run check:transfersrls # nobody rewrites a transfer from the browser: no client write policy or privilege, no session-bound write
 npm run check:directpath  # a direct-path sale reaches only an account that can take it; its payout delay is set and never above 31
+npm run check:delivery    # a sale whose buyer asked for delivery pays the seller only after delivery details; the address stays with the two parties
 npm run check:chainjobs   # the anchor upgrade, recovery sweep and balance alarm run hourly on Supabase Cron; Vercel keeps only the daily fallback
 npm run check:storage     # every Arweave upload is signed by the storage key, read back from the signed bytes; the old Metaplex library is gone
 ```

@@ -46,6 +46,8 @@ export type Rules = {
   threeDsRegistrationExempt: boolean
   payouts: { platformPct: number; costBank: number; costUsdc: number; sellerDelayDays: number; usdcEnabled: boolean }
   scan: { warn: number; block: number }
+  /** Decision 94: dias para dar los datos de entrega. null = sin plazo, el barrido no abre nada. */
+  delivery: { detailsDeadlineDays: number | null }
   /** Solo en el servidor: `rules-public.ts` no la pide y el navegador no puede leerla (058). */
   scanProcessorUrl: string | null
   pauses: Record<PauseKey, { on: boolean; message: Locale4 }>
@@ -142,6 +144,7 @@ export function rulesFromRow(row: RulesRow): Rules {
       usdcEnabled: bool(row, 'usdc_enabled'),
     },
     scan: { warn: num(row, 'scan_warn'), block: num(row, 'scan_block') },
+    delivery: { detailsDeadlineDays: row.delivery_details_deadline == null ? null : num(row, 'delivery_details_deadline') },
     scanProcessorUrl: typeof row.scan_processor_url === 'string' ? row.scan_processor_url : null,
     pauses,
     covered: { enabled: bool(row, 'covered_brews_enabled'), count: num(row, 'covered_brews_count') },
@@ -198,6 +201,7 @@ export const RULE_AUTHORITY: Record<string, 'two_person' | 'operator'> = {
   payout_platform_pct: 'two_person',
   payout_cost_bank: 'operator',
   payout_cost_usdc: 'operator',
+  delivery_details_deadline: 'operator',
   seller_payout_delay_days: 'operator',
   usdc_enabled: 'operator',
   scan_warn: 'two_person',
