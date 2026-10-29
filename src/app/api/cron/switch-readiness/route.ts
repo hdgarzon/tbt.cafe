@@ -3,6 +3,8 @@ import { PublicKey } from '@solana/web3.js'
 import { createAdminClient } from '@/lib/supabase-admin'
 import { SOLANA_NETWORK, getConnection } from '@/lib/solana/config'
 import { KEY_ENV, readSecret, assertDistinctSecrets, type KeyRole } from '@/lib/solana/keys'
+import { UPLOAD_SERVICE, arweaveFile, signForArweave, signerOf } from '@/lib/chain/storage-upload'
+import { storageCredits } from '@/lib/chain/storage-credits'
 
 /**
  * GET /api/cron/switch-readiness — ¿esta produccion lista para el cambio?
@@ -10,8 +12,10 @@ import { KEY_ENV, readSecret, assertDistinctSecrets, type KeyRole } from '@/lib/
  *
  * Solo lee. Dice que esta puesto y que falta: red, conexion de pago, las cuatro
  * claves (por su direccion publica, nunca el secreto), la coleccion en cadena,
- * el saldo de trabajo del payer, los datos de prueba borrados y los IDs
- * reservados. No cambia nada; el cambio lo hacen personas, con el runbook
+ * el saldo de trabajo del payer, los datos de prueba borrados, los IDs
+ * reservados, los tres trabajos de cadena programados, y que las subidas las
+ * firma la clave de almacenamiento y tiene creditos. No cambia nada; el
+ * cambio lo hacen personas, con el runbook
  * (documentation/mainnet-switch.md).
  */
 export const dynamic = 'force-dynamic'
@@ -20,6 +24,9 @@ export const dynamic = 'force-dynamic'
 const MPL_CORE_PROGRAM = 'CoREENxT6tW1HoK8ypY1SxRMZTcVPm7R94rH4PZNhX7d'
 /** C11: un saldo de trabajo de 1–2 SOL antes del cambio. */
 const WORKING_BALANCE_LAMPORTS = 1_000_000_000
+/** Upgrade de anclas (6.2), barrido (7.3) y alarma de saldo (7.2.2). */
+const CHAIN_JOBS = ['tbt-anchor-upgrade', 'tbt-chain-recovery', 'tbt-balance-alarm']
+const HOURLY = /^\d+ \* \* \* \*$/
 
 type Check = { name: string; ok: boolean; detail?: string }
 
@@ -57,6 +64,23 @@ export async function GET(request: NextRequest) {
   }
   push('title-signing key ID set (TBT_TITLE_SIGNING_KEY_ID)', Boolean(process.env.TBT_TITLE_SIGNING_KEY_ID))
   push('CRON_SECRET set', true)
+
+  // 5.1: el que sube firma con la clave de almacenamiento. Se firma una prueba
+  // con el mismo codigo que firma cada subida, sin subirla, y se lee el firmante.
+  try {
+    const probe = await signForArweave(arweaveFile('switch-readiness', 'probe.txt', 'text/plain', [{ name: 'App-Name', value: 'tbt.cafe' }]))
+    const signer = signerOf(probe)
+    push('uploads are signed by the storage key', signerOf(probe) === addresses.storage && (await probe.isValid()), signer)
+  } catch (error) {
+    push('uploads are signed by the storage key', false, error instanceof Error ? error.message : 'signing failed')
+  }
+  push('mainnet uploads go to Turbo', SOLANA_NETWORK === 'mainnet-beta', SOLANA_NETWORK === 'mainnet-beta' ? UPLOAD_SERVICE['mainnet-beta'] : UPLOAD_SERVICE.devnet)
+  try {
+    const c = await storageCredits()
+    push('the storage key can pay for a full image', c.credits >= c.perRegistration, `${c.credits} ${c.unit}; an 8 MB image is ${c.perRegistration}`)
+  } catch (error) {
+    push('the storage key can pay for a full image', false, error instanceof Error ? error.message : 'lookup failed')
+  }
 
   // La coleccion y el saldo, en la red configurada.
   const connection = (() => {
@@ -96,6 +120,15 @@ export async function GET(request: NextRequest) {
   push('originality index empty (Stage 10)', vectors === 0, `${vectors ?? '?'} vectors`)
   const reserved = ((config as { tbt_id_reserved?: string[] } | null)?.tbt_id_reserved ?? []).length
   push('prototype IDs reserved', reserved >= 8, `${reserved} reserved`)
+
+  // Los tres trabajos de cadena, cada hora en Supabase Cron (083).
+  const { data: jobs, error: jobsError } = await admin.rpc('chain_jobs_scheduled')
+  const scheduled = (jobs ?? []) as { jobname: string; schedule: string; active: boolean }[]
+  for (let i = 0; i < CHAIN_JOBS.length; i++) {
+    const job = scheduled.find((j) => j.jobname === CHAIN_JOBS[i])
+    push(`${CHAIN_JOBS[i]} scheduled hourly`, !jobsError && !!job && job.active && HOURLY.test(job.schedule),
+      jobsError ? jobsError.message : job ? `${job.schedule}${job.active ? '' : ' (inactive)'}` : 'missing')
+  }
 
   return NextResponse.json({ ready: checks.every((c) => c.ok), checks })
 }

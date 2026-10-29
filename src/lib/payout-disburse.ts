@@ -1,6 +1,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { stripe } from '@/lib/stripe'
 import { notify } from '@/lib/notify'
+import { fileSystemTicket } from '@/lib/system-tickets'
 
 /**
  * La disposicion real del dinero — Spec 02 §4 paso 8.
@@ -127,6 +128,20 @@ export async function disburseBlock(
         dedupeKey: blockId,
         data: { ...shown, reason },
         href: '/history/payouts',
+      })
+      /*
+       * Y un ticket de soporte sobre el bloque (Addendum A, Step 21): el aviso
+       * dice que paso, el ticket es donde se resuelve. Va en la misma rama que el
+       * aviso, asi que un reintento sobre un bloque ya marcado no abre otro; y el
+       * ticket es idempotente por bloque de todos modos. El detalle es el motivo,
+       * nunca un destino: ese lo mando el navegador.
+       */
+      await fileSystemTicket(admin, {
+        userId,
+        eventCode: 'payout_failed',
+        entityType: 'payout_block',
+        entityId: blockId,
+        errorDetail: { reason },
       })
     }
     return { status: 'failed', reason }

@@ -6,15 +6,16 @@
  *
  * LOS BYTES QUE SUBEN SON LOS QUE SE HASHEAN
  *
- * Esto es lo unico que hace que el esquema sirva para algo. `metaplex.storage()`
- * ofrece `uploadJson`, que toma un objeto y lo reserializa con `JSON.stringify`
- * antes de subirlo — orden de claves del motor, espaciado del motor. Los bytes
- * publicados dejarian de coincidir con los que `canonicalize` produjo y
- * `recordHash` firmo, y cualquiera que descargara el registro para verificarlo
- * obtendria un hash distinto.
+ * Esto es lo unico que hace que el esquema sirva para algo. El driver viejo de
+ * Metaplex ofrecia `uploadJson`, que toma un objeto y lo reserializa con
+ * `JSON.stringify` antes de subirlo — orden de claves del motor, espaciado del
+ * motor. Los bytes publicados dejarian de coincidir con los que `canonicalize`
+ * produjo y `recordHash` firmo, y cualquiera que descargara el registro para
+ * verificarlo obtendria un hash distinto.
  *
  * Por eso se construye el archivo a mano con la cadena canonica literal. La
- * unica transformacion entre `canonicalize()` y Arweave es UTF-8.
+ * unica transformacion entre `canonicalize()` y Arweave es UTF-8, y lo que firma
+ * la clave de almacenamiento (storage-upload.ts) son esos mismos bytes.
  *
  * LAS ETIQUETAS
  *
@@ -23,11 +24,10 @@
  * hash contra cualquier pasarela. `Content-Type` va tambien como etiqueta
  * porque es lo que leen las pasarelas al servirlo.
  */
-import { toMetaplexFile, type MetaplexFile } from '@metaplex-foundation/js'
 import { canonicalize, recordHash } from './serialize'
 import { assertNoIdentifiers } from './pseudonym'
 import { anchorRecord } from './ots'
-import { getMetaplex } from './irys'
+import { arweaveFile, signForArweave, uploadSigned, type ArweaveFile } from './storage-upload'
 import { SOLANA_NETWORK } from '@/lib/solana/config'
 import { arweaveUrl } from './gateways'
 import type { RecordKind } from './records'
@@ -54,7 +54,7 @@ type PublishableRecord = {
  * red: que lleve la forma canonica es la propiedad que importa, y no deberia
  * hacer falta pagar una transaccion para verificarla.
  */
-export function recordFileFor(record: PublishableRecord): MetaplexFile {
+export function recordFileFor(record: PublishableRecord): ArweaveFile {
   /*
    * El ultimo punto antes de lo permanente — Item 10.
    *
@@ -68,33 +68,30 @@ export function recordFileFor(record: PublishableRecord): MetaplexFile {
   const canonical = canonicalize(record)
   const hash = recordHash(record)
 
-  return toMetaplexFile(canonical, `${record.tbt_id}-${record.type}.json`, {
-    contentType: 'application/json',
-    tags: [
-      { name: RECORD_TAGS.app, value: 'tbt.cafe' },
-      { name: RECORD_TAGS.schema, value: record.schema },
-      { name: RECORD_TAGS.type, value: record.type },
-      { name: RECORD_TAGS.tbtId, value: record.tbt_id },
-      { name: RECORD_TAGS.hash, value: hash },
-      { name: 'Content-Type', value: 'application/json' },
-    ],
-  })
+  return arweaveFile(canonical, `${record.tbt_id}-${record.type}.json`, 'application/json', [
+    { name: RECORD_TAGS.app, value: 'tbt.cafe' },
+    { name: RECORD_TAGS.schema, value: record.schema },
+    { name: RECORD_TAGS.type, value: record.type },
+    { name: RECORD_TAGS.tbtId, value: record.tbt_id },
+    { name: RECORD_TAGS.hash, value: hash },
+    { name: 'Content-Type', value: 'application/json' },
+  ])
 }
 
 /**
  * La URI que de verdad resuelve.
  *
- * El driver devuelve siempre `https://arweave.net/<id>`, y en devnet eso es un
- * 404: lo subido a Irys devnet vive en su propia pasarela y no llega a la red
- * Arweave. Comprobado subiendo un registro y pidiendolo por las tres.
+ * En devnet, `https://arweave.net/<id>` es un 404: lo subido a Irys devnet vive
+ * en su propia pasarela y no llega a la red Arweave. Comprobado subiendo un
+ * registro y pidiendolo por las tres.
  *
  * Importa porque esta URI se escribe EN CADENA (Item 6, paso 4) y el spec pide
  * que apunte a algo que exista. Una direccion permanente hacia un 404 es peor
  * que no tenerla: parece verificable y no lo es.
  */
-export function gatewayUri(driverUri: string): string {
-  const id = driverUri.split('/').filter(Boolean).pop()
-  if (!id) return driverUri
+export function gatewayUri(idOrUri: string): string {
+  const id = idOrUri.split('/').filter(Boolean).pop()
+  if (!id) return idOrUri
   return SOLANA_NETWORK === 'mainnet-beta'
     ? arweaveUrl(id)
     : `https://devnet.irys.xyz/${id}`
@@ -113,10 +110,11 @@ export type PublishedRecord = {
  *
  * Un solo sitio que suba, para que la regla de la pasarela no se duplique: la
  * usan el registro y la imagen de la obra, y una copia de esta funcion que se
- * quedara atras es una URI permanente hacia un 404.
+ * quedara atras es una URI permanente hacia un 404. Y un solo firmante: la
+ * clave de almacenamiento (Stage 5.1).
  */
-export async function uploadToArweave(file: MetaplexFile): Promise<string> {
-  return gatewayUri(await getMetaplex().storage().upload(file))
+export async function uploadToArweave(file: ArweaveFile): Promise<string> {
+  return gatewayUri(await uploadSigned(await signForArweave(file)))
 }
 
 /**

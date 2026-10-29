@@ -12,8 +12,9 @@ import { join } from 'path'
  *  e  confirmed anchor with no proof record → publish it;
  *  f  anything failing for 24 hours → an operator ticket naming the work and the step.
  *
- * Built and callable, but not scheduled: the hourly schedule waits on
- * question (s). It must not appear in vercel.json or in a pg_cron job yet.
+ * Scheduled hourly on Supabase Cron (083, question s), never on Vercel: the
+ * sweep mints and publishes, and Hobby allows one run a day. check:chainjobs
+ * holds the schedule itself.
  */
 
 let bad = 0
@@ -46,11 +47,11 @@ const route = read('src/app/api/cron/chain-recovery/route.ts')
 ok('the route runs the sweep', /await runChainRecovery\(/.test(route))
 ok('the route is behind CRON_SECRET', /Bearer \$\{secret\}/.test(route) && /if \(!secret/.test(route))
 
-ok('not scheduled on Vercel (question s)', !/chain-recovery/.test(read('vercel.json')))
+ok('not scheduled on Vercel', !/chain-recovery/.test(read('vercel.json')))
 const migs = readdirSync(join(root, 'supabase/migrations'))
 let scheduled = false
-for (let i = 0; i < migs.length; i++) if (/cron\.schedule[\s\S]{0,400}chain-recovery/.test(read(`supabase/migrations/${migs[i]}`))) scheduled = true
-ok('not scheduled on Supabase (question s)', !scheduled)
+for (let i = 0; i < migs.length; i++) if (/cron\.schedule\(\s*'tbt-chain-recovery',\s*'\d+ \* \* \* \*'[\s\S]{0,400}\/api\/cron\/chain-recovery/.test(read(`supabase/migrations/${migs[i]}`))) scheduled = true
+ok('scheduled hourly on Supabase (question s)', scheduled)
 
 console.log(bad === 0 ? '\nall good' : `\n${bad} failure(s)`)
 process.exit(bad === 0 ? 0 : 1)

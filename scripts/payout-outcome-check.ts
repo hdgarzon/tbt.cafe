@@ -66,8 +66,34 @@ const code = (s: string) => s.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/.*$/
     !/destination_masked|destinationMasked/.test(body),
     'la plantilla inserta los valores en HTML'
   )
+  // ---- el fallo tambien abre un ticket de soporte (Addendum A, Step 21)
+  ok('importa fileSystemTicket', src.includes("import { fileSystemTicket } from '@/lib/system-tickets'"))
+  ok(
+    'fallido: abre el ticket sobre el bloque, a continuacion del aviso y solo en esa rama',
+    /if \(moved === true\) \{\s*await notify\(admin, \{[\s\S]*?\}\)\s*await fileSystemTicket\(admin, \{\s*userId,\s*eventCode: 'payout_failed',\s*entityType: 'payout_block',\s*entityId: blockId,\s*errorDetail: \{ reason \},?\s*\}\)/.test(body),
+    'sin moved === true un reintento abriria otro ticket por el mismo bloque'
+  )
+  ok('un solo ticket', (body.match(/fileSystemTicket\(/g) ?? []).length === 1)
+  ok(
+    'el ticket no se abre donde el dinero pudo salir',
+    !/fileSystemTicket\(/.test(body.slice(settleError, settleErrorEnd)) && !/fileSystemTicket\(/.test(body.slice(pending, pendingEnd)),
+    'ni el estado indeterminado ni «salio y la fila no cerro»: un ticket de fallo ahi mentiria'
+  )
+  ok('el detalle del ticket es el motivo, no un destino', /errorDetail: \{ reason \}/.test(body) && !/errorDetail:[^\n]*(destination|masked)/i.test(body))
+
   ok('enseña el neto y la referencia del bloque', /const shown = \{\s*amount: netAmount\.toLocaleString\(/.test(body) && /block: blockId,/.test(body))
   ok('lleva a una pagina que existe', body.includes("href: '/history/payouts'") && existsSync(join(root, 'src/app/history/payouts/page.tsx')))
+}
+
+// ---- la plantilla del ticket
+{
+  const tickets = read('src/lib/system-tickets.ts')
+  const at = tickets.indexOf('  payout_failed: {')
+  const block = at > -1 ? tickets.slice(at, tickets.indexOf('\n  },\n', at)) : ''
+  ok('payout_failed es un codigo de evento', /SystemEventCode =[\s\S]{0,400}\| 'payout_failed'/.test(tickets))
+  ok('la plantilla existe, de pagos y financiera', at > -1 && block.includes("category: 'payouts'") && block.includes("severity: 'financial'"))
+  ok('en los cuatro idiomas', /en: \{/.test(block) && /es: \{/.test(block) && /pt: \{/.test(block) && /fr: \{/.test(block))
+  ok('no promete mas de lo que el libro hace', /not lost/.test(block) && !/refund/i.test(block), 'el dinero vuelve a disponible; no se devuelve nada')
 }
 
 // ---- el fallido sigue sin poder apagarse
