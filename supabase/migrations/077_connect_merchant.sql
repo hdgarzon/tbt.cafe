@@ -21,10 +21,6 @@ alter table public.payout_connect_accounts
 -- 6.5  The direct-path payout delay is set on the connected account from
 --      seller_payout_delay_days. Stripe accepts at most 31 (sandbox, 1 October:
 --      31 accepted, 32 refused with "must be less than or equal to 31"). The
---      configuration only checked >= 0, so an operator could store a value
---      Stripe would refuse on every account. The table now refuses it first.
+--      cap itself is rules_payout_delay_cap, in 082; this file adds no second
+--      one.
 -- ---------------------------------------------------------------------------
-
-alter table public.platform_config
-  drop constraint if exists rules_payout_delay_max,
-  add constraint rules_payout_delay_max check (seller_payout_delay_days <= 31);

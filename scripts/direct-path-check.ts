@@ -56,9 +56,9 @@ async function main() {
   ok('an unknown account is ignored, not created', /from\('payout_connect_accounts'\)[\s\S]{0,200}eq\('account_id'/.test(events))
 
   // ---- 6.5 the payout delay
-  ok('the delay cannot exceed what Stripe accepts',
-     /add constraint rules_payout_delay_max check \(seller_payout_delay_days <= 31\)/.test(mig))
-  ok('the snapshot carries the cap', /rules_payout_delay_max check \(seller_payout_delay_days <= 31\)/.test(read('supabase/schema-snapshot.sql')))
+  // The cap is 082's (check:rules); a second one here would be a twin.
+  ok('the delay cap is not added twice', !/add constraint rules_payout_delay_max/.test(mig))
+  ok('the snapshot carries the cap', /rules_payout_delay_cap check \(seller_payout_delay_days >= 0 and seller_payout_delay_days <= 31\)/.test(read('supabase/schema-snapshot.sql')))
   ok('the delay is set on the connected account',
      /balanceSettings\.update\(\s*\{ payments: \{ settlement_timing: \{ delay_days_override: rules\.payouts\.sellerDelayDays \} \} \},\s*\{ stripeAccount: accountId \}/.test(events))
   ok('only once it can take charges', /if \(fresh\.cardPaymentsEnabled\)[\s\S]{0,200}balanceSettings\.update\(/.test(events))
