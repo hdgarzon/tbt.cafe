@@ -8,7 +8,8 @@ import { runChainRecovery } from '@/lib/chain/recovery'
  * Acuña, mueve y publica: gasta SOL y créditos. Por eso, a diferencia del
  * upgrade de anclas, sin CRON_SECRET no corre nunca.
  *
- * Construido y sin programar: su horario espera la pregunta (s).
+ * Corre cada hora desde Supabase Cron (083, `tbt-chain-recovery`), nunca desde
+ * Vercel.
  */
 export const dynamic = 'force-dynamic'
 export const maxDuration = 300

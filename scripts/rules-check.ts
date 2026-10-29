@@ -73,6 +73,16 @@ ok('the warning sits under the ceiling', /check \(royalty_pct_warning <= royalty
 ok('scan fractions between 0 and 1, warn under block', /check \(scan_warn > 0 and scan_warn <= scan_block and scan_block <= 1\)/.test(mig))
 ok('near-expiry fraction between 0 and 1', /check \(offer_near_expiry_fraction > 0 and offer_near_expiry_fraction < 1\)/.test(mig))
 ok('fees non-negative', /check \(service_fee_buyer >= 0 and service_fee_seller >= 0 and service_fee_royalty >= 0 and registration_fee >= 0 and transfer_fee >= 0\)/.test(mig))
+
+// ---- Update 01, U7: Stripe refuses a payout delay over 31 days on a v2
+// account (stop-and-ask 6.5), so the database refuses it first. The rule
+// writer leaves ranges to the database, so this check is the only cap.
+const CAP = /add constraint rules_payout_delay_cap\s+check \(seller_payout_delay_days >= 0 and seller_payout_delay_days <= 31\)/
+const capMig = readdirSync(migDir).filter((f) => /_payout_delay_cap\.sql$/.test(f))[0]
+ok('a payout_delay_cap migration exists', !!capMig)
+ok('the payout delay is capped at 31 days', !!capMig && CAP.test(readFileSync(join(migDir, capMig), 'utf8')))
+ok('the snapshot carries the cap',
+   /add constraint rules_payout_delay_cap check \(seller_payout_delay_days >= 0 and seller_payout_delay_days <= 31\);/.test(read('supabase/schema-snapshot.sql')))
 ok('the scanner address is not readable with the public key',
    /revoke select on public\.platform_config from anon, authenticated/.test(mig) &&
    /grant select \([^)]*\) on public\.platform_config to anon, authenticated/.test(mig) &&

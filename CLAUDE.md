@@ -77,6 +77,8 @@ npm run check:roastquestions # nobody can post a Roast question until moderation
 npm run check:stealth     # robots.txt disallows all and every page inherits noindex, until the launch checklist says otherwise
 npm run check:delivery    # a sale whose buyer asked for delivery pays the seller only after delivery details; the address stays with the two parties
 npm run check:deliveryflow # no physical work is listed without its kind or bought without a delivery choice; it stays off while its wording awaits approval
+npm run check:chainjobs   # the anchor upgrade, recovery sweep and balance alarm run hourly on Supabase Cron; Vercel keeps only the daily fallback
+npm run check:storage     # every Arweave upload is signed by the storage key, read back from the signed bytes; the old Metaplex library is gone
 ```
 
 Each guard is a plain script under `scripts/`, written BEFORE the module it
@@ -249,9 +251,10 @@ visible only inside the build detail:
 > (0 * * * *) would run more than once per day.
 
 What that costs is confirmation latency, not the proof: the time an anchor
-attests is the time it was **stamped**, not the time it was checked. Restoring
-the hourly schedule the spec asks for needs the Pro plan. `npm run check:ots`
-fails if the expression stops being daily.
+attests is the time it was **stamped**, not the time it was checked. The hourly
+schedule the spec asks for runs on Supabase Cron instead (`083_chain_jobs`,
+through pg_net, like `tbt-sweep`), and the daily Vercel entry stays as a
+fallback. `npm run check:ots` fails if the Vercel expression stops being daily.
 
 ### A `security definer` function is a public endpoint until proven otherwise
 

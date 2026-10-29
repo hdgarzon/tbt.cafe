@@ -1,4 +1,4 @@
-import { existsSync, readFileSync } from 'fs'
+import { existsSync, readdirSync, readFileSync } from 'fs'
 import { join } from 'path'
 import { toBytea, fromBytea } from '../src/lib/chain/ots'
 
@@ -66,6 +66,12 @@ const cron = read('src/app/api/cron/anchor-upgrade/route.ts')
   ok('el cron está declarado', job?.path === '/api/cron/anchor-upgrade')
   ok('una vez al día', /^\d+ \d+ \* \* \*$/.test(job?.schedule ?? ''),
      `'${job?.schedule}' — una cuenta Hobby RECHAZA EL DESPLIEGUE ENTERO si corre más veces al día`)
+
+  // Chains 01, 6.2: cada hora en Supabase Cron; el diario de Vercel queda de respaldo.
+  const migs = readdirSync(join(__dirname, '..', 'supabase/migrations')).filter((f) => /_chain_jobs\.sql$/.test(f))
+  const jobs = migs.map((f) => read(`supabase/migrations/${f}`)).join('\n')
+  ok('cada hora en Supabase Cron',
+     /cron\.schedule\(\s*'tbt-anchor-upgrade',\s*'\d+ \* \* \* \*'[\s\S]{0,400}\/api\/cron\/anchor-upgrade'/.test(jobs))
 }
 
 // ---- la prueba se guarda como BYTES, no como un Buffer serializado
