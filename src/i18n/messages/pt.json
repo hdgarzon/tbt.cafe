@@ -1388,5 +1388,36 @@
     "registrationFee": "Taxa de registro",
     "tbtId": "TBT ID",
     "open": "Recibo"
+  },
+  "delivery": {
+    "workKindLabel": "[pending approval] delivery.workKindLabel",
+    "workKindPhysical": "[pending approval] delivery.workKindPhysical",
+    "workKindDigital": "[pending approval] delivery.workKindDigital",
+    "sellerAck": "[pending approval] delivery.sellerAck",
+    "sellerAckConfirm": "[pending approval] delivery.sellerAckConfirm",
+    "buyerAck": "[pending approval] delivery.buyerAck",
+    "choiceTitle": "[pending approval] delivery.choiceTitle",
+    "choiceDeliver": "[pending approval] delivery.choiceDeliver",
+    "choiceCollect": "[pending approval] delivery.choiceCollect",
+    "choiceNone": "[pending approval] delivery.choiceNone",
+    "addressConsent": "[pending approval] delivery.addressConsent",
+    "directNotice": "[pending approval] delivery.directNotice",
+    "address": {
+      "name": "[pending approval] delivery.address.name",
+      "line1": "[pending approval] delivery.address.line1",
+      "line2": "[pending approval] delivery.address.line2",
+      "city": "[pending approval] delivery.address.city",
+      "region": "[pending approval] delivery.address.region",
+      "postalCode": "[pending approval] delivery.address.postalCode",
+      "country": "[pending approval] delivery.address.country"
+    },
+    "errors": {
+      "delivery_choice_required": "[pending approval] delivery.errors.delivery_choice_required",
+      "address_required": "[pending approval] delivery.errors.address_required",
+      "consent_required": "[pending approval] delivery.errors.consent_required",
+      "work_kind_required": "[pending approval] delivery.errors.work_kind_required",
+      "seller_ack_required": "[pending approval] delivery.errors.seller_ack_required",
+      "buyer_ack_required": "[pending approval] delivery.errors.buyer_ack_required"
+    }
   }
 }
