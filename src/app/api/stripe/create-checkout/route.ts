@@ -277,7 +277,9 @@ export async function POST(request: NextRequest) {
         .update({ payment_status: 'pending', payment_intent_id: session.id })
         .eq('id', workId)
     } else if (type === 'transfer' && transferId) {
-      await supabase
+      // The seller was checked above; the write is the server's. `transfers`
+      // has no client UPDATE since 080, so the caller's session would no-op.
+      await createAdminClient()
         .from('transfers')
         .update({
           payment_status: 'pending',

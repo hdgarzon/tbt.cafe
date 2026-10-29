@@ -72,6 +72,14 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'completed_by_webhook' }, { status: 409 })
     }
 
+    // Service-role for every mutating write below: the seller-initiated path
+    // happens to satisfy the works UPDATE RLS (auth.uid() = current_owner_id,
+    // true for the seller until this exact update runs) but the buyer never
+    // does — using the caller's session here would silently no-op for buyers.
+    // `transfers` has no client UPDATE at all since 080: the payment status is
+    // what this route verified with Stripe, never what the caller could PATCH.
+    const serviceClient = createAdminClient()
+
     // Check payment status with fallback to Stripe verification
     if (transfer.payment_status !== 'completed') {
       const { couponCode } = requestBody
@@ -81,7 +89,7 @@ export async function POST(request: NextRequest) {
         paymentBypassed = true
         console.log('Payment bypassed with dev coupon:', couponCode)
 
-        await supabase
+        await serviceClient
           .from('transfers')
           .update({
             payment_status: 'completed',
@@ -102,7 +110,7 @@ export async function POST(request: NextRequest) {
             const session = await stripe.checkout.sessions.retrieve(stripeSessionId)
             if (session.payment_status === 'paid') {
               verified = true
-              await supabase
+              await serviceClient
                 .from('transfers')
                 .update({
                   payment_status: 'completed',
@@ -172,12 +180,6 @@ export async function POST(request: NextRequest) {
     }
 
     console.log('Completing transfer:', transferId)
-
-    // Service-role for every mutating write below: the seller-initiated path
-    // happens to satisfy the works UPDATE RLS (auth.uid() = current_owner_id,
-    // true for the seller until this exact update runs) but the buyer never
-    // does — using the caller's session here would silently no-op for buyers.
-    const serviceClient = createAdminClient()
 
     // Update work ownership in Supabase
     // When to_owner_id is null (owner-initiated transfer), keep current_owner_id as from_owner_id
