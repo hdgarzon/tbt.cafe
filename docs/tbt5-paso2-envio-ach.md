@@ -151,6 +151,10 @@ read -s STRIPE_TEST_KEY && export STRIPE_TEST_KEY && node probe.mjs; unset STRIP
 | G4 | Si G2 o G3 se crean: cuenta de EE. UU. para ese destinatario CO | Rechazo | [P] |
 | G5 | Control: cuenta de EE. UU. para el destinatario US | Se crea | [P] |
 
+**Intento del 11 de noviembre:** las seis llamadas volvieron con `401 api_key_expired`. Es la
+misma clave de test que ya había caducado el 6 de noviembre. No se creó nada en el sandbox. Las
+filas siguen pendientes hasta que se rote la clave de test.
+
 **Regla:** si alguna fila contradice lo esperado (sobre todo G2 o G4 aceptados), cambian §1 y §3 y
 hay que avisar a Federico antes de construir.
 
