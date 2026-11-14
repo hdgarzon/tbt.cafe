@@ -99,7 +99,7 @@
     "@simplewebauthn/server": "^14.0.3",
     "@solana/web3.js": "^1.99.0",
     "@stripe/react-stripe-js": "^6.12.0",
-    "@stripe/stripe-js": "^9.17.0",
+    "@stripe/stripe-js": "^10.2.1",
     "@supabase/supabase-js": "^2.118.0",
     "javascript-opentimestamps": "^0.4.5",
     "next": "^16.4.3",
