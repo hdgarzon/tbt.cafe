@@ -97,7 +97,7 @@
     "@metaplex-foundation/umi-bundle-defaults": "^1.6.0",
     "@simplewebauthn/browser": "^14.0.0",
     "@simplewebauthn/server": "^14.0.3",
-    "@solana/web3.js": "^1.99.0",
+    "@solana/web3.js": "^3.2.1",
     "@stripe/react-stripe-js": "^6.12.0",
     "@stripe/stripe-js": "^9.17.0",
     "@supabase/supabase-js": "^2.118.0",
